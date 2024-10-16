@@ -1,0 +1,12 @@
+[tool.ruff.lint]
+select = ["ALL"]
+
+ignore = [
+    # We do not annotate the type of 'self'.
+    "ANN101",
+]
+
+# Do not automatically remove commented out code.
+# We comment out code during development, and with VSCode auto-save, this code
+# is sometimes annoyingly removed.
+unfixable = ["ERA001"]

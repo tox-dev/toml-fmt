@@ -1,0 +1,198 @@
+[tool.ruff]
+required-version = ">=0.0.193"
+extend = "../pyproject.toml"
+target-version = "py37"
+line-length = 120
+indent-width = 2
+tab-size = 2
+builtins = [
+  "ALPHA",
+  "Bar",
+]
+namespace-packages = [
+  "ALPHA",
+  "Bar",
+]
+src = [
+  "ALPHA",
+  "Bar",
+]
+include = [
+  "ALPHA",
+  "Bar",
+]
+extend-include = [
+  "ALPHA",
+  "Bar",
+]
+exclude = [
+  "ALPHA",
+  "Bar",
+]
+extend-exclude = [
+  "ALPHA",
+  "Bar",
+]
+force-exclude = true
+respect-gitignore = false
+preview = true
+fix = true
+unsafe-fixes = true
+fix-only = true
+show-fixes = true
+show-source = true
+output-format = "grouped"
+cache-dir = "~/a"
+format.preview = true
+format.indent-style = "tab"
+format.quote-style = "single"
+format.line-ending = "lf"
+format.skip-magic-trailing-comma = true
+format.docstring-code-line-length = 60
+format.exclude = [
+  "ALPHA",
+  "Bar",
+]
+format.docstring-code-format = true
+format.extra = true
+format.more = true
+lint.select = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-select = [
+  "ALPHA",
+  "Bar",
+]
+lint.explicit-preview-rules = true
+lint.exclude = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-ignore = [
+  "ALPHA",
+  "Bar",
+]
+lint.per-file-ignores.'Magic.py' = [
+  "ALPHA",
+  "Bar",
+]
+lint.per-file-ignores."alpha.py" = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-per-file-ignores.'Magic.py' = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-per-file-ignores."alpha.py" = [
+  "ALPHA",
+  "Bar",
+]
+lint.fixable = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-fixable = [
+  "ALPHA",
+  "Bar",
+]
+lint.unfixable = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-safe-fixes = [
+  "ALPHA",
+  "Bar",
+]
+lint.extend-unsafe-fixes = [
+  "ALPHA",
+  "Bar",
+]
+lint.typing-modules = [
+  "ALPHA",
+  "Bar",
+]
+lint.allowed-confusables = [
+  "−",
+  "∗",
+  "ρ",
+]
+lint.dummy-variable-rgx = "^_$"
+lint.external = [
+  "ALPHA",
+  "Bar",
+]
+lint.task-tags = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-annotations.suppress-none-returning = true
+lint.flake8-bandit.hardcoded-tmp-directory = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-boolean-trap.extend-allowed-calls = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-bugbear.extend-immutable-calls = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-builtins.builtins-ignorelist = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-comprehensions.allow-dict-calls-with-keyword-arguments = true
+lint.flake8-copyright.author = "Ruff"
+lint.flake8-copyright.notice-rgx = "(?i)Copyright \\(C\\) \\d{4}"
+lint.flake8-errmsg.max-string-length = 20
+lint.flake8-gettext.extend-function-names = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-implicit-str-concat.allow-multiline = false
+lint.flake8-import-conventions.aliases.altair = "alt"
+lint.flake8-import-conventions.aliases.numpy = "np"
+lint.flake8-pytest-style.parametrize-names-type = "list"
+lint.flake8-pytest-style.raises-extend-require-match-for = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-quotes.docstring-quotes = "single"
+lint.flake8-self.extend-ignore-names = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-tidy-imports.banned-module-level-imports = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-type-checking.exempt-modules = [
+  "ALPHA",
+  "Bar",
+]
+lint.flake8-unused-arguments.ignore-variadic-names = true
+lint.isort.section-order = [
+  "Bar",
+  "ALPHA",
+]
+lint.mccabe.max-complexity = 5
+lint.pep8-naming.classmethod-decorators = [
+  "ALPHA",
+  "Bar",
+]
+lint.pycodestyle.max-line-length = 100
+lint.pydocstyle.convention = "google"
+lint.pyflakes.extend-generics = [
+  "ALPHA",
+  "Bar",
+]
+lint.pylint.allow-dunder-method-names = [
+  "ALPHA",
+  "Bar",
+]
+lint.pyupgrade.keep-runtime-typing = true
+lint.extra.ok = 1
+lint.more.ok = 1

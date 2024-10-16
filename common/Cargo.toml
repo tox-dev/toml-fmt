@@ -1,0 +1,18 @@
+[package]
+name = "common"
+version = "1.0.0"
+description = "Common code for formatting TOML files"
+repository = "https://github.com/tox-dev/toml-fmt"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+taplo = { version = "0.13.2" }                          # formatter
+pep508_rs = { version = "0.6.1" }
+pep440_rs = { version = "0.6.5" } # align up with pep508_rs for now https://github.com/konstin/pep508_rs/issues/19
+lexical-sort = { version = "0.3.1" }
+
+[dev-dependencies]
+rstest = { version = "0.23.0" } # parametrized tests
+indoc = { version = "2.0.5" }   # dedented test cases for literal strings
