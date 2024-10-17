@@ -1,3 +1,9 @@
+<a id="2.4.2"></a>
+
+## 2.4.2 - 2024-10-17
+
+- Fix release script by [@gaborbernat](https://github.com/gaborbernat)
+
 <a id="2.4.1"></a>
 
 ## 2.4.1 - 2024-10-17
