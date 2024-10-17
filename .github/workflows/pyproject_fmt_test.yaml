@@ -1,0 +1,128 @@
+name: Test pyproject-fmt
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+      - name: Lint rust code with clippy
+        run: cargo clippy -p pyproject-fmt --all-targets -- -D warnings
+
+  rust-fmt:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pyproject-fmt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - name: Rust formatting check
+        run: cargo fmt -p pyproject-fmt --check
+
+  rust-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Build library
+        run: cargo build -p pyproject-fmt
+
+  rust-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - run: cargo test -p pyproject-fmt
+
+  py-test:
+    name: test ${{ matrix.py }} ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py:
+          - "3.13"
+          - "3.12"
+          - "3.11"
+          - "3.10"
+          - "3.9"
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+    defaults:
+      run:
+        working-directory: pyproject-fmt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Install Python
+        if: matrix.py != '3.13'
+        run: uv python install --python-preference only-managed ${{ matrix.env }}
+      - uses: moonrepo/setup-rust@v1
+        with:
+          cache-base: main
+          bins: cargo-tarpaulin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup test suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.py }}
+      - name: Run test suite
+        run: tox run  --skip-pkg-install -e ${{ matrix.py }}
+        env:
+          PYTEST_ADDOPTS: "-vv --durations=20"
+
+  py-check:
+    name: tox env ${{ matrix.env }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - type
+          - dev
+          - pkg_meta
+    defaults:
+      run:
+        working-directory: pyproject-fmt
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install tox
+        run: uv tool install --python-preference only-managed --python 3.13 tox --with tox-uv
+      - name: Setup test suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
+      - name: Run test suite
+        run: tox run --skip-pkg-install -e ${{ matrix.env }}
+        env:
+          PYTEST_ADDOPTS: "-vv --durations=20"

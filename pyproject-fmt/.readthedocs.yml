@@ -1,0 +1,9 @@
+version: 2
+build:
+  os: ubuntu-lts-latest
+  tools:
+    python: "3.12"
+  commands:
+    - pip install tox-uv
+    - tox r -e docs -vv --notest
+    - tox r -e docs --skip-pkg-install -- "${READTHEDOCS_OUTPUT}"/html

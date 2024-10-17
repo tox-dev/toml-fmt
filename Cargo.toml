@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "common",
+    "pyproject-fmt",
+]
+resolver = "2"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"
+nursery = "warn"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

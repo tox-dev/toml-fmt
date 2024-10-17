@@ -1,0 +1,26 @@
+[package]
+name = "pyproject-fmt"
+version = "2.3.1"
+description = "Format pyproject.toml files"
+repository = "https://github.com/tox-dev/pyproject-fmt"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "_lib"
+path = "rust/src/main.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+common = {path = "../common" }
+regex = { version = "1.11.0" }
+pyo3 = { version = "0.22.5", features = ["abi3-py38"] } # integration with Python
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]
+
+[dev-dependencies]
+rstest = { version = "0.23.0" } # parametrized tests
+indoc = { version = "2.0.5" }   # dedented test cases for literal strings

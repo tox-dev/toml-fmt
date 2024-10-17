@@ -1,0 +1,239 @@
+name: Build pyproject-fmt
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Cut a release (select semver bump)?"
+        required: true
+        default: "no"
+        type: choice
+        options:
+          - "no"
+          - patch
+          - minor
+          - major
+  push:
+    branches: ["main"]
+  pull_request:
+  schedule:
+    - cron: "0 8 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
+
+permissions:
+  contents: read
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      changelog: ${{ steps.get-version.outputs.changelog }}
+    steps:
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install cargo-edit from crates.io
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-edit
+      - uses: actions/checkout@v4
+      - name: Bump version
+        run:
+          cargo set-version -p pyproject-fmt --bump '${{ github.event.inputs.release == 'no' ||
+          github.event.inputs.release == null  &&  'patch' || github.event.inputs.release }}'
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          cache-dependency-glob: "tasks/changelog.py"
+      - name: Generate changelog
+        id: get-version
+        run:
+          uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha
+          }}"
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - uses: actions/setup-python@v5
+      - uses: pre-commit/action@v3.0.1
+        continue-on-error: true
+      - name: Show changes to the repository
+        run: git diff HEAD -u
+      - name: Store the patched distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: source
+          path: .
+          compression-level: 9
+          retention-days: 1
+          if-no-files-found: "error"
+
+  linux:
+    needs: [bump]
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+            interpreter: "3.8 pypy3.8 pypy3.9 pypy3.10"
+          - runner: ubuntu-latest
+            target: x86
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            manylinux: musllinux_1_1
+          - runner: ubuntu-latest
+            target: i686-unknown-linux-musl
+            manylinux: musllinux_1_1
+          - runner: ubuntu-latest
+            target: aarch64
+          - runner: ubuntu-latest
+            target: armv7
+          - runner: ubuntu-latest
+            target: s390x
+          - runner: ubuntu-latest
+            target: ppc64le
+    steps:
+      - name: Download the code
+        uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: Build wheels
+        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+
+        with:
+          target: ${{ matrix.platform.target }}
+          args:
+            -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }}
+            --target-dir target
+          sccache: "true"
+          manylinux: ${{ matrix.platform.manylinux || 'auto' }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.platform.target }}
+          path: dist
+
+  windows:
+    needs: [bump]
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x64
+          - runner: windows-latest
+            target: x86
+    steps:
+      - name: Download the code
+        uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: Build wheels
+        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+
+        with:
+          target: ${{ matrix.platform.target }}
+          args:
+            -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }}
+            --target-dir target
+          sccache: "true"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.platform.target }}
+          path: dist
+
+  macos:
+    needs: [bump]
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: macos-latest
+            target: x86_64
+          - runner: macos-14
+            target: aarch64
+    steps:
+      - name: Download the code
+        uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: Build wheels
+        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+
+        with:
+          target: ${{ matrix.platform.target }}
+          args:
+            -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir
+            target
+          sccache: "true"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.platform.target }}
+          path: dist
+
+  sdist:
+    needs: [bump]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the code
+        uses: actions/download-artifact@v4
+        with:
+          name: source
+      - name: Build sdist
+        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+
+        with:
+          command: sdist
+          args: -m pyproject-fmt/Cargo.toml --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/project/pyproject-fmt/${{ needs.bump.outputs.version }}
+    permissions:
+      id-token: write
+      contents: write
+    if: github.event.inputs.release != 'no' && github.event.inputs.release != null  && github.ref == 'main'
+    needs: [linux, windows, macos, sdist, bump]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - name: Show changes to the repository
+        run: git diff HEAD -u
+      - name: Commit changes
+        run: |
+          git config --global user.name 'Bernat Gabor'
+          git config --global user.email 'gaborbernat@users.noreply.github.com'
+          git commit -am "Release pyproject-fmt ${{needs.bump.outputs.version}}"
+      - name: Tag release
+        run: git tag pyproject-fmt/${{needs.bump.outputs.version}}
+      - name: Publish to PyPI
+        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+        with:
+          command: upload
+          args: --non-interactive --skip-existing wheels-*/*
+      - name: Push release commit+tag and create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push
+          git push --tags
+          gh release create "pyproject-fmt/${{needs.bump.outputs.version}}" \
+              --title="pyproject-fmt/${{needs.bump.outputs.version}}" --verify-tag
+             --notes "$(cat << 'EOM'
+            ${{ needs.bump.outputs.changelog }}
+            EOM
+            )"
