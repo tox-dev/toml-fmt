@@ -1,6 +1,6 @@
 [package]
 name = "pyproject-fmt"
-version = "2.4.2"
+version = "2.4.3"
 description = "Format pyproject.toml files"
 repository = "https://github.com/tox-dev/pyproject-fmt"
 readme = "README.md"
