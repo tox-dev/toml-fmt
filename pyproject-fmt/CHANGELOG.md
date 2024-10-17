@@ -1,3 +1,10 @@
+<a id="2.4.1"></a>
+
+## 2.4.1 - 2024-10-17
+
+- Fix release script by [@gaborbernat](https://github.com/gaborbernat) in
+  [#$8](https://github.com/tox-dev/toml-fmt/pull/8)]
+
 <a id="2.4.0"></a>
 
 ## 2.4.0 - 2024-10-17
