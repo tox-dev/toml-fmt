@@ -223,7 +223,7 @@ jobs:
           path: dist
           merge-multiple: "true"
       - name: Show wheels
-        run: ls -lath dist
+        run: ls -lth dist
       - name: Publish to PyPI
         uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
         with:
@@ -236,8 +236,7 @@ jobs:
           git push
           git push --tags
           gh release create "pyproject-fmt/${{needs.bump.outputs.version}}" \
-              --title="pyproject-fmt/${{needs.bump.outputs.version}}" --verify-tag
-             --notes "$(cat << 'EOM'
-            ${{ needs.bump.outputs.changelog }}
-            EOM
-            )"
+              --title="pyproject-fmt/${{needs.bump.outputs.version}}" --verify-tag \
+              --notes "$(cat << 'EOM'
+                ${{ needs.bump.outputs.changelog }}
+                EOM)"
