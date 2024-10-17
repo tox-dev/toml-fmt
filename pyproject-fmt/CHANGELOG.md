@@ -3,7 +3,7 @@
 ## 2.4.3 - 2024-10-17
 
 - Fix tomli not present for Python<3.11 by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$9](https://github.com/tox-dev/toml-fmt/pull/9)]
+  [#$9](https://github.com/tox-dev/toml-fmt/pull/9)
 
 <a id="2.4.2"></a>
 
@@ -16,7 +16,7 @@
 ## 2.4.1 - 2024-10-17
 
 - Fix release script by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$8](https://github.com/tox-dev/toml-fmt/pull/8)]
+  [#$8](https://github.com/tox-dev/toml-fmt/pull/8)
 
 <a id="2.4.0"></a>
 

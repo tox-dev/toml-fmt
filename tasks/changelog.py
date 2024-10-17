@@ -49,7 +49,7 @@ def run() -> None:
     at = "tox-dev/toml-fmt"
     gh_repo = github.get_repo(at)
     for title, pr, by in entries(gh_repo, git_repo, options.pr, options.base):
-        suffix = f" in [#${pr}](https://github.com/{at}/pull/{pr})]" if pr else ""
+        suffix = f" in [#${pr}](https://github.com/{at}/pull/{pr})" if pr else ""
         logs.append(f"{title} by [@{by}](https://github.com/{by}){suffix}")
 
     if logs:
