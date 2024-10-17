@@ -9,7 +9,7 @@ company, name = "tox-dev", "pyproject-fmt"
 ver = metadata_version("pyproject-fmt")
 release, version = ver, ".".join(ver.split(".")[:2])
 now = datetime.now(tz=timezone.utc)
-copyright = f"2022-{now.year}, {company}"  # noqa: A001
+project_copyright = f"2022-{now.year}, {company}"
 master_doc, source_suffix = "index", ".rst"
 
 html_theme = "furo"

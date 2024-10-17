@@ -41,9 +41,7 @@ jobs:
           crate: cargo-edit
       - uses: actions/checkout@v4
       - name: Bump version
-        run:
-          cargo set-version -p pyproject-fmt --bump '${{ github.event.inputs.release == 'no' ||
-          github.event.inputs.release == null  &&  'patch' || github.event.inputs.release }}'
+        run: cargo set-version -p pyproject-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v3
         with:
@@ -51,12 +49,12 @@ jobs:
           cache-dependency-glob: "tasks/changelog.py"
       - name: Generate changelog
         id: get-version
-        run:
-          uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha
-          }}"
+        run: uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: pre-commit/action@v3.0.1
         continue-on-error: true
       - name: Show changes to the repository
@@ -106,9 +104,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args:
-            -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }}
-            --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
           sccache: "true"
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
@@ -137,9 +133,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args:
-            -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }}
-            --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -167,9 +161,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args:
-            -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir
-            target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -206,11 +198,15 @@ jobs:
     permissions:
       id-token: write
       contents: write
-    if: github.event.inputs.release != 'no' && github.event.inputs.release != null  && github.ref == 'main'
-    needs: [linux, windows, macos, sdist, bump]
+    if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
+    needs: [bump, sdist, linux, macos, windows]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - name: Download source
+        uses: actions/download-artifact@v4
+        with:
+          name: source
+          path: .
       - name: Show changes to the repository
         run: git diff HEAD -u
       - name: Commit changes
@@ -220,11 +216,19 @@ jobs:
           git commit -am "Release pyproject-fmt ${{needs.bump.outputs.version}}"
       - name: Tag release
         run: git tag pyproject-fmt/${{needs.bump.outputs.version}}
+      - name: Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: "true"
+      - name: Show wheels
+        run: ls -lath dist
       - name: Publish to PyPI
         uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
         with:
           command: upload
-          args: --non-interactive --skip-existing wheels-*/*
+          args: --non-interactive --skip-existing dist/*
       - name: Push release commit+tag and create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

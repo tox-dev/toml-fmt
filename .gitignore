@@ -2,3 +2,4 @@
 /target
 /pyproject-fmt/.tox
 /pyproject-fmt/dist
+/dist

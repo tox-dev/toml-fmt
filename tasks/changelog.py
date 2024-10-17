@@ -35,7 +35,7 @@ class Options(Namespace):
 
 def run() -> None:
     options = parse_cli()
-    print(options)
+    print(f">> {options}")
     project = ROOT / options.project
     changelog_file = project / "CHANGELOG.md"
 
@@ -67,7 +67,8 @@ def run() -> None:
     else:
         new = ""
 
-    if output := os.environ.get("GITHUB_TOKEN"):
+    if output := os.environ.get("GITHUB_OUTPUT"):
+        print(f">> GitHub output set, populating: {output}")
         with Path(output).open("at+", encoding="utf-8") as file_handler:
             file_handler.write(f"version={version}\n")
             file_handler.write(f"changelog<<EOF\n{new}\nEOF\n")

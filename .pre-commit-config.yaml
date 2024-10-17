@@ -29,7 +29,13 @@ repos:
     rev: "v3.3.3"
     hooks:
       - id: prettier
+        name: Prettier non-workflow files
         args: ["--print-width=120", "--prose-wrap=always"]
+        exclude: ".github/workflows/"
+      - id: prettier
+        name: Prettier workflow files
+        args: ["--print-width=240", "--prose-wrap=always"]
+        exclude: "^(?!.github/workflows/)"
   - repo: meta
     hooks:
       - id: check-hooks-apply
