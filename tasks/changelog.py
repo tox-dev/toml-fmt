@@ -53,25 +53,27 @@ def run() -> None:
         logs.append(f"{title} by [@{by}](https://github.com/{by}){suffix}")
 
     if logs:
+        logs = [f" - {i}" for i in logs]
         new_lines = [
             anchor,
             f"## {version} - {datetime.now(tz=UTC).date().isoformat()}",
             "",
-            *[f" - {i}" for i in logs],
+            *logs,
             "",
             "",
         ]
         new = "\n".join(new_lines)
         print(new)
+        logs_text = "\n".join(logs)
         changelog_file.write_text(new + changelog)
     else:
-        new = ""
+        logs_text = ""
 
     if output := os.environ.get("GITHUB_OUTPUT"):
         print(f">> GitHub output set, populating: {output}")
         with Path(output).open("at+", encoding="utf-8") as file_handler:
             file_handler.write(f"version={version}\n")
-            file_handler.write(f"changelog<<EOF\n{new}\nEOF\n")
+            file_handler.write(f"changelog<<EOF\n{logs_text}\nEOF\n")
 
 
 def parse_cli() -> Options:
