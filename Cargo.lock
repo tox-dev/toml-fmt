@@ -524,7 +524,7 @@ dependencies = [
 
 [[package]]
 name = "pyproject-fmt"
-version = "2.3.1"
+version = "2.4.0"
 dependencies = [
  "common",
  "indoc",

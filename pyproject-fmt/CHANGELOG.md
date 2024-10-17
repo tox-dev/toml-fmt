@@ -1,3 +1,9 @@
+<a id="2.4.0"></a>
+
+## 2.4.0 - 2024-10-17
+
+- Fix GitHub action warning by [@gaborbernat](https://github.com/gaborbernat)
+
 <a id="2.3.0"></a>
 
 # [2.3.1](https://github.com/tox-dev/pyproject-fmt/releases/tag/2.3.1) - 2024-10-14
