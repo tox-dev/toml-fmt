@@ -237,6 +237,7 @@ jobs:
           git push --tags
           gh release create "pyproject-fmt/${{needs.bump.outputs.version}}" \
               --title="pyproject-fmt/${{needs.bump.outputs.version}}" --verify-tag \
-              --notes "$(cat << 'EOM'
-                ${{ needs.bump.outputs.changelog }}
-                EOM)"
+            --notes "$(cat << 'EOM'
+          ${{ needs.bump.outputs.changelog }}
+          EOM
+          )"
