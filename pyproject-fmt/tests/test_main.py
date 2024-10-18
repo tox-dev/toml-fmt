@@ -1,56 +1,16 @@
 from __future__ import annotations
 
-import difflib
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
-from pyproject_fmt.__main__ import GREEN, RED, RESET, color_diff, run
+from pyproject_fmt.__main__ import runner as run
 
 if TYPE_CHECKING:
     from pathlib import Path
 
     from pytest_mock import MockerFixture
-
-
-def test_color_diff() -> None:
-    # Arrange
-    before = """
-    abc
-    def
-    ghi
-"""
-    after = """
-    abc
-    abc
-    def
-"""
-    diff = difflib.unified_diff(before.splitlines(), after.splitlines())
-    expected_lines = f"""
-{RED}---
-{RESET}
-{GREEN}+++
-{RESET}
-@@ -1,4 +1,4 @@
-
-
-     abc
-{GREEN}+    abc{RESET}
-     def
-{RED}-    ghi{RESET}
-""".strip().splitlines()
-
-    # Act
-    found_diff = color_diff(diff)
-
-    # Assert
-    output_lines = [line.rstrip() for line in "\n".join(found_diff).splitlines()]
-    assert output_lines == expected_lines
-
-
-def no_color(diff: Any) -> Any:
-    return diff
 
 
 @pytest.mark.parametrize(
@@ -102,7 +62,7 @@ def test_main(
     cwd: bool,
     check: bool,
 ) -> None:
-    mocker.patch("pyproject_fmt.__main__.color_diff", no_color)
+    mocker.patch("toml_fmt_common._color_diff", lambda t: t)
     if cwd:
         monkeypatch.chdir(tmp_path)
     pyproject_toml = tmp_path / "pyproject.toml"

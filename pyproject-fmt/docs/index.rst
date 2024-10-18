@@ -74,8 +74,8 @@ If not set they will default to values from the CLI, the example above shows the
 Command line interface
 ----------------------
 .. sphinx_argparse_cli::
-  :module: pyproject_fmt.cli
-  :func: _build_cli
+  :module: pyproject_fmt.__main__
+  :func: _build_our_cli
   :prog: pyproject-fmt
   :title:
 

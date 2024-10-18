@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .__main__ import run
+from .__main__ import runner as run
 
 __all__ = [
     "run",
