@@ -1,5 +1,5 @@
-/common/target
-/target
-/pyproject-fmt/.tox
-/pyproject-fmt/dist
-/dist
+.tox
+target
+dist
+__pycache__
+_lib.abi3.*

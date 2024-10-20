@@ -32,13 +32,13 @@ dynamic = [
   "version",
 ]
 dependencies = [
-  "tomli>=2.0.2; python_version<'3.11'",
+  "toml-fmt-common==1.0.1",
 ]
 urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
 urls."Changelog" = "https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md"
 urls.Documentation = "https://github.com/tox-dev/toml-fmt/"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt"
-scripts.pyproject-fmt = "pyproject_fmt.__main__:run"
+scripts.pyproject-fmt = "pyproject_fmt.__main__:runner"
 
 [tool.maturin]
 bindings = "pyo3"
