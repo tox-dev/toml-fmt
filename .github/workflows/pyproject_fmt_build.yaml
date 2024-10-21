@@ -100,7 +100,7 @@ jobs:
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+        uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab
 
         with:
           target: ${{ matrix.platform.target }}
@@ -129,7 +129,7 @@ jobs:
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+        uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab
 
         with:
           target: ${{ matrix.platform.target }}
@@ -157,7 +157,7 @@ jobs:
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+        uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab
 
         with:
           target: ${{ matrix.platform.target }}
@@ -178,7 +178,7 @@ jobs:
         with:
           name: source
       - name: Build sdist
-        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+        uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab
 
         with:
           command: sdist
@@ -225,7 +225,7 @@ jobs:
       - name: Show wheels
         run: ls -lth dist
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@e21013af641daf9513198d98a6853760803a5c6c
+        uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab
         with:
           command: upload
           args: --non-interactive --skip-existing dist/*
