@@ -10,6 +10,7 @@ pub fn reorder_tables(root_ast: &SyntaxNode<Lang>, tables: &Tables) {
             "",
             "build-system",
             "project",
+            "dependency-groups",
             // Build backends
             "tool.poetry",
             "tool.poetry-dynamic-versioning",
