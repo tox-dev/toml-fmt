@@ -17,6 +17,8 @@ use crate::{format_toml, Settings};
     [build-system]
     build-backend="backend"
     requires=[" c >= 1.5.0", "d == 2.0.0"]
+    [dependency-groups]
+    test=["p>1.0.0"]
     [tool.mypy]
     mk="mv"
     "#},
@@ -43,6 +45,11 @@ use crate::{format_toml, Settings};
     ]
     dependencies = [
       "e>=1.5",
+    ]
+
+    [dependency-groups]
+    test = [
+      "p>1",
     ]
 
     [tool.mypy]

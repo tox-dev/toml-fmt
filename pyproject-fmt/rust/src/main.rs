@@ -9,6 +9,7 @@ use crate::global::reorder_tables;
 use common::table::Tables;
 
 mod build_system;
+mod dependency_groups;
 mod project;
 
 mod global;
@@ -60,6 +61,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.max_supported_python,
         opt.min_supported_python,
     );
+    dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables);
     reorder_tables(&root_ast, &tables);
 
