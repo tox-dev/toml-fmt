@@ -1,18 +1,18 @@
-use std::cell::RefMut;
-
+use common::array::{sort, sort_strings, transform};
+use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_newline};
+use common::pep508::{format_requirement, get_canonic_requirement_name};
+use common::string::{load_text, update_content};
+use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
 use common::taplo::syntax::SyntaxKind::{
     ARRAY, BRACKET_END, BRACKET_START, COMMA, ENTRY, IDENT, INLINE_TABLE, KEY, NEWLINE, STRING, VALUE,
 };
 use common::taplo::syntax::{SyntaxElement, SyntaxNode};
 use common::taplo::util::StrExt;
 use common::taplo::HashSet;
+use lexical_sort::natural_lexical_cmp;
 use regex::Regex;
-
-use common::array::{sort, transform};
-use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_newline};
-use common::pep508::{format_requirement, get_canonic_requirement_name};
-use common::string::{load_text, update_content};
-use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
+use std::cell::RefMut;
+use std::cmp::Ordering;
 
 pub fn fix(
     tables: &mut Tables,
@@ -55,17 +55,34 @@ pub fn fix(
         }
         "dependencies" | "optional-dependencies" => {
             transform(entry, &|s| format_requirement(s, keep_full_version));
-            sort(entry, |e| {
-                get_canonic_requirement_name(e).to_lowercase() + " " + &format_requirement(e, keep_full_version)
-            });
+            sort::<(String, String), _, _>(
+                entry,
+                |node| {
+                    for child in node.children_with_tokens() {
+                        if let STRING = child.kind() {
+                            let val = load_text(child.as_token().unwrap().text(), STRING);
+                            let package_name = get_canonic_requirement_name(val.as_str()).to_lowercase();
+                            return Some((package_name, val));
+                        }
+                    }
+                    None
+                },
+                &|lhs, rhs| {
+                    let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
+                    if res == Ordering::Equal {
+                        res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
+                    }
+                    res
+                },
+            );
         }
         "dynamic" | "keywords" => {
             transform(entry, &|s| String::from(s));
-            sort(entry, str::to_lowercase);
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
         "classifiers" => {
             transform(entry, &|s| String::from(s));
-            sort(entry, str::to_lowercase);
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
         _ => {}
     });
@@ -73,7 +90,7 @@ pub fn fix(
     generate_classifiers(table, max_supported_python, min_supported_python);
     for_entries(table, &mut |key, entry| {
         if key.as_str() == "classifiers" {
-            sort(entry, str::to_lowercase);
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
     });
     reorder_table_keys(

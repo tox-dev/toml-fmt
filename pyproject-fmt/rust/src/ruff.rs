@@ -1,6 +1,7 @@
-use common::array::{sort, transform};
+use common::array::{sort_strings, transform};
 use common::string::update_content;
 use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
+use lexical_sort::natural_lexical_cmp;
 
 #[allow(clippy::too_many_lines)]
 pub fn fix(tables: &mut Tables) {
@@ -92,7 +93,7 @@ pub fn fix(tables: &mut Tables) {
         | "lint.pylint.allow-dunder-method-names"
         | "lint.pylint.allow-magic-value-types" => {
             transform(entry, &|s| String::from(s));
-            sort(entry, str::to_lowercase);
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
         "lint.isort.section-order" => {
             transform(entry, &|s| String::from(s));
@@ -100,7 +101,7 @@ pub fn fix(tables: &mut Tables) {
         _ => {
             if key.starts_with("lint.extend-per-file-ignores.") || key.starts_with("lint.per-file-ignores.") {
                 transform(entry, &|s| String::from(s));
-                sort(entry, str::to_lowercase);
+                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
             }
         }
     });

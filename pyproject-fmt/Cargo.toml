@@ -16,6 +16,7 @@ crate-type = ["cdylib"]
 common = {path = "../common" }
 regex = { version = "1.11.0" }
 pyo3 = { version = "0.22.5", features = ["abi3-py38"] } # integration with Python
+lexical-sort = { version = "0.3.1" }
 
 [features]
 extension-module = ["pyo3/extension-module"]

@@ -69,7 +69,6 @@ name = "common"
 version = "1.0.0"
 dependencies = [
  "indoc",
- "lexical-sort",
  "pep440_rs",
  "pep508_rs",
  "rstest",
@@ -528,6 +527,7 @@ version = "2.4.3"
 dependencies = [
  "common",
  "indoc",
+ "lexical-sort",
  "pyo3",
  "regex",
  "rstest",

@@ -4,7 +4,7 @@ use taplo::formatter::{format_syntax, Options};
 use taplo::parser::parse;
 use taplo::syntax::SyntaxKind::{ENTRY, VALUE};
 
-use crate::array::{sort, transform};
+use crate::array::{sort_strings, transform};
 use crate::pep508::format_requirement;
 
 #[rstest]
@@ -148,7 +148,9 @@ fn test_order_array(#[case] start: &str, #[case] expected: &str) {
         if children.kind() == ENTRY {
             for entry in children.as_node().unwrap().children_with_tokens() {
                 if entry.kind() == VALUE {
-                    sort(entry.as_node().unwrap(), str::to_lowercase);
+                    sort_strings::<String, _, _>(entry.as_node().unwrap(), |s| s.to_lowercase(), &|lhs, rhs| {
+                        lhs.cmp(rhs)
+                    });
                 }
             }
         }
@@ -172,7 +174,9 @@ fn test_reorder_no_trailing_comma(#[case] start: &str, #[case] expected: &str) {
         if children.kind() == ENTRY {
             for entry in children.as_node().unwrap().children_with_tokens() {
                 if entry.kind() == VALUE {
-                    sort(entry.as_node().unwrap(), str::to_lowercase);
+                    sort_strings::<String, _, _>(entry.as_node().unwrap(), |s| s.to_lowercase(), &|lhs, rhs| {
+                        lhs.cmp(rhs)
+                    });
                 }
             }
         }
