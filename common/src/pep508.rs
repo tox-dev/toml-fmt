@@ -1,6 +1,7 @@
 use std::fmt::Write;
 use std::str::FromStr;
 
+use pep508_rs::pep440_rs::Operator::TildeEqual;
 use pep508_rs::{MarkerTree, Requirement, VersionOrUrl};
 
 pub fn format_requirement(value: &str, keep_full_version: bool) -> String {
@@ -23,7 +24,7 @@ pub fn format_requirement(value: &str, keep_full_version: bool) -> String {
                 let extra_count = v.len() - 1;
                 for (at, spec) in v.iter().enumerate() {
                     let mut spec_repr = format!("{spec}");
-                    if !keep_full_version && spec.operator() != &pep440_rs::Operator::TildeEqual {
+                    if !keep_full_version && spec.operator() != &TildeEqual {
                         loop {
                             let propose = spec_repr.strip_suffix(".0");
                             if propose.is_none() {

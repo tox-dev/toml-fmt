@@ -9,9 +9,7 @@ edition = "2021"
 
 [dependencies]
 taplo = { version = "0.13.2" }                          # formatter
-pep508_rs = { version = "0.6.1" }
-pep440_rs = { version = "0.6.5" } # align up with pep508_rs for now https://github.com/konstin/pep508_rs/issues/19
-lexical-sort = { version = "0.3.1" }
+pep508_rs = { version = "0.8.1" }
 
 [dev-dependencies]
 rstest = { version = "0.23.0" } # parametrized tests

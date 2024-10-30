@@ -256,6 +256,22 @@ where
     }
 }
 
+pub fn find_key(table: &SyntaxNode, key: &str) -> Option<SyntaxNode> {
+    let mut current_key = String::new();
+    for table_entry in table.children_with_tokens() {
+        if table_entry.kind() == ENTRY {
+            for entry in table_entry.as_node().unwrap().children_with_tokens() {
+                if entry.kind() == KEY {
+                    current_key = entry.as_node().unwrap().text().to_string().trim().to_string();
+                } else if entry.kind() == VALUE && current_key == key {
+                    return Some(entry.as_node().unwrap().clone());
+                }
+            }
+        }
+    }
+    None
+}
+
 pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
     let h2p = tables.header_to_pos.clone();
     let sub_name_prefix = format!("{name}.");

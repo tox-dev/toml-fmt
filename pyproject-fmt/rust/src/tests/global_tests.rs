@@ -17,6 +17,9 @@ use common::table::Tables;
     [build-system]
     build-backend="backend"
     requires=["c", "d"]
+    [dependency-groups]
+    docs=["s"]
+    test=["p", "q"]
     [tool.mypy]
     mk="mv"
     [tool.ruff.test]
@@ -55,6 +58,15 @@ use common::table::Tables;
     name = "alpha"
     dependencies = [
       "e",
+    ]
+
+    [dependency-groups]
+    docs = [
+      "s",
+    ]
+    test = [
+      "p",
+      "q",
     ]
 
     [tool.ruff]
