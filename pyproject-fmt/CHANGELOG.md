@@ -1,3 +1,10 @@
+<a id="2.5.0"></a>
+
+## 2.5.0 - 2024-10-30
+
+- Add support for PEP 735 dependency-groups by [@browniebroke](https://github.com/browniebroke) in
+  [#$16](https://github.com/tox-dev/toml-fmt/pull/16)
+
 <a id="2.4.3"></a>
 
 ## 2.4.3 - 2024-10-17
