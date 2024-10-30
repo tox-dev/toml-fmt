@@ -117,9 +117,9 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
 #[case::include_many_groups(
         indoc ! {r#"
     [dependency-groups]
+    test = ["a>1"]
     docs=["b==1"]
-    test=["a>1"]
-    all=[{include-group="docs"},{include-group="test"}]
+    all=[{include-group='test'}, {include-group='docs'}]
     "#},
         indoc ! {r#"
     [dependency-groups]
@@ -130,8 +130,8 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
       "b==1",
     ]
     all = [
-      { include-group = "docs" },
       { include-group = "test" },
+      { include-group = "docs" },
     ]
     "#},
         false,
