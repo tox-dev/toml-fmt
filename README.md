@@ -1,9 +1,6 @@
 # Python TOML formatters
 
-This project includes the:
+This project includes the following TOML formatters for the Python ecosystem:
 
-- pyproject-fmt,
-- ruff-toml-fmt,
-- tox-toml-fmt,
-
-projects formatting your TOML files in the Python world.
+- [`pyproject-fmt`](./pyproject-fmt),
+- [`tox-toml-fmt`](./tox-toml-fmt).

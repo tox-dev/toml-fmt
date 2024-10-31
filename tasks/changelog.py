@@ -78,7 +78,7 @@ def run() -> None:
 
 def parse_cli() -> Options:
     parser = ArgumentParser()
-    parser.add_argument("project", choices=["pyproject-fmt"])
+    parser.add_argument("project", choices=["pyproject-fmt", "tox-toml-fmt"])
     parser.add_argument("pr", type=lambda s: int(s) if s else None)
     parser.add_argument("base", type=str)
     options = Options()

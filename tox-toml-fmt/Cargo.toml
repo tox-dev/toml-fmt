@@ -1,0 +1,27 @@
+[package]
+name = "tox-toml-fmt"
+version = "2.5.0"
+description = "Format pyproject.toml files"
+repository = "https://github.com/tox-dev/tox-toml-fmt"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+[lib]
+name = "_lib"
+path = "rust/src/main.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+common = {path = "../common" }
+regex = { version = "1.11.1" }
+pyo3 = { version = "0.22.5", features = ["abi3-py38"] } # integration with Python
+lexical-sort = { version = "0.3.1" }
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]
+
+[dev-dependencies]
+rstest = { version = "0.23.0" } # parametrized tests
+indoc = { version = "2.0.5" }   # dedented test cases for literal strings

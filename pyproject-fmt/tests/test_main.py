@@ -19,6 +19,7 @@ if TYPE_CHECKING:
         True,
         False,
     ],
+    ids=("in_place", "print"),
 )
 @pytest.mark.parametrize(
     "check",
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
         True,
         False,
     ],
+    ids=["check", "no_check"],
 )
 @pytest.mark.parametrize(
     "cwd",
@@ -33,20 +35,23 @@ if TYPE_CHECKING:
         True,
         False,
     ],
+    ids=["cwd", "absolute"],
 )
 @pytest.mark.parametrize(
     ("start", "outcome", "output"),
     [
-        (
+        pytest.param(
             '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n',
             '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n',
             "no change for {0}\n",
+            id="formatted",
         ),
-        (
+        pytest.param(
             '[build-system]\nrequires = ["hatchling>=0.14.0"]',
             '[build-system]\nrequires = [ "hatchling>=0.14" ]\n',
             "--- {0}\n\n+++ {0}\n\n@@ -1,2 +1,2 @@\n\n [build-system]\n-requires = "
             '["hatchling>=0.14.0"]\n+requires = [ "hatchling>=0.14" ]\n',
+            id="format",
         ),
     ],
 )

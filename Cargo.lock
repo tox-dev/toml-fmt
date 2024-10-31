@@ -819,6 +819,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tox-toml-fmt"
+version = "2.5.0"
+dependencies = [
+ "common",
+ "indoc",
+ "lexical-sort",
+ "pyo3",
+ "regex",
+ "rstest",
+]
+
+[[package]]
 name = "tracing"
 version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"

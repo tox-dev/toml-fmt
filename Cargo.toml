@@ -2,6 +2,7 @@
 members = [
     "common",
     "pyproject-fmt",
+    "tox-toml-fmt"
 ]
 resolver = "2"
 

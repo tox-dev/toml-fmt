@@ -1,8 +1,8 @@
-pyproject-fmt
+tox-toml-fmt
 =============
 
 Apply a consistent format to your ``pyproject.toml`` file with comment support. See
-`changelog here <https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md>`_.
+`changelog here <https://github.com/tox-dev/toml-fmt/blob/main/tox-toml-fmt/CHANGELOG.md>`_.
 
 
 Philosophy
@@ -17,7 +17,7 @@ Use
 Via ``CLI``
 ~~~~~~~~~~~
 
-:pypi:`pyproject-fmt` is a CLI tool that needs a Python interpreter (version 3.7 or higher) to run. We recommend either
+:pypi:`tox-toml-fmt` is a CLI tool that needs a Python interpreter (version 3.7 or higher) to run. We recommend either
 :pypi:`pipx` or :pypi:`uv` to install tox into an isolated environment. This has the added benefit that later you'll
 be able to upgrade tox without affecting other parts of the system. We provide method for ``pip`` too here but we
 discourage that path if you can:
@@ -27,8 +27,8 @@ discourage that path if you can:
     .. code-block:: bash
 
         # install uv per https://docs.astral.sh/uv/#getting-started
-        uv tool install pyproject-fmt
-        pyproject-fmt --help
+        uv tool install tox-toml-fmt
+        tox-toml-fmt --help
 
 
 .. tab:: pipx
@@ -36,15 +36,15 @@ discourage that path if you can:
     .. code-block:: bash
 
         python -m pip install pipx-in-pipx --user
-        pipx install pyproject-fmt
-        pyproject-fmt --help
+        pipx install tox-toml-fmt
+        tox-toml-fmt --help
 
 .. tab:: pip
 
     .. code-block:: bash
 
-        python -m pip install --user pyproject-fmt
-        pyproject-fmt --help
+        python -m pip install --user tox-toml-fmt
+        tox-toml-fmt --help
 
     You can install it within the global Python interpreter itself (perhaps as a user package via the
     ``--user`` flag). Be cautious if you are using a Python installation that is managed by your operating system or
@@ -59,15 +59,15 @@ See :gh:`pre-commit/pre-commit` for instructions, sample ``.pre-commit-config.ya
 
 .. code-block:: yaml
 
-    - repo: https://github.com/tox-dev/pyproject-fmt
-      rev: "v2.5.0"
+    - repo: https://github.com/tox-dev/tox-toml-fmt
+      rev: "v1.0.0"
       hooks:
-        - id: pyproject-fmt
+        - id: tox-toml-fmt
 
 Via Python
 ~~~~~~~~~~
 
-.. automodule:: pyproject_fmt
+.. automodule:: tox_toml_fmt
    :members:
 
 .. toctree::
@@ -78,11 +78,11 @@ Via Python
 Configuration via file
 ----------------------
 
-The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` file:
+The ``tox-toml-fmt`` table is used when present in the ``tox.toml`` file:
 
 .. code-block:: toml
 
-  [tool.pyproject-fmt]
+  [tox-toml-fmt]
 
   # after how many column width split arrays/dicts into multiple lines, 1 will force always
   column_width = 120
@@ -90,29 +90,12 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
   # how many spaces use for indentation
   indent = 2
 
-  # if false will remove unnecessary trailing ``.0``'s from version specifiers
-  keep_full_version = false
-
-  # maximum Python version to use when generating version specifiers
-  max_supported_python = "3.12"
-
 If not set they will default to values from the CLI, the example above shows the defaults.
 
 Command line interface
 ----------------------
 .. sphinx_argparse_cli::
-  :module: pyproject_fmt.__main__
+  :module: tox_toml_fmt.__main__
   :func: _build_our_cli
-  :prog: pyproject-fmt
+  :prog: tox-toml-fmt
   :title:
-
-Python version classifiers
---------------------------
-
-This tool will automatically generate the ``Programming Language :: Python :: 3.X`` classifiers for you. To do so it
-needs to know the range of Python interpreter versions you support:
-
-- The lower bound can be set via the ``requires-python`` key in the ``pyproject.toml`` configuration file (defaults to
-  the oldest non end of line CPython version at the time of the release).
-- The upper bound, by default, will assume the latest stable release of CPython at the time of the release, but can be
-  changed via CLI flag or the config file.

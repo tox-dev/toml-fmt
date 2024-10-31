@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from importlib.metadata import version as metadata_version
 
-company, name = "tox-dev", "pyproject-fmt"
-ver = metadata_version("pyproject-fmt")
+company, name = "tox-dev", "tox-toml-fmt"
+ver = metadata_version("tox-toml-fmt")
 release, version = ver, ".".join(ver.split(".")[:2])
 now = datetime.now(tz=timezone.utc)
 project_copyright = f"2022-{now.year}, {company}"
