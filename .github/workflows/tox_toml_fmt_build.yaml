@@ -1,4 +1,4 @@
-name: Build pyproject-fmt
+name: Build tox-toml-fmt
 on:
   workflow_dispatch:
     inputs:
@@ -14,9 +14,9 @@ on:
           - major
   push:
     branches: ["main"]
-    paths: ["common/**", "pyproject-fmt/**", ".github/workflows/pyproject_fmt_build.yaml"]
+    paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_build.yaml"]
   pull_request:
-    paths: ["common/**", "pyproject-fmt/**", ".github/workflows/pyproject_fmt_build.yaml"]
+    paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_build.yaml"]
   schedule:
     - cron: "0 8 * * *"
 
@@ -43,7 +43,7 @@ jobs:
           crate: cargo-edit
       - uses: actions/checkout@v4
       - name: Bump version
-        run: cargo set-version -p pyproject-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
+        run: cargo set-version -p tox-toml-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v3
         with:
@@ -51,7 +51,7 @@ jobs:
           cache-dependency-glob: "tasks/changelog.py"
       - name: Generate changelog
         id: get-version
-        run: uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
+        run: uv run tasks/changelog.py tox-toml-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - uses: actions/setup-python@v5
@@ -106,7 +106,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
           sccache: "true"
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
@@ -135,7 +135,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -163,7 +163,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -184,7 +184,7 @@ jobs:
 
         with:
           command: sdist
-          args: -m pyproject-fmt/Cargo.toml --out dist
+          args: -m tox-toml-fmt/Cargo.toml --out dist
       - name: Upload sdist
         uses: actions/upload-artifact@v4
         with:
@@ -196,7 +196,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: release
-      url: https://pypi.org/project/pyproject-fmt/${{ needs.bump.outputs.version }}
+      url: https://pypi.org/project/tox-toml-fmt/${{ needs.bump.outputs.version }}
     permissions:
       id-token: write
       contents: write
@@ -215,9 +215,9 @@ jobs:
         run: |
           git config --global user.name 'Bernat Gabor'
           git config --global user.email 'gaborbernat@users.noreply.github.com'
-          git commit -am "Release pyproject-fmt ${{needs.bump.outputs.version}}"
+          git commit -am "Release tox-toml-fmt ${{needs.bump.outputs.version}}"
       - name: Tag release
-        run: git tag pyproject-fmt/${{needs.bump.outputs.version}}
+        run: git tag tox-toml-fmt/${{needs.bump.outputs.version}}
       - name: Download wheels
         uses: actions/download-artifact@v4
         with:
@@ -237,8 +237,8 @@ jobs:
         run: |
           git push
           git push --tags
-          gh release create "pyproject-fmt/${{needs.bump.outputs.version}}" \
-              --title="pyproject-fmt/${{needs.bump.outputs.version}}" --verify-tag \
+          gh release create "tox-toml-fmt/${{needs.bump.outputs.version}}" \
+              --title="tox-toml-fmt/${{needs.bump.outputs.version}}" --verify-tag \
             --notes "$(cat << 'EOM'
           ${{ needs.bump.outputs.changelog }}
           EOM

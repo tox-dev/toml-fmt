@@ -1,11 +1,11 @@
-name: Test pyproject-fmt
+name: Test tox-toml-fmt
 on:
   workflow_dispatch:
   push:
     branches: ["main"]
-    paths: ["common/**", "pyproject-fmt/**", ".github/workflows/pyproject_fmt_test.yaml"]
+    paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_test.yaml"]
   pull_request:
-    paths: ["common/**", "pyproject-fmt/**", ".github/workflows/pyproject_fmt_test.yaml"]
+    paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_test.yaml"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,20 +20,20 @@ jobs:
         with:
           components: clippy
       - name: Lint rust code with clippy
-        run: cargo clippy -p pyproject-fmt --all-targets -- -D warnings
+        run: cargo clippy -p tox-toml-fmt --all-targets -- -D warnings
 
   rust-fmt:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: pyproject-fmt
+        working-directory: tox-toml-fmt
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
       - name: Rust formatting check
-        run: cargo fmt -p pyproject-fmt --check
+        run: cargo fmt -p tox-toml-fmt --check
 
   rust-build:
     runs-on: ubuntu-latest
@@ -41,14 +41,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build library
-        run: cargo build -p pyproject-fmt
+        run: cargo build -p tox-toml-fmt
 
   rust-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo test -p pyproject-fmt
+      - run: cargo test -p tox-toml-fmt
 
   py-test:
     name: test ${{ matrix.py }} ${{ matrix.os }}
@@ -68,7 +68,7 @@ jobs:
           - macos-latest
     defaults:
       run:
-        working-directory: pyproject-fmt
+        working-directory: tox-toml-fmt
     steps:
       - uses: actions/checkout@v4
         with:
@@ -109,7 +109,7 @@ jobs:
           - pkg_meta
     defaults:
       run:
-        working-directory: pyproject-fmt
+        working-directory: tox-toml-fmt
     steps:
       - uses: actions/checkout@v4
         with:

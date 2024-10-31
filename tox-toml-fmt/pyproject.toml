@@ -1,11 +1,11 @@
 [build-system]
 build-backend = "maturin"
 requires = [
-  "maturin>=1.7.1",
+  "maturin>=1.7.4",
 ]
 
 [project]
-name = "pyproject-fmt"
+name = "tox-toml-fmt"
 description = "Format your pyproject.toml file"
 readme = "README.md"
 keywords = [
@@ -35,10 +35,10 @@ dependencies = [
   "toml-fmt-common==1.0.1",
 ]
 urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
-urls."Changelog" = "https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md"
+urls."Changelog" = "https://github.com/tox-dev/toml-fmt/blob/main/tox-toml-fmt/CHANGELOG.md"
 urls.Documentation = "https://github.com/tox-dev/toml-fmt/"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt"
-scripts.pyproject-fmt = "pyproject_fmt.__main__:runner"
+scripts.tox-toml-fmt = "tox_toml_fmt.__main__:runner"
 
 [dependency-groups]
 dev = [
@@ -79,7 +79,7 @@ pkg-meta = [
 [tool.maturin]
 bindings = "pyo3"
 manifest-path = "Cargo.toml"
-module-name = "pyproject_fmt._lib"
+module-name = "tox_toml_fmt._lib"
 python-source = "src"
 strip = true
 include = [

@@ -3,7 +3,9 @@ on:
   workflow_dispatch:
   push:
     branches: ["main"]
+    paths: ["common/**", ".github/workflows/common.yaml"]
   pull_request:
+    paths: ["common/**", ".github/workflows/common.yaml"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
