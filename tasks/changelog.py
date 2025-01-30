@@ -14,7 +14,7 @@ import re
 from argparse import ArgumentParser, Namespace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 from git import Repo
 from github import Github, Repository
@@ -22,6 +22,8 @@ from github.Auth import Token
 from tomllib import load
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from github.Repository import Repository as GitHubRepository
 
 ROOT = Path(__file__).parents[1]

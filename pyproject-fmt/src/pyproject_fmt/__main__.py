@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser, ArgumentTypeError
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, run  # noqa: PLC2701
 
 from ._lib import Settings, format_toml
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class PyProjectFmtNamespace(FmtNamespace):
