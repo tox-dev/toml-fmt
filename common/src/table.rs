@@ -312,13 +312,14 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
                 let child_node = child.as_node().unwrap();
                 for mut entry in child_node.children_with_tokens() {
                     if entry.kind() == KEY {
+                        let mut key_parts = vec![String::from(sub_name)];
                         for array_entry_value in entry.as_node().unwrap().children_with_tokens() {
                             if array_entry_value.kind() == IDENT {
                                 let txt = load_text(array_entry_value.as_token().unwrap().text(), IDENT);
-                                entry = make_key(format!("{sub_name}.{txt}").as_str());
-                                break;
+                                key_parts.push(txt);
                             }
                         }
+                        entry = make_key(&key_parts.join("."));
                     }
                     to_insert.push(entry);
                 }

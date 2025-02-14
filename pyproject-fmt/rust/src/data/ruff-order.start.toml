@@ -88,6 +88,8 @@ docstring-quotes = 'single'
 extend-ignore-names = ['Bar', 'ALPHA']
 [tool.ruff.lint.flake8-tidy-imports]
 banned-module-level-imports = ['Bar', 'ALPHA']
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"foo".msg = "Use bar instead"
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ['Bar', 'ALPHA']
 [tool.ruff.lint.flake8-unused-arguments]

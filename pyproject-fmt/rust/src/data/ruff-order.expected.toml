@@ -165,6 +165,7 @@ lint.flake8-self.extend-ignore-names = [
   "ALPHA",
   "Bar",
 ]
+lint.flake8-tidy-imports.banned-api."foo".msg = "Use bar instead"
 lint.flake8-tidy-imports.banned-module-level-imports = [
   "ALPHA",
   "Bar",
