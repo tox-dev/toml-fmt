@@ -30,7 +30,7 @@ repos:
       - id: ruff
         args: ["--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.5.0"
+    rev: "v3.5.1"
     hooks:
       - id: prettier
         name: Prettier non-workflow files
