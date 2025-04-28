@@ -79,7 +79,7 @@ jobs:
         platform:
           - runner: ubuntu-latest
             target: x86_64
-            interpreter: "3.8 pypy3.8 pypy3.9 pypy3.10"
+            interpreter: "pypy3.9 pypy3.10"
           - runner: ubuntu-latest
             target: x86
           - runner: ubuntu-latest
@@ -106,7 +106,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
           sccache: "true"
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
@@ -135,7 +135,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -163,7 +163,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "pypy3.9 pypy3.10" --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4

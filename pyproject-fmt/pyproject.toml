@@ -61,7 +61,7 @@ type = [
 ]
 docs = [
   "furo>=2024.8.6",
-  "sphinx>=8.3",
+  "sphinx>=8.2.3",
   "sphinx-argparse-cli>=1.19",
   "sphinx-autodoc-typehints>=3.1",
   "sphinx-copybutton>=0.5.2",
