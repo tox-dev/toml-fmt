@@ -10,13 +10,13 @@ fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str
 }
 #[rstest]
 #[case::strip_version(
-    r#"requests [security , tests] >= 2.0.0, == 2.8.* ; (os_name=="a" or os_name=='b') and os_name=='c' and python_version > "3.8""#,
-    "requests[security,tests]>=2,==2.8.*; (os_name=='a' or os_name=='b') and os_name=='c' and python_version>'3.8'",
+    r#"requests [security , tests] >= 2.0.0, == 2.8.* ; (os_name=="a" or os_name=='b') and sys_platform=='c' and python_version > "3.8""#,
+    "requests[security,tests]>=2,==2.8.*; (python_full_version >= '3.9' and os_name == 'a' and sys_platform == 'c') or (python_full_version >= '3.9' and os_name == 'b' and sys_platform == 'c')",
     false
 )]
 #[case::keep_version(
-r#"requests [security , tests] >= 2.0.0, == 2.8.* ; (os_name=="a" or os_name=='b') and os_name=='c' and python_version > "3.8""#,
-"requests[security,tests]>=2.0.0,==2.8.*; (os_name=='a' or os_name=='b') and os_name=='c' and python_version>'3.8'",
+r#"requests [security , tests] >= 2.0.0, == 2.8.* ; (os_name=="a" or os_name=='b') and sys_platform=='c' and python_version > "3.8""#,
+"requests[security,tests]>=2.0.0,==2.8.*; (python_full_version >= '3.9' and os_name == 'a' and sys_platform == 'c') or (python_full_version >= '3.9' and os_name == 'b' and sys_platform == 'c')",
 true
 )]
 #[case::do_not_strip_tilda("a~=3.0.0", "a~=3.0.0", false)]

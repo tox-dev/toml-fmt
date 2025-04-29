@@ -321,12 +321,13 @@ fn get_python_requires_with_classifier(
     assert_eq!(max_supported_python.0, 3, "for now only Python 3 supported");
     assert_eq!(min_supported_python.0, 3, "for now only Python 3 supported");
 
+    let re = Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap();
+
     for_entries(table, &mut |key, entry| {
         if key == "requires-python" {
             for child in entry.children_with_tokens() {
                 if child.kind() == STRING {
                     let found_str_value = load_text(child.as_token().unwrap().text(), STRING);
-                    let re = Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap();
                     for part in found_str_value.split(',') {
                         let capture = re.captures(part);
                         if capture.is_some() {

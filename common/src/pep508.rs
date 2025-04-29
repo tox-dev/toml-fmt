@@ -2,10 +2,10 @@ use std::fmt::Write;
 use std::str::FromStr;
 
 use pep508_rs::pep440_rs::Operator::TildeEqual;
-use pep508_rs::{MarkerTree, Requirement, VersionOrUrl};
+use pep508_rs::{Requirement, VerbatimUrl, VersionOrUrl};
 
 pub fn format_requirement(value: &str, keep_full_version: bool) -> String {
-    let req = Requirement::from_str(value).unwrap();
+    let req: Requirement<VerbatimUrl> = Requirement::from_str(value).unwrap();
     let mut result = req.name.to_string();
     if !req.extras.is_empty() {
         write!(&mut result, "[").unwrap();
@@ -44,45 +44,14 @@ pub fn format_requirement(value: &str, keep_full_version: bool) -> String {
             }
         }
     }
-    if let Some(marker) = req.marker {
+    if req.marker.contents().is_some() {
         write!(&mut result, "; ").unwrap();
-        handle_marker(&marker, &mut result, false);
+        write!(result, "{}", req.marker.try_to_string().unwrap()).unwrap();
     }
-
     result
 }
 
-fn handle_marker(marker: &MarkerTree, result: &mut String, nested: bool) {
-    match marker {
-        MarkerTree::Expression(e) => {
-            write!(result, "{}{}{}", e.l_value, e.operator, e.r_value).unwrap();
-        }
-        MarkerTree::And(a) => {
-            handle_tree(result, nested, a, " and ");
-        }
-        MarkerTree::Or(a) => {
-            handle_tree(result, nested, a, " or ");
-        }
-    }
-}
-
-fn handle_tree(result: &mut String, nested: bool, elements: &[MarkerTree], x: &str) {
-    let len = elements.len() - 1;
-    if nested && len > 0 {
-        write!(result, "(").unwrap();
-    }
-    for (at, e) in elements.iter().enumerate() {
-        handle_marker(e, result, true);
-        if at != len {
-            write!(result, "{x}").unwrap();
-        }
-    }
-    if nested && len > 0 {
-        write!(result, ")").unwrap();
-    }
-}
-
 pub fn get_canonic_requirement_name(value: &str) -> String {
-    let req = Requirement::from_str(value).unwrap();
+    let req: Requirement<VerbatimUrl> = Requirement::from_str(value).unwrap();
     req.name.to_string()
 }

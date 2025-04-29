@@ -341,7 +341,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     ]
     dependencies = [
       "appdirs",
-      "packaging>=20.0; python_version>'3.4'",
+      "packaging>=20.0; python_full_version >= '3.5'",
     ]
     "#},
         true,
@@ -351,7 +351,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
         indoc ! {r#"
     [project]
     dependencies = [
-        'pyperclip; platform_system == "Darwin"',
+        'pyperclip; platform_system== "Darwin"',
         'pyperclip; platform_system == "Windows"',
         "appdirs"
     ]
@@ -366,8 +366,8 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     ]
     dependencies = [
       "appdirs",
-      "pyperclip; platform_system=='Darwin'",
-      "pyperclip; platform_system=='Windows'",
+      "pyperclip; platform_system == 'Darwin'",
+      "pyperclip; platform_system == 'Windows'",
     ]
     "#},
         true,
