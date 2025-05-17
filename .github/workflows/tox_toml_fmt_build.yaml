@@ -106,7 +106,6 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
-          sccache: "false"
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4

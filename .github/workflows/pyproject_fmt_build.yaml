@@ -107,7 +107,6 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
-          sccache: "true"
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -136,7 +135,6 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
-          sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
