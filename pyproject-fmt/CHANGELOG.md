@@ -1,3 +1,9 @@
+<a id="2.6.0"></a>
+
+## 2.6.0 - 2025-05-19
+
+- Use abi3-py39 by [@gaborbernat](https://github.com/gaborbernat) in [#$58](https://github.com/tox-dev/toml-fmt/pull/58)
+
 <a id="2.5.0"></a>
 
 ## 2.5.0 - 2024-10-30
