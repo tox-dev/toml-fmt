@@ -323,10 +323,10 @@ fn get_python_requires_with_classifier(
 
     for_entries(table, &mut |key, entry| {
         if key == "requires-python" {
+            let re = Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap();
             for child in entry.children_with_tokens() {
                 if child.kind() == STRING {
                     let found_str_value = load_text(child.as_token().unwrap().text(), STRING);
-                    let re = Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap();
                     for part in found_str_value.split(',') {
                         let capture = re.captures(part);
                         if capture.is_some() {

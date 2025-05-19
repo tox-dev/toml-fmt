@@ -56,7 +56,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - uses: pre-commit/action@v3.0.1
         continue-on-error: true
       - name: Show changes to the repository
@@ -79,7 +79,7 @@ jobs:
         platform:
           - runner: ubuntu-latest
             target: x86_64
-            interpreter: "3.8 pypy3.8 pypy3.9 pypy3.10"
+            interpreter: "3.9 pypy3.9 pypy3.10"
           - runner: ubuntu-latest
             target: x86
           - runner: ubuntu-latest
@@ -105,7 +105,7 @@ jobs:
         uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -133,7 +133,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.8' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -161,7 +161,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter "3.8 pypy3.8 pypy3.9 pypy3.10" --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter "3.9 pypy3.9 pypy3.10" --target-dir target
           sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
