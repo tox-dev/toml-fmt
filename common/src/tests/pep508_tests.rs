@@ -6,7 +6,7 @@ use crate::pep508::{format_requirement, get_canonic_requirement_name};
 #[case::lowercase("A", "a")]
 #[case::replace_dot_with_dash("a.b", "a-b")]
 fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str) {
-    assert_eq!(get_canonic_requirement_name(start), expected);
+    assert_eq!(expected, get_canonic_requirement_name(start));
 }
 #[rstest]
 #[case::strip_version(
@@ -27,7 +27,7 @@ true
 )]
 fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     let got = format_requirement(start, keep_full_version);
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
     // formatting remains stable
-    assert_eq!(format_requirement(got.as_str(), keep_full_version), expected);
+    similar_asserts::assert_eq!(expected: expected, actual: format_requirement(got.as_str(), keep_full_version));
 }

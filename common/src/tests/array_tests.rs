@@ -71,7 +71,7 @@ fn test_normalize_requirement(#[case] start: &str, #[case] expected: &str, #[cas
         }
     }
     let res = format_syntax(root_ast, Options::default());
-    assert_eq!(expected, res);
+    similar_asserts::assert_eq!(expected: expected, actual: res);
 }
 
 #[rstest]

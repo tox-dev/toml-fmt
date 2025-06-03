@@ -516,5 +516,5 @@ fn test_format_project(
     #[case] keep_full_version: bool,
     #[case] max_supported_python: (u8, u8),
 ) {
-    assert_eq!(evaluate(start, keep_full_version, max_supported_python), expected);
+    similar_asserts::assert_eq!(evaluate(start, keep_full_version, max_supported_python), expected);
 }

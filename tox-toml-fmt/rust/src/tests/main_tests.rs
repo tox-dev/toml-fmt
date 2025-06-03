@@ -44,9 +44,9 @@ fn test_format_toml(#[case] start: &str, #[case] expected: &str, #[case] indent:
         indent,
     };
     let got = format_toml(start, &settings);
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
     let second = format_toml(got.as_str(), &settings);
-    assert_eq!(second, got);
+    similar_asserts::assert_eq!(expected: got, actual: second);
 }
 
 /// Test that the column width is respected,
@@ -78,7 +78,7 @@ fn test_column_width() {
             "pkg_meta",
         ]
         "#};
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
     let second = format_toml(got.as_str(), &settings);
-    assert_eq!(second, got);
+    similar_asserts::assert_eq!(expected: got, actual: second);
 }

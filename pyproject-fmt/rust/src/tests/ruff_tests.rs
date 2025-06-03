@@ -39,7 +39,8 @@ fn test_order_ruff(data: PathBuf) {
     let start = read_to_string(data.join("ruff-order.start.toml")).unwrap();
     let got = evaluate(start.as_str());
     let expected = read_to_string(data.join("ruff-order.expected.toml")).unwrap();
-    assert_eq!(got, expected);
+
+    similar_asserts::assert_eq!(expected: expected, actual: got);
 }
 
 #[rstest]
@@ -47,5 +48,5 @@ fn test_ruff_comment_21(data: PathBuf) {
     let start = read_to_string(data.join("ruff-21.start.toml")).unwrap();
     let got = evaluate(start.as_str());
     let expected = read_to_string(data.join("ruff-21.expected.toml")).unwrap();
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
 }
