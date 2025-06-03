@@ -51,5 +51,5 @@ fn test_reorder_table(#[case] start: &str, #[case] expected: &str) {
         ..Options::default()
     };
     let got = format_syntax(root_ast, opt);
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
 }
