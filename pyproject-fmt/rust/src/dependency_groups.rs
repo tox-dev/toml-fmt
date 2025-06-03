@@ -1,6 +1,6 @@
 use common::array::{sort, transform};
 use common::pep508::{format_requirement, get_canonic_requirement_name};
-use common::string::{load_text, update_content};
+use common::string::{load_text, update_content, StringUpdateMode};
 use common::table::{collapse_sub_tables, find_key, for_entries, reorder_table_keys, Tables};
 use common::taplo::syntax::SyntaxKind::{ARRAY, ENTRY, INLINE_TABLE, STRING, VALUE};
 use common::util::iter;
@@ -21,7 +21,7 @@ pub fn fix(tables: &mut Tables, keep_full_version: bool) {
 
         // update inline table values to double-quoted string, e.g. include-group
         iter(entry, [ARRAY, VALUE, INLINE_TABLE, ENTRY, VALUE].as_ref(), &|node| {
-            update_content(node, |s| String::from(s));
+            update_content(node, |s| String::from(s), StringUpdateMode::ConvertToString);
         });
 
         // sort array elements

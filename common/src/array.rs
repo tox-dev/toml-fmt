@@ -6,7 +6,7 @@ use taplo::syntax::SyntaxKind::{ARRAY, COMMA, NEWLINE, STRING, VALUE, WHITESPACE
 use taplo::syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
 use crate::create::{make_comma, make_newline};
-use crate::string::{load_text, update_content};
+use crate::string::{load_text, update_content, StringUpdateMode};
 use crate::util::{find_first, iter};
 
 pub fn transform<F>(node: &SyntaxNode, transform: &F)
@@ -14,7 +14,7 @@ where
     F: Fn(&str) -> String,
 {
     iter(node, [ARRAY, VALUE].as_ref(), &|array_entry| {
-        update_content(array_entry, transform);
+        update_content(array_entry, transform, StringUpdateMode::ConvertToString);
     });
 }
 

@@ -25,7 +25,24 @@ pub fn load_text(value: &str, kind: SyntaxKind) -> String {
     res
 }
 
-pub fn update_content<F>(entry: &SyntaxNode, transform: F)
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum StringUpdateMode {
+    /// Preserve the string type.
+    PreserveType,
+
+    /// Convert to a simple string (non-literal, non-multiline).
+    ConvertToString,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum StringType {
+    String,
+    Literal,
+    Multiline,
+    MultilineLiteral,
+}
+
+pub fn update_content<F>(entry: &SyntaxNode, transform: F, mode: StringUpdateMode)
 where
     F: Fn(&str) -> String,
 {
@@ -38,9 +55,22 @@ where
             let found_str_value = load_text(child.as_token().unwrap().text(), kind);
             let output = transform(found_str_value.as_str());
 
-            changed = output != found_str_value || kind != STRING;
+            changed = output != found_str_value || (mode == StringUpdateMode::ConvertToString && kind != STRING);
             if changed {
-                child = make_string_node(output.as_str());
+                let literal = [STRING_LITERAL, MULTI_LINE_STRING_LITERAL].contains(&kind);
+                let multiline = [MULTI_LINE_STRING, MULTI_LINE_STRING_LITERAL].contains(&kind);
+
+                let target_type = match mode {
+                    StringUpdateMode::ConvertToString => StringType::String,
+                    StringUpdateMode::PreserveType => match (literal, multiline) {
+                        (false, false) => StringType::String,
+                        (true, false) => StringType::Literal,
+                        (false, true) => StringType::Multiline,
+                        (true, true) => StringType::MultilineLiteral,
+                    },
+                };
+
+                child = make_string_node(output.as_str(), target_type);
             }
         }
         to_insert.push(child);

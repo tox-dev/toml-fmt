@@ -1,7 +1,7 @@
 use common::array::{sort, sort_strings, transform};
 use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_newline};
 use common::pep508::{format_requirement, get_canonic_requirement_name};
-use common::string::{load_text, update_content};
+use common::string::{load_text, update_content, StringUpdateMode};
 use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
 use common::taplo::syntax::SyntaxKind::{
     ARRAY, BRACKET_END, BRACKET_START, COMMA, ENTRY, IDENT, INLINE_TABLE, KEY, NEWLINE, STRING, VALUE,
@@ -29,29 +29,37 @@ pub fn fix(
     expand_entry_points_inline_tables(table);
     for_entries(table, &mut |key, entry| match key.split('.').next().unwrap() {
         "name" => {
-            update_content(entry, get_canonic_requirement_name);
+            update_content(entry, get_canonic_requirement_name, StringUpdateMode::ConvertToString);
         }
         "version" | "readme" | "license-files" | "scripts" | "entry-points" | "gui-scripts" => {
-            update_content(entry, |s| String::from(s));
+            update_content(entry, |s| String::from(s), StringUpdateMode::ConvertToString);
         }
         "description" => {
-            update_content(entry, |s| {
-                s.trim()
-                    .lines()
-                    .map(|part| {
-                        part.trim()
-                            .split(char::is_whitespace)
-                            .filter(|part| !part.trim().is_empty())
-                            .collect::<Vec<&str>>()
-                            .join(" ")
-                            .replace(" .", ".")
-                    })
-                    .collect::<Vec<String>>()
-                    .join(" ")
-            });
+            update_content(
+                entry,
+                |s| {
+                    s.trim()
+                        .lines()
+                        .map(|part| {
+                            part.trim()
+                                .split(char::is_whitespace)
+                                .filter(|part| !part.trim().is_empty())
+                                .collect::<Vec<&str>>()
+                                .join(" ")
+                                .replace(" .", ".")
+                        })
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                },
+                StringUpdateMode::ConvertToString,
+            );
         }
         "requires-python" => {
-            update_content(entry, |s| s.split_whitespace().collect());
+            update_content(
+                entry,
+                |s| s.split_whitespace().collect(),
+                StringUpdateMode::ConvertToString,
+            );
         }
         "dependencies" | "optional-dependencies" => {
             transform(entry, &|s| format_requirement(s, keep_full_version));

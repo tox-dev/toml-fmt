@@ -1,5 +1,5 @@
 use common::array::{sort_strings, transform};
-use common::string::update_content;
+use common::string::{update_content, StringUpdateMode};
 use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
@@ -20,9 +20,7 @@ pub fn fix(tables: &mut Tables) {
         | "format.indent-style"
         | "format.line-ending"
         | "format.quote-style"
-        | "lint.dummy-variable-rgx"
         | "lint.flake8-copyright.author"
-        | "lint.flake8-copyright.notice-rgx"
         | "lint.flake8-pytest-style.parametrize-names-type"
         | "lint.flake8-pytest-style.parametrize-values-row-type"
         | "lint.flake8-pytest-style.parametrize-values-type"
@@ -34,7 +32,10 @@ pub fn fix(tables: &mut Tables) {
         | "lint.isort.known-third-party"
         | "lint.isort.relative-imports-order"
         | "lint.pydocstyle.convention" => {
-            update_content(entry, |s| String::from(s));
+            update_content(entry, |s| String::from(s), StringUpdateMode::ConvertToString);
+        }
+        "lint.dummy-variable-rgx" | "lint.flake8-copyright.notice-rgx" => {
+            update_content(entry, |s| String::from(s), StringUpdateMode::PreserveType);
         }
         "exclude"
         | "extend-exclude"
