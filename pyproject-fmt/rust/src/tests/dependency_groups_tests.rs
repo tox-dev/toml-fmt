@@ -96,6 +96,28 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
     "#},
         false,
 )]
+#[case::multiple_groups_and_extra_line(
+  indoc ! {r#"
+    [dependency-groups]
+    example = [ "c<1" ]
+    coverage = ["b<2"]
+    type = [ "a>1" ]
+
+    "#},
+  indoc ! {r#"
+    [dependency-groups]
+    type = [
+      "a>1",
+    ]
+    example = [
+      "c<1",
+    ]
+    coverage = [
+      "b<2",
+    ]
+    "#},
+  false,
+)]
 #[case::include_single_group(
         indoc ! {r#"
     [dependency-groups]
