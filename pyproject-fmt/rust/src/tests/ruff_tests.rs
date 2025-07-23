@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use common::taplo::formatter::{format_syntax, Options};
 use common::taplo::parser::parse;
 use common::taplo::syntax::SyntaxElement;
+use indoc::indoc;
 use rstest::{fixture, rstest};
 
 use crate::ruff::fix;
@@ -39,7 +40,8 @@ fn test_order_ruff(data: PathBuf) {
     let start = read_to_string(data.join("ruff-order.start.toml")).unwrap();
     let got = evaluate(start.as_str());
     let expected = read_to_string(data.join("ruff-order.expected.toml")).unwrap();
-    assert_eq!(got, expected);
+
+    similar_asserts::assert_eq!(expected: expected, actual: got);
 }
 
 #[rstest]
@@ -47,5 +49,42 @@ fn test_ruff_comment_21(data: PathBuf) {
     let start = read_to_string(data.join("ruff-21.start.toml")).unwrap();
     let got = evaluate(start.as_str());
     let expected = read_to_string(data.join("ruff-21.expected.toml")).unwrap();
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
+}
+
+#[rstest]
+#[case::string(
+    indoc! {r#"
+        [tool.ruff]
+        lint.flake8-copyright.notice-rgx = "Copyright author year"
+    "#},
+)]
+#[case::string_literal(
+    // https://github.com/tox-dev/toml-fmt/issues/22
+    indoc! {r#"
+        [tool.ruff]
+        lint.flake8-copyright.notice-rgx = 'SPDX-License-Identifier: MPL-2\.0'
+    "#},
+)]
+#[case::multi_line_string(
+    indoc! {r#"
+        [tool.ruff]
+        lint.flake8-copyright.notice-rgx = """
+          Copyright author year
+          Some more terms
+        """
+    "#},
+)]
+#[case::multi_line_string_literal(
+    indoc! {r#"
+        [tool.ruff]
+        lint.flake8-copyright.notice-rgx = '''
+          Copyright author year\.
+          Some more terms\.
+        '''
+    "#},
+)]
+fn test_flake8_copyright_notice_preserve_string_type(#[case] start: &str) {
+    let got = evaluate(start);
+    similar_asserts::assert_eq!(expected: start, actual: got);
 }
