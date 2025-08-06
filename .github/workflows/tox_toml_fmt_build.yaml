@@ -98,7 +98,7 @@ jobs:
             target: ppc64le
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
@@ -125,7 +125,7 @@ jobs:
             target: x86
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
@@ -153,7 +153,7 @@ jobs:
             target: aarch64
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
@@ -174,7 +174,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build sdist
@@ -203,7 +203,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download source
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
           path: .
@@ -217,7 +217,7 @@ jobs:
       - name: Tag release
         run: git tag tox-toml-fmt/${{needs.bump.outputs.version}}
       - name: Download wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: wheels-*
           path: dist
