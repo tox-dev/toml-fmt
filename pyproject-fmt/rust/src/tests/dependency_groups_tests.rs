@@ -139,5 +139,5 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
         false,
 )]
 fn test_format_dependency_groups(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
-    assert_eq!(evaluate(start, keep_full_version), expected);
+    similar_asserts::assert_eq!(evaluate(start, keep_full_version), expected);
 }

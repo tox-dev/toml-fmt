@@ -192,9 +192,9 @@ fn test_format_toml(
         min_supported_python: (3, 9),
     };
     let got = format_toml(start, &settings);
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
     let second = format_toml(got.as_str(), &settings);
-    assert_eq!(second, got);
+    similar_asserts::assert_eq!(expected: got, actual: second);
 }
 
 #[fixture]
@@ -217,9 +217,9 @@ fn test_issue_24(data: PathBuf) {
     };
     let got = format_toml(start.as_str(), &settings);
     let expected = read_to_string(data.join("ruff-order.expected.toml")).unwrap();
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
     let second = format_toml(got.as_str(), &settings);
-    assert_eq!(second, got);
+    similar_asserts::assert_eq!(expected: got, actual: second);
 }
 
 /// Test that the column width is respected,
@@ -260,7 +260,7 @@ fn test_column_width() {
             "e>=1.5",
         ]
         "#};
-    assert_eq!(got, expected);
+    similar_asserts::assert_eq!(expected: expected, actual: got);
     let second = format_toml(got.as_str(), &settings);
-    assert_eq!(second, got);
+    similar_asserts::assert_eq!(expected: got, actual: second);
 }
