@@ -15,7 +15,7 @@ jobs:
   rust-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
@@ -28,7 +28,7 @@ jobs:
       run:
         working-directory: pyproject-fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
@@ -38,7 +38,7 @@ jobs:
   rust-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build library
         run: cargo build -p pyproject-fmt
@@ -46,7 +46,7 @@ jobs:
   rust-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: cargo test -p pyproject-fmt
 
@@ -70,7 +70,7 @@ jobs:
       run:
         working-directory: pyproject-fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install the latest version of uv
@@ -111,7 +111,7 @@ jobs:
       run:
         working-directory: pyproject-fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install the latest version of uv
