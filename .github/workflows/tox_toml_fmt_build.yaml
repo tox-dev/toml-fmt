@@ -41,7 +41,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-edit
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Bump version
         run: cargo set-version -p tox-toml-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
       - name: Install the latest version of uv
@@ -201,7 +201,7 @@ jobs:
     if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
     needs: [bump, sdist, linux, macos, windows]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download source
         uses: actions/download-artifact@v4
         with:
