@@ -102,7 +102,7 @@ jobs:
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
@@ -129,7 +129,7 @@ jobs:
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380
 
         with:
           target: ${{ matrix.platform.target }}
@@ -157,7 +157,7 @@ jobs:
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380
 
         with:
           target: ${{ matrix.platform.target }}
@@ -178,7 +178,7 @@ jobs:
         with:
           name: source
       - name: Build sdist
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380
 
         with:
           command: sdist
@@ -225,7 +225,7 @@ jobs:
       - name: Show wheels
         run: ls -lth dist
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380
         with:
           command: upload
           args: --non-interactive --skip-existing dist/*
