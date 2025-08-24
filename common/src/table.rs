@@ -187,6 +187,13 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
 }
 
 fn load_keys(table: &[SyntaxElement]) -> (HashMap<String, usize>, Vec<Vec<SyntaxElement>>) {
+    let table_clone = if table.last().unwrap().kind() == NEWLINE {
+        // drop the final element if it is a new line, multiple new lines are handled together and add unwanted
+        // empty lines within the table when reordered
+        &table[..table.len() - 1]
+    } else {
+        table
+    };
     let mut key_to_pos = HashMap::<String, usize>::new();
     let mut key_set = Vec::<Vec<SyntaxElement>>::new();
     let entry_set = RefCell::new(Vec::<SyntaxElement>::new());
@@ -200,7 +207,7 @@ fn load_keys(table: &[SyntaxElement]) -> (HashMap<String, usize>, Vec<Vec<Syntax
     };
     let mut key = String::new();
     let mut cutoff = false;
-    for element in table {
+    for element in table_clone {
         let kind = element.kind();
         if kind == ENTRY {
             if cutoff {
