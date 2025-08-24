@@ -1,10 +1,19 @@
 use taplo::parser::parse;
 use taplo::syntax::SyntaxElement;
-use taplo::syntax::SyntaxKind::{ARRAY, COMMA, ENTRY, KEY, NEWLINE, STRING, VALUE};
+use taplo::syntax::SyntaxKind::{
+    ARRAY, COMMA, ENTRY, KEY, MULTI_LINE_STRING, MULTI_LINE_STRING_LITERAL, NEWLINE, STRING, STRING_LITERAL, VALUE,
+};
 
-pub fn make_string_node(text: &str) -> SyntaxElement {
-    let expr = &format!("a = \"{}\"", text.replace('"', "\\\""));
-    for root in parse(expr)
+use crate::string::StringType;
+
+pub fn make_string_node(text: &str, target_type: StringType) -> SyntaxElement {
+    let expr = match target_type {
+        StringType::String => format!("a = \"{}\"", text.replace('"', "\\\"")),
+        StringType::Multiline => format!("a = \"\"\"{}\"\"\"", text.replace('"', "\\\"")),
+        StringType::Literal => format!("a = '{}'", text),
+        StringType::MultilineLiteral => format!("a = '''{}'''", text),
+    };
+    for root in parse(&expr)
         .into_syntax()
         .clone_for_update()
         .first_child()
@@ -13,7 +22,11 @@ pub fn make_string_node(text: &str) -> SyntaxElement {
     {
         if root.kind() == VALUE {
             for entries in root.as_node().unwrap().children_with_tokens() {
-                if entries.kind() == STRING {
+                if (target_type == StringType::String && entries.kind() == STRING)
+                    || (target_type == StringType::Multiline && entries.kind() == MULTI_LINE_STRING)
+                    || (target_type == StringType::Literal && entries.kind() == STRING_LITERAL)
+                    || (target_type == StringType::MultilineLiteral && entries.kind() == MULTI_LINE_STRING_LITERAL)
+                {
                     return entries;
                 }
             }
