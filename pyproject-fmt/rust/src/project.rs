@@ -26,6 +26,7 @@ pub fn fix(
         return;
     }
     let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
+    let re = Regex::new(r" \.(\W)").unwrap();
     expand_entry_points_inline_tables(table);
     for_entries(table, &mut |key, entry| match key.split('.').next().unwrap() {
         "name" => {
@@ -36,18 +37,20 @@ pub fn fix(
         }
         "description" => {
             update_content(entry, |s| {
-                s.trim()
-                    .lines()
-                    .map(|part| {
-                        part.trim()
-                            .split(char::is_whitespace)
-                            .filter(|part| !part.trim().is_empty())
-                            .collect::<Vec<&str>>()
-                            .join(" ")
-                            .replace(" .", ".")
-                    })
-                    .collect::<Vec<String>>()
-                    .join(" ")
+                re.replace_all(
+                    &s.trim()
+                        .lines()
+                        .map(|part| {
+                            part.split_whitespace()
+                                .filter(|part| !part.trim().is_empty())
+                                .collect::<Vec<&str>>()
+                                .join(" ")
+                        })
+                        .collect::<Vec<String>>()
+                        .join(" "),
+                    ".$1",
+                )
+                .to_string()
             });
         }
         "requires-python" => {
