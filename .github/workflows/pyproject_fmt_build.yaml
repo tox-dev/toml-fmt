@@ -54,7 +54,7 @@ jobs:
         run: uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - uses: pre-commit/action@v3.0.1
