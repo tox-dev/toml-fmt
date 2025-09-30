@@ -1,5 +1,5 @@
 use common::array::{sort, transform};
-use common::pep508::{format_requirement, get_canonic_requirement_name};
+use common::pep508::Requirement;
 use common::string::{load_text, update_content};
 use common::table::{collapse_sub_tables, find_key, for_entries, reorder_table_keys, Tables};
 use common::taplo::syntax::SyntaxKind::{ARRAY, ENTRY, INLINE_TABLE, STRING, VALUE};
@@ -17,7 +17,9 @@ pub fn fix(tables: &mut Tables, keep_full_version: bool) {
     let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
     for_entries(table, &mut |_key, entry| {
         // format dependency specifications
-        transform(entry, &|s| format_requirement(s, keep_full_version));
+        transform(entry, &|s| {
+            Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
+        });
 
         // update inline table values to double-quoted string, e.g. include-group
         iter(entry, [ARRAY, VALUE, INLINE_TABLE, ENTRY, VALUE].as_ref(), &|node| {
@@ -32,7 +34,7 @@ pub fn fix(tables: &mut Tables, keep_full_version: bool) {
                     match child.kind() {
                         STRING => {
                             let val = load_text(child.as_token().unwrap().text(), STRING);
-                            let package_name = get_canonic_requirement_name(val.as_str()).to_lowercase();
+                            let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
                             return Some((0, package_name, val));
                         }
                         INLINE_TABLE => {

@@ -1,12 +1,12 @@
 use rstest::rstest;
 
-use crate::pep508::{format_requirement, get_canonic_requirement_name};
+use crate::pep508::Requirement;
 
 #[rstest]
 #[case::lowercase("A", "a")]
 #[case::replace_dot_with_dash("a.b", "a-b")]
 fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str) {
-    assert_eq!(get_canonic_requirement_name(start), expected);
+    assert_eq!(Requirement::new(start).unwrap().canonical_name(), expected);
 }
 #[rstest]
 #[case::strip_version(
@@ -26,8 +26,17 @@ true
     true
 )]
 fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
-    let got = format_requirement(start, keep_full_version);
+    let got = Requirement::new(start)
+        .unwrap()
+        .normalize(keep_full_version)
+        .to_string();
     assert_eq!(got, expected);
     // formatting remains stable
-    assert_eq!(format_requirement(got.as_str(), keep_full_version), expected);
+    assert_eq!(
+        Requirement::new(got.as_str())
+            .unwrap()
+            .normalize(keep_full_version)
+            .to_string(),
+        expected
+    );
 }

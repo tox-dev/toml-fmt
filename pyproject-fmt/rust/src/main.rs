@@ -85,6 +85,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         reorder_keys: false,   // respect custom order
         reorder_arrays: false, // for natural sorting we need to this ourselves
         crlf: false,
+        reorder_inline_tables: false,
     };
     format_syntax(root_ast, options)
 }
