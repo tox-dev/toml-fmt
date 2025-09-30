@@ -289,10 +289,10 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
         (3, 13),
 )]
 #[case::project_description_whitespace(
-        "[project]\ndescription = ' A  magic stuff \t is great\t\t.\r\n  Like  really  .\t\'\nrequires-python = '==3.12'",
+        "[project]\ndescription = ' A  magic stuff \t is great\t\t.\r\n  Like  really  . Works on .rst and .NET :)\t\'\nrequires-python = '==3.12'",
         indoc ! {r#"
     [project]
-    description = "A magic stuff is great. Like really."
+    description = "A magic stuff is great. Like really. Works on .rst and .NET :)"
     requires-python = "==3.12"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
