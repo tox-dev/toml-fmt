@@ -1,3 +1,10 @@
+<a id="2.7.0"></a>
+
+## 2.7.0 - 2025-10-01
+
+- Macos 26 is not yet ready for wide usage by [@gaborbernat](https://github.com/gaborbernat) in
+  [#$86](https://github.com/tox-dev/toml-fmt/pull/86)
+
 <a id="2.6.0"></a>
 
 ## 2.6.0 - 2025-05-19
