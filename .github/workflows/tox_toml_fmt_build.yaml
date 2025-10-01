@@ -54,7 +54,7 @@ jobs:
         run: uv run tasks/changelog.py tox-toml-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - uses: pre-commit/action@v3.0.1
@@ -98,7 +98,7 @@ jobs:
             target: ppc64le
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
@@ -126,9 +126,14 @@ jobs:
             target: x86
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.9"
+          architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1.49.4
         with:
@@ -153,7 +158,7 @@ jobs:
             target: aarch64
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
@@ -172,7 +177,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build sdist
@@ -201,7 +206,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Download source
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
           path: .
@@ -215,7 +220,7 @@ jobs:
       - name: Tag release
         run: git tag tox-toml-fmt/${{needs.bump.outputs.version}}
       - name: Download wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: wheels-*
           path: dist
