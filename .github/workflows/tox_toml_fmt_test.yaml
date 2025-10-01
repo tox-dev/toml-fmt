@@ -65,7 +65,7 @@ jobs:
         os:
           - ubuntu-24.04
           - windows-2025
-          - macos-26
+          - macos-15
     defaults:
       run:
         working-directory: tox-toml-fmt
