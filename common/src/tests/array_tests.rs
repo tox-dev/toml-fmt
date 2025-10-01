@@ -5,7 +5,7 @@ use taplo::parser::parse;
 use taplo::syntax::SyntaxKind::{ENTRY, VALUE};
 
 use crate::array::{sort_strings, transform};
-use crate::pep508::format_requirement;
+use crate::pep508::Requirement;
 
 #[rstest]
 #[case::strip_micro_no_keep(
@@ -65,7 +65,9 @@ fn test_normalize_requirement(#[case] start: &str, #[case] expected: &str, #[cas
         if children.kind() == ENTRY {
             for entry in children.as_node().unwrap().children_with_tokens() {
                 if entry.kind() == VALUE {
-                    transform(entry.as_node().unwrap(), &|s| format_requirement(s, keep_full_version));
+                    transform(entry.as_node().unwrap(), &|s| {
+                        Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
+                    });
                 }
             }
         }

@@ -29,7 +29,7 @@ permissions:
 
 jobs:
   bump:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pull-requests: read
     outputs:
@@ -41,7 +41,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-edit
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Bump version
         run: cargo set-version -p pyproject-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
       - name: Install the latest version of uv
@@ -54,10 +54,10 @@ jobs:
         run: uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - uses: pre-commit/action@v3.0.1
+      - uses: tox-dev/action-pre-commit-uv@v1
         continue-on-error: true
       - name: Show changes to the repository
         run: git diff HEAD -u
@@ -77,33 +77,32 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86_64
             interpreter: "3.9 pypy3.9 pypy3.10"
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             manylinux: musllinux_1_2
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: i686-unknown-linux-musl
             manylinux: musllinux_1_2
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: aarch64
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: armv7
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: s390x
-          - runner: ubuntu-latest
+          - runner: ubuntu-24.04
             target: ppc64le
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
-
+        uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
@@ -118,20 +117,25 @@ jobs:
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
+      fail-fast: false
       matrix:
         platform:
-          - runner: windows-latest
+          - runner: windows-2025
             target: x64
-          - runner: windows-latest
+          - runner: windows-2025
             target: x86
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.9"
+          architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: Build wheels
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
-
+        uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
@@ -145,24 +149,24 @@ jobs:
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
+      fail-fast: false
       matrix:
         platform:
-          - runner: macos-latest
+          - runner: macos-26
             target: x86_64
-          - runner: macos-14
+          - runner: macos-26
             target: aarch64
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build wheels
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@v1.49.4
 
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.9 pypy3.9 pypy3.10" --target-dir target
-          sccache: "true"
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -171,14 +175,14 @@ jobs:
 
   sdist:
     needs: [bump]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
       - name: Build sdist
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@v1.49.4
 
         with:
           command: sdist
@@ -191,7 +195,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: release
       url: https://pypi.org/project/pyproject-fmt/${{ needs.bump.outputs.version }}
@@ -201,9 +205,9 @@ jobs:
     if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
     needs: [bump, sdist, linux, macos, windows]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download source
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: source
           path: .
@@ -217,7 +221,7 @@ jobs:
       - name: Tag release
         run: git tag pyproject-fmt/${{needs.bump.outputs.version}}
       - name: Download wheels
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: wheels-*
           path: dist
@@ -225,7 +229,7 @@ jobs:
       - name: Show wheels
         run: ls -lth dist
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@aef21716ff3dcae8a1c301d23ec3e4446972a6e3
+        uses: PyO3/maturin-action@v1.49.4
         with:
           command: upload
           args: --non-interactive --skip-existing dist/*

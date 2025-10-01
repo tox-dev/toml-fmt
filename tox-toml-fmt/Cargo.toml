@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 [dependencies]
 common = {path = "../common" }
 regex = { version = "1.11.1" }
-pyo3 = { version = "0.25.0", features = ["abi3-py39"] } # integration with Python
+pyo3 = { version = "0.26.0", features = ["abi3-py39"] } # integration with Python
 lexical-sort = { version = "0.3.1" }
 
 [features]
@@ -23,5 +23,5 @@ extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
 
 [dev-dependencies]
-rstest = { version = "0.25.0" } # parametrized tests
+rstest = "0.26.1" # parametrized tests
 indoc = { version = "2.0.6" }   # dedented test cases for literal strings

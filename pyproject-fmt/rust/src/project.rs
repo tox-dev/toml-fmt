@@ -1,6 +1,6 @@
 use common::array::{sort, sort_strings, transform};
 use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_newline};
-use common::pep508::{format_requirement, get_canonic_requirement_name};
+use common::pep508::Requirement;
 use common::string::{load_text, update_content};
 use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
 use common::taplo::syntax::SyntaxKind::{
@@ -30,7 +30,7 @@ pub fn fix(
     expand_entry_points_inline_tables(table);
     for_entries(table, &mut |key, entry| match key.split('.').next().unwrap() {
         "name" => {
-            update_content(entry, get_canonic_requirement_name);
+            update_content(entry, |s| Requirement::new(s).unwrap().canonical_name());
         }
         "version" | "readme" | "license-files" | "scripts" | "entry-points" | "gui-scripts" => {
             update_content(entry, |s| String::from(s));
@@ -57,14 +57,16 @@ pub fn fix(
             update_content(entry, |s| s.split_whitespace().collect());
         }
         "dependencies" | "optional-dependencies" => {
-            transform(entry, &|s| format_requirement(s, keep_full_version));
+            transform(entry, &|s| {
+                Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
+            });
             sort::<(String, String), _, _>(
                 entry,
                 |node| {
                     for child in node.children_with_tokens() {
                         if let STRING = child.kind() {
                             let val = load_text(child.as_token().unwrap().text(), STRING);
-                            let package_name = get_canonic_requirement_name(val.as_str()).to_lowercase();
+                            let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
                             return Some((package_name, val));
                         }
                     }
@@ -331,9 +333,7 @@ fn get_python_requires_with_classifier(
                 if child.kind() == STRING {
                     let found_str_value = load_text(child.as_token().unwrap().text(), STRING);
                     for part in found_str_value.split(',') {
-                        let capture = re.captures(part);
-                        if capture.is_some() {
-                            let caps = capture.unwrap();
+                        if let Some(caps) = re.captures(part) {
                             let minor = caps["minor"].parse::<u8>().unwrap();
                             match &caps["op"] {
                                 "==" => {

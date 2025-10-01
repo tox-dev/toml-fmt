@@ -13,9 +13,9 @@ concurrency:
 
 jobs:
   rust-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
@@ -23,12 +23,12 @@ jobs:
         run: cargo clippy -p pyproject-fmt --all-targets -- -D warnings
 
   rust-fmt:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: pyproject-fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
@@ -36,23 +36,23 @@ jobs:
         run: cargo fmt -p pyproject-fmt --check
 
   rust-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build library
         run: cargo build -p pyproject-fmt
 
   rust-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - run: cargo test -p pyproject-fmt
 
   py-test:
     name: test ${{ matrix.py }} ${{ matrix.os }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -63,14 +63,14 @@ jobs:
           - "3.10"
           - "3.9"
         os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
+          - ubuntu-24.04
+          - windows-2025
+          - macos-26
     defaults:
       run:
         working-directory: pyproject-fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install the latest version of uv
@@ -99,7 +99,7 @@ jobs:
 
   py-check:
     name: tox env ${{ matrix.env }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -111,7 +111,7 @@ jobs:
       run:
         working-directory: pyproject-fmt
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Install the latest version of uv
