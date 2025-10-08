@@ -42,6 +42,8 @@ use common::table::Tables;
     ef="fg"
     [tool.pytest]
     mk="mv"
+    [tool.uv]
+    vu="uv"
     "#},
         indoc ! {r#"
     # comment
@@ -68,6 +70,9 @@ use common::table::Tables;
       "p",
       "q",
     ]
+
+    [tool.uv]
+    vu = "uv"
 
     [tool.ruff]
     mr = "vr"

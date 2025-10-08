@@ -26,6 +26,7 @@ pub fn reorder_tables(root_ast: &SyntaxNode<Lang>, tables: &Tables) {
             "tool.whey",
             "tool.py-build-cmake",
             "tool.sphinx-theme-builder",
+            "tool.uv",
             // Builders
             "tool.cibuildwheel",
             // Formatters and linters
