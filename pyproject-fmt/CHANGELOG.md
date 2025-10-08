@@ -1,3 +1,10 @@
+<a id="2.9.0"></a>
+
+## 2.9.0 - 2025-10-08
+
+- Sort [tool.uv] higher in the pyproject.toml by [@browniebroke](https://github.com/browniebroke) in
+  [#$97](https://github.com/tox-dev/toml-fmt/pull/97)
+
 <a id="2.8.0"></a>
 
 ## 2.8.0 - 2025-10-08
