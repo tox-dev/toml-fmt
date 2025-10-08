@@ -1,3 +1,10 @@
+<a id="2.8.0"></a>
+
+## 2.8.0 - 2025-10-08
+
+- Fix parsing of version pre labels by [@adamchainz](https://github.com/adamchainz) in
+  [#$89](https://github.com/tox-dev/toml-fmt/pull/89)
+
 <a id="2.7.0"></a>
 
 ## 2.7.0 - 2025-10-01
