@@ -22,15 +22,15 @@ repos:
     hooks:
       - id: validate-pyproject
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.7.0"
+    rev: "v2.8.0"
     hooks:
       - id: pyproject-fmt
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.13.3"
+    rev: "v0.14.0"
     hooks:
       - id: ruff-format
         args: ["--config", "pyproject.toml"]
-      - id: ruff
+      - id: ruff-check
         args: ["--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: "v3.6.2"
