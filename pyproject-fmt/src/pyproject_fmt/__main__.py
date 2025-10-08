@@ -49,20 +49,20 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         def _version_argument(got: str) -> tuple[int, int]:
             parts = got.split(".")
             if len(parts) != 2:  # noqa: PLR2004
-                err = f"invalid version: {got}, must be e.g. 3.13"
+                err = f"invalid version: {got}, must be e.g. 3.14"
                 raise ArgumentTypeError(err)
             try:
                 return int(parts[0]), int(parts[1])
             except ValueError as exc:
-                err = f"invalid version: {got} due {exc!r}, must be e.g. 3.13"
+                err = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
                 raise ArgumentTypeError(err) from exc
 
         parser.add_argument(
             "--max-supported-python",
             metavar="minor.major",
             type=_version_argument,
-            default=(3, 13),
-            help="latest Python version the project supports (e.g. 3.13)",
+            default=(3, 14),  # latest stable release known at time of writing
+            help="latest Python version the project supports (e.g. 3.14)",
         )
 
     @property
