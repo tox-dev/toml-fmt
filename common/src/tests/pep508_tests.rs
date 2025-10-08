@@ -25,6 +25,7 @@ true
     "pip @ https://github.com/pypa/pip/archive/1.3.1.zip#sha1=da9234ee9982d4bbb3c72346a6de940a148ea686",
     true
 )]
+#[case::keep_rc_version("a==5.2rc1", "a==5.2rc1", true)]
 fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     let got = Requirement::new(start)
         .unwrap()

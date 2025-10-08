@@ -64,7 +64,8 @@ impl Version {
         }
 
         // Parse pre-release (e.g., "a1", "beta2", "rc3")
-        let pre_labels = ["alpha", "a", "beta", "b", "preview", "pre", "c", "rc"];
+        // Labels checked longest first to avoid partial matches (e.g. "rc" before "c")
+        let pre_labels = ["preview", "alpha", "beta", "pre", "rc", "a", "b", "c"];
         for label in &pre_labels {
             if let Some(idx) = main.to_ascii_lowercase().rfind(label) {
                 let (before, after) = main.split_at(idx);
