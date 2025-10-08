@@ -56,7 +56,7 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - uses: tox-dev/action-pre-commit-uv@v1
         continue-on-error: true
       - name: Show changes to the repository
@@ -79,7 +79,7 @@ jobs:
         platform:
           - runner: ubuntu-24.04
             target: x86_64
-            interpreter: "3.9 pypy3.9 pypy3.10"
+            interpreter: "3.10 pypy3.10"
           - runner: ubuntu-24.04
             target: x86
           - runner: ubuntu-24.04
@@ -105,7 +105,7 @@ jobs:
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -129,16 +129,16 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: source
-      - name: Set up Python 3.9
+      - name: Set up Python 3.10
         uses: actions/setup-python@v6
         with:
-          python-version: "3.9"
+          python-version: "3.10"
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.9' }} --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -166,7 +166,7 @@ jobs:
 
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.9 pypy3.9 pypy3.10" --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --release --out dist --interpreter "3.10 pypy3.10" --target-dir target
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
