@@ -1,3 +1,10 @@
+<a id="2.10.0"></a>
+
+## 2.10.0 - 2025-10-09
+
+- Add a few more type checkers to top level tables by [@browniebroke](https://github.com/browniebroke) in
+  [#$98](https://github.com/tox-dev/toml-fmt/pull/98)
+
 <a id="2.9.0"></a>
 
 ## 2.9.0 - 2025-10-08
