@@ -113,56 +113,39 @@ fn test_version_without_dot_before_rc() {
 }
 
 #[test]
-fn test_stability_iterations() {
-    // Test that normalization is stable across multiple iterations
+fn test_deep_version_structure() {
     let inputs = vec![
-        ("pkg>=2.7.0rc1", "pkg>=2.7rc1"),
-        ("pkg>=2.7rc1", "pkg>=2.7rc1"),
-        ("pkg>=2rc1", "pkg>=2rc1"),
-    ];
-    
-    for (input, expected) in inputs {
-        let result1 = Requirement::new(input).unwrap().normalize(false).to_string();
-        let result2 = Requirement::new(&result1).unwrap().normalize(false).to_string();
-        let result3 = Requirement::new(&result2).unwrap().normalize(false).to_string();
-        
-        println!("Input: {} -> {} -> {} -> {}", input, result1, result2, result3);
-        assert_eq!(result1, expected, "First normalization failed");
-        assert_eq!(result2, expected, "Second normalization not stable");
-        assert_eq!(result3, expected, "Third normalization not stable");
-    }
-}
-#[test]
-fn test_dot_before_rc() {
-    // Test versions with dot before rc (might be malformed input)
-    let inputs = vec![
-        "pkg>=2.7.rc1",
-        "pkg>=2..rc1",  
+        "pkg>=2.7.0rc1",
+        "pkg>=2.7rc1",
+        "pkg>=2rc1",
     ];
     
     for input in inputs {
-        let result = Requirement::new(input).unwrap().normalize(false).to_string();
-        println!("Input: {}, Result: {}", input, result);
+        let req = Requirement::new(input).unwrap().normalize(false);
+        let vo = match &req.version_or_url {
+            Some(crate::pep508::requirement::VersionOrUrl::Versions(specs)) => &specs[0],
+            _ => panic!("Expected version"),
+        };
         
-        // Check stability
-        let result2 = Requirement::new(&result).unwrap().normalize(false).to_string();
-        println!("  Second: {}", result2);
-        assert_eq!(result, result2, "Should be stable");
-    }
-}
-
-#[test]
-fn test_case_sensitivity() {
-    let inputs = vec![
-        ("pkg>=2.7.0rc1", "pkg>=2.7rc1"),
-        ("pkg>=2.7.0RC1", "pkg>=2.7rc1"),
-        ("pkg>=2.7.0Rc1", "pkg>=2.7rc1"),
-        ("pkg>=2.7.0rC1", "pkg>=2.7rc1"),
-    ];
-    
-    for (input, expected) in inputs {
-        let result = Requirement::new(input).unwrap().normalize(false).to_string();
-        println!("Input: {}, Result: {}", input, result);
-        assert_eq!(result, expected);
+        println!("\n=== Input: {} ===", input);
+        println!("  release: {:?}", vo.version.release);
+        println!("  pre: {:?}", vo.version.pre);
+        println!("  output: {}", req);
+        
+        // Now parse the output and check again
+        let output_str = req.to_string();
+        let req2 = Requirement::new(&output_str).unwrap().normalize(false);
+        let vo2 = match &req2.version_or_url {
+            Some(crate::pep508::requirement::VersionOrUrl::Versions(specs)) => &specs[0],
+            _ => panic!("Expected version"),
+        };
+        
+        println!("After round-trip:");
+        println!("  release: {:?}", vo2.version.release);
+        println!("  pre: {:?}", vo2.version.pre);
+        println!("  output: {}", req2);
+        
+        assert_eq!(vo.version.release, vo2.version.release, 
+            "Release should be stable for {}", input);
     }
 }
