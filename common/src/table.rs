@@ -1,11 +1,12 @@
 use std::cell::{RefCell, RefMut};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeSet};
 use std::iter::zip;
 use std::ops::Index;
 
 use taplo::syntax::SyntaxKind::{ENTRY, IDENT, KEY, NEWLINE, TABLE_ARRAY_HEADER, TABLE_HEADER, VALUE};
 use taplo::syntax::{SyntaxElement, SyntaxNode};
 use taplo::HashSet;
+use taplo::{dom::node::DomNode as _, parser::parse};
 
 use crate::create::{make_empty_newline, make_key, make_newline, make_table_entry};
 use crate::string::load_text;
@@ -296,6 +297,14 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str, exclude: &[Vec<Strin
     if main_positions.len() != 1 {
         return;
     }
+
+    // remove `name` from `exclude`s (and skip if `name` is not a prefix)
+    let prefix = parse_ident(name).expect("could not parse prefix");
+    let exclude: BTreeSet<_> = exclude.into_iter().filter_map(|id| {
+        let (prefix_2, rest) = id.split_at(prefix.len()+1);
+        (prefix == prefix_2).then_some(rest)
+    }).collect();
+
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
     for key in sub_table_keys {
         let sub_positions = tables.header_to_pos[key].clone();
@@ -339,4 +348,36 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str, exclude: &[Vec<Strin
         }
         sub.clear();
     }
+}
+
+pub fn parse_ident(ident: &str) -> Result<Vec<String>, String> {
+    let parsed = parse(&format!("{ident} = 1"));
+    if let Some(e) = parsed.errors.first() {
+        return Err(format!("syntax error: {e}"));
+    }
+
+    let root = parsed.into_dom();
+    let errors = root.errors();
+    if let Some(e) = errors.get().first() {
+        return Err(format!("semantic error: {e}"));
+    }
+
+    dbg!(&root.errors());
+
+    // We cannot use `.into_syntax()` since only the DOM transformation
+    // allows accessing ident `.value()`s without quotes.
+    let mut node = root;
+    let mut parts = vec![];
+    while let Ok(table) = node.try_into_table() {
+        let entries = table.entries().get();
+        if entries.len() != 1 {
+            return Err("expected exactly one entry".to_string());
+        }
+        let mut it = entries.iter();
+        let (key, next_node) = it.next().unwrap(); // checked if len == 1 above
+
+        parts.push(key.value().to_string());
+        node = next_node.clone();
+    }
+    Ok(parts)
 }

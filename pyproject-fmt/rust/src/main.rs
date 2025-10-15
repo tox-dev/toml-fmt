@@ -1,7 +1,5 @@
 use std::string::String;
-use std::vec;
 
-use common::taplo::dom::node::DomNode;
 use common::taplo::formatter::{format_syntax, Options};
 use common::taplo::parser::parse;
 use pyo3::exceptions::PyValueError;
@@ -102,36 +100,13 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     format_syntax(root_ast, options)
 }
 
+/// Parse a nested toml identifier into a tuple of idents
+///
+/// >>> parse_ident('a."b.c"')
+/// ('a', 'b.c')
 #[pyfunction]
-pub fn parse_ident<'py>(py: pyo3::Python<'py>, ident: String) -> PyResult<Bound<'py, PyTuple>> {
-    let parsed = parse(&format!("{ident} = 1"));
-    if let Some(e) = parsed.errors.first() {
-        return Err(PyValueError::new_err(format!("syntax error: {e}")));
-    }
-
-    let root = parsed.into_dom();
-    let errors = root.errors();
-    if let Some(e) = errors.get().first() {
-        return Err(PyValueError::new_err(format!("semantic error: {e}")));
-    }
-
-    dbg!(&root.errors());
-
-    // We cannot use `.into_syntax()` since only the DOM transformation
-    // allows accessing ident `.value()`s without quotes.
-    let mut node = root;
-    let mut parts = vec![];
-    while let Ok(table) = node.try_into_table() {
-        let entries = table.entries().get();
-        if entries.len() != 1 {
-            return Err(PyValueError::new_err("expected exactly one entry"));
-        }
-        let mut it = entries.iter();
-        let (key, next_node) = it.next().unwrap(); // checked if len == 1 above
-
-        parts.push(key.value().to_string());
-        node = next_node.clone();
-    }
+pub fn parse_ident<'py>(py: pyo3::Python<'py>, ident: &str) -> PyResult<Bound<'py, PyTuple>> {
+    let parts = common::table::parse_ident(ident).map_err(|e| PyValueError::new_err(e))?;
     PyTuple::new(py, parts)
 }
 
