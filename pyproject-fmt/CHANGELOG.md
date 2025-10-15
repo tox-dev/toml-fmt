@@ -1,3 +1,10 @@
+<a id="2.11.0"></a>
+
+## 2.11.0 - 2025-10-15
+
+- Allow to opt out of the Python version classifier generation by [@gaborbernat](https://github.com/gaborbernat) in
+  [#$102](https://github.com/tox-dev/toml-fmt/pull/102)
+
 <a id="2.10.0"></a>
 
 ## 2.10.0 - 2025-10-09
