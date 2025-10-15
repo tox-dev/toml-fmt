@@ -3,6 +3,7 @@ use common::taplo::parser::parse;
 use common::taplo::syntax::SyntaxElement;
 use indoc::indoc;
 use rstest::rstest;
+use pretty_assertions::assert_eq;
 
 use crate::project::fix;
 use common::table::Tables;
@@ -538,6 +539,47 @@ fn evaluate(
         (3, 9),
         true,
         &[],
+)]
+
+#[case::project_entry_points_no_collapse(
+        indoc ! {r#"
+    [project]
+    entry-points.tox = {"tox-uv" = "tox_uv.plugin", "tox" = "tox.plugin"}
+    [project.scripts]
+    virtualenv = "virtualenv.__main__:run_with_catch"
+    [project.gui-scripts]
+    hello-world = "timmins:hello_world"
+    [project.entry-points."virtualenv.activate"]
+    bash = "virtualenv.activation.bash:BashActivator"
+    [project.entry-points]
+    B = {base = "vehicle_crash_prevention.main:VehicleBase"}
+    [project.entry-points."no_crashes.vehicle"]
+    base = "vehicle_crash_prevention.main:VehicleBase"
+    [project.entry-points.plugin-namespace]
+    plugin-name1 = "pkg.subpkg1"
+    plugin-name2 = "pkg.subpkg2:func"
+    "#},
+        indoc ! {r#"
+    [project]
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+    ]
+    scripts.virtualenv = "virtualenv.__main__:run_with_catch"
+    gui-scripts.hello-world = "timmins:hello_world"
+    [project.entry-points]
+    B.base = "vehicle_crash_prevention.main:VehicleBase"
+    "no_crashes.vehicle".base = "vehicle_crash_prevention.main:VehicleBase"
+    plugin-namespace.plugin-name1 = "pkg.subpkg1"
+    plugin-namespace.plugin-name2 = "pkg.subpkg2:func"
+    tox.tox = "tox.plugin"
+    tox.tox-uv = "tox_uv.plugin"
+    "virtualenv.activate".bash = "virtualenv.activation.bash:BashActivator"
+    "#},
+        true,
+        (3, 9),
+        true,
+        &[vec!["project".to_string(), "entry-points".to_string()]],
 )]
 #[case::project_preserve_implementation_classifiers(
         indoc ! {r#"

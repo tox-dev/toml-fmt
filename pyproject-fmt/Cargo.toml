@@ -25,3 +25,4 @@ default = ["extension-module"]
 [dev-dependencies]
 rstest = "0.26.1" # parametrized tests
 indoc = { version = "2.0.6" }   # dedented test cases for literal strings
+pretty_assertions = { version = "1.4.1", features = ["alloc"] }

@@ -300,10 +300,10 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str, exclude: &[Vec<Strin
 
     // remove `name` from `exclude`s (and skip if `name` is not a prefix)
     let prefix = parse_ident(name).expect("could not parse prefix");
-    let exclude: BTreeSet<_> = exclude.into_iter().filter_map(|id| {
-        let (prefix_2, rest) = id.split_at(prefix.len()+1);
-        (prefix == prefix_2).then_some(rest)
-    }).collect();
+    let exclude: BTreeSet<_> = exclude.into_iter().filter_map(|id|
+        id.strip_prefix(prefix.as_slice())
+    ).collect();
+    dbg!(&exclude);
 
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
     for key in sub_table_keys {
@@ -313,6 +313,10 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str, exclude: &[Vec<Strin
         }
         let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
         let sub_name = key.strip_prefix(sub_name_prefix.as_str()).unwrap();
+        let sub_path = parse_ident(sub_name).unwrap();
+        if exclude.contains(sub_path.as_slice()) {
+            continue;
+        }
         let mut header = false;
         for child in sub.iter() {
             let kind = child.kind();
@@ -362,8 +366,6 @@ pub fn parse_ident(ident: &str) -> Result<Vec<String>, String> {
         return Err(format!("semantic error: {e}"));
     }
 
-    dbg!(&root.errors());
-
     // We cannot use `.into_syntax()` since only the DOM transformation
     // allows accessing ident `.value()`s without quotes.
     let mut node = root;
@@ -380,4 +382,8 @@ pub fn parse_ident(ident: &str) -> Result<Vec<String>, String> {
         node = next_node.clone();
     }
     Ok(parts)
+}
+
+fn prefixes<T>(slice: &[T]) -> impl Iterator<Item = &[T]> + DoubleEndedIterator {
+    (0..=slice.len()).map(|len| &slice[..len])
 }
