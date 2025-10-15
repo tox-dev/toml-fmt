@@ -9,11 +9,11 @@ use rstest::{fixture, rstest};
 use crate::ruff::fix;
 use common::table::Tables;
 
-fn evaluate(start: &str) -> String {
+fn evaluate(start: &str, do_not_collapse: &[Vec<String>]) -> String {
     let root_ast = parse(start).into_syntax().clone_for_update();
     let count = root_ast.children_with_tokens().count();
     let mut tables = Tables::from_ast(&root_ast);
-    fix(&mut tables);
+    fix(&mut tables, do_not_collapse);
     let entries = tables
         .table_set
         .iter()
@@ -37,7 +37,7 @@ fn data() -> PathBuf {
 #[rstest]
 fn test_order_ruff(data: PathBuf) {
     let start = read_to_string(data.join("ruff-order.start.toml")).unwrap();
-    let got = evaluate(start.as_str());
+    let got = evaluate(start.as_str(), &[]);
     let expected = read_to_string(data.join("ruff-order.expected.toml")).unwrap();
     assert_eq!(got, expected);
 }
@@ -45,7 +45,7 @@ fn test_order_ruff(data: PathBuf) {
 #[rstest]
 fn test_ruff_comment_21(data: PathBuf) {
     let start = read_to_string(data.join("ruff-21.start.toml")).unwrap();
-    let got = evaluate(start.as_str());
+    let got = evaluate(start.as_str(), &[]);
     let expected = read_to_string(data.join("ruff-21.expected.toml")).unwrap();
     assert_eq!(got, expected);
 }

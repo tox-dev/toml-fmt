@@ -71,7 +71,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.generate_python_version_classifiers,
         opt.do_not_collapse.as_slice(),
     );
-    dependency_groups::fix(&mut tables, opt.keep_full_version, opt.do_not_collapse.as_slice());
+    dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables, opt.do_not_collapse.as_slice());
     reorder_tables(&root_ast, &tables);
 
