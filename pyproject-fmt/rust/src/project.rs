@@ -19,6 +19,7 @@ pub fn fix(
     keep_full_version: bool,
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
 ) {
     collapse_sub_tables(tables, "project");
     let table_element = tables.get("project");
@@ -92,7 +93,13 @@ pub fn fix(
         _ => {}
     });
 
-    generate_classifiers(table, max_supported_python, min_supported_python);
+    generate_classifiers(
+        table,
+        max_supported_python,
+        min_supported_python,
+        generate_python_version_classifiers,
+    );
+
     for_entries(table, &mut |key, entry| {
         if key.as_str() == "classifiers" {
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
@@ -186,30 +193,84 @@ fn generate_classifiers(
     table: &mut RefMut<Vec<SyntaxElement>>,
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
 ) {
-    let (min, max, omit, classifiers) =
-        get_python_requires_with_classifier(table, max_supported_python, min_supported_python);
-    match classifiers {
-        None => {
-            let entry = make_array("classifiers");
-            generate_classifiers_to_entry(entry.as_node().unwrap(), min, max, &omit, &HashSet::new());
-            table.push(entry);
-        }
-        Some(c) => {
-            let mut key_value = String::new();
-            for table_row in table.iter() {
-                if table_row.kind() == ENTRY {
-                    for entry in table_row.as_node().unwrap().children_with_tokens() {
-                        if entry.kind() == KEY {
-                            key_value = entry.as_node().unwrap().text().to_string().trim().to_string();
-                        } else if entry.kind() == VALUE && key_value == "classifiers" {
-                            generate_classifiers_to_entry(table_row.as_node().unwrap(), min, max, &omit, &c);
+    if generate_python_version_classifiers {
+        let (min, max, omit, classifiers) =
+            get_python_requires_with_classifier(table, max_supported_python, min_supported_python);
+        match classifiers {
+            None => {
+                let entry = make_array("classifiers");
+                generate_classifiers_to_entry(entry.as_node().unwrap(), min, max, &omit, &HashSet::new());
+                table.push(entry);
+            }
+            Some(c) => {
+                let mut key_value = String::new();
+                for table_row in table.iter() {
+                    if table_row.kind() == ENTRY {
+                        for entry in table_row.as_node().unwrap().children_with_tokens() {
+                            if entry.kind() == KEY {
+                                key_value = entry.as_node().unwrap().text().to_string().trim().to_string();
+                            } else if entry.kind() == VALUE && key_value == "classifiers" {
+                                generate_classifiers_to_entry(table_row.as_node().unwrap(), min, max, &omit, &c);
+                            }
                         }
                     }
                 }
             }
-        }
-    };
+        };
+    } else {
+        for_entries(table, &mut |key, entry| {
+            if key.as_str() == "classifiers" {
+                for child in entry.children_with_tokens() {
+                    if child.kind() == ARRAY {
+                        let orig = child.as_node().unwrap().children_with_tokens().collect::<Vec<_>>();
+                        let mut new_children: Vec<SyntaxElement> = Vec::new();
+                        let mut at = 0;
+                        while at < orig.len() {
+                            let node = &orig[at];
+                            if node.kind() == VALUE {
+                                // determine if this VALUE is a Python classifier
+                                let mut is_python = false;
+                                for inner in node.as_node().unwrap().children_with_tokens() {
+                                    if inner.kind() == STRING {
+                                        let txt = load_text(inner.as_token().unwrap().text(), STRING);
+                                        if txt.starts_with("Programming Language :: Python :: 3")
+                                            || txt.starts_with("Programming Language :: Python :: Implementation")
+                                        {
+                                            is_python = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if is_python {
+                                    // skip this VALUE and also skip following comma/newline if present
+                                    at += 1;
+                                    if at < orig.len() && orig[at].kind() == COMMA {
+                                        at += 1;
+                                    }
+                                    if at < orig.len() && orig[at].kind() == NEWLINE {
+                                        at += 1;
+                                    }
+                                    continue;
+                                } else {
+                                    new_children.push(node.clone());
+                                    at += 1;
+                                }
+                            } else {
+                                new_children.push(node.clone());
+                                at += 1;
+                            }
+                        }
+                        child
+                            .as_node()
+                            .unwrap()
+                            .splice_children(0..child.as_node().unwrap().children_with_tokens().count(), new_children);
+                    }
+                }
+            }
+        });
+    }
 }
 
 fn generate_classifiers_to_entry(

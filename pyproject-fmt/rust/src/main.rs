@@ -24,18 +24,20 @@ pub struct Settings {
     keep_full_version: bool,
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
 }
 
 #[pymethods]
 impl Settings {
     #[new]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python ))]
+    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers ))]
     const fn new(
         column_width: usize,
         indent: usize,
         keep_full_version: bool,
         max_supported_python: (u8, u8),
         min_supported_python: (u8, u8),
+        generate_python_version_classifiers: bool,
     ) -> Self {
         Self {
             column_width,
@@ -43,6 +45,7 @@ impl Settings {
             keep_full_version,
             max_supported_python,
             min_supported_python,
+            generate_python_version_classifiers,
         }
     }
 }
@@ -60,6 +63,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.keep_full_version,
         opt.max_supported_python,
         opt.min_supported_python,
+        opt.generate_python_version_classifiers,
     );
     dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables);

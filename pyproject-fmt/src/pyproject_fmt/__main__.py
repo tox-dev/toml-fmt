@@ -18,6 +18,7 @@ class PyProjectFmtNamespace(FmtNamespace):
 
     keep_full_version: bool
     max_supported_python: tuple[int, int]
+    generate_python_version_classifiers: bool
 
 
 class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
@@ -45,6 +46,13 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """
         msg = "keep full dependency versions - do not remove redundant .0 from versions"
         parser.add_argument("--keep-full-version", action="store_true", help=msg)
+        msg = "do not generate Python version classifiers based on requires-python"
+        parser.add_argument(
+            "--no-generate-python-version-classifiers",
+            action="store_false",
+            dest="generate_python_version_classifiers",
+            help=msg,
+        )
 
         def _version_argument(got: str) -> tuple[int, int]:
             parts = got.split(".")
@@ -84,6 +92,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             keep_full_version=opt.keep_full_version,
             max_supported_python=opt.max_supported_python,
             min_supported_python=(3, 10),  # default for when the user didn't specify via requires-python
+            generate_python_version_classifiers=opt.generate_python_version_classifiers,
         )
         return format_toml(text, settings)
 

@@ -190,6 +190,7 @@ fn test_format_toml(
         keep_full_version,
         max_supported_python,
         min_supported_python: (3, 9),
+        generate_python_version_classifiers: true,
     };
     let got = format_toml(start, &settings);
     assert_eq!(got, expected);
@@ -214,6 +215,7 @@ fn test_issue_24(data: PathBuf) {
         keep_full_version: false,
         max_supported_python: (3, 9),
         min_supported_python: (3, 9),
+        generate_python_version_classifiers: true,
     };
     let got = format_toml(start.as_str(), &settings);
     let expected = read_to_string(data.join("ruff-order.expected.toml")).unwrap();
@@ -243,6 +245,7 @@ fn test_column_width() {
         keep_full_version: false,
         max_supported_python: (3, 13),
         min_supported_python: (3, 13),
+        generate_python_version_classifiers: true,
     };
     let got = format_toml(start, &settings);
     let expected = indoc! {r#"
