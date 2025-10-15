@@ -20,8 +20,9 @@ pub fn fix(
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
+    do_not_collapse: &[Vec<String>],
 ) {
-    collapse_sub_tables(tables, "project");
+    collapse_sub_tables(tables, "project", do_not_collapse);
     let table_element = tables.get("project");
     if table_element.is_none() {
         return;

@@ -4,8 +4,8 @@ use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables
 use lexical_sort::natural_lexical_cmp;
 
 #[allow(clippy::too_many_lines)]
-pub fn fix(tables: &mut Tables) {
-    collapse_sub_tables(tables, "tool.ruff");
+pub fn fix(tables: &mut Tables, do_not_collapse: &[Vec<String>]) {
+    collapse_sub_tables(tables, "tool.ruff", do_not_collapse);
     let table_element = tables.get("tool.ruff");
     if table_element.is_none() {
         return;

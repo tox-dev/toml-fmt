@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, run  # noqa: PLC2701
 
-from pyproject_fmt._lib import Settings, format_toml
+from pyproject_fmt._lib import Settings, format_toml, parse_ident
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -19,6 +19,7 @@ class PyProjectFmtNamespace(FmtNamespace):
     keep_full_version: bool
     max_supported_python: tuple[int, int]
     generate_python_version_classifiers: bool
+    do_not_collapse: list[tuple[str, ...]]
 
 
 class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
@@ -73,6 +74,15 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             help="latest Python version the project supports (e.g. 3.14)",
         )
 
+        parser.add_argument(
+            "--do-not-collapse",
+            metavar="table.name",
+            type=parse_ident,
+            default=[],
+            action="append",
+            help="do not collapse the given table.name (can be specified multiple times)",
+        )
+
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
         """:return: path where config overrides live"""
@@ -93,6 +103,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             max_supported_python=opt.max_supported_python,
             min_supported_python=(3, 10),  # default for when the user didn't specify via requires-python
             generate_python_version_classifiers=opt.generate_python_version_classifiers,
+            do_not_collapse=opt.do_not_collapse,
         )
         return format_toml(text, settings)
 

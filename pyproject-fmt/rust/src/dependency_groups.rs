@@ -7,8 +7,8 @@ use common::util::iter;
 use lexical_sort::natural_lexical_cmp;
 use std::cmp::Ordering;
 
-pub fn fix(tables: &mut Tables, keep_full_version: bool) {
-    collapse_sub_tables(tables, "dependency-groups");
+pub fn fix(tables: &mut Tables, keep_full_version: bool, do_not_collapse: &[Vec<String>]) {
+    collapse_sub_tables(tables, "dependency-groups", do_not_collapse);
     let table_element = tables.get("dependency-groups");
     if table_element.is_none() {
         return;

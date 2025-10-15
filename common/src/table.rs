@@ -279,7 +279,7 @@ pub fn find_key(table: &SyntaxNode, key: &str) -> Option<SyntaxNode> {
     None
 }
 
-pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
+pub fn collapse_sub_tables(tables: &mut Tables, name: &str, exclude: &[Vec<String>]) {
     let h2p = tables.header_to_pos.clone();
     let sub_name_prefix = format!("{name}.");
     let sub_table_keys: Vec<&String> = h2p.keys().filter(|s| s.starts_with(sub_name_prefix.as_str())).collect();
