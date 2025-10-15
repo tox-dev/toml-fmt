@@ -7,11 +7,22 @@ use rstest::rstest;
 use crate::project::fix;
 use common::table::Tables;
 
-fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)) -> String {
+fn evaluate(
+    start: &str,
+    keep_full_version: bool,
+    max_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
+) -> String {
     let root_ast = parse(start).into_syntax().clone_for_update();
     let count = root_ast.children_with_tokens().count();
     let mut tables = Tables::from_ast(&root_ast);
-    fix(&mut tables, keep_full_version, max_supported_python, (3, 9));
+    fix(
+        &mut tables,
+        keep_full_version,
+        max_supported_python,
+        (3, 9),
+        generate_python_version_classifiers,
+    );
     let entries = tables
         .table_set
         .iter()
@@ -31,6 +42,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
         "\n",
         false,
         (3, 9),
+        true,
 )]
 #[case::project_requires_no_keep(
         indoc ! {r#"
@@ -50,6 +62,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         false,
         (3, 9),
+        true,
 )]
 #[case::project_requires_keep(
         indoc ! {r#"
@@ -69,6 +82,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_requires_ge(
         indoc ! {r#"
@@ -106,6 +120,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 10),
+        true,
 )]
 #[case::project_requires_gt(
         indoc ! {r#"
@@ -122,6 +137,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_requires_eq(
         indoc ! {r#"
@@ -138,6 +154,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_sort_keywords(
         indoc ! {r#"
@@ -159,6 +176,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_sort_dynamic(
         indoc ! {r#"
@@ -182,6 +200,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_name_norm(
         indoc ! {r#"
@@ -198,6 +217,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_name_literal(
         indoc ! {r"
@@ -214,6 +234,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_requires_gt_old(
         indoc ! {r#"
@@ -231,6 +252,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_requires_range(
         indoc ! {r#"
@@ -252,6 +274,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_requires_high_range(
         indoc ! {r#"
@@ -270,6 +293,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_requires_range_neq(
         indoc ! {r#"
@@ -287,6 +311,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 13),
+        true,
 )]
 #[case::project_description_whitespace(
         "[project]\ndescription = ' A  magic stuff \t is great\t\t.\r\n  Like  really  . Works on .rst and .NET :)\t\'\nrequires-python = '==3.12'",
@@ -301,6 +326,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 13),
+        true,
 )]
 #[case::project_description_multiline(
         indoc ! {r#"
@@ -322,6 +348,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 13),
+        true,
 )]
 #[case::project_dependencies_with_double_quotes(
         indoc ! {r#"
@@ -346,6 +373,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 13),
+        true,
 )]
 #[case::project_platform_dependencies(
         indoc ! {r#"
@@ -372,6 +400,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 13),
+        true,
 )]
 #[case::project_opt_inline_dependencies(
         indoc ! {r#"
@@ -402,6 +431,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 13),
+        true,
 )]
 #[case::project_opt_dependencies(
         indoc ! {r#"
@@ -426,6 +456,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_scripts_collapse(
         indoc ! {r#"
@@ -444,6 +475,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_entry_points_collapse(
         indoc ! {r#"
@@ -481,6 +513,7 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 9),
+        true,
 )]
 #[case::project_preserve_implementation_classifiers(
         indoc ! {r#"
@@ -509,12 +542,104 @@ fn evaluate(start: &str, keep_full_version: bool, max_supported_python: (u8, u8)
     "#},
         true,
         (3, 10),
+        true,
+)]
+#[case::remove_existing_python_classifiers(
+    indoc! {r#"
+    [project]
+    classifiers = [
+      "Topic :: Software Development :: Libraries :: Python Modules",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3.10",
+    ]
+    dependencies = ["a>=1.0.0"]
+    "#},
+    indoc! {r#"
+    [project]
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Topic :: Software Development :: Libraries :: Python Modules",
+    ]
+    dependencies = [
+      "a>=1.0.0",
+    ]
+    "#},
+    true,
+    (3, 10),
+    false,
+)]
+#[case::missing_classifiers(
+    indoc! {r#"
+    [project]
+    dependencies = ["a>=1.0.0"]
+    "#},
+    indoc! {r#"
+    [project]
+    dependencies = [
+      "a>=1.0.0",
+    ]
+    "#},
+    true,
+    (3, 10),
+    false,
+)]
+#[case::empty_classifiers(
+    indoc! {r#"
+    [project]
+    classifiers = []
+    dependencies = ["a>=1.0.0"]
+    "#},
+    indoc! {r#"
+    [project]
+    classifiers = [
+    ]
+    dependencies = [
+      "a>=1.0.0",
+    ]
+    "#},
+    true,
+    (3, 10),
+    false,
+)]
+#[case::preserve_non_python_classifiers(
+    indoc! {r#"
+    [project]
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Topic :: Software Development :: Libraries :: Python Modules"
+    ]
+    dependencies = ["a>=1.0.0"]
+    "#},
+    indoc! {r#"
+    [project]
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Topic :: Software Development :: Libraries :: Python Modules",
+    ]
+    dependencies = [
+      "a>=1.0.0",
+    ]
+    "#},
+    true,
+    (3, 10),
+    false,
 )]
 fn test_format_project(
     #[case] start: &str,
     #[case] expected: &str,
     #[case] keep_full_version: bool,
     #[case] max_supported_python: (u8, u8),
+    #[case] generate_python_version_classifiers: bool,
 ) {
-    assert_eq!(evaluate(start, keep_full_version, max_supported_python), expected);
+    assert_eq!(
+        evaluate(
+            start,
+            keep_full_version,
+            max_supported_python,
+            generate_python_version_classifiers
+        ),
+        expected
+    );
 }

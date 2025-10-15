@@ -2,8 +2,8 @@
 select = ["ALL"]
 
 ignore = [
-    # We do not annotate the type of 'self'.
-    "ANN101",
+    # Missing type annotation for **{name}.
+    "ANN003",
 ]
 
 # Do not automatically remove commented out code.

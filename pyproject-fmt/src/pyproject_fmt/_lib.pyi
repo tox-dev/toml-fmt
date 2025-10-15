@@ -7,6 +7,7 @@ class Settings:
         keep_full_version: bool,
         max_supported_python: tuple[int, int],
         min_supported_python: tuple[int, int],
+        generate_python_version_classifiers: bool,
     ) -> None: ...
     @property
     def column_width(self) -> int: ...
