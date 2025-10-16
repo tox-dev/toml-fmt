@@ -7,3 +7,5 @@
 [![PyPI - License](https://img.shields.io/pypi/l/tox-toml-fmt?style=flat-square)](https://opensource.org/licenses/MIT)
 [![Build tox-toml-fmt](https://github.com/tox-dev/toml-fmt/actions/workflows/tox_toml_fmt_build.yaml/badge.svg)](https://github.com/tox-dev/toml-fmt/actions/workflows/tox_toml_fmt_build.yaml)
 [![Test tox-toml-fmt](https://github.com/tox-dev/toml-fmt/actions/workflows/tox_toml_fmt_test.yaml/badge.svg)](https://github.com/tox-dev/toml-fmt/actions/workflows/tox_toml_fmt_test.yaml)
+[![Documentation
+status](https://readthedocs.org/projects/pyproject-fmt/badge/?version=latest)](https://pyproject-fmt.readthedocs.io/en/latest/)
