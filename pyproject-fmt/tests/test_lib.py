@@ -4,7 +4,7 @@ from textwrap import dedent
 
 import pytest
 
-from pyproject_fmt._lib import Settings, format_toml
+from pyproject_fmt._lib import Settings, format_toml, parse_ident
 
 
 @pytest.mark.parametrize(
@@ -76,6 +76,32 @@ def test_format_toml(start: str, expected: str) -> None:
         min_supported_python=(3, 7),
         max_supported_python=(3, 8),
         generate_python_version_classifiers=True,
+        do_not_collapse=[],
     )
     res = format_toml(dedent(start), settings)
     assert res == dedent(expected)
+
+
+@pytest.mark.parametrize(
+    ("arg", "expected"),
+    [
+        ("a.b", ("a", "b")),
+        ("a.'b.c'", ("a", "b.c")),
+    ],
+)
+def test_parse_idents(arg: str, expected: tuple[str, ...]) -> None:
+    assert parse_ident(arg) == expected
+
+
+@pytest.mark.parametrize(
+    ("arg", "exc_cls", "msg_pat"),
+    [
+        (None, TypeError, r"None"),
+        ("1 b", ValueError, r"syntax error"),
+        ("[]", ValueError, r"syntax error"),
+        ("x.", ValueError, r"syntax error"),
+    ],
+)
+def test_parse_idents_errors(arg: object, exc_cls: type[Exception], msg_pat: str) -> None:
+    with pytest.raises(exc_cls, match=msg_pat):
+        parse_ident(arg)

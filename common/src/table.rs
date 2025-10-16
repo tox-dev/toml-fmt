@@ -1,11 +1,12 @@
 use std::cell::{RefCell, RefMut};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeSet};
 use std::iter::zip;
 use std::ops::Index;
 
 use taplo::syntax::SyntaxKind::{ENTRY, IDENT, KEY, NEWLINE, TABLE_ARRAY_HEADER, TABLE_HEADER, VALUE};
 use taplo::syntax::{SyntaxElement, SyntaxNode};
 use taplo::HashSet;
+use taplo::{dom::node::DomNode as _, parser::parse};
 
 use crate::create::{make_empty_newline, make_key, make_newline, make_table_entry};
 use crate::string::load_text;
@@ -279,7 +280,7 @@ pub fn find_key(table: &SyntaxNode, key: &str) -> Option<SyntaxNode> {
     None
 }
 
-pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
+pub fn collapse_sub_tables(tables: &mut Tables, name: &str, exclude: &[Vec<String>]) {
     let h2p = tables.header_to_pos.clone();
     let sub_name_prefix = format!("{name}.");
     let sub_table_keys: Vec<&String> = h2p.keys().filter(|s| s.starts_with(sub_name_prefix.as_str())).collect();
@@ -296,6 +297,14 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
     if main_positions.len() != 1 {
         return;
     }
+
+    // remove `name` from `exclude`s (and skip if `name` is not a prefix)
+    let prefix = parse_ident(name).expect("could not parse prefix");
+    let exclude: BTreeSet<_> = exclude.into_iter().filter_map(|id|
+        id.strip_prefix(prefix.as_slice())
+    ).collect();
+    dbg!(&exclude);
+
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
     for key in sub_table_keys {
         let sub_positions = tables.header_to_pos[key].clone();
@@ -304,6 +313,10 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
         }
         let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
         let sub_name = key.strip_prefix(sub_name_prefix.as_str()).unwrap();
+        let sub_path = parse_ident(sub_name).unwrap();
+        if exclude.contains(sub_path.as_slice()) {
+            continue;
+        }
         let mut header = false;
         for child in sub.iter() {
             let kind = child.kind();
@@ -339,4 +352,38 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
         }
         sub.clear();
     }
+}
+
+pub fn parse_ident(ident: &str) -> Result<Vec<String>, String> {
+    let parsed = parse(&format!("{ident} = 1"));
+    if let Some(e) = parsed.errors.first() {
+        return Err(format!("syntax error: {e}"));
+    }
+
+    let root = parsed.into_dom();
+    let errors = root.errors();
+    if let Some(e) = errors.get().first() {
+        return Err(format!("semantic error: {e}"));
+    }
+
+    // We cannot use `.into_syntax()` since only the DOM transformation
+    // allows accessing ident `.value()`s without quotes.
+    let mut node = root;
+    let mut parts = vec![];
+    while let Ok(table) = node.try_into_table() {
+        let entries = table.entries().get();
+        if entries.len() != 1 {
+            return Err("expected exactly one entry".to_string());
+        }
+        let mut it = entries.iter();
+        let (key, next_node) = it.next().unwrap(); // checked if len == 1 above
+
+        parts.push(key.value().to_string());
+        node = next_node.clone();
+    }
+    Ok(parts)
+}
+
+fn prefixes<T>(slice: &[T]) -> impl Iterator<Item = &[T]> + DoubleEndedIterator {
+    (0..=slice.len()).map(|len| &slice[..len])
 }
