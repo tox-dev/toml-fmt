@@ -17,9 +17,9 @@ Use
 Via ``CLI``
 ~~~~~~~~~~~
 
-:pypi:`tox-toml-fmt` is a CLI tool that needs a Python interpreter (version 3.7 or higher) to run. We recommend either
-:pypi:`pipx` or :pypi:`uv` to install tox into an isolated environment. This has the added benefit that later you'll
-be able to upgrade tox without affecting other parts of the system. We provide method for ``pip`` too here but we
+:pypi:`tox-toml-fmt` is a CLI tool that needs a Python interpreter (version 3.10 or higher) to run. We recommend either
+:pypi:`pipx` or :pypi:`uv` to install tox-toml-fmt into an isolated environment. This has the added benefit that later you'll
+be able to upgrade tox-toml-fmt without affecting other parts of the system. We provide method for ``pip`` too here but we
 discourage that path if you can:
 
 .. tab:: uv
