@@ -13,6 +13,7 @@ use lexical_sort::natural_lexical_cmp;
 use regex::Regex;
 use std::cell::RefMut;
 use std::cmp::Ordering;
+use std::sync::LazyLock;
 
 pub fn fix(
     tables: &mut Tables,
@@ -27,7 +28,7 @@ pub fn fix(
         return;
     }
     let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
-    let re = Regex::new(r" \.(\W)").unwrap();
+    static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r" \.(\W)").unwrap());
     expand_entry_points_inline_tables(table);
     for_entries(table, &mut |key, entry| match key.split('.').next().unwrap() {
         "name" => {
@@ -38,7 +39,7 @@ pub fn fix(
         }
         "description" => {
             update_content(entry, |s| {
-                re.replace_all(
+                RE.replace_all(
                     &s.trim()
                         .lines()
                         .map(|part| {
@@ -88,8 +89,8 @@ pub fn fix(
         }
         "import-names" | "import-namespaces" => {
             transform(entry, &|s| {
-                let re = Regex::new(r"\s*;\s*").unwrap();
-                re.replace_all(s, "; ").trim_end().to_string()
+                static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s*;\s*").unwrap());
+                RE.replace_all(s, "; ").trim_end().to_string()
             });
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
@@ -398,12 +399,13 @@ fn get_python_requires_with_classifier(
 
     for_entries(table, &mut |key, entry| {
         if key == "requires-python" {
-            let re = Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap();
+            static RE: LazyLock<Regex> =
+                LazyLock::new(|| Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap());
             for child in entry.children_with_tokens() {
                 if child.kind() == STRING {
                     let found_str_value = load_text(child.as_token().unwrap().text(), STRING);
                     for part in found_str_value.split(',') {
-                        if let Some(caps) = re.captures(part) {
+                        if let Some(caps) = RE.captures(part) {
                             let minor = caps["minor"].parse::<u8>().unwrap();
                             match &caps["op"] {
                                 "==" => {
