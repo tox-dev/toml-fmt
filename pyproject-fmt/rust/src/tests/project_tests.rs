@@ -626,6 +626,31 @@ fn evaluate(
     (3, 10),
     false,
 )]
+#[case::import_names_and_namespaces(
+    indoc! {r#"
+    [project]
+    name = "hi"
+    import-namespaces = ["ddd"]
+    import-names = ["bbb;private", "aaa", "ccC ; private"]
+    version = "1.0.0"
+    "#},
+    indoc! {r#"
+    [project]
+    name = "hi"
+    version = "1.0.0"
+    import-names = [
+      "aaa",
+      "bbb; private",
+      "ccC; private",
+    ]
+    import-namespaces = [
+      "ddd",
+    ]
+    "#},
+    true,
+    (3, 14),
+    false,
+)]
 fn test_format_project(
     #[case] start: &str,
     #[case] expected: &str,
