@@ -86,6 +86,13 @@ pub fn fix(
             transform(entry, &|s| String::from(s));
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
+        "import-names" | "import-namespaces" => {
+            transform(entry, &|s| {
+                let re = Regex::new(r"\s*;\s*").unwrap();
+                re.replace_all(s, "; ").trim_end().to_string()
+            });
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+        }
         "classifiers" => {
             transform(entry, &|s| String::from(s));
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
@@ -111,6 +118,8 @@ pub fn fix(
             "",
             "name",
             "version",
+            "import-names",
+            "import-namespaces",
             "description",
             "readme",
             "keywords",
