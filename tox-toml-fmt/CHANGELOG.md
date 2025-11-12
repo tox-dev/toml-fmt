@@ -1,3 +1,10 @@
+<a id="1.2.1"></a>
+
+## 1.2.1 - 2025-11-12
+
+- perf: only compile regexes once by [@henryiii](https://github.com/henryiii) in
+  [#$110](https://github.com/tox-dev/toml-fmt/pull/110)
+
 <a id="1.2.0"></a>
 
 ## 1.2.0 - 2025-10-08
