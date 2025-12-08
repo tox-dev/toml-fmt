@@ -2,7 +2,9 @@ use std::string::String;
 
 use common::taplo::formatter::{format_syntax, Options};
 use common::taplo::parser::parse;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyModule, PyModuleMethods};
+use pyo3::types::PyTuple;
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
 
 use crate::global::reorder_tables;
@@ -25,12 +27,13 @@ pub struct Settings {
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
+    do_not_collapse: Vec<Vec<String>>,
 }
 
 #[pymethods]
 impl Settings {
     #[new]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers ))]
+    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, do_not_collapse))]
     const fn new(
         column_width: usize,
         indent: usize,
@@ -38,6 +41,7 @@ impl Settings {
         max_supported_python: (u8, u8),
         min_supported_python: (u8, u8),
         generate_python_version_classifiers: bool,
+        do_not_collapse: Vec<Vec<String>>,
     ) -> Self {
         Self {
             column_width,
@@ -46,6 +50,7 @@ impl Settings {
             max_supported_python,
             min_supported_python,
             generate_python_version_classifiers,
+            do_not_collapse,
         }
     }
 }
@@ -64,9 +69,10 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.max_supported_python,
         opt.min_supported_python,
         opt.generate_python_version_classifiers,
+        opt.do_not_collapse.as_slice(),
     );
     dependency_groups::fix(&mut tables, opt.keep_full_version);
-    ruff::fix(&mut tables);
+    ruff::fix(&mut tables, opt.do_not_collapse.as_slice());
     reorder_tables(&root_ast, &tables);
 
     let options = Options {
@@ -94,6 +100,16 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     format_syntax(root_ast, options)
 }
 
+/// Parse a nested toml identifier into a tuple of idents
+///
+/// >>> parse_ident('a."b.c"')
+/// ('a', 'b.c')
+#[pyfunction]
+pub fn parse_ident<'py>(py: pyo3::Python<'py>, ident: &str) -> PyResult<Bound<'py, PyTuple>> {
+    let parts = common::table::parse_ident(ident).map_err(|e| PyValueError::new_err(e))?;
+    PyTuple::new(py, parts)
+}
+
 /// # Errors
 ///
 /// Will return `PyErr` if an error is raised during formatting.
@@ -101,6 +117,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(format_toml, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_ident, m)?)?;
     m.add_class::<Settings>()?;
     Ok(())
 }
