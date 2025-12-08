@@ -60,7 +60,9 @@ See :gh:`pre-commit/pre-commit` for instructions, sample ``.pre-commit-config.ya
 .. code-block:: yaml
 
     - repo: https://github.com/tox-dev/pyproject-fmt
-      rev: "v2.5.0"
+      # Use the sha / tag you want to point at
+      # or use `pre-commit autoupdate` to get the latest version
+      rev: ""
       hooks:
         - id: pyproject-fmt
 
