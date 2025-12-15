@@ -62,7 +62,7 @@ jobs:
       - name: Show changes to the repository
         run: git diff HEAD -u
       - name: Store the patched distribution
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: source
           path: .
@@ -98,7 +98,7 @@ jobs:
             target: ppc64le
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: source
       - name: Build wheels
@@ -108,7 +108,7 @@ jobs:
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
       - name: Upload wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
@@ -126,7 +126,7 @@ jobs:
             target: x86
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: source
       - name: Set up Python 3.10
@@ -140,7 +140,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
       - name: Upload wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: dist
@@ -158,7 +158,7 @@ jobs:
             target: aarch64
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: source
       - name: Build wheels
@@ -167,7 +167,7 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter "3.10 pypy3.10" --target-dir target
       - name: Upload wheels
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
@@ -177,7 +177,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download the code
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: source
       - name: Build sdist
@@ -187,7 +187,7 @@ jobs:
           command: sdist
           args: -m tox-toml-fmt/Cargo.toml --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: wheels-sdist
           path: dist
@@ -206,7 +206,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download source
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: source
           path: .
@@ -220,7 +220,7 @@ jobs:
       - name: Tag release
         run: git tag tox-toml-fmt/${{needs.bump.outputs.version}}
       - name: Download wheels
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: wheels-*
           path: dist
