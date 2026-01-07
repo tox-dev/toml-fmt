@@ -37,6 +37,8 @@ fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str
 #[case::post_dev_local("pkg>=2.7.0.post2.dev3+abc", "pkg>=2.7.0.post2.dev3+abc", false)]
 #[case::all_segments("pkg>=2.7.0rc1.post2.dev3+abc", "pkg>=2.7.0rc1.post2.dev3+abc", false)]
 #[case::pre_release_keep("pkg>=2.7.0rc1", "pkg>=2.7.0rc1", true)]
+#[case::parentheses("pkg (>=0.5.5,<0.6.1)", "pkg>=0.5.5,<0.6.1", false)]
+#[case::parentheses_extras("pkg [extra] (>=0.5.5,<0.6.1)", "pkg[extra]>=0.5.5,<0.6.1", false)]
 fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     let got = Requirement::new(start)
         .unwrap()
