@@ -45,7 +45,7 @@ impl Requirement {
             (name, extras)
         } else {
             // No extras, but need to find where version specifiers start
-            let name_end = req_part.find(|c: char| "=!<>~".contains(c)).unwrap_or(req_part.len());
+            let name_end = req_part.find(|c: char| "=!<>~(".contains(c)).unwrap_or(req_part.len());
             let name = &req_part[..name_end];
             (name, vec![])
         };
@@ -55,7 +55,8 @@ impl Requirement {
             let url = &raw_req[url_idx..];
             Some(VersionOrUrl::Url(url.trim().to_string()))
         } else if let Some(specs_start) = req_part.find(|c: char| "=!<>~".contains(c)) {
-            let specs = &req_part[specs_start..];
+            let specs_end = req_part.find(|c: char| ")".contains(c)).unwrap_or(req_part.len());
+            let specs = &req_part[specs_start..specs_end];
             let mut parsed = Vec::new();
             for spec in specs.split(',') {
                 match VersionOp::new(spec) {

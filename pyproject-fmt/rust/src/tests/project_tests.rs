@@ -375,6 +375,25 @@ fn evaluate(
         (3, 13),
         true,
 )]
+#[case::project_dependencies_with_version_in_parentheses(
+        indoc ! {r#"
+    [project]
+    dependencies = [
+        "sqlparse (>=0.5.5,<0.6.0)",
+   ]
+    requires-python = "==3.12"
+    "#},
+        indoc ! {r#"
+    [project]
+    dependencies = [
+      "sqlparse>=0.5.5,<0.6.0",
+    ]
+    requires-python = "==3.12"
+    "#},
+        true,
+        (3, 13),
+        false,
+)]
 #[case::project_platform_dependencies(
         indoc ! {r#"
     [project]
