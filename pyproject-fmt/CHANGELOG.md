@@ -1,3 +1,10 @@
+<a id="2.11.1"></a>
+
+## 2.11.1 - 2026-01-07
+
+- Fix parsing of versions in parentheses by [@jamesbursa](https://github.com/jamesbursa) in
+  [#$122](https://github.com/tox-dev/toml-fmt/pull/122)
+
 <a id="2.11.0"></a>
 
 ## 2.11.0 - 2025-10-15
