@@ -1,6 +1,6 @@
 [package]
 name = "tox-toml-fmt"
-version = "1.2.1"
+version = "1.2.2"
 description = "Format pyproject.toml files"
 repository = "https://github.com/tox-dev/tox-toml-fmt"
 readme = "README.md"

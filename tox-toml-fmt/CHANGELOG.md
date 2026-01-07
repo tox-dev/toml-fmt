@@ -1,3 +1,9 @@
+<a id="1.2.2"></a>
+
+## 1.2.2 - 2026-01-07
+
+- Release pyproject-fmt 2.11.1 by [@gaborbernat](https://github.com/gaborbernat)
+
 <a id="1.2.1"></a>
 
 ## 1.2.1 - 2025-11-12
