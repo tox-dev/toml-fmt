@@ -11,16 +11,67 @@ This tool aims to be an *opinionated formatter*, with similar objectives to `bla
 This means it deliberately does not support a wide variety of configuration settings. In return, you get consistency,
 predictability, and smaller diffs.
 
+Formatting Principles
+---------------------
+
+``pyproject-fmt`` applies the following formatting rules to your ``pyproject.toml`` file:
+
+**Table Organization** - Tables are reordered into a consistent structure. The ``[build-system]`` section appears
+first, followed by ``[project]``, then ``[tool]`` sections in a defined order (e.g., ``tool.ruff`` before other tools),
+and finally other tables.
+
+**Comment Preservation** - All comments in your file are preserved during formatting, including inline comments and
+comments before entries. Comments are aligned for better readability.
+
+**Array and Dictionary Formatting** - Arrays and dictionaries are automatically expanded to multiple lines when they
+exceed the configured column width. Trailing commas are added to multi-line arrays for consistency. When within the
+column limit, they remain on a single line.
+
+**Indentation and Column Width** - Your entire file is reformatted with consistent indentation and respects the
+configured column width for line breaking decisions.
+
+**Table Formatting** - Sub-tables can be formatted as either collapsed dotted keys (``project.urls.homepage``) or
+expanded table headers (``[project.urls]``). You can configure global defaults and override specific tables.
+
+Normalizations and Transformations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In addition to the formatting principles above, ``pyproject-fmt`` performs the following normalizations:
+
+**Version Specifiers** - All PEP 508 version specifiers are normalized by removing spaces around operators
+(e.g., ``package >= 1.0`` becomes ``package>=1.0``), optionally removing redundant trailing zeros (e.g., ``1.0``
+becomes ``1``) unless ``keep_full_version = true``, and validating against PEP 508 standards.
+
+**Dependency Sorting** - Dependencies are sorted by their canonical package name. In ``[build-system]`` ``requires``
+arrays, dependencies are sorted alphabetically. In ``[dependency-groups]``, dependencies are sorted with regular
+requirements first, then include-group entries.
+
+**Python Version Classifiers** - Programming Language classifiers for Python versions are automatically generated
+based on the ``requires-python`` field (which sets the lower bound, defaults to oldest supported Python), the
+``max_supported_python`` configuration option (which sets the upper bound), and can be disabled with
+``generate_python_version_classifiers = false``.
+
+**Authors and Maintainers** - Contact information can be collapsed to inline tables on the ``project.authors`` or
+``project.maintainers`` line, or expanded to full ``[[project.authors]]`` array of tables format, and this is
+controlled by ``table_format``, ``expand_tables``, and ``collapse_tables`` configuration options.
+
+**Ruff Configuration** - The ``[tool.ruff]`` section receives special formatting where sub-tables (``tool.ruff.lint``,
+``tool.ruff.format``, etc.) can be collapsed or expanded based on configuration, and lists like ``exclude``,
+``include``, and rule selections are sorted.
+
+**Entry Points** - The ``[project.entry-points]`` section is formatted as inline tables for compactness unless
+expanded by configuration.
+
 Use
 ---
 
 Via ``CLI``
 ~~~~~~~~~~~
 
-:pypi:`pyproject-fmt` is a CLI tool that needs a Python interpreter (version 3.10 or higher) to run. We recommend either
-:pypi:`pipx` or :pypi:`uv` to install pyproject-fmt into an isolated environment. This has the added benefit that later you'll
-be able to upgrade pyproject-fmt without affecting other parts of the system. We provide method for ``pip`` too here but we
-discourage that path if you can:
+:pypi:`pyproject-fmt` is a CLI tool that needs a Python interpreter (version 3.10 or higher) to run. We recommend
+either :pypi:`pipx` or :pypi:`uv` to install pyproject-fmt into an isolated environment. This has the added benefit that
+later you will be able to upgrade pyproject-fmt without affecting other parts of the system. We provide a method for
+``pip`` too here, but we discourage that path if you can:
 
 .. tab:: uv
 
@@ -69,6 +120,18 @@ See :gh:`pre-commit/pre-commit` for instructions, sample ``.pre-commit-config.ya
 Via Python
 ~~~~~~~~~~
 
+You can use ``pyproject-fmt`` as a Python module to format TOML content programmatically.
+
+.. code-block:: python
+
+    from pyproject_fmt import run
+
+    # Format a pyproject.toml file and return the exit code
+    exit_code = run(["path/to/pyproject.toml"])
+
+The ``run`` function accepts command-line arguments as a list and returns an exit code (0 for success, non-zero for
+failure).
+
 .. automodule:: pyproject_fmt
    :members:
 
@@ -86,28 +149,32 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
 
   [tool.pyproject-fmt]
 
-  # after how many column width split arrays/dicts into multiple lines, 1 will force always
+  # After how many columns split arrays/dicts into multiple lines (1 forces always)
   column_width = 120
 
-  # how many spaces use for indentation
+  # Number of spaces for indentation
   indent = 2
 
-  # if false will remove unnecessary trailing ``.0``'s from version specifiers
+  # Keep full version numbers (e.g., 1.0.0 instead of 1.0) in dependency specifiers
   keep_full_version = false
 
-  # maximum Python version to use when generating version specifiers
+  # Automatically generate Python version classifiers based on requires-python
+  # Set to false to disable automatic classifier generation
+  generate_python_version_classifiers = true
+
+  # Maximum Python version for generating version classifiers
   max_supported_python = "3.12"
 
-  # table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
+  # Table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
   table_format = "short"
 
-  # list of tables to force expand regardless of table_format setting
+  # List of tables to force expand regardless of table_format setting
   expand_tables = ["project.entry-points", "project.optional-dependencies"]
 
-  # list of tables to force collapse regardless of table_format or expand_tables settings
+  # List of tables to force collapse regardless of table_format or expand_tables settings
   collapse_tables = ["project.urls"]
 
-If not set they will default to values from the CLI, the example above shows the defaults.
+If not set they will default to values from the CLI. The example above shows the defaults.
 
 Command line interface
 ----------------------
@@ -131,9 +198,14 @@ needs to know the range of Python interpreter versions you support:
 Table formatting
 ----------------
 
+.. note::
+
+  Table formatting options are available in version 2.12.0 and later.
+
 You can control how sub-tables are formatted in your ``pyproject.toml`` file. There are two formatting styles:
 
-**Short format (collapsed)** - The default behavior where sub-tables are collapsed into dotted keys:
+**Short format (collapsed)** - The default behavior where sub-tables are collapsed into dotted keys. Use this for a
+compact representation:
 
 .. code-block:: toml
 
@@ -143,7 +215,8 @@ You can control how sub-tables are formatted in your ``pyproject.toml`` file. Th
   urls.repository = "https://github.com/example/myproject"
   scripts.mycli = "mypackage:main"
 
-**Long format (expanded)** - Sub-tables are expanded into separate ``[table.subtable]`` sections:
+**Long format (expanded)** - Sub-tables are expanded into separate ``[table.subtable]`` sections. Use this for
+readability when tables have many keys or complex values:
 
 .. code-block:: toml
 
@@ -160,13 +233,15 @@ You can control how sub-tables are formatted in your ``pyproject.toml`` file. Th
 Configuration priority
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The formatting behavior is determined by a priority system:
+The formatting behavior is determined by a priority system that allows you to set a global default while overriding
+specific tables:
 
-1. **collapse_tables** - Highest priority, forces specific tables to be collapsed
+1. **collapse_tables** - Highest priority, forces specific tables to be collapsed regardless of other settings
 2. **expand_tables** - Medium priority, forces specific tables to be expanded
-3. **table_format** - Lowest priority, sets the default behavior for all tables
+3. **table_format** - Lowest priority, sets the default behavior for all tables not explicitly configured
 
-This allows you to set a global default and override specific tables. For example:
+This three-tier approach lets you fine-tune formatting for specific tables while maintaining a consistent default.
+For example:
 
 .. code-block:: toml
 
