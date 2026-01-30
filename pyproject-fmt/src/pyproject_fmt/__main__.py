@@ -19,6 +19,9 @@ class PyProjectFmtNamespace(FmtNamespace):
     keep_full_version: bool
     max_supported_python: tuple[int, int]
     generate_python_version_classifiers: bool
+    table_format: str
+    expand_tables: list[str]
+    collapse_tables: list[str]
 
 
 class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
@@ -65,12 +68,36 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
                 err = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
                 raise ArgumentTypeError(err) from exc
 
+        def _list_argument(value: str | list[str]) -> list[str]:
+            # Handle both CLI args (string) and TOML config (list)
+            if isinstance(value, list):
+                return value
+            return [x.strip() for x in value.split(",") if x.strip()]
+
         parser.add_argument(
             "--max-supported-python",
             metavar="minor.major",
             type=_version_argument,
             default=(3, 14),
             help="latest Python version the project supports (e.g. 3.14)",
+        )
+        parser.add_argument(
+            "--table-format",
+            choices=["short", "long"],
+            default="short",
+            help="table format: 'short' collapses sub-tables to dotted keys, 'long' expands to [table.subtable] headers",
+        )
+        parser.add_argument(
+            "--expand-tables",
+            type=_list_argument,
+            default=[],
+            help="comma-separated list of tables to force expand (e.g. 'project.urls,project.scripts')",
+        )
+        parser.add_argument(
+            "--collapse-tables",
+            type=_list_argument,
+            default=[],
+            help="comma-separated list of tables to force collapse (e.g. 'tool.ruff.format')",
         )
 
     @property
@@ -93,6 +120,9 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             max_supported_python=opt.max_supported_python,
             min_supported_python=(3, 10),  # default for when the user didn't specify via requires-python
             generate_python_version_classifiers=opt.generate_python_version_classifiers,
+            table_format=opt.table_format,
+            expand_tables=opt.expand_tables,
+            collapse_tables=opt.collapse_tables,
         )
         return format_toml(text, settings)
 

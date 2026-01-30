@@ -191,6 +191,9 @@ fn test_format_toml(
         max_supported_python,
         min_supported_python: (3, 9),
         generate_python_version_classifiers: true,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
     };
     let got = format_toml(start, &settings);
     assert_eq!(got, expected);
@@ -216,6 +219,9 @@ fn test_issue_24(data: PathBuf) {
         max_supported_python: (3, 9),
         min_supported_python: (3, 9),
         generate_python_version_classifiers: true,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
     };
     let got = format_toml(start.as_str(), &settings);
     let expected = read_to_string(data.join("ruff-order.expected.toml")).unwrap();
@@ -246,6 +252,9 @@ fn test_column_width() {
         max_supported_python: (3, 13),
         min_supported_python: (3, 13),
         generate_python_version_classifiers: true,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
     };
     let got = format_toml(start, &settings);
     let expected = indoc! {r#"
@@ -266,4 +275,206 @@ fn test_column_width() {
     assert_eq!(got, expected);
     let second = format_toml(got.as_str(), &settings);
     assert_eq!(second, got);
+}
+
+/// Test table_format="long" expands sub-tables
+#[rstest]
+fn test_table_format_long_expands_project_sub_tables() {
+    let start = indoc! {r#"
+        [project]
+        name = "myproject"
+        urls.homepage = "https://example.com"
+        urls.repository = "https://github.com/example"
+        scripts.mycli = "mypackage:main"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    // Verify sub-tables are expanded (order may vary)
+    assert!(got.contains("[project.urls]"));
+    assert!(got.contains("[project.scripts]"));
+    assert!(got.contains("homepage = "));
+    assert!(got.contains("repository = "));
+    assert!(got.contains("mycli = "));
+    // Verify dotted keys are removed
+    assert!(!got.contains("urls.homepage ="));
+    assert!(!got.contains("scripts.mycli ="));
+    // Verify idempotency
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test table_format="short" collapses sub-tables (default behavior)
+#[rstest]
+fn test_table_format_short_collapses_project_sub_tables() {
+    let start = indoc! {r#"
+        [project]
+        name = "myproject"
+
+        [project.urls]
+        homepage = "https://example.com"
+        repository = "https://github.com/example"
+
+        [project.scripts]
+        mycli = "mypackage:main"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    // Verify sub-tables are collapsed
+    assert!(got.contains("urls.homepage ="));
+    assert!(got.contains("urls.repository ="));
+    assert!(got.contains("scripts.mycli ="));
+    // Verify expanded tables are removed
+    assert!(!got.contains("[project.urls]"));
+    assert!(!got.contains("[project.scripts]"));
+    // Verify idempotency
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test expand_tables override takes priority over table_format="short"
+#[rstest]
+fn test_expand_tables_override() {
+    let start = indoc! {r#"
+        [project]
+        name = "myproject"
+        urls.homepage = "https://example.com"
+        scripts.mycli = "mypackage:main"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    // With expand_tables override, project sub-tables should be expanded
+    assert!(got.contains("[project.urls]") || got.contains("[project.scripts]"));
+}
+
+/// Test collapse_tables override takes priority over expand_tables
+#[rstest]
+fn test_collapse_tables_priority_over_expand() {
+    let start = indoc! {r#"
+        [project]
+        name = "myproject"
+
+        [project.urls]
+        homepage = "https://example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![String::from("project")],
+        collapse_tables: vec![String::from("project")],
+    };
+    let got = format_toml(start, &settings);
+    // collapse_tables takes priority, so urls should be collapsed
+    assert!(got.contains("urls.homepage ="));
+}
+
+/// Test table_format="long" expands ruff sub-tables
+#[rstest]
+fn test_table_format_long_expands_ruff_sub_tables() {
+    let start = indoc! {r#"
+        [tool.ruff]
+        lint.select = ["E", "F"]
+        lint.ignore = ["E501"]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    // Verify sub-table is expanded
+    assert!(got.contains("[tool.ruff.lint]"));
+    assert!(got.contains("select ="));
+    assert!(got.contains("ignore ="));
+    // Verify dotted keys are removed
+    assert!(!got.contains("lint.select ="));
+    assert!(!got.contains("lint.ignore ="));
+    // Verify idempotency
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test TableFormatConfig.should_collapse priority
+#[rstest]
+fn test_table_format_config_should_collapse() {
+    use crate::TableFormatConfig;
+    use std::collections::HashSet;
+
+    // Test default collapse with table_format="short"
+    let config = TableFormatConfig {
+        default_collapse: true,
+        expand_tables: HashSet::new(),
+        collapse_tables: HashSet::new(),
+    };
+    assert!(config.should_collapse("project"));
+
+    // Test default expand with table_format="long"
+    let config = TableFormatConfig {
+        default_collapse: false,
+        expand_tables: HashSet::new(),
+        collapse_tables: HashSet::new(),
+    };
+    assert!(!config.should_collapse("project"));
+
+    // Test expand_tables override
+    let mut expand = HashSet::new();
+    expand.insert(String::from("project"));
+    let config = TableFormatConfig {
+        default_collapse: true,
+        expand_tables: expand,
+        collapse_tables: HashSet::new(),
+    };
+    assert!(!config.should_collapse("project"));
+
+    // Test collapse_tables priority over expand_tables
+    let mut expand = HashSet::new();
+    expand.insert(String::from("project"));
+    let mut collapse = HashSet::new();
+    collapse.insert(String::from("project"));
+    let config = TableFormatConfig {
+        default_collapse: false,
+        expand_tables: expand,
+        collapse_tables: collapse,
+    };
+    assert!(config.should_collapse("project"));
 }

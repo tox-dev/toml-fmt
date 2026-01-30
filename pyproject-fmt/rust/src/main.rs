@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::string::String;
 
 use common::taplo::formatter::{format_syntax, Options};
@@ -25,19 +26,25 @@ pub struct Settings {
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
+    table_format: String,
+    expand_tables: Vec<String>,
+    collapse_tables: Vec<String>,
 }
 
 #[pymethods]
 impl Settings {
     #[new]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers ))]
-    const fn new(
+    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, expand_tables, collapse_tables))]
+    fn new(
         column_width: usize,
         indent: usize,
         keep_full_version: bool,
         max_supported_python: (u8, u8),
         min_supported_python: (u8, u8),
         generate_python_version_classifiers: bool,
+        table_format: String,
+        expand_tables: Vec<String>,
+        collapse_tables: Vec<String>,
     ) -> Self {
         Self {
             column_width,
@@ -46,7 +53,39 @@ impl Settings {
             max_supported_python,
             min_supported_python,
             generate_python_version_classifiers,
+            table_format,
+            expand_tables,
+            collapse_tables,
         }
+    }
+}
+
+/// Configuration for table formatting behavior.
+pub struct TableFormatConfig {
+    pub default_collapse: bool,
+    pub expand_tables: HashSet<String>,
+    pub collapse_tables: HashSet<String>,
+}
+
+impl TableFormatConfig {
+    pub fn from_settings(settings: &Settings) -> Self {
+        Self {
+            default_collapse: settings.table_format == "short",
+            expand_tables: settings.expand_tables.iter().cloned().collect(),
+            collapse_tables: settings.collapse_tables.iter().cloned().collect(),
+        }
+    }
+
+    /// Determine if a table should be collapsed based on configuration.
+    /// Priority: collapse_tables > expand_tables > default_collapse
+    pub fn should_collapse(&self, table_name: &str) -> bool {
+        if self.collapse_tables.contains(table_name) {
+            return true;
+        }
+        if self.expand_tables.contains(table_name) {
+            return false;
+        }
+        self.default_collapse
     }
 }
 
@@ -56,6 +95,7 @@ impl Settings {
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
+    let table_config = TableFormatConfig::from_settings(opt);
 
     build_system::fix(&tables, opt.keep_full_version);
     project::fix(
@@ -64,9 +104,10 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.max_supported_python,
         opt.min_supported_python,
         opt.generate_python_version_classifiers,
+        &table_config,
     );
     dependency_groups::fix(&mut tables, opt.keep_full_version);
-    ruff::fix(&mut tables);
+    ruff::fix(&mut tables, &table_config);
     reorder_tables(&root_ast, &tables);
 
     let options = Options {

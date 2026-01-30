@@ -10,6 +10,9 @@ use taplo::HashSet;
 use crate::create::{make_empty_newline, make_key, make_newline, make_table_entry};
 use crate::string::load_text;
 
+// Re-export taplo for use in expand_sub_tables
+use taplo;
+
 #[derive(Debug)]
 pub struct Tables {
     pub header_to_pos: HashMap<String, Vec<usize>>,
@@ -392,5 +395,119 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
             main.push(child.clone());
         }
         sub.clear();
+    }
+}
+
+/// Expand dotted keys in a table into separate sub-tables.
+/// This is the reverse of `collapse_sub_tables`.
+/// For example, `urls.homepage = "..."` becomes a `[project.urls]` table with `homepage = "..."`.
+pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
+    let main_positions = match tables.header_to_pos.get(name) {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+    if main_positions.len() != 1 {
+        return;
+    }
+
+    // Collect all dotted keys and group by first segment
+    let mut groups: HashMap<String, Vec<(String, SyntaxElement)>> = HashMap::new();
+    let mut entries_to_remove: HashSet<usize> = HashSet::new();
+
+    {
+        let main = tables.table_set[*main_positions.first().unwrap()].borrow();
+        let mut entry_index = 0;
+
+        for element in main.iter() {
+            if element.kind() == ENTRY {
+                let mut key_text = String::new();
+                for child in element.as_node().unwrap().children_with_tokens() {
+                    if child.kind() == KEY {
+                        key_text = child.as_node().unwrap().text().to_string().trim().to_string();
+                        break;
+                    }
+                }
+
+                // Check if this is a dotted key (contains a dot)
+                if let Some(dot_pos) = key_text.find('.') {
+                    let prefix = &key_text[..dot_pos];
+                    let rest = &key_text[dot_pos + 1..];
+
+                    groups.entry(String::from(prefix)).or_default().push((String::from(rest), element.clone()));
+                    entries_to_remove.insert(entry_index);
+                }
+                entry_index += 1;
+            }
+        }
+    }
+
+    if groups.is_empty() {
+        return;
+    }
+
+    // Remove the dotted key entries from the main table
+    {
+        let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
+        let mut new_elements = Vec::new();
+        let mut entry_index = 0;
+
+        for element in main.iter() {
+            if element.kind() == ENTRY {
+                if !entries_to_remove.contains(&entry_index) {
+                    new_elements.push(element.clone());
+                }
+                entry_index += 1;
+            } else {
+                new_elements.push(element.clone());
+            }
+        }
+
+        // Remove trailing newlines
+        while new_elements.last().is_some_and(|e| e.kind() == NEWLINE) {
+            new_elements.pop();
+        }
+        // Add one newline at the end
+        new_elements.push(make_newline());
+
+        let main_len = main.len();
+        main.splice(0..main_len, new_elements);
+    }
+
+    // Create new sub-tables for each group
+    for (sub_name, entries) in groups {
+        let full_name = format!("{name}.{sub_name}");
+
+        // Create the new table
+        let mut new_table = make_table_entry(&full_name);
+
+        // Add entries with simplified keys
+        for (simple_key, original_entry) in entries {
+            // Rebuild the entry with the simplified key
+            let entry_node = original_entry.as_node().unwrap();
+            let mut value_text = String::new();
+
+            for child in entry_node.children_with_tokens() {
+                if child.kind() == VALUE {
+                    value_text = child.as_node().unwrap().text().to_string();
+                    break;
+                }
+            }
+
+            // Create a new entry with simplified key
+            let new_entry_text = format!("{simple_key} ={value_text}\n");
+            let parsed = taplo::parser::parse(&new_entry_text);
+            let parsed_root = parsed.into_syntax().clone_for_update();
+            for child in parsed_root.children_with_tokens() {
+                if child.kind() == ENTRY {
+                    new_table.push(child);
+                    break;
+                }
+            }
+        }
+
+        // Register the new table
+        let pos = tables.table_set.len();
+        tables.table_set.push(RefCell::new(new_table));
+        tables.header_to_pos.entry(full_name).or_default().push(pos);
     }
 }

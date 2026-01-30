@@ -3,8 +3,10 @@ use common::taplo::parser::parse;
 use common::taplo::syntax::SyntaxElement;
 use indoc::indoc;
 use rstest::rstest;
+use std::collections::HashSet;
 
 use crate::project::fix;
+use crate::TableFormatConfig;
 use common::table::Tables;
 
 fn evaluate(
@@ -16,12 +18,18 @@ fn evaluate(
     let root_ast = parse(start).into_syntax().clone_for_update();
     let count = root_ast.children_with_tokens().count();
     let mut tables = Tables::from_ast(&root_ast);
+    let table_config = TableFormatConfig {
+        default_collapse: true,
+        expand_tables: HashSet::new(),
+        collapse_tables: HashSet::new(),
+    };
     fix(
         &mut tables,
         keep_full_version,
         max_supported_python,
         (3, 9),
         generate_python_version_classifiers,
+        &table_config,
     );
     let entries = tables
         .table_set

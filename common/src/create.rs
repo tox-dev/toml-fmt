@@ -139,3 +139,28 @@ pub fn make_entry_with_array_of_inline_tables(key: &str, inline_tables: &[String
         .find(|n| n.kind() == ENTRY)
         .expect("parsed entry has ENTRY")
 }
+
+/// Create an array of tables entry (e.g., `[[project.authors]]`)
+pub fn make_table_array_entry(key: &str) -> Vec<SyntaxElement> {
+    let txt = format!("[[{key}]]\n");
+    parse(txt.as_str())
+        .into_syntax()
+        .clone_for_update()
+        .children_with_tokens()
+        .collect()
+}
+
+/// Create a table array with entries (e.g., `[[project.authors]]\nname = "John"\nemail = "john@example.com"`)
+pub fn make_table_array_with_entries(key: &str, entries: &[(String, String)]) -> Vec<SyntaxElement> {
+    let entries_str = entries
+        .iter()
+        .map(|(k, v)| format!("{k} = {v}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let txt = format!("[[{key}]]\n{entries_str}\n");
+    parse(txt.as_str())
+        .into_syntax()
+        .clone_for_update()
+        .children_with_tokens()
+        .collect()
+}

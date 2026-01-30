@@ -1,11 +1,11 @@
 use common::array::{dedupe_strings, sort, sort_strings, transform};
 use common::create::{
     make_array, make_array_entry, make_comma, make_entry_of_string, make_entry_with_array_of_inline_tables, make_key,
-    make_newline,
+    make_newline, make_table_array_with_entries,
 };
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
-use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
+use common::table::{collapse_sub_tables, expand_sub_tables, for_entries, reorder_table_keys, Tables};
 use common::taplo::syntax::SyntaxKind::{
     ARRAY, BRACKET_END, BRACKET_START, COMMA, ENTRY, IDENT, INLINE_TABLE, KEY, NEWLINE, STRING, VALUE,
 };
@@ -18,17 +18,36 @@ use std::cell::RefMut;
 use std::cmp::Ordering;
 use std::sync::LazyLock;
 
+use crate::TableFormatConfig;
+
 pub fn fix(
     tables: &mut Tables,
     keep_full_version: bool,
     max_supported_python: (u8, u8),
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
+    table_config: &TableFormatConfig,
 ) {
     let key_order = &["name", "email"];
-    collapse_array_of_tables(tables, "project.authors", key_order);
-    collapse_array_of_tables(tables, "project.maintainers", key_order);
-    collapse_sub_tables(tables, "project");
+
+    // Handle array of tables (authors/maintainers)
+    if table_config.should_collapse("project.authors") {
+        collapse_array_of_tables(tables, "project.authors", key_order);
+    } else {
+        expand_array_of_tables(tables, "project.authors", key_order);
+    }
+    if table_config.should_collapse("project.maintainers") {
+        collapse_array_of_tables(tables, "project.maintainers", key_order);
+    } else {
+        expand_array_of_tables(tables, "project.maintainers", key_order);
+    }
+
+    // Handle sub-tables (urls, scripts, gui-scripts, optional-dependencies, entry-points)
+    if table_config.should_collapse("project") {
+        collapse_sub_tables(tables, "project");
+    } else {
+        expand_sub_tables(tables, "project");
+    }
     let table_element = tables.get("project");
     if table_element.is_none() {
         return;
@@ -645,4 +664,147 @@ fn collapse_array_of_tables(tables: &mut Tables, full_name: &str, key_order: &[&
         parent.push(make_newline());
     }
     parent.push(entry);
+}
+
+/// Expand inline table arrays to array of tables format.
+/// This is the reverse of `collapse_array_of_tables`.
+/// For example, `authors = [{ name = "John", email = "john@example.com" }]`
+/// becomes `[[project.authors]]` with `name = "John"` and `email = "john@example.com"`.
+fn expand_array_of_tables(tables: &mut Tables, full_name: &str, key_order: &[&str]) {
+    let parts: Vec<&str> = full_name.splitn(2, '.').collect();
+    if parts.len() != 2 {
+        return;
+    }
+    let parent_name = parts[0];
+    let field_name = parts[1];
+
+    // Check if we already have array of tables entries
+    if let Some(positions) = tables.header_to_pos.get(full_name) {
+        if !positions.is_empty() {
+            // Already expanded, nothing to do
+            return;
+        }
+    }
+
+    // Find the inline table array in the parent
+    let parent_positions = match tables.header_to_pos.get(parent_name) {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+
+    let mut inline_table_entries: Vec<Vec<(String, String)>> = Vec::new();
+    let mut entry_to_remove_index: Option<usize> = None;
+
+    {
+        let parent = tables.table_set[parent_positions[0]].borrow();
+        let mut entry_index = 0;
+
+        for element in parent.iter() {
+            if element.kind() != ENTRY {
+                continue;
+            }
+            let entry_node = element.as_node().unwrap();
+            let mut current_key = String::new();
+
+            for child in entry_node.children_with_tokens() {
+                if child.kind() == KEY {
+                    current_key = child.as_node().unwrap().text().to_string().trim().to_string();
+                } else if child.kind() == VALUE && current_key == field_name {
+                    // Found the array entry
+                    for value_child in child.as_node().unwrap().children_with_tokens() {
+                        if value_child.kind() == ARRAY {
+                            // Parse inline tables from the array
+                            for array_element in value_child.as_node().unwrap().children_with_tokens() {
+                                if array_element.kind() == VALUE {
+                                    for inner in array_element.as_node().unwrap().children_with_tokens() {
+                                        if inner.kind() == INLINE_TABLE {
+                                            let mut fields: Vec<(String, String)> = Vec::new();
+                                            for inline_entry in inner.as_node().unwrap().children_with_tokens() {
+                                                if inline_entry.kind() == ENTRY {
+                                                    let mut key_name = String::new();
+                                                    let mut value_str = String::new();
+                                                    for e in inline_entry.as_node().unwrap().children_with_tokens() {
+                                                        match e.kind() {
+                                                            KEY => {
+                                                                for k in e.as_node().unwrap().children_with_tokens() {
+                                                                    if k.kind() == IDENT {
+                                                                        key_name =
+                                                                            k.as_token().unwrap().text().to_string();
+                                                                    }
+                                                                }
+                                                            }
+                                                            VALUE => {
+                                                                for v in e.as_node().unwrap().children_with_tokens() {
+                                                                    if v.kind() == STRING {
+                                                                        value_str =
+                                                                            v.as_token().unwrap().text().to_string();
+                                                                    }
+                                                                }
+                                                            }
+                                                            _ => {}
+                                                        }
+                                                    }
+                                                    if !key_name.is_empty() && !value_str.is_empty() {
+                                                        fields.push((key_name, value_str));
+                                                    }
+                                                }
+                                            }
+                                            if !fields.is_empty() {
+                                                // Sort fields according to key_order
+                                                fields.sort_by(|a, b| {
+                                                    let order = |s: &str| {
+                                                        key_order
+                                                            .iter()
+                                                            .position(|&k| k == s)
+                                                            .unwrap_or(key_order.len())
+                                                    };
+                                                    order(&a.0).cmp(&order(&b.0)).then_with(|| a.0.cmp(&b.0))
+                                                });
+                                                inline_table_entries.push(fields);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            entry_to_remove_index = Some(entry_index);
+                        }
+                    }
+                }
+            }
+            entry_index += 1;
+        }
+    }
+
+    if inline_table_entries.is_empty() {
+        return;
+    }
+
+    // Remove the inline table array entry from the parent
+    if let Some(remove_idx) = entry_to_remove_index {
+        let mut parent = tables.table_set[parent_positions[0]].borrow_mut();
+        let mut new_elements = Vec::new();
+        let mut entry_index = 0;
+
+        for element in parent.iter() {
+            if element.kind() == ENTRY {
+                if entry_index != remove_idx {
+                    new_elements.push(element.clone());
+                }
+                entry_index += 1;
+            } else {
+                new_elements.push(element.clone());
+            }
+        }
+
+        let parent_len = parent.len();
+        parent.splice(0..parent_len, new_elements);
+    }
+
+    // Create new array of tables entries
+    for fields in inline_table_entries {
+        let new_table = make_table_array_with_entries(full_name, &fields);
+        let pos = tables.table_set.len();
+        tables.table_set.push(std::cell::RefCell::new(new_table));
+        tables.header_to_pos.entry(String::from(full_name)).or_default().push(pos);
+    }
 }
