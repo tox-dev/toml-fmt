@@ -715,3 +715,61 @@ fn test_load_keys_entries_without_newline() {
         }
     }
 }
+
+#[test]
+fn test_comments_before_table_header_stay_with_that_table() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+
+        # comment for build-system
+        [build-system]
+        requires = ["hatchling"]
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &["build-system", "project"]);
+
+    let res = format_syntax(root_ast, Options::default());
+    // The comment should stay with [build-system], not [project]
+    assert!(res.starts_with("# comment for build-system\n[build-system]"));
+}
+
+#[test]
+fn test_multiple_comments_before_table_header() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+
+        # first comment
+        # second comment
+        [build-system]
+        requires = ["hatchling"]
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &["build-system", "project"]);
+
+    let res = format_syntax(root_ast, Options::default());
+    // Both comments should stay with [build-system]
+    assert!(res.contains("# first comment\n# second comment\n[build-system]"));
+}
+
+#[test]
+fn test_comment_with_blank_line_before_table_header() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+
+        # comment for build-system
+        [build-system]
+        requires = ["hatchling"]
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &["build-system", "project"]);
+
+    let res = format_syntax(root_ast, Options::default());
+    // Comment should stay with [build-system] even with blank line before it
+    assert!(res.starts_with("# comment for build-system\n[build-system]"));
+}
