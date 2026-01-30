@@ -1,4 +1,4 @@
-use common::array::{sort, sort_strings, transform};
+use common::array::{dedupe_strings, sort, sort_strings, transform};
 use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_newline};
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
@@ -83,8 +83,13 @@ pub fn fix(
                 },
             );
         }
-        "dynamic" | "keywords" => {
+        "dynamic" => {
             transform(entry, &|s| String::from(s));
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+        }
+        "keywords" => {
+            transform(entry, &|s| String::from(s));
+            dedupe_strings(entry, |s| s.to_lowercase());
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
         "import-names" | "import-namespaces" => {
@@ -96,6 +101,7 @@ pub fn fix(
         }
         "classifiers" => {
             transform(entry, &|s| String::from(s));
+            dedupe_strings(entry, |s| s.to_lowercase());
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
         _ => {}
@@ -110,6 +116,7 @@ pub fn fix(
 
     for_entries(table, &mut |key, entry| {
         if key.as_str() == "classifiers" {
+            dedupe_strings(entry, |s| s.to_lowercase());
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
     });
