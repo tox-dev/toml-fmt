@@ -600,6 +600,33 @@ fn evaluate(
         (3, 9),
         true,
 )]
+#[case::project_normalize_extra_names(
+        indoc ! {r#"
+    [project]
+    optional-dependencies.Test_Suite = ["pytest"]
+    optional-dependencies.DOCS = ["sphinx"]
+    optional-dependencies.dev_tools = ["black"]
+    "#},
+        indoc ! {r#"
+    [project]
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+    ]
+    optional-dependencies.dev-tools = [
+      "black",
+    ]
+    optional-dependencies.docs = [
+      "sphinx",
+    ]
+    optional-dependencies.test-suite = [
+      "pytest",
+    ]
+    "#},
+        true,
+        (3, 9),
+        true,
+)]
 #[case::project_entry_points_collapse(
         indoc ! {r#"
     [project]
