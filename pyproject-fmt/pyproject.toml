@@ -95,7 +95,6 @@ skip = [
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
 
-
 [tool.coverage]
 html.show_contexts = true
 html.skip_covered = false
