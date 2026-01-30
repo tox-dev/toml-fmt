@@ -37,6 +37,14 @@ pub fn fix(
         "version" | "readme" | "license-files" | "scripts" | "entry-points" | "gui-scripts" => {
             update_content(entry, |s| String::from(s));
         }
+        "license" => {
+            static LICENSE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\b(and|or|with)\b").unwrap());
+            update_content(entry, |s| {
+                LICENSE_RE
+                    .replace_all(s, |caps: &regex::Captures| caps[1].to_uppercase())
+                    .to_string()
+            });
+        }
         "description" => {
             update_content(entry, |s| {
                 RE.replace_all(
