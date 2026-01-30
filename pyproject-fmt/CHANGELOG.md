@@ -1,3 +1,10 @@
+<a id="2.12.0"></a>
+
+## 2.12.0 - TBD
+
+- Add configurable table formatting with `--table-format`, `--expand-tables`, and `--collapse-tables` options by
+  [@gaborbernat](https://github.com/gaborbernat) in [#142](https://github.com/tox-dev/toml-fmt/pull/142)
+
 <a id="2.11.1"></a>
 
 ## 2.11.1 - 2026-01-07

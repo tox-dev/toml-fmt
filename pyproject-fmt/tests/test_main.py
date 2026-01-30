@@ -285,3 +285,130 @@ def test_no_generate_python_version_classifiers(tmp_path: Path) -> None:
     ]
     """
     assert got == dedent(expected)
+
+
+def test_table_format_long_expands_sub_tables(tmp_path: Path) -> None:
+    """Test that --table-format long expands sub-tables to [table.subtable] format."""
+    txt = """\
+    [project]
+    name = "myproject"
+    urls.homepage = "https://example.com"
+    urls.repository = "https://github.com/example"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+    res = run([str(filename), "--table-format", "long", "--no-generate-python-version-classifiers"])
+
+    assert res == 1
+
+    got = filename.read_text()
+    # Verify sub-tables are expanded
+    assert "[project.urls]" in got
+    # Verify dotted keys are removed
+    assert "urls.homepage =" not in got
+    assert "homepage =" in got
+    assert "repository =" in got
+
+
+def test_table_format_short_collapses_sub_tables(tmp_path: Path) -> None:
+    """Test that --table-format short collapses [table.subtable] to dotted keys."""
+    txt = """\
+    [project]
+    name = "myproject"
+
+    [project.urls]
+    homepage = "https://example.com"
+    repository = "https://github.com/example"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+    res = run([str(filename), "--table-format", "short", "--no-generate-python-version-classifiers"])
+
+    assert res == 1
+
+    got = filename.read_text()
+    # Verify sub-tables are collapsed
+    assert "urls.homepage =" in got
+    assert "urls.repository =" in got
+    # Verify expanded tables are removed
+    assert "[project.urls]" not in got
+
+
+def test_table_format_config_in_pyproject_toml(tmp_path: Path) -> None:
+    """Test that table_format can be configured via pyproject.toml."""
+    txt = """\
+    [project]
+    name = "myproject"
+    urls.homepage = "https://example.com"
+
+    [tool.pyproject-fmt]
+    table_format = "long"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+    res = run([str(filename), "--no-generate-python-version-classifiers"])
+
+    assert res == 1
+
+    got = filename.read_text()
+    # Verify sub-tables are expanded
+    assert "[project.urls]" in got
+    assert "homepage =" in got
+
+
+def test_expand_tables_override(tmp_path: Path) -> None:
+    """Test that --expand-tables overrides the default table format."""
+    txt = """\
+    [project]
+    name = "myproject"
+    urls.homepage = "https://example.com"
+    scripts.main = "pkg:main"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+    # Use short format but expand project tables
+    res = run([
+        str(filename),
+        "--table-format",
+        "short",
+        "--expand-tables",
+        "project",
+        "--no-generate-python-version-classifiers",
+    ])
+
+    assert res == 1
+
+    got = filename.read_text()
+    # Verify sub-tables are expanded despite short format
+    assert "[project.urls]" in got or "[project.scripts]" in got
+
+
+def test_collapse_tables_override(tmp_path: Path) -> None:
+    """Test that --collapse-tables overrides expand-tables."""
+    txt = """\
+    [project]
+    name = "myproject"
+
+    [project.urls]
+    homepage = "https://example.com"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+    # Use long format, set expand, but collapse overrides
+    res = run([
+        str(filename),
+        "--table-format",
+        "long",
+        "--expand-tables",
+        "project",
+        "--collapse-tables",
+        "project",
+        "--no-generate-python-version-classifiers",
+    ])
+
+    assert res == 1
+
+    got = filename.read_text()
+    # Verify sub-tables are collapsed due to collapse override
+    assert "urls.homepage =" in got
+    assert "[project.urls]" not in got

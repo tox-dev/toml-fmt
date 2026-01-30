@@ -106,6 +106,23 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
     "#},
         true
 )]
+#[case::backend_path_sorting(
+        indoc ! {r#"
+    [build-system]
+    build-backend = "backend"
+    backend-path = ["src", "lib", "another"]
+    "#},
+        indoc ! {r#"
+    [build-system]
+    build-backend = "backend"
+    backend-path = [
+      "another",
+      "lib",
+      "src",
+    ]
+    "#},
+        false
+)]
 fn test_format_build_systems(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     assert_eq!(evaluate(start, keep_full_version), expected);
 }

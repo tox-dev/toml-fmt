@@ -3,7 +3,9 @@ use rstest::rstest;
 use taplo::formatter::{format_syntax, Options};
 use taplo::parser::parse;
 
-use crate::table::{collapse_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys, Tables};
+use crate::table::{
+    collapse_sub_tables, expand_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys, Tables,
+};
 
 #[test]
 fn test_tables_from_ast_empty() {
@@ -772,4 +774,109 @@ fn test_comment_with_blank_line_before_table_header() {
     let res = format_syntax(root_ast, Options::default());
     // Comment should stay with [build-system] even with blank line before it
     assert!(res.starts_with("# comment for build-system\n[build-system]"));
+}
+
+#[test]
+fn test_expand_sub_tables_creates_sub_table() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+        urls.repository = "https://github.com/example"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_tables(&mut tables, "project");
+
+    // Verify the sub-table was created
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+}
+
+#[test]
+fn test_expand_sub_tables_removes_dotted_keys_from_parent() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_tables(&mut tables, "project");
+
+    // Verify the dotted key is removed from parent
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(!txt.contains("urls.homepage"));
+    assert!(txt.contains("name"));
+}
+
+#[test]
+fn test_expand_sub_tables_multiple_groups() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+        scripts.main = "pkg:main"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_tables(&mut tables, "project");
+
+    // Verify both sub-tables were created
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+    assert!(tables.header_to_pos.contains_key("project.scripts"));
+}
+
+#[test]
+fn test_expand_sub_tables_no_dotted_keys() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        version = "1.0"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    let initial_count = tables.header_to_pos.len();
+    expand_sub_tables(&mut tables, "project");
+
+    // No new tables should be created
+    assert_eq!(tables.header_to_pos.len(), initial_count);
+}
+
+#[test]
+fn test_expand_sub_tables_non_existent_table() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    // Should not panic when expanding non-existent table
+    expand_sub_tables(&mut tables, "nonexistent");
+}
+
+#[test]
+fn test_expand_and_collapse_are_inverses() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+        homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    // Collapse should work
+    collapse_sub_tables(&mut tables, "project");
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("urls.homepage"));
 }

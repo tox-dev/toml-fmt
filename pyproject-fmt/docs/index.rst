@@ -98,6 +98,15 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
   # maximum Python version to use when generating version specifiers
   max_supported_python = "3.12"
 
+  # table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
+  table_format = "short"
+
+  # list of tables to force expand regardless of table_format setting
+  expand_tables = ["project.entry-points", "project.optional-dependencies"]
+
+  # list of tables to force collapse regardless of table_format or expand_tables settings
+  collapse_tables = ["project.urls"]
+
 If not set they will default to values from the CLI, the example above shows the defaults.
 
 Command line interface
@@ -118,3 +127,73 @@ needs to know the range of Python interpreter versions you support:
   the oldest non end of line CPython version at the time of the release).
 - The upper bound, by default, will assume the latest stable release of CPython at the time of the release, but can be
   changed via CLI flag or the config file.
+
+Table formatting
+----------------
+
+You can control how sub-tables are formatted in your ``pyproject.toml`` file. There are two formatting styles:
+
+**Short format (collapsed)** - The default behavior where sub-tables are collapsed into dotted keys:
+
+.. code-block:: toml
+
+  [project]
+  name = "myproject"
+  urls.homepage = "https://example.com"
+  urls.repository = "https://github.com/example/myproject"
+  scripts.mycli = "mypackage:main"
+
+**Long format (expanded)** - Sub-tables are expanded into separate ``[table.subtable]`` sections:
+
+.. code-block:: toml
+
+  [project]
+  name = "myproject"
+
+  [project.urls]
+  homepage = "https://example.com"
+  repository = "https://github.com/example/myproject"
+
+  [project.scripts]
+  mycli = "mypackage:main"
+
+Configuration priority
+~~~~~~~~~~~~~~~~~~~~~~
+
+The formatting behavior is determined by a priority system:
+
+1. **collapse_tables** - Highest priority, forces specific tables to be collapsed
+2. **expand_tables** - Medium priority, forces specific tables to be expanded
+3. **table_format** - Lowest priority, sets the default behavior for all tables
+
+This allows you to set a global default and override specific tables. For example:
+
+.. code-block:: toml
+
+  [tool.pyproject-fmt]
+  table_format = "short"  # Collapse most tables
+  expand_tables = ["project.entry-points"]  # But expand entry-points
+
+Supported tables
+~~~~~~~~~~~~~~~~
+
+The following sub-tables can be formatted with this configuration:
+
+**Project tables:**
+
+- ``project.urls`` - Project URLs (homepage, repository, etc.)
+- ``project.scripts`` - Console script entry points
+- ``project.gui-scripts`` - GUI script entry points
+- ``project.entry-points`` - Custom entry point groups
+- ``project.optional-dependencies`` - Optional dependency groups
+
+**Tool tables:**
+
+- ``tool.ruff.format`` - Ruff formatter settings
+- ``tool.ruff.lint`` - Ruff linter settings
+- Any other tool sub-tables
+
+**Array of tables:**
+
+- ``project.authors`` - Can be inline tables or ``[[project.authors]]``
+- ``project.maintainers`` - Can be inline tables or ``[[project.maintainers]]``

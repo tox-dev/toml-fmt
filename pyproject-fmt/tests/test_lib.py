@@ -76,6 +76,9 @@ def test_format_toml(start: str, expected: str) -> None:
         min_supported_python=(3, 7),
         max_supported_python=(3, 8),
         generate_python_version_classifiers=True,
+        table_format="short",
+        expand_tables=[],
+        collapse_tables=[],
     )
     res = format_toml(dedent(start), settings)
     assert res == dedent(expected)
