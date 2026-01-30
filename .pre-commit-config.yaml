@@ -2,36 +2,21 @@ ci:
   autoupdate_schedule: monthly
 
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-  - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.36.1
-    hooks:
-      - id: check-github-workflows
-        args: ["--verbose"]
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
-    hooks:
-      - id: codespell
-        additional_dependencies: ["tomli>=2.4"]
-  - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.24.1
-    hooks:
-      - id: validate-pyproject
+  # Priority 0: Formatters + read-only validators (all in parallel)
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: "v2.11.1"
     hooks:
       - id: pyproject-fmt
+        priority: 0
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: "v0.14.14"
     hooks:
       - id: ruff-format
         args: ["--config", "pyproject.toml"]
+        priority: 0
       - id: ruff-check
         args: ["--fix", "--unsafe-fixes", "--exit-non-zero-on-fix", "--config", "pyproject.toml"]
+        priority: 1 # after ruff-format (both modify Python)
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: "v3.8.1"
     hooks:
@@ -39,11 +24,40 @@ repos:
         name: Prettier non-workflow files
         args: ["--print-width=120", "--prose-wrap=always"]
         exclude: ".github/workflows/"
+        priority: 0
       - id: prettier
         name: Prettier workflow files
         args: ["--print-width=240", "--prose-wrap=always"]
         exclude: "^(?!.github/workflows/)"
+        priority: 0
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.36.1
+    hooks:
+      - id: check-github-workflows
+        args: ["--verbose"]
+        priority: 0 # read-only
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        additional_dependencies: ["tomli>=2.4"]
+        priority: 0 # read-only
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.24.1
+    hooks:
+      - id: validate-pyproject
+        priority: 0 # read-only
   - repo: meta
     hooks:
       - id: check-hooks-apply
+        priority: 0 # read-only
       - id: check-useless-excludes
+        priority: 0 # read-only
+  # Priority 2: File fixers (cleanup after all formatters)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+        priority: 2
+      - id: trailing-whitespace
+        priority: 2

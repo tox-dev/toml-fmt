@@ -162,3 +162,36 @@ impl std::fmt::Display for Version {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_display_unknown_pre_release_label() {
+        let version = Version {
+            epoch: None,
+            release: vec![1, 2, 3],
+            pre: Some(("unknown".to_string(), Some(1))),
+            post: None,
+            dev: None,
+            local: None,
+            has_wildcard: false,
+        };
+        assert_eq!(version.to_string(), "1.2.3unknown1");
+    }
+
+    #[test]
+    fn test_display_unknown_pre_release_no_number() {
+        let version = Version {
+            epoch: None,
+            release: vec![1, 2, 3],
+            pre: Some(("xyz".to_string(), None)),
+            post: None,
+            dev: None,
+            local: None,
+            has_wildcard: false,
+        };
+        assert_eq!(version.to_string(), "1.2.3xyz0");
+    }
+}

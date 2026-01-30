@@ -18,12 +18,14 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
       - name: 📎 Run Clippy
-        run: cargo clippy -p pyproject-fmt --all-targets -- -D warnings
+        run: cargo clippy -p pyproject-fmt --locked --all-targets -- -D warnings
 
   fmt:
     name: 🎨 fmt
@@ -31,6 +33,8 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -44,10 +48,12 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: 🔨 Build
-        run: cargo build -p pyproject-fmt
+        run: cargo build -p pyproject-fmt --locked
 
   test:
     name: ✅ test
@@ -55,10 +61,23 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: ✅ Run tests
-        run: cargo test -p pyproject-fmt
+        with:
+          components: llvm-tools-preview
+      - name: 📦 Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+      - name: ✅ Run tests with coverage
+        run: cargo llvm-cov -p pyproject-fmt --locked --codecov --output-path coverage.json --ignore-filename-regex 'main\.rs' --fail-under-lines 96
+      - name: 📤 Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.json
+          flags: rust
 
   py:
     name: 🐍 ${{ matrix.py }} @ ${{ matrix.os }}
@@ -90,7 +109,6 @@ jobs:
         uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
-          bins: cargo-tarpaulin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 🔧 Setup test suite
@@ -114,7 +132,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@v7
         with:
