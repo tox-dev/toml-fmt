@@ -85,7 +85,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             "--table-format",
             choices=["short", "long"],
             default="short",
-            help="table format: 'short' collapses sub-tables to dotted keys, 'long' expands to [table.subtable] headers",
+            help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
         )
         parser.add_argument(
             "--expand-tables",
