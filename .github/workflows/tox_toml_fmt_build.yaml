@@ -66,7 +66,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: source
-          path: .
+          path: |
+            .
+            !.git
           compression-level: 9
           retention-days: 1
           if-no-files-found: "error"
@@ -79,14 +81,10 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: ubuntu-24.04, target: x86_64, interpreter: "3.10 pypy3.10" }
-          - { runner: ubuntu-24.04, target: x86 }
+          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 pypy3.10" }
           - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
-          - { runner: ubuntu-24.04, target: i686-unknown-linux-musl, manylinux: musllinux_1_2 }
-          - { runner: ubuntu-24.04, target: aarch64 }
-          - { runner: ubuntu-24.04, target: armv7 }
-          - { runner: ubuntu-24.04, target: s390x }
-          - { runner: ubuntu-24.04, target: ppc64le }
+          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true }
+          - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@v7
@@ -96,8 +94,9 @@ jobs:
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
+          sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
         with:
@@ -113,7 +112,6 @@ jobs:
       matrix:
         platform:
           - { runner: windows-2025, target: x64 }
-          - { runner: windows-2025, target: x86 }
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@v7
@@ -128,7 +126,8 @@ jobs:
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
+          sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
         with:
@@ -154,7 +153,8 @@ jobs:
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter "3.10 pypy3.10" --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.10" --target-dir target
+          sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
         with:

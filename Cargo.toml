@@ -12,4 +12,3 @@ pedantic = "warn"
 nursery = "warn"
 
 [workspace.lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(tarpaulin_include)'] }

@@ -1,10 +1,11 @@
 use rstest::rstest;
 
-use crate::pep508::Requirement;
+use crate::pep508::{MarkerExpr, Requirement};
 
 #[rstest]
 #[case::lowercase("A", "a")]
 #[case::replace_dot_with_dash("a.b", "a-b")]
+#[case::replace_underscore_with_dash("a_b", "a-b")]
 fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str) {
     assert_eq!(Requirement::new(start).unwrap().canonical_name(), expected);
 }
@@ -39,6 +40,15 @@ fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str
 #[case::pre_release_keep("pkg>=2.7.0rc1", "pkg>=2.7.0rc1", true)]
 #[case::parentheses("pkg (>=0.5.5,<0.6.1)", "pkg>=0.5.5,<0.6.1", false)]
 #[case::parentheses_extras("pkg [extra] (>=0.5.5,<0.6.1)", "pkg[extra]>=0.5.5,<0.6.1", false)]
+#[case::epoch("pkg>=1!2.0.0", "pkg>=1!2", false)]
+#[case::alpha_label("pkg>=2.7alpha1", "pkg>=2.7a1", false)]
+#[case::beta_label("pkg>=2.7beta2", "pkg>=2.7b2", false)]
+#[case::preview_label("pkg>=2.7preview3", "pkg>=2.7rc3", false)]
+#[case::pre_label("pkg>=2.7pre", "pkg>=2.7rc0", false)]
+#[case::c_label("pkg>=2.7c1", "pkg>=2.7rc1", false)]
+#[case::post_no_number("pkg>=2.7.post", "pkg>=2.7.post0", false)]
+#[case::dev_no_number("pkg>=2.7.dev", "pkg>=2.7.dev0", false)]
+#[case::name_only("requests", "requests", false)]
 fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     let got = Requirement::new(start)
         .unwrap()
@@ -53,4 +63,59 @@ fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] 
             .to_string(),
         expected
     );
+}
+
+#[rstest]
+#[case::simple_comparison("os_name == 'linux'", "os_name=='linux'")]
+#[case::and_expr(
+    "os_name == 'linux' and python_version > '3.8'",
+    "os_name=='linux' and python_version>'3.8'"
+)]
+#[case::or_expr("os_name == 'linux' or os_name == 'darwin'", "os_name=='linux' or os_name=='darwin'")]
+#[case::parentheses("(os_name == 'linux')", "(os_name=='linux')")]
+#[case::ident_rhs("platform_machine == arm64", "platform_machine==arm64")]
+#[case::in_operator("sys_platform in 'linux'", "sys_platformin'linux'")]
+#[case::not_in_operator("sys_platform not in 'win32'", "sys_platformnot in'win32'")]
+fn test_marker_expression(#[case] input: &str, #[case] expected: &str) {
+    let marker = MarkerExpr::new(input).unwrap();
+    assert_eq!(marker.to_string(), expected);
+}
+
+#[rstest]
+#[case::unclosed_string("os_name == 'linux")]
+#[case::unexpected_char("os_name == @value")]
+#[case::trailing_tokens("os_name == 'linux' extra")]
+#[case::missing_operator("os_name 'linux'")]
+#[case::missing_identifier("== 'linux'")]
+#[case::unclosed_paren("(os_name == 'linux'")]
+#[case::missing_rhs("os_name ==")]
+#[case::not_without_in("os_name not foo")]
+fn test_marker_expression_errors(#[case] input: &str) {
+    assert!(MarkerExpr::new(input).is_err());
+}
+
+#[rstest]
+#[case::unclosed_extras("pkg[extra>=1.0")]
+#[case::invalid_marker("pkg; @@@invalid")]
+#[case::invalid_version_op("pkg>=1.0,&2.0")]
+fn test_requirement_errors(#[case] input: &str) {
+    assert!(Requirement::new(input).is_err());
+}
+
+#[test]
+fn test_requirement_from_str() {
+    let req: Requirement = "requests>=2.0".parse().unwrap();
+    assert_eq!(req.to_string(), "requests>=2");
+}
+
+#[test]
+fn test_requirement_empty_marker() {
+    let req = Requirement::new("pkg>=1.0;").unwrap().normalize(false);
+    assert_eq!(req.to_string(), "pkg>=1");
+}
+
+#[test]
+fn test_invalid_epoch_falls_back() {
+    let req = Requirement::new("pkg>=abc!1.0").unwrap().normalize(false);
+    assert!(req.to_string().starts_with("pkg>="));
 }
