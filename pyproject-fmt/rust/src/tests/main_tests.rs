@@ -627,3 +627,74 @@ fn test_collapse_project_authors() {
     let got = format_toml(start, &settings);
     assert!(got.contains("authors = ["));
 }
+
+/// Test expand_tables with project.authors array
+#[rstest]
+fn test_expand_project_authors() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        authors = [{name = "John Doe", email = "john@example.com"}]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project.authors")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("[[project.authors]]"));
+}
+
+/// Test expand_tables with project.maintainers array
+#[rstest]
+fn test_expand_project_maintainers() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        maintainers = [{name = "Jane Doe", email = "jane@example.com"}]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project.maintainers")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("[[project.maintainers]]"));
+}
+
+/// Test collapse_tables with project.maintainers
+#[rstest]
+fn test_collapse_project_maintainers() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.maintainers]]
+        name = "Jane Doe"
+        email = "jane@example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![String::from("project.maintainers")],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("maintainers = ["));
+}
