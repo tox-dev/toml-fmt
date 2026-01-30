@@ -16,15 +16,28 @@ pub struct Requirement {
     extras: Vec<String>,
     version_or_url: Option<VersionOrUrl>,
     marker: Option<MarkerExpr>,
+    private: bool,
 }
 
 impl Requirement {
     pub fn new(raw: &str) -> Result<Self, String> {
-        // Extract the marker (find ';' separator)
-        let (raw_req, marker_start) = if let Some(idx) = raw.find(';') {
-            (&raw[..idx], Some(idx + 1))
+        // Check for ; private suffix (PEP 794)
+        let (raw_without_private, private) = if let Some(idx) = raw.rfind(';') {
+            let suffix = raw[idx + 1..].trim();
+            if suffix.eq_ignore_ascii_case("private") {
+                (&raw[..idx], true)
+            } else {
+                (raw, false)
+            }
         } else {
-            (raw, None)
+            (raw, false)
+        };
+
+        // Extract the marker (find ';' separator)
+        let (raw_req, marker_start) = if let Some(idx) = raw_without_private.find(';') {
+            (&raw_without_private[..idx], Some(idx + 1))
+        } else {
+            (raw_without_private, None)
         };
 
         // Extract URL from remaining (find "@" separator)
@@ -70,7 +83,7 @@ impl Requirement {
         };
 
         let marker = if let Some(marker_idx) = marker_start {
-            let marker_str = raw[marker_idx..].trim();
+            let marker_str = raw_without_private[marker_idx..].trim();
             if marker_str.is_empty() {
                 None
             } else {
@@ -84,6 +97,7 @@ impl Requirement {
             extras,
             version_or_url,
             marker,
+            private,
         })
     }
 
@@ -159,6 +173,9 @@ impl std::fmt::Display for Requirement {
         }
         if let Some(marker) = &self.marker {
             write!(&mut result, "; {marker}")?;
+        }
+        if self.private {
+            write!(&mut result, "; private")?;
         }
         write!(f, "{}", result)
     }
