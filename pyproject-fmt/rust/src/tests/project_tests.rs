@@ -219,6 +219,23 @@ fn evaluate(
         (3, 9),
         true,
 )]
+#[case::project_license_normalize(
+        indoc ! {r#"
+    [project]
+    license = "mit or apache-2.0 with llvm-exception and gpl-3.0-only"
+    "#},
+        indoc ! {r#"
+    [project]
+    license = "mit OR apache-2.0 WITH llvm-exception AND gpl-3.0-only"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+    ]
+    "#},
+        true,
+        (3, 9),
+        true,
+)]
 #[case::project_name_literal(
         indoc ! {r"
     [project]
