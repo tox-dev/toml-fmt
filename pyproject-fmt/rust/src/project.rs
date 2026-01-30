@@ -1,7 +1,7 @@
 use common::array::{dedupe_strings, sort, sort_strings, transform};
 use common::create::{
-    make_array, make_array_entry, make_comma, make_entry_of_string, make_entry_with_array_of_inline_tables,
-    make_key, make_newline,
+    make_array, make_array_entry, make_comma, make_entry_of_string, make_entry_with_array_of_inline_tables, make_key,
+    make_newline,
 };
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
