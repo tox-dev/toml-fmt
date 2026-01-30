@@ -128,3 +128,14 @@ pub fn make_table_entry(key: &str) -> Vec<SyntaxElement> {
         .children_with_tokens()
         .collect()
 }
+
+pub fn make_entry_with_array_of_inline_tables(key: &str, inline_tables: &[String]) -> SyntaxElement {
+    let tables_str = inline_tables.join(", ");
+    let txt = format!("{key} = [{tables_str}]\n");
+    parse(txt.as_str())
+        .into_syntax()
+        .clone_for_update()
+        .children_with_tokens()
+        .find(|n| n.kind() == ENTRY)
+        .expect("parsed entry has ENTRY")
+}

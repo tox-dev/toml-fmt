@@ -1,5 +1,8 @@
 use common::array::{dedupe_strings, sort, sort_strings, transform};
-use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_key, make_newline};
+use common::create::{
+    make_array, make_array_entry, make_comma, make_entry_of_string, make_entry_with_array_of_inline_tables,
+    make_key, make_newline,
+};
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
 use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
@@ -22,6 +25,9 @@ pub fn fix(
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
 ) {
+    let key_order = &["name", "email"];
+    collapse_array_of_tables(tables, "project.authors", key_order);
+    collapse_array_of_tables(tables, "project.maintainers", key_order);
     collapse_sub_tables(tables, "project");
     let table_element = tables.get("project");
     if table_element.is_none() {
@@ -550,4 +556,93 @@ fn normalize_extra_names(table: &mut RefMut<Vec<SyntaxElement>>) {
             }
         }
     }
+}
+
+fn collapse_array_of_tables(tables: &mut Tables, full_name: &str, key_order: &[&str]) {
+    let positions = match tables.header_to_pos.get(full_name) {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+
+    let parts: Vec<&str> = full_name.splitn(2, '.').collect();
+    if parts.len() != 2 {
+        return;
+    }
+    let parent_name = parts[0];
+    let field_name = parts[1];
+
+    let mut inline_tables = Vec::new();
+
+    for pos in &positions {
+        let table = tables.table_set[*pos].borrow();
+        let mut fields = Vec::new();
+
+        for element in table.iter() {
+            if element.kind() != ENTRY {
+                continue;
+            }
+            let entry_node = element.as_node().unwrap();
+            let mut key_name = String::new();
+            let mut value_str = String::new();
+
+            for child in entry_node.children_with_tokens() {
+                match child.kind() {
+                    KEY => {
+                        for k in child.as_node().unwrap().children_with_tokens() {
+                            if k.kind() == IDENT {
+                                key_name = k.as_token().unwrap().text().to_string();
+                            }
+                        }
+                    }
+                    VALUE => {
+                        for v in child.as_node().unwrap().children_with_tokens() {
+                            if v.kind() == STRING {
+                                value_str = v.as_token().unwrap().text().to_string();
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            if !key_name.is_empty() && !value_str.is_empty() {
+                fields.push(format!("{key_name} = {value_str}"));
+            }
+        }
+
+        if !fields.is_empty() {
+            fields.sort_by(|a, b| {
+                let order = |s: &str| {
+                    for (i, key) in key_order.iter().enumerate() {
+                        if s.starts_with(&format!("{key} ")) {
+                            return i;
+                        }
+                    }
+                    key_order.len()
+                };
+                order(a).cmp(&order(b)).then_with(|| a.cmp(b))
+            });
+            inline_tables.push(format!("{{ {} }}", fields.join(", ")));
+        }
+    }
+
+    for pos in &positions {
+        tables.table_set[*pos].borrow_mut().clear();
+    }
+
+    if inline_tables.is_empty() {
+        return;
+    }
+
+    let parent_positions = match tables.header_to_pos.get(parent_name) {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+
+    let entry = make_entry_with_array_of_inline_tables(field_name, &inline_tables);
+    let mut parent = tables.table_set[parent_positions[0]].borrow_mut();
+    if parent.last().is_some_and(|e| e.kind() != NEWLINE) {
+        parent.push(make_newline());
+    }
+    parent.push(entry);
 }
