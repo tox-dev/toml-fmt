@@ -98,6 +98,56 @@ pub fn fix(
             transform(entry, &|s| String::from(s));
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
+        "authors" | "maintainers" => {
+            sort::<(String, String), _, _>(
+                entry,
+                |node| {
+                    let mut name = String::new();
+                    let mut email = String::new();
+                    for child in node.children_with_tokens() {
+                        if child.kind() == INLINE_TABLE {
+                            for item in child.as_node().unwrap().children_with_tokens() {
+                                if item.kind() == ENTRY {
+                                    let mut current_key = String::new();
+                                    for e in item.as_node().unwrap().children_with_tokens() {
+                                        match e.kind() {
+                                            KEY => {
+                                                for k in e.as_node().unwrap().children_with_tokens() {
+                                                    if k.kind() == IDENT {
+                                                        current_key = k.as_token().unwrap().text().to_string();
+                                                    }
+                                                }
+                                            }
+                                            VALUE => {
+                                                for v in e.as_node().unwrap().children_with_tokens() {
+                                                    if v.kind() == STRING {
+                                                        let val = load_text(v.as_token().unwrap().text(), STRING);
+                                                        match current_key.as_str() {
+                                                            "name" => name = val.to_lowercase(),
+                                                            "email" => email = val.to_lowercase(),
+                                                            _ => {}
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Some((name, email))
+                },
+                &|lhs, rhs| {
+                    let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
+                    if res == Ordering::Equal {
+                        res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
+                    }
+                    res
+                },
+            );
+        }
         _ => {}
     });
 
