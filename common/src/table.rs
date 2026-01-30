@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::iter::zip;
 use std::ops::Index;
 
-use taplo::syntax::SyntaxKind::{ENTRY, IDENT, KEY, NEWLINE, TABLE_ARRAY_HEADER, TABLE_HEADER, VALUE};
+use taplo::syntax::SyntaxKind::{COMMENT, ENTRY, IDENT, KEY, NEWLINE, TABLE_ARRAY_HEADER, TABLE_HEADER, VALUE};
 use taplo::syntax::{SyntaxElement, SyntaxNode};
 use taplo::HashSet;
 
@@ -37,7 +37,11 @@ impl Tables {
         let mut add_to_table_set = |kind| {
             let mut entry_set_borrow = entry_set.borrow_mut();
             if !entry_set_borrow.is_empty() {
-                let table_name = get_table_name(&entry_set_borrow[0]);
+                // Find the table header in the entry set (may not be first element due to comments)
+                let table_name = entry_set_borrow
+                    .iter()
+                    .find(|e| [TABLE_HEADER, TABLE_ARRAY_HEADER].contains(&e.kind()))
+                    .map_or_else(String::new, get_table_name);
                 let indexes = header_to_pos.entry(table_name).or_default();
                 if kind == TABLE_ARRAY_HEADER || (kind == TABLE_HEADER && indexes.is_empty()) {
                     indexes.push(table_set.len());
@@ -63,8 +67,28 @@ impl Tables {
         };
         for c in root_ast.children_with_tokens() {
             if [TABLE_ARRAY_HEADER, TABLE_HEADER].contains(&c.kind()) {
+                // Find comments that appear after the last ENTRY - these belong to the new table
+                let mut borrow = entry_set.borrow_mut();
+
+                // Find the first COMMENT after the last ENTRY - that's where we split
+                let last_entry_pos = borrow.iter().rposition(|x| x.kind() == ENTRY);
+                let first_comment_pos = borrow.iter().position(|x| x.kind() == COMMENT);
+
+                let comments_start = match (last_entry_pos, first_comment_pos) {
+                    (Some(entry_pos), Some(comment_pos)) if comment_pos > entry_pos => comment_pos,
+                    (None, Some(comment_pos)) => comment_pos, // No entries, but has comments
+                    _ => borrow.len(),                        // No comments to move
+                };
+
+                // Split: keep elements for previous table, extract comments for new table
+                let comments_for_new_table: Vec<SyntaxElement> = borrow.drain(comments_start..).collect();
+                drop(borrow);
+
                 add_to_table_set(table_kind);
                 table_kind = c.kind();
+
+                // Add the comments first (they belong to this new table)
+                entry_set.borrow_mut().extend(comments_for_new_table);
             }
             entry_set.borrow_mut().push(c);
         }
