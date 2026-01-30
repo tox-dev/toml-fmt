@@ -1,7 +1,22 @@
+//! Syntax node creation utilities using the parse-and-extract pattern.
+//!
+//! This module provides functions to create TOML syntax nodes by parsing valid TOML
+//! and extracting the desired elements. While this approach involves parsing overhead,
+//! it ensures:
+//!
+//! 1. **Correctness**: All created nodes are guaranteed to be valid TOML syntax
+//! 2. **Proper escaping**: Taplo's parser handles all TOML escape sequences correctly
+//! 3. **Simplicity**: Straightforward code that's easy to understand and maintain
+//!
+
 use taplo::parser::parse;
 use taplo::syntax::SyntaxElement;
 use taplo::syntax::SyntaxKind::{ARRAY, COMMA, ENTRY, KEY, NEWLINE, STRING, VALUE};
 
+/// Create a STRING syntax element by parsing valid TOML.
+///
+/// This function ensures proper TOML escaping by using taplo's parser to handle
+/// quote escaping, backslash escaping, and unicode sequences.
 pub fn make_string_node(text: &str) -> SyntaxElement {
     let expr = &format!("a = \"{}\"", text.replace('"', "\\\""));
     parse(expr)
@@ -19,6 +34,9 @@ pub fn make_string_node(text: &str) -> SyntaxElement {
         .expect("VALUE contains STRING")
 }
 
+/// Create a NEWLINE token with a blank line (two newlines).
+///
+/// Used for adding vertical spacing between sections in TOML files.
 pub fn make_empty_newline() -> SyntaxElement {
     parse("\n\n")
         .into_syntax()
@@ -28,6 +46,7 @@ pub fn make_empty_newline() -> SyntaxElement {
         .expect("parsed newlines contain NEWLINE")
 }
 
+/// Create a single NEWLINE token.
 pub fn make_newline() -> SyntaxElement {
     parse("\n")
         .into_syntax()
@@ -37,6 +56,7 @@ pub fn make_newline() -> SyntaxElement {
         .expect("parsed newline contains NEWLINE")
 }
 
+/// Create a COMMA token for use in arrays.
 pub fn make_comma() -> SyntaxElement {
     parse("a=[1,2]")
         .into_syntax()
@@ -61,6 +81,9 @@ pub fn make_comma() -> SyntaxElement {
         .expect("ARRAY contains COMMA")
 }
 
+/// Create a KEY token with the given text.
+///
+/// Supports dotted keys like `"foo.bar"`.
 pub fn make_key(text: &str) -> SyntaxElement {
     parse(format!("{text}=1").as_str())
         .into_syntax()

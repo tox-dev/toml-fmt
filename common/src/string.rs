@@ -1,89 +1,65 @@
 use taplo::syntax::SyntaxKind::{IDENT, MULTI_LINE_STRING, MULTI_LINE_STRING_LITERAL, STRING, STRING_LITERAL};
 use taplo::syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
+use taplo::util::{check_escape, unescape};
 
 use crate::create::make_string_node;
 
 /// Check if a string contains backslash sequences that would be invalid in a TOML basic string.
-/// Valid escapes are: \b, \t, \n, \f, \r, \", \\, \uXXXX, \UXXXXXXXX
+/// Valid escapes are: \b, \t, \n, \f, \r, \", \\, \uXXXX, \UXXXXXXXX, and line continuations.
+///
+/// Uses taplo's escape checking for TOML spec compliance.
 fn has_invalid_escapes(s: &str) -> bool {
-    let mut chars = s.chars().peekable();
-    while let Some(c) = chars.next() {
-        if c == '\\' {
-            match chars.peek() {
-                Some('b' | 't' | 'n' | 'f' | 'r' | '"' | '\\') => {
-                    chars.next();
-                }
-                Some('u') => {
-                    chars.next();
-                    for _ in 0..4 {
-                        if !chars.next().is_some_and(|c| c.is_ascii_hexdigit()) {
-                            return true;
-                        }
-                    }
-                }
-                Some('U') => {
-                    chars.next();
-                    for _ in 0..8 {
-                        if !chars.next().is_some_and(|c| c.is_ascii_hexdigit()) {
-                            return true;
-                        }
-                    }
-                }
-                _ => return true,
-            }
-        }
-    }
-    false
+    check_escape(s).is_err()
 }
 
+/// Load the text content from a TOML string value, handling all escape sequences.
+///
+/// This function:
+/// 1. Strips the appropriate delimiters based on string kind (", ', """, ''')
+/// 2. Unescapes all TOML escape sequences using taplo's unescape function
+/// 3. Returns the final string content
+///
+/// Uses taplo's unescape for TOML spec compliance, which handles:
+/// - Basic escapes: \b, \t, \n, \f, \r, \", \\
+/// - Unicode escapes: \uXXXX, \UXXXXXXXX
+/// - Line continuations: \<newline>
 pub fn load_text(value: &str, kind: SyntaxKind) -> String {
-    let mut chars = value.chars();
+    // Determine delimiter offset based on string type
     let offset = if [STRING, STRING_LITERAL].contains(&kind) {
-        1
+        1 // Single quote or double quote
     } else if kind == IDENT {
-        0
+        0 // No delimiters
     } else {
-        3
+        3 // Triple quotes (""" or ''')
     };
+
+    // Strip delimiters
+    let mut chars = value.chars();
     for _ in 0..offset {
         chars.next();
     }
     for _ in 0..offset {
         chars.next_back();
     }
-    let mut res = chars.as_str().to_string();
-    if kind == STRING {
-        res = res.replace("\\\"", "\"");
-    }
-    if kind == MULTI_LINE_STRING {
-        // Handle line continuation: backslash followed by newline and any whitespace
-        res = process_line_continuations(&res);
-    }
-    res
-}
+    let content = chars.as_str();
 
-fn process_line_continuations(s: &str) -> String {
-    let mut result = String::with_capacity(s.len());
-    let mut chars = s.chars().peekable();
-    while let Some(c) = chars.next() {
-        if c == '\\' {
-            if chars.peek() == Some(&'\n') || chars.peek() == Some(&'\r') {
-                // Skip the backslash and consume newlines/whitespace
-                while let Some(&next) = chars.peek() {
-                    if next == '\n' || next == '\r' || next == ' ' || next == '\t' {
-                        chars.next();
-                    } else {
-                        break;
-                    }
-                }
-            } else {
-                result.push(c);
-            }
-        } else {
-            result.push(c);
-        }
+    // For multiline strings, strip leading newline if present (per TOML spec)
+    let content = if kind == MULTI_LINE_STRING || kind == MULTI_LINE_STRING_LITERAL {
+        content
+            .strip_prefix("\r\n")
+            .or_else(|| content.strip_prefix('\n'))
+            .unwrap_or(content)
+    } else {
+        content
+    };
+
+    // Unescape for basic and multiline basic strings (not literals)
+    if kind == STRING || kind == MULTI_LINE_STRING {
+        unescape(content).unwrap_or_else(|_| content.to_string())
+    } else {
+        // Literal strings don't have escape sequences
+        content.to_string()
     }
-    result
 }
 
 pub fn update_content<F>(entry: &SyntaxNode, transform: F)

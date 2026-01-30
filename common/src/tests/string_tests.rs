@@ -25,6 +25,22 @@ fn test_load_text_empty_string() {
 }
 
 #[test]
+fn test_load_text_escape_sequences() {
+    // Test that escape sequences are properly unescaped using taplo's unescape
+    let result = load_text(r#""hello\nworld""#, STRING);
+    assert_eq!(result, "hello\nworld"); // \n should become actual newline
+
+    let result = load_text(r#""hello\tworld""#, STRING);
+    assert_eq!(result, "hello\tworld"); // \t should become actual tab
+
+    let result = load_text(r#""hello\\world""#, STRING);
+    assert_eq!(result, "hello\\world"); // \\ should become single backslash
+
+    let result = load_text(r#""quote:\"text\"""#, STRING);
+    assert_eq!(result, r#"quote:"text""#); // \" should become quote
+}
+
+#[test]
 fn test_update_content_basic() {
     let toml = r#"name = "foo""#;
     let root_ast = parse(toml).into_syntax().clone_for_update();
