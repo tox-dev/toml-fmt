@@ -106,10 +106,10 @@ use crate::{format_toml, Settings};
 
     [tool.coverage]
     a = 0
-    [tool.coverage.report]
-    a = 2
     [tool.coverage.paths]
     a = 1
+    [tool.coverage.report]
+    a = 2
     [tool.coverage.run]
     a = 3
     "#},
