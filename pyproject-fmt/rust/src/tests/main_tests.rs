@@ -478,3 +478,152 @@ fn test_table_format_config_should_collapse() {
     };
     assert!(config.should_collapse("project"));
 }
+
+/// Test table_format="long" with project dependencies
+#[rstest]
+fn test_table_format_long_with_dependencies() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        dependencies = ["requests>=2.0"]
+        optional-dependencies.dev = ["pytest"]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("[project.optional-dependencies]"));
+}
+
+/// Test table_format="short" with project dependencies
+#[rstest]
+fn test_table_format_short_with_dependencies() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        dependencies = ["requests>=2.0"]
+        [project.optional-dependencies]
+        dev = ["pytest"]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("optional-dependencies.dev ="));
+}
+
+/// Test expand_tables with main table
+#[rstest]
+fn test_expand_tables_with_project() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        optional-dependencies.dev = ["pytest"]
+        urls.homepage = "https://example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    // With expand override on project, all sub-tables should be expanded
+    assert!(got.contains("[project.optional-dependencies]") || got.contains("[project.urls]"));
+}
+
+/// Test collapse_tables with tool.ruff
+#[rstest]
+fn test_collapse_tables_with_ruff() {
+    let start = indoc! {r#"
+        [tool.ruff]
+        [tool.ruff.lint]
+        select = ["E", "F"]
+        ignore = ["E501"]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![String::from("tool.ruff")],
+    };
+    let got = format_toml(start, &settings);
+    // With collapse override, ruff sub-tables should be collapsed
+    assert!(got.contains("lint.select ="));
+}
+
+/// Test table_format="long" with authors array
+#[rstest]
+fn test_table_format_long_with_authors() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.authors]]
+        name = "John Doe"
+        email = "john@example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("[[project.authors]]"));
+}
+
+/// Test collapse_tables with project.authors
+#[rstest]
+fn test_collapse_project_authors() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.authors]]
+        name = "John Doe"
+        email = "john@example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![String::from("project.authors")],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("authors = ["));
+}
