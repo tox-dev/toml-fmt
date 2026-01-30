@@ -350,6 +350,27 @@ fn evaluate(
         (3, 13),
         true,
 )]
+#[case::project_description_line_continuation(
+        indoc ! {r#"
+    [project]
+    requires-python = "==3.12"
+    description = """\
+        FlexGet is a program aimed to automate downloading.\
+    """
+    "#},
+        indoc ! {r#"
+    [project]
+    description = "FlexGet is a program aimed to automate downloading."
+    requires-python = "==3.12"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.12",
+    ]
+    "#},
+        true,
+        (3, 13),
+        true,
+)]
 #[case::project_dependencies_with_double_quotes(
         indoc ! {r#"
     [project]

@@ -153,3 +153,79 @@ fn test_literal_string_escape_handling(#[case] input: &str, #[case] expected: &s
     let result = root_ast.to_string();
     assert!(result.contains(expected), "Expected {expected}, got: {result}");
 }
+
+#[test]
+fn test_issue_36_line_continuation() {
+    let toml = "desc = \"\"\"\\\n    hello\\\n\"\"\"";
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains("\"hello\""), "Got: {}", result);
+}
+
+#[test]
+fn test_line_continuation_with_crlf() {
+    let toml = "desc = \"\"\"\\\r\n    hello\"\"\"";
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains("\"hello\""), "Got: {}", result);
+}
+
+#[test]
+fn test_multiline_with_regular_escapes() {
+    let toml = "desc = \"\"\"hello\\nworld\"\"\"";
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains("\"hello\\nworld\""), "Got: {}", result);
+}
+
+#[test]
+fn test_multiline_with_tabs_after_continuation() {
+    let toml = "desc = \"\"\"\\\n\t\thello\"\"\"";
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains("\"hello\""), "Got: {}", result);
+}

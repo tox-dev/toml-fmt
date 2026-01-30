@@ -55,7 +55,35 @@ pub fn load_text(value: &str, kind: SyntaxKind) -> String {
     if kind == STRING {
         res = res.replace("\\\"", "\"");
     }
+    if kind == MULTI_LINE_STRING {
+        // Handle line continuation: backslash followed by newline and any whitespace
+        res = process_line_continuations(&res);
+    }
     res
+}
+
+fn process_line_continuations(s: &str) -> String {
+    let mut result = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            if chars.peek() == Some(&'\n') || chars.peek() == Some(&'\r') {
+                // Skip the backslash and consume newlines/whitespace
+                while let Some(&next) = chars.peek() {
+                    if next == '\n' || next == '\r' || next == ' ' || next == '\t' {
+                        chars.next();
+                    } else {
+                        break;
+                    }
+                }
+            } else {
+                result.push(c);
+            }
+        } else {
+            result.push(c);
+        }
+    }
+    result
 }
 
 pub fn update_content<F>(entry: &SyntaxNode, transform: F)
