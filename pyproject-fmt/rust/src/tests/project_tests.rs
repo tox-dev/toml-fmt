@@ -277,6 +277,31 @@ fn evaluate(
         (3, 9),
         true,
 )]
+#[case::project_sort_authors(
+        indoc ! {r#"
+    [project]
+    authors = [
+      {name = "Zoe", email = "zoe@example.com"},
+      {name = "Alice", email = "alice@example.com"},
+      {name = "Alice", email = "a@example.com"},
+    ]
+    "#},
+        indoc ! {r#"
+    [project]
+    authors = [
+      { name = "Alice", email = "a@example.com" },
+      { name = "Alice", email = "alice@example.com" },
+      { name = "Zoe", email = "zoe@example.com" },
+    ]
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+    ]
+    "#},
+        true,
+        (3, 9),
+        true,
+)]
 #[case::project_requires_gt_old(
         indoc ! {r#"
     [project]
