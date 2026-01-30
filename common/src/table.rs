@@ -360,6 +360,13 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
             continue;
         }
         let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
+
+        // Skip array tables (those with TABLE_ARRAY_HEADER instead of TABLE_HEADER)
+        let is_array_table = sub.iter().any(|child| child.kind() == TABLE_ARRAY_HEADER);
+        if is_array_table {
+            continue;
+        }
+
         let sub_name = key.strip_prefix(sub_name_prefix.as_str()).unwrap();
         let mut header = false;
         for child in sub.iter() {

@@ -693,7 +693,6 @@ fn test_collapse_project_authors() {
     assert_eq!(second, got);
 }
 
-
 /// Test collapse_tables with project.maintainers
 #[rstest]
 fn test_collapse_project_maintainers() {
@@ -726,4 +725,282 @@ fn test_collapse_project_maintainers() {
     assert_eq!(got, expected);
     let second = format_toml(got.as_str(), &settings);
     assert_eq!(second, got);
+}
+
+/// Test table_format="long" with entry-points
+#[rstest]
+fn test_table_format_long_with_entry_points() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        entry-points."console_scripts".mycli = "pkg:main"
+        entry-points."console_scripts".othercli = "pkg:other"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [project]
+        name = "example"
+        [project.entry-points]
+        "console_scripts".mycli = "pkg:main"
+        "console_scripts".othercli = "pkg:other"
+        "#};
+    assert_eq!(got, expected);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test expand_tables with project.authors
+#[rstest]
+fn test_expand_project_authors() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        authors = [
+          { name = "John Doe", email = "john@example.com" },
+          { name = "Jane Doe", email = "jane@example.com" },
+        ]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project.authors")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.authors]]
+        name = "John Doe"
+        email = "john@example.com"
+
+        [[project.authors]]
+        name = "Jane Doe"
+        email = "jane@example.com"
+        "#};
+    assert_eq!(got, expected);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test expand_tables with project.maintainers
+#[rstest]
+fn test_expand_project_maintainers() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        maintainers = [
+          { name = "Bob Smith", email = "bob@example.com" },
+          { name = "Alice Jones", email = "alice@example.com" },
+        ]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project.maintainers")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.maintainers]]
+        name = "Bob Smith"
+        email = "bob@example.com"
+
+        [[project.maintainers]]
+        name = "Alice Jones"
+        email = "alice@example.com"
+        "#};
+    assert_eq!(got, expected);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test expand single author
+#[rstest]
+fn test_expand_single_author() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        authors = [
+          { name = "John Doe", email = "john@example.com" },
+        ]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project.authors")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.authors]]
+        name = "John Doe"
+        email = "john@example.com"
+        "#};
+    assert_eq!(got, expected);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+/// Test collapse authors with custom url field (covers line 640 in project.rs)
+#[rstest]
+fn test_collapse_authors_with_url_field() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        [[project.authors]]
+        name = "Bob"
+        email = "bob@example.com"
+        url = "https://bob.com"
+        [[project.authors]]
+        name = "Alice"
+        email = "alice@example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [project]
+        name = "test"
+        authors = [
+          { name = "Alice", email = "alice@example.com" },
+          { name = "Bob", email = "bob@example.com", url = "https://bob.com" },
+        ]
+        "#};
+    assert_eq!(got, expected);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+/// Test collapse empty authors (covers line 653 in project.rs)
+#[rstest]
+fn test_collapse_empty_authors() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        [[project.authors]]
+        [[project.authors]]
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [project]
+        name = "test"
+        "#};
+    assert_eq!(got, expected);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got);
+}
+
+/// Test collapse authors when parent doesn't end with newline (covers line 664)
+#[rstest]
+fn test_collapse_authors_without_trailing_newline() {
+    let start = "[project]\nname = \"test\"\n[[project.authors]]\nname = \"Alice\"\nemail = \"alice@example.com\"";
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("authors = ["));
+    assert!(got.contains("{ name = \"Alice\", email = \"alice@example.com\" }"));
+}
+
+/// Test collapse authors with compact parent table
+#[rstest]
+fn test_collapse_authors_compact_parent() {
+    let start =
+        "[project]\nname=\"test\"\nversion=\"1.0\"\n[[project.authors]]\nname=\"Alice\"\nemail=\"alice@example.com\"";
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("authors = ["));
+}
+
+/// Test expand when authors already in array of tables format (covers line 686)
+#[rstest]
+fn test_expand_authors_already_expanded() {
+    let start = indoc! {r#"
+        [project]
+        name = "example"
+        [[project.authors]]
+        name = "John Doe"
+        email = "john@example.com"
+        "#};
+    let settings = Settings {
+        column_width: 1,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![String::from("project.authors")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(got.contains("[[project.authors]]"));
+    assert!(got.contains("name = \"John Doe\""));
 }

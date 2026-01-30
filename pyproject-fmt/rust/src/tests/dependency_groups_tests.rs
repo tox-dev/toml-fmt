@@ -160,6 +160,131 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
     "#},
         false,
 )]
+#[case::duplicate_package_names(
+        indoc ! {r#"
+    [dependency-groups]
+    test=["pkg>=2.0","pkg>=1.0","other"]
+    "#},
+        indoc ! {r#"
+    [dependency-groups]
+    test = [
+      "other",
+      "pkg>=1",
+      "pkg>=2",
+    ]
+    "#},
+        false,
+)]
+#[case::inline_table_without_include_group(
+        indoc ! {r#"
+    [dependency-groups]
+    test=["pkg>=1.0",{some-key="value"}]
+    "#},
+        indoc ! {r#"
+    [dependency-groups]
+    test = [
+      "pkg>=1",
+      { some-key = "value" },
+    ]
+    "#},
+        false,
+)]
+#[case::multiple_include_groups_sorted(
+        indoc ! {r#"
+    [dependency-groups]
+    test = ['a>=1']
+    docs = ['b>=1']
+    dev = ['c>=1']
+    all = [
+      {include-group='test'},
+      {include-group='docs'},
+      {include-group='dev'},
+    ]
+    "#},
+        indoc ! {r#"
+    [dependency-groups]
+    dev = [
+      "c>=1",
+    ]
+    test = [
+      "a>=1",
+    ]
+    docs = [
+      "b>=1",
+    ]
+    all = [
+      { include-group = "dev" },
+      { include-group = "docs" },
+      { include-group = "test" },
+    ]
+    "#},
+        false,
+)]
+#[case::array_with_comments(
+        indoc ! {r#"
+    [dependency-groups]
+    test = [
+      "pytest>=7.0",
+      # This is a comment
+      "black>=23.0",
+      { include-group = "docs" },
+      # Another comment
+    ]
+    docs = ["sphinx>=5.0"]
+    "#},
+        indoc ! {r#"
+    [dependency-groups]
+    test = [
+      # This is a comment
+      "black>=23",
+      "pytest>=7",
+      { include-group = "docs" },
+      # Another comment
+    ]
+    docs = [
+      "sphinx>=5",
+    ]
+    "#},
+        false,
+)]
+#[case::mixed_packages_and_include_groups(
+        indoc ! {r#"
+    [dependency-groups]
+    base = ['requests>=2']
+    extended = [
+      {include-group='base'},
+      'pytest>=7',
+      {include-group='base'},
+      'black>=23',
+    ]
+    "#},
+        indoc ! {r#"
+    [dependency-groups]
+    base = [
+      "requests>=2",
+    ]
+    extended = [
+      "black>=23",
+      "pytest>=7",
+      { include-group = "base" },
+      { include-group = "base" },
+    ]
+    "#},
+        false,
+)]
 fn test_format_dependency_groups(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     assert_eq!(evaluate(start, keep_full_version), expected);
+}
+
+#[test]
+fn test_dependency_groups_with_integer() {
+    let start = indoc! {r#"
+        [dependency-groups]
+        test = [
+          "pkg>=1.0",
+          42,
+        ]
+        "#};
+    let result = evaluate(start, false);
+    assert!(result.contains("[dependency-groups]"));
 }

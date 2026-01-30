@@ -857,6 +857,49 @@ fn evaluate(
     (3, 13),
     true,
 )]
+#[case::classifiers_single_line_format(
+    indoc! {r#"
+    [project]
+    requires-python = ">=3.10"
+    classifiers = ["License :: OSI Approved :: MIT License"]
+    "#},
+    indoc! {r#"
+    [project]
+    requires-python = ">=3.10"
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+    ]
+    "#},
+    true,
+    (3, 13),
+    true,
+)]
+#[case::authors_with_extra_fields(
+    indoc! {r#"
+    [project]
+    name = "test"
+    authors = [
+      { name = "Bob", email = "bob@example.com", url = "https://bob.com" },
+      { name = "Alice", email = "alice@example.com" },
+    ]
+    "#},
+    indoc! {r#"
+    [project]
+    name = "test"
+    authors = [
+      { name = "Alice", email = "alice@example.com" },
+      { name = "Bob", email = "bob@example.com", url = "https://bob.com" },
+    ]
+    "#},
+    false,
+    (3, 9),
+    false,
+)]
 fn test_format_project(
     #[case] start: &str,
     #[case] expected: &str,
@@ -873,4 +916,356 @@ fn test_format_project(
         ),
         expected
     );
+}
+
+#[rstest]
+#[case::requires_python_with_not_equal(
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">=3.9, !=3.10"
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">=3.9,!=3.10"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+    ]
+    "#},
+    true,
+)]
+fn test_requires_python_not_equal(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(start, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(got, expected);
+    let again = evaluate(&got, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(again, expected);
+}
+
+#[rstest]
+#[case::remove_python_classifiers_without_generation(
+    indoc ! {r#"
+    [project]
+    name = "example"
+    classifiers = [
+      "Development Status :: 5 - Production/Stable",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "License :: OSI Approved :: MIT License",
+    ]
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "example"
+    classifiers = [
+      "Development Status :: 5 - Production/Stable",
+      "License :: OSI Approved :: MIT License",
+    ]
+    "#},
+    false,
+)]
+fn test_remove_python_classifiers_without_generation(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(start, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(got, expected);
+    let again = evaluate(&got, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(again, expected);
+}
+
+#[rstest]
+#[case::replace_outdated_python_classifiers(
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">=3.11"
+    classifiers = [
+      "Development Status :: 4 - Beta",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.8",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
+      "License :: OSI Approved :: MIT License",
+    ]
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">=3.11"
+    classifiers = [
+      "Development Status :: 4 - Beta",
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+    ]
+    "#},
+    true,
+)]
+fn test_replace_outdated_python_classifiers(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(start, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(got, expected);
+    let again = evaluate(&got, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(again, expected);
+}
+
+#[rstest]
+#[case::requires_python_less_than(
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">3.10, <3.13"
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">3.10,<3.13"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+    ]
+    "#},
+    true,
+)]
+fn test_requires_python_less_than(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(start, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(got, expected);
+    let again = evaluate(&got, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(again, expected);
+}
+
+#[rstest]
+#[case::generate_classifiers_without_existing(
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">=3.11"
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "example"
+    requires-python = ">=3.11"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+    ]
+    "#},
+    true,
+)]
+fn test_generate_classifiers_without_existing(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(start, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(got, expected);
+    let again = evaluate(&got, false, (3, 13), generate_python_version_classifiers);
+    assert_eq!(again, expected);
+}
+
+#[test]
+fn test_dependencies_with_non_string_value() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        dependencies = [
+          "pkg>=1.0",
+          42,
+        ]
+        "#};
+    let result = evaluate(start, false, (3, 9), false);
+    assert!(result.contains("[project]"));
+    assert!(result.contains("name = \"test\""));
+}
+
+#[rstest]
+#[case::authors_inline_with_non_standard_whitespace(
+    indoc ! {r#"
+    [project]
+    name = "test"
+    authors = [
+      { name = "Alice", email = "alice@example.com" },
+      { name = "Bob", email = "bob@example.com" },
+      42,
+    ]
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "test"
+    authors = [
+      42,
+      { name = "Alice", email = "alice@example.com" },
+      { name = "Bob", email = "bob@example.com" },
+    ]
+    "#},
+    false,
+    (3, 9),
+    false,
+)]
+fn test_authors_with_mixed_content(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] keep_full_version: bool,
+    #[case] max_supported_python: (u8, u8),
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(
+        start,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+    );
+    assert_eq!(got, expected);
+}
+
+#[rstest]
+#[case::complex_classifier_manipulation(
+    indoc ! {r#"
+    [project]
+    name = "test"
+    requires-python = ">=3.10,<3.12"
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3.8",
+      "Programming Language :: Python :: 3.9",
+      "Development Status :: 4 - Beta",
+      "Programming Language :: Python :: 3 :: Only",
+    ]
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "test"
+    requires-python = ">=3.10,<3.12"
+    classifiers = [
+      "Development Status :: 4 - Beta",
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+    ]
+    "#},
+    false,
+    (3, 13),
+    true,
+)]
+fn test_complex_classifier_deletion_and_addition(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] keep_full_version: bool,
+    #[case] max_supported_python: (u8, u8),
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(
+        start,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+    );
+    assert_eq!(got, expected);
+    let again = evaluate(
+        &got,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+    );
+    assert_eq!(again, expected);
+}
+
+#[rstest]
+#[case::single_line_classifiers_with_addition(
+    indoc ! {r#"
+    [project]
+    name = "test"
+    requires-python = ">=3.11"
+    classifiers = ["License :: OSI Approved :: MIT License"]
+    "#},
+    indoc ! {r#"
+    [project]
+    name = "test"
+    requires-python = ">=3.11"
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+    ]
+    "#},
+    false,
+    (3, 13),
+    true,
+)]
+fn test_classifier_addition_to_single_entry(
+    #[case] start: &str,
+    #[case] expected: &str,
+    #[case] keep_full_version: bool,
+    #[case] max_supported_python: (u8, u8),
+    #[case] generate_python_version_classifiers: bool,
+) {
+    let got = evaluate(
+        start,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+    );
+    assert_eq!(got, expected);
+}
+
+#[test]
+fn test_classifiers_with_mixed_value_types() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        requires-python = ">=3.11"
+        classifiers = [
+          "License :: OSI Approved :: MIT License",
+          42,
+          "Development Status :: 4 - Beta",
+        ]
+        "#};
+    let result = evaluate(start, false, (3, 13), true);
+    assert!(result.contains("Programming Language :: Python :: 3.11"));
+}
+#[test]
+fn test_requires_python_with_unrecognized_operator() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        requires-python = "===3.11"
+        "#};
+    let result = evaluate(start, false, (3, 13), true);
+    assert!(result.contains("requires-python = \"===3.11\""));
+}
+
+#[test]
+fn test_requires_python_with_tilde_greater_operator() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        requires-python = "~>3.11"
+        "#};
+    let result = evaluate(start, false, (3, 13), false);
+    assert!(result.contains("requires-python = \"~>3.11\""));
 }
