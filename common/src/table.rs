@@ -111,7 +111,6 @@ fn calculate_order(
     table_set: &[RefCell<Vec<SyntaxElement>>],
     ordering: &[&str],
 ) -> Vec<String> {
-    let max_ordering = ordering.len() * 2;
     let key_to_pos = ordering
         .iter()
         .enumerate()
@@ -125,19 +124,44 @@ fn calculate_order(
         .map(|(k, v)| (k, *v.iter().min().unwrap()))
         .collect();
 
-    header_pos.sort_by_cached_key(|(k, file_pos)| -> (usize, usize) {
-        let key = get_key(k);
-        let pos = key_to_pos.get(&key.as_str());
+    // Calculate the first file position for each base key (e.g., tool.hatch)
+    let mut base_key_first_pos: HashMap<String, usize> = HashMap::new();
+    for (k, file_pos) in &header_pos {
+        let base = get_key(k);
+        base_key_first_pos
+            .entry(base)
+            .and_modify(|p| *p = (*p).min(*file_pos))
+            .or_insert(*file_pos);
+    }
 
-        (
-            if let Some(&pos) = pos {
-                let offset = usize::from(key != *k);
-                pos + offset
-            } else {
-                max_ordering
-            },
-            *file_pos,
-        )
+    header_pos.sort_by(|(k1, _), (k2, _)| {
+        let key1 = get_key(k1);
+        let key2 = get_key(k2);
+        let pos1 = key_to_pos.get(&key1.as_str());
+        let pos2 = key_to_pos.get(&key2.as_str());
+
+        match (pos1, pos2) {
+            // Both in ordering list: sort by position, then alphabetically within same tool
+            (Some(&p1), Some(&p2)) => {
+                let offset1 = usize::from(key1 != *k1);
+                let offset2 = usize::from(key2 != *k2);
+                (p1 + offset1)
+                    .cmp(&(p2 + offset2))
+                    .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
+            }
+            // Only first in ordering list: first comes before
+            (Some(_), None) => std::cmp::Ordering::Less,
+            // Only second in ordering list: second comes before
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            // Neither in ordering list: sort by first file position of the base key, then alphabetically
+            (None, None) => {
+                let base_pos1 = base_key_first_pos.get(&key1).unwrap_or(&usize::MAX);
+                let base_pos2 = base_key_first_pos.get(&key2).unwrap_or(&usize::MAX);
+                base_pos1
+                    .cmp(base_pos2)
+                    .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
+            }
+        }
     });
     header_pos.into_iter().map(|(k, _)| k).collect()
 }

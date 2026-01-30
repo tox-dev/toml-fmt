@@ -126,6 +126,78 @@ fn test_tables_get_non_existing() {
         line-length = 120
     "#}
 )]
+#[case::unknown_tools_file_order_subtables_alphabetical(
+    // tool.flake8 appears first in file, so it stays first
+    // tool.cff-from-621 appears second, with its subtable after
+    // tool.coverage subtables are sorted alphabetically (report < run)
+    // tool.hatch subtables are sorted alphabetically (linting < mypy < unit-tests)
+    indoc! {r#"
+        [tool.flake8]
+
+        [tool.cff-from-621]
+        [tool.cff-from-621.static]
+
+        [tool.coverage.run]
+        [tool.coverage.report]
+
+        [tool.hatch.envs.linting]
+        [tool.hatch.envs.linting.scripts]
+
+        [tool.hatch.envs.unit-tests]
+        [tool.hatch.envs.unit-tests.scripts]
+
+        [tool.hatch.envs.mypy]
+        [tool.hatch.envs.mypy.scripts]
+    "#},
+    &["project", "tool"],
+    indoc! {r#"
+        [tool.flake8]
+
+        [tool.cff-from-621]
+        [tool.cff-from-621.static]
+
+        [tool.coverage.report]
+
+        [tool.coverage.run]
+
+        [tool.hatch.envs.linting]
+        [tool.hatch.envs.linting.scripts]
+
+        [tool.hatch.envs.mypy]
+        [tool.hatch.envs.mypy.scripts]
+        [tool.hatch.envs.unit-tests]
+        [tool.hatch.envs.unit-tests.scripts]
+    "#}
+)]
+#[case::same_tool_subtables_sorted_short_to_long(
+    // Within same tool, subtables sorted alphabetically (short before long)
+    indoc! {r#"
+        [tool.hatch.envs.test.scripts]
+        [tool.hatch.envs.test]
+        [tool.hatch]
+    "#},
+    &["tool"],
+    indoc! {r#"
+        [tool.hatch]
+        [tool.hatch.envs.test]
+        [tool.hatch.envs.test.scripts]
+    "#}
+)]
+#[case::different_tools_preserve_file_order(
+    // tool.zebra appears first in file, tool.alpha appears second
+    // file order is preserved between different tools
+    indoc! {r#"
+        [tool.zebra]
+
+        [tool.alpha]
+    "#},
+    &["tool"],
+    indoc! {r#"
+        [tool.zebra]
+
+        [tool.alpha]
+    "#}
+)]
 fn test_tables_reorder(#[case] start: &str, #[case] order: &[&str], #[case] expected: &str) {
     let root_ast = parse(start).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);

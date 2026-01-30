@@ -84,10 +84,10 @@ use common::table::Tables;
 
     [tool.coverage]
     aa = "bb"
-    [tool.coverage.report]
-    cd = "de"
     [tool.coverage.paths]
     ab = "bc"
+    [tool.coverage.report]
+    cd = "de"
     [tool.coverage.run]
     ef = "fg"
 
