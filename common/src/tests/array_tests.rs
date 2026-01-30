@@ -4,7 +4,7 @@ use taplo::formatter::{format_syntax, Options};
 use taplo::parser::parse;
 use taplo::syntax::SyntaxKind::{ENTRY, VALUE};
 
-use crate::array::{sort, sort_strings, transform};
+use crate::array::{dedupe_strings, sort, sort_strings, transform};
 use crate::pep508::Requirement;
 
 #[rstest]
@@ -211,4 +211,68 @@ fn test_sort_empty_array_direct() {
     }
     let res = root_ast.to_string();
     assert_eq!(res, "a=[]");
+}
+
+#[rstest]
+#[case::no_duplicates(
+        indoc ! {r#"
+    a = ["A", "B", "C"]
+    "#},
+        indoc ! {r#"
+    a = ["A", "B", "C"]
+    "#}
+)]
+#[case::basic_duplicates(
+        indoc ! {r#"
+    a = ["A", "a", "B", "A"]
+    "#},
+        indoc ! {r#"
+    a = ["A", "B"]
+    "#}
+)]
+#[case::empty_array(
+        indoc ! {r"
+    a = []
+    "},
+        indoc ! {r"
+    a = []
+    "}
+)]
+#[case::multiline_with_trailing_duplicate(
+        indoc ! {r#"
+    a = [
+      "A",
+      "B",
+      "a",
+    ]
+    "#},
+        indoc ! {r#"
+    a = ["A", "B"]
+    "#}
+)]
+#[case::duplicate_at_end_no_trailing_comma(
+        indoc ! {r#"
+    a = ["A", "B", "a"]
+    "#},
+        indoc ! {r#"
+    a = ["A", "B"]
+    "#}
+)]
+fn test_dedupe_strings(#[case] start: &str, #[case] expected: &str) {
+    let root_ast = parse(start).into_syntax().clone_for_update();
+    for children in root_ast.children_with_tokens() {
+        if children.kind() == ENTRY {
+            for entry in children.as_node().unwrap().children_with_tokens() {
+                if entry.kind() == VALUE {
+                    dedupe_strings(entry.as_node().unwrap(), |s| s.to_lowercase());
+                }
+            }
+        }
+    }
+    let opt = Options {
+        column_width: 120,
+        ..Options::default()
+    };
+    let res = format_syntax(root_ast, opt);
+    assert_eq!(res, expected);
 }

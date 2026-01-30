@@ -1,8 +1,8 @@
 use std::cell::RefCell;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use taplo::syntax::SyntaxKind::{ARRAY, COMMA, NEWLINE, STRING, VALUE, WHITESPACE};
+use taplo::syntax::SyntaxKind::{ARRAY, BRACKET_END, COMMA, NEWLINE, STRING, VALUE, WHITESPACE};
 use taplo::syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
 use crate::create::{make_comma, make_newline};
@@ -154,4 +154,59 @@ where
         },
         cmp,
     );
+}
+
+/// Remove duplicate string entries from an array (case-insensitive comparison)
+pub fn dedupe_strings<K>(node: &SyntaxNode, to_key: K)
+where
+    K: Fn(&str) -> String,
+{
+    iter(node, [ARRAY].as_ref(), &|array| {
+        let mut seen: HashSet<String> = HashSet::new();
+        let mut to_insert: Vec<SyntaxElement> = Vec::new();
+        let mut skip_until_next_value = false;
+        let count = array.children_with_tokens().count();
+
+        for entry in array.children_with_tokens() {
+            match entry.kind() {
+                VALUE => {
+                    let mut key: Option<String> = None;
+                    for child in entry.as_node().unwrap().children_with_tokens() {
+                        if child.kind() == STRING {
+                            let text = load_text(child.as_token().unwrap().text(), STRING);
+                            key = Some(to_key(&text));
+                            break;
+                        }
+                    }
+                    if let Some(k) = key {
+                        if seen.contains(&k) {
+                            skip_until_next_value = true;
+                            continue;
+                        }
+                        seen.insert(k);
+                    }
+                    skip_until_next_value = false;
+                    to_insert.push(entry);
+                }
+                COMMA | NEWLINE | WHITESPACE if skip_until_next_value => {
+                    continue;
+                }
+                BRACKET_END if skip_until_next_value => {
+                    // Remove trailing comma before bracket if we skipped last value
+                    while let Some(last) = to_insert.last() {
+                        if last.kind() == COMMA || last.kind() == NEWLINE || last.kind() == WHITESPACE {
+                            to_insert.pop();
+                        } else {
+                            break;
+                        }
+                    }
+                    to_insert.push(entry);
+                }
+                _ => {
+                    to_insert.push(entry);
+                }
+            }
+        }
+        array.splice_children(0..count, to_insert);
+    });
 }

@@ -178,6 +178,47 @@ fn evaluate(
         (3, 9),
         true,
 )]
+#[case::project_dedupe_keywords(
+        indoc ! {r#"
+    [project]
+    keywords = ["Python", "python", "PYTHON", "toml", "Toml"]
+    "#},
+        indoc ! {r#"
+    [project]
+    keywords = [
+      "Python",
+      "toml",
+    ]
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+    ]
+    "#},
+        true,
+        (3, 9),
+        true,
+)]
+#[case::project_dedupe_classifiers(
+        indoc ! {r#"
+    [project]
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Topic :: Software Development",
+      "license :: osi approved :: mit license",
+      "TOPIC :: SOFTWARE DEVELOPMENT",
+    ]
+    "#},
+        indoc ! {r#"
+    [project]
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Topic :: Software Development",
+    ]
+    "#},
+        true,
+        (3, 9),
+        false,
+)]
 #[case::project_sort_dynamic(
         indoc ! {r#"
     [project]
