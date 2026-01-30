@@ -367,7 +367,14 @@ def test_expand_tables_override(tmp_path: Path) -> None:
     filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     # Use short format but expand project tables
-    res = run([str(filename), "--table-format", "short", "--expand-tables", "project", "--no-generate-python-version-classifiers"])
+    res = run([
+        str(filename),
+        "--table-format",
+        "short",
+        "--expand-tables",
+        "project",
+        "--no-generate-python-version-classifiers",
+    ])
 
     assert res == 1
 
@@ -388,7 +395,16 @@ def test_collapse_tables_override(tmp_path: Path) -> None:
     filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     # Use long format, set expand, but collapse overrides
-    res = run([str(filename), "--table-format", "long", "--expand-tables", "project", "--collapse-tables", "project", "--no-generate-python-version-classifiers"])
+    res = run([
+        str(filename),
+        "--table-format",
+        "long",
+        "--expand-tables",
+        "project",
+        "--collapse-tables",
+        "project",
+        "--no-generate-python-version-classifiers",
+    ])
 
     assert res == 1
 
