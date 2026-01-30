@@ -44,8 +44,13 @@ where
         let mut add_to_order_sets = |entry: T| {
             let mut entry_set_borrow = current_set.borrow_mut();
             if !entry_set_borrow.is_empty() {
-                key_to_order_set.insert(entry, order_sets.len());
-                order_sets.push(entry_set_borrow.clone());
+                if let Some(&existing_idx) = key_to_order_set.get(&entry) {
+                    // Append to existing order set for duplicate keys (e.g., same package with different markers)
+                    order_sets[existing_idx].extend(entry_set_borrow.clone());
+                } else {
+                    key_to_order_set.insert(entry, order_sets.len());
+                    order_sets.push(entry_set_borrow.clone());
+                }
                 entry_set_borrow.clear();
             }
         };
