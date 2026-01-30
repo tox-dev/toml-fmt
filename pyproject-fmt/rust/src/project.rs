@@ -1,5 +1,5 @@
 use common::array::{dedupe_strings, sort, sort_strings, transform};
-use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_newline};
+use common::create::{make_array, make_array_entry, make_comma, make_entry_of_string, make_key, make_newline};
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
 use common::table::{collapse_sub_tables, for_entries, reorder_table_keys, Tables};
@@ -170,6 +170,7 @@ pub fn fix(
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
     });
+    normalize_extra_names(table);
     reorder_table_keys(
         table,
         &[
@@ -514,4 +515,31 @@ fn get_python_requires_with_classifier(
     let min_py = (3, *mins.iter().max().unwrap_or(&min_supported_python.1));
     let max_py = (3, *maxs.iter().min().unwrap_or(&max_supported_python.1));
     (min_py, max_py, omit, classifiers)
+}
+
+fn normalize_extra_names(table: &mut RefMut<Vec<SyntaxElement>>) {
+    static EXTRA_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"[-_.]+").unwrap());
+    for element in table.iter() {
+        if element.kind() != ENTRY {
+            continue;
+        }
+        let entry_node = element.as_node().unwrap();
+        for child in entry_node.children_with_tokens() {
+            if child.kind() != KEY {
+                continue;
+            }
+            let key_node = child.as_node().unwrap();
+            let key_text = key_node.text().to_string().trim().to_string();
+            if !key_text.starts_with("optional-dependencies.") {
+                continue;
+            }
+            let extra_name = key_text.strip_prefix("optional-dependencies.").unwrap();
+            let normalized = EXTRA_RE.replace_all(&extra_name.to_lowercase(), "-").to_string();
+            if extra_name != normalized {
+                let new_key = make_key(&format!("optional-dependencies.{normalized}"));
+                let count = key_node.children_with_tokens().count();
+                key_node.splice_children(0..count, new_key.as_node().unwrap().children_with_tokens().collect());
+            }
+        }
+    }
 }
