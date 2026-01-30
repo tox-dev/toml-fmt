@@ -49,6 +49,14 @@ fn test_get_canonic_requirement_name(#[case] start: &str, #[case] expected: &str
 #[case::post_no_number("pkg>=2.7.post", "pkg>=2.7.post0", false)]
 #[case::dev_no_number("pkg>=2.7.dev", "pkg>=2.7.dev0", false)]
 #[case::name_only("requests", "requests", false)]
+#[case::private_simple("requests; private", "requests; private", false)]
+#[case::private_with_version("requests>=2.0; private", "requests>=2; private", false)]
+#[case::private_with_marker(
+    "requests>=2.0; os_name=='linux'; private",
+    "requests>=2; os_name=='linux'; private",
+    false
+)]
+#[case::private_spacing("requests ;  PRIVATE  ", "requests; private", false)]
 fn test_format_requirement(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     let got = Requirement::new(start)
         .unwrap()
