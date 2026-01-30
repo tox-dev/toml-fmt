@@ -62,6 +62,33 @@ controlled by ``table_format``, ``expand_tables``, and ``collapse_tables`` confi
 **Entry Points** - The ``[project.entry-points]`` section is formatted as inline tables for compactness unless
 expanded by configuration.
 
+Handled Tables
+~~~~~~~~~~~~~~
+
+``pyproject-fmt`` applies intelligent formatting to the following tables and sections in your ``pyproject.toml`` file.
+
+The ``[build-system]`` table receives special attention: dependencies in the ``requires`` array are normalized and
+sorted alphabetically by canonical package name. The table keys are reordered to a consistent order: ``build-backend``,
+``requires``, then ``backend-path``.
+
+The ``[project]`` table is formatted with reorered keys in a logical order and receives transformations on several
+sub-sections. Authors and maintainers can be formatted as inline tables or expanded array of tables. Project URLs,
+scripts, GUI scripts, and entry points are formatted according to your ``table_format`` configuration and can be
+individually controlled via ``expand_tables`` and ``collapse_tables``. Python version classifiers are automatically
+maintained based on your ``requires-python`` setting.
+
+The ``[dependency-groups]`` table (introduced in PEP 735) is processed where all dependencies are normalized according
+to PEP 508 and sorted. Each dependency group is treated as an array, and entries can be simple strings or inline tables
+with include-group references, which are sorted appropriately.
+
+Tool-specific sections under ``[tool]`` follow a predefined order to ensure consistency across projects. The formatter
+recognizes over 50 tool sections (including poetry, pdm, setuptools, ruff, mypy, pytest, tox, coverage, and many others)
+and orders them in a standard sequence. The ``[tool.ruff]`` section receives special treatment where sub-sections like
+``lint``, ``format``, and others can be collapsed or expanded, and configuration lists are sorted.
+
+Any other tables in your file are preserved and reordered according to the standard table ordering rules, but receive
+minimal transformation unless they match one of the recognized patterns above.
+
 Use
 ---
 

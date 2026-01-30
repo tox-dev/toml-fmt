@@ -44,6 +44,30 @@ respects your configuration and ensures reproducible ordering.
 match the ``env_list`` order when specified, allowing you to control which test environments run first, and preserving
 the ordering across formatting operations.
 
+Handled Tables
+~~~~~~~~~~~~~~
+
+``tox-toml-fmt`` applies formatting to the following sections in your ``tox.toml`` file.
+
+The root-level configuration including keys like ``env_list``, ``min_version``, ``skip_missing_interpreters``, and
+other global tox settings appear at the top of your formatted file and are preserved in their original form.
+
+The ``[env_run_base]`` section, which defines base configuration inherited by all environments, is positioned after
+root-level settings. This is a special section that sets up shared behavior for test environments, like shared
+dependencies or common settings that apply across the board.
+
+Environment-specific sections follow the pattern ``[env.NAME]`` where ``NAME`` is the environment identifier (such as
+``py38``, ``py39``, ``lint``, ``type-check``, or any custom environment you define). These sections are ordered
+according to your ``env_list`` configuration if specified, ensuring that environments run in your preferred sequence.
+Any environments not explicitly listed in ``env_list`` are placed at the end, maintaining deterministic ordering across
+formatting operations.
+
+Within environment sections, configuration keys are preserved and arrays/dictionaries are formatted according to column
+width and indentation settings, just like in pyproject.toml. Comments are fully preserved and aligned for readability.
+
+Any other custom sections or keys in your tox.toml file are preserved and positioned according to the standard table
+ordering, ensuring your configuration remains valid and your custom settings are maintained.
+
 Use
 ---
 
