@@ -243,6 +243,33 @@ fn evaluate(
         (3, 9),
         true,
 )]
+#[case::project_collapse_authors_array_of_tables(
+        indoc ! {r#"
+    [project]
+    name = "my-app"
+    [[project.authors]]
+    name = "Joe Blogs"
+    email = "joe@example.com"
+    [[project.authors]]
+    name = "Jane Doe"
+    email = "jane@example.com"
+    "#},
+        indoc ! {r#"
+    [project]
+    name = "my-app"
+    authors = [
+      { name = "Jane Doe", email = "jane@example.com" },
+      { name = "Joe Blogs", email = "joe@example.com" },
+    ]
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+    ]
+    "#},
+        true,
+        (3, 9),
+        true,
+)]
 #[case::project_name_norm(
         indoc ! {r#"
     [project]
