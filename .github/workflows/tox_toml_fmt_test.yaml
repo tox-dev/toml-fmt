@@ -1,4 +1,4 @@
-name: Test tox-toml-fmt
+name: 🧪 tox-toml-fmt
 on:
   workflow_dispatch:
   push:
@@ -12,119 +12,120 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rust-lint:
+  clippy:
+    name: 📎 clippy
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
-      - name: Lint rust code with clippy
+      - name: 📎 Run Clippy
         run: cargo clippy -p tox-toml-fmt --all-targets -- -D warnings
 
-  rust-fmt:
+  fmt:
+    name: 🎨 fmt
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: tox-toml-fmt
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
-      - name: Rust formatting check
+      - name: 🎨 Check formatting
         run: cargo fmt -p tox-toml-fmt --check
 
-  rust-build:
+  build:
+    name: 🔨 build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Build library
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 🔨 Build
         run: cargo build -p tox-toml-fmt
 
-  rust-test:
+  test:
+    name: ✅ test
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo test -p tox-toml-fmt
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: ✅ Run tests
+        run: cargo test -p tox-toml-fmt
 
-  py-test:
-    name: test ${{ matrix.py }} ${{ matrix.os }}
-    runs-on: ubuntu-24.04
+  py:
+    name: 🐍 ${{ matrix.py }} @ ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        py:
-          - "3.14"
-          - "3.13"
-          - "3.12"
-          - "3.11"
-          - "3.10"
-        os:
-          - ubuntu-24.04
-          - windows-2025
-          - macos-15
+        py: ["3.14", "3.13", "3.12", "3.11", "3.10"]
+        os: [ubuntu-24.04, windows-2025, macos-15]
     defaults:
       run:
         working-directory: tox-toml-fmt
     steps:
-      - uses: actions/checkout@v6
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Install the latest version of uv
+      - name: 📦 Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
-      - name: Install tox
+      - name: 🔧 Install tox
         run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
-      - name: Install Python
+      - name: 🐍 Install Python ${{ matrix.py }}
         if: matrix.py != '3.14'
-        run: uv python install --python-preference only-managed ${{ matrix.env }}
-      - uses: moonrepo/setup-rust@v1
+        run: uv python install --python-preference only-managed ${{ matrix.py }}
+      - name: 🦀 Setup Rust
+        uses: moonrepo/setup-rust@v1
         with:
           cache-base: main
           bins: cargo-tarpaulin
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup test suite
+      - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.py }}
-      - name: Run test suite
-        run: tox run  --skip-pkg-install -e ${{ matrix.py }}
+      - name: ✅ Run tests
+        run: tox run --skip-pkg-install -e ${{ matrix.py }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
 
-  py-check:
-    name: tox env ${{ matrix.env }}
+  check:
+    name: 🔎 ${{ matrix.env }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        env:
-          - type
-          - dev
-          - pkg_meta
+        env: [type, dev, pkg_meta]
     defaults:
       run:
         working-directory: tox-toml-fmt
     steps:
-      - uses: actions/checkout@v6
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Install the latest version of uv
+      - name: 📦 Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install tox
+      - name: 🔧 Install tox
         run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
-      - name: Setup test suite
+      - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
-      - name: Run test suite
+      - name: ✅ Run tests
         run: tox run --skip-pkg-install -e ${{ matrix.env }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"

@@ -1,4 +1,4 @@
-name: Test common
+name: 🧪 common
 on:
   workflow_dispatch:
   push:
@@ -12,40 +12,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rust-lint:
+  clippy:
+    name: 📎 clippy
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
-      - name: Lint rust code with clippy
+      - name: 📎 Run Clippy
         run: cargo clippy -p common --all-targets -- -D warnings
 
-  rust-fmt:
+  fmt:
+    name: 🎨 fmt
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: common
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: rustfmt
-      - name: Rust formatting check
+      - name: 🎨 Check formatting
         run: cargo fmt -p common --check
 
-  rust-build:
+  build:
+    name: 🔨 build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Build library
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 🔨 Build
         run: cargo build -p common
 
-  rust-test:
+  test:
+    name: ✅ test
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo test -p common
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: ✅ Run tests
+        run: cargo test -p common

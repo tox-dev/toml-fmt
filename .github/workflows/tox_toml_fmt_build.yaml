@@ -1,17 +1,13 @@
-name: Build tox-toml-fmt
+name: 📦 tox-toml-fmt
 on:
   workflow_dispatch:
     inputs:
       release:
-        description: "Cut a release (select semver bump)?"
+        description: "🚀 Release (semver bump)?"
         required: true
         default: "no"
         type: choice
-        options:
-          - "no"
-          - patch
-          - minor
-          - major
+        options: ["no", patch, minor, major]
   push:
     branches: ["main"]
     paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_build.yaml"]
@@ -29,39 +25,44 @@ permissions:
 
 jobs:
   bump:
+    name: 🔖 bump
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: read
     outputs:
-      version: ${{ steps.get-version.outputs.version }}
-      changelog: ${{ steps.get-version.outputs.changelog }}
+      version: ${{ steps.v.outputs.version }}
+      changelog: ${{ steps.v.outputs.changelog }}
     steps:
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - name: Install cargo-edit from crates.io
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 📦 Install cargo-edit
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-edit
-      - uses: actions/checkout@v6
-      - name: Bump version
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🔖 Bump version
         run: cargo set-version -p tox-toml-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
-      - name: Install the latest version of uv
+      - name: 📦 Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "tasks/changelog.py"
-      - name: Generate changelog
-        id: get-version
+      - name: 📝 Generate changelog
+        id: v
         run: uv run tasks/changelog.py tox-toml-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - uses: actions/setup-python@v6
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - uses: pre-commit/action@v3.0.1
+      - name: 🎨 Run pre-commit
+        uses: tox-dev/action-pre-commit-uv@v1
         continue-on-error: true
-      - name: Show changes to the repository
+      - name: 👀 Show changes
         run: git diff HEAD -u
-      - name: Store the patched distribution
+      - name: 📤 Upload source
         uses: actions/upload-artifact@v6
         with:
           name: source
@@ -71,129 +72,117 @@ jobs:
           if-no-files-found: "error"
 
   linux:
+    name: 🐧 ${{ matrix.platform.target }}
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - runner: ubuntu-24.04
-            target: x86_64
-            interpreter: "3.10 pypy3.10"
-          - runner: ubuntu-24.04
-            target: x86
-          - runner: ubuntu-24.04
-            target: x86_64-unknown-linux-musl
-            manylinux: musllinux_1_2
-          - runner: ubuntu-24.04
-            target: i686-unknown-linux-musl
-            manylinux: musllinux_1_2
-          - runner: ubuntu-24.04
-            target: aarch64
-          - runner: ubuntu-24.04
-            target: armv7
-          - runner: ubuntu-24.04
-            target: s390x
-          - runner: ubuntu-24.04
-            target: ppc64le
+          - { runner: ubuntu-24.04, target: x86_64, interpreter: "3.10 pypy3.10" }
+          - { runner: ubuntu-24.04, target: x86 }
+          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
+          - { runner: ubuntu-24.04, target: i686-unknown-linux-musl, manylinux: musllinux_1_2 }
+          - { runner: ubuntu-24.04, target: aarch64 }
+          - { runner: ubuntu-24.04, target: armv7 }
+          - { runner: ubuntu-24.04, target: s390x }
+          - { runner: ubuntu-24.04, target: ppc64le }
     steps:
-      - name: Download the code
+      - name: 📥 Download source
         uses: actions/download-artifact@v7
         with:
           name: source
-      - name: Build wheels
+      - name: 🔨 Build wheels
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
-      - name: Upload wheels
+      - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
 
   windows:
+    name: 🪟 ${{ matrix.platform.target }}
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - runner: windows-2025
-            target: x64
-          - runner: windows-2025
-            target: x86
+          - { runner: windows-2025, target: x64 }
+          - { runner: windows-2025, target: x86 }
     steps:
-      - name: Download the code
+      - name: 📥 Download source
         uses: actions/download-artifact@v7
         with:
           name: source
-      - name: Set up Python 3.10
+      - name: 🐍 Setup Python 3.10
         uses: actions/setup-python@v6
         with:
           python-version: "3.10"
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
-      - name: Build wheels
+      - name: 🔨 Build wheels
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
-      - name: Upload wheels
+      - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: dist
 
   macos:
+    name: 🍎 ${{ matrix.platform.target }}
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - runner: macos-15
-            target: x86_64
-          - runner: macos-15
-            target: aarch64
+          - { runner: macos-15, target: x86_64 }
+          - { runner: macos-15, target: aarch64 }
     steps:
-      - name: Download the code
+      - name: 📥 Download source
         uses: actions/download-artifact@v7
         with:
           name: source
-      - name: Build wheels
+      - name: 🔨 Build wheels
         uses: PyO3/maturin-action@v1.49.4
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --release --out dist --interpreter "3.10 pypy3.10" --target-dir target
-      - name: Upload wheels
+      - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
 
   sdist:
+    name: 📦 sdist
     needs: [bump]
     runs-on: ubuntu-24.04
     steps:
-      - name: Download the code
+      - name: 📥 Download source
         uses: actions/download-artifact@v7
         with:
           name: source
-      - name: Build sdist
+      - name: 📦 Build sdist
         uses: PyO3/maturin-action@v1.49.4
-
         with:
           command: sdist
           args: -m tox-toml-fmt/Cargo.toml --out dist
-      - name: Upload sdist
+      - name: 📤 Upload sdist
         uses: actions/upload-artifact@v6
         with:
           name: wheels-sdist
           path: dist
 
   release:
-    name: Release
+    name: 🚀 release
     runs-on: ubuntu-24.04
     environment:
       name: release
@@ -204,38 +193,40 @@ jobs:
     if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
     needs: [bump, sdist, linux, macos, windows]
     steps:
-      - uses: actions/checkout@v6
-      - name: Download source
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 📥 Download source
         uses: actions/download-artifact@v7
         with:
           name: source
           path: .
-      - name: Show changes to the repository
+      - name: 👀 Show changes
         run: git diff HEAD -u
-      - name: Commit changes
+      - name: 💾 Commit release
         run: |
           git config --global user.name 'Bernat Gabor'
           git config --global user.email 'gaborbernat@users.noreply.github.com'
           git commit -am "Release tox-toml-fmt ${{needs.bump.outputs.version}}"
-      - name: Tag release
+      - name: 🏷️ Tag release
         run: git tag tox-toml-fmt/${{needs.bump.outputs.version}}
-      - name: Download wheels
+      - name: 📥 Download wheels
         uses: actions/download-artifact@v7
         with:
           pattern: wheels-*
           path: dist
           merge-multiple: "true"
-      - name: Show wheels
+      - name: 👀 Show wheels
         run: ls -lth dist
-      - name: Publish to PyPI
+      - name: 🚀 Publish to PyPI
         uses: PyO3/maturin-action@v1.49.4
         with:
           command: upload
           args: --non-interactive --skip-existing dist/*
-      - name: Push release commit+tag and create GitHub release
+      - name: 📢 Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git pull --rebase origin main
           git push
           git push --tags
           gh release create "tox-toml-fmt/${{needs.bump.outputs.version}}" \
