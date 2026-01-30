@@ -34,6 +34,7 @@ pub struct Settings {
 #[pymethods]
 impl Settings {
     #[new]
+    #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, expand_tables, collapse_tables))]
     fn new(
         column_width: usize,

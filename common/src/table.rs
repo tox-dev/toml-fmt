@@ -433,7 +433,10 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
                     let prefix = &key_text[..dot_pos];
                     let rest = &key_text[dot_pos + 1..];
 
-                    groups.entry(String::from(prefix)).or_default().push((String::from(rest), element.clone()));
+                    groups
+                        .entry(String::from(prefix))
+                        .or_default()
+                        .push((String::from(rest), element.clone()));
                     entries_to_remove.insert(entry_index);
                 }
                 entry_index += 1;

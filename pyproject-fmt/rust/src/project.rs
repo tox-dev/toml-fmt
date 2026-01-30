@@ -805,6 +805,10 @@ fn expand_array_of_tables(tables: &mut Tables, full_name: &str, key_order: &[&st
         let new_table = make_table_array_with_entries(full_name, &fields);
         let pos = tables.table_set.len();
         tables.table_set.push(std::cell::RefCell::new(new_table));
-        tables.header_to_pos.entry(String::from(full_name)).or_default().push(pos);
+        tables
+            .header_to_pos
+            .entry(String::from(full_name))
+            .or_default()
+            .push(pos);
     }
 }

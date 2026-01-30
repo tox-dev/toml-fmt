@@ -3,7 +3,9 @@ use rstest::rstest;
 use taplo::formatter::{format_syntax, Options};
 use taplo::parser::parse;
 
-use crate::table::{collapse_sub_tables, expand_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys, Tables};
+use crate::table::{
+    collapse_sub_tables, expand_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys, Tables,
+};
 
 #[test]
 fn test_tables_from_ast_empty() {
