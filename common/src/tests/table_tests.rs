@@ -201,7 +201,7 @@ fn test_tables_get_non_existing() {
 fn test_tables_reorder(#[case] start: &str, #[case] order: &[&str], #[case] expected: &str) {
     let root_ast = parse(start).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, order);
+    tables.reorder(&root_ast, order, &["tool"]); // tool.* uses two-part keys
 
     let res = format_syntax(root_ast, Options::default());
     assert_eq!(res, expected);
@@ -436,7 +436,7 @@ fn test_reorder_with_root_entries() {
 
     assert!(tables.header_to_pos.contains_key(""));
 
-    tables.reorder(&root_ast, &["", "project"]);
+    tables.reorder(&root_ast, &["", "project"], &[]);
     let res = format_syntax(root_ast, Options::default());
     assert!(res.contains("root_key"));
     assert!(res.contains("[project]"));
@@ -456,7 +456,7 @@ fn test_reorder_preserves_empty_lines_between_groups() {
     "#};
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["project", "tool"]);
+    tables.reorder(&root_ast, &["project", "tool"], &["tool"]);
 
     let res = format_syntax(root_ast, Options::default());
     assert!(res.contains("\n\n"));
@@ -546,7 +546,7 @@ fn test_reorder_only_newline_table() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
 
-    tables.reorder(&root_ast, &["", "project"]);
+    tables.reorder(&root_ast, &["", "project"], &[]);
     let res = format_syntax(root_ast, Options::default());
     assert!(res.contains("[project]"));
 }
@@ -672,7 +672,7 @@ fn test_reorder_same_tool_group() {
     "#};
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["tool"]);
+    tables.reorder(&root_ast, &["tool"], &["tool"]);
 
     let res = format_syntax(root_ast, Options::default());
     assert!(res.contains("[tool.black]"));
@@ -684,7 +684,7 @@ fn test_reorder_different_groups_no_trailing_newline() {
     let toml = "[tool.black]\nline-length = 120\n[project]\nname = \"foo\"";
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["project", "tool"]);
+    tables.reorder(&root_ast, &["project", "tool"], &["tool"]);
 
     let res = format_syntax(root_ast, Options::default());
     assert!(res.contains("[project]"));
@@ -728,7 +728,7 @@ fn test_comments_before_table_header_stay_with_that_table() {
     "#};
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["build-system", "project"]);
+    tables.reorder(&root_ast, &["build-system", "project"], &[]);
 
     let res = format_syntax(root_ast, Options::default());
     // The comment should stay with [build-system], not [project]
@@ -748,7 +748,7 @@ fn test_multiple_comments_before_table_header() {
     "#};
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["build-system", "project"]);
+    tables.reorder(&root_ast, &["build-system", "project"], &[]);
 
     let res = format_syntax(root_ast, Options::default());
     // Both comments should stay with [build-system]
@@ -767,7 +767,7 @@ fn test_comment_with_blank_line_before_table_header() {
     "#};
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["build-system", "project"]);
+    tables.reorder(&root_ast, &["build-system", "project"], &[]);
 
     let res = format_syntax(root_ast, Options::default());
     // Comment should stay with [build-system] even with blank line before it

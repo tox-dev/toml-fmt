@@ -72,5 +72,6 @@ pub fn reorder_tables(root_ast: &SyntaxNode<Lang>, tables: &Tables) {
             "tool.ty",
             "tool.django-stubs",
         ],
+        &["tool"], // Treat tool.* as distinct base keys (e.g., tool.black != tool.ruff)
     );
 }

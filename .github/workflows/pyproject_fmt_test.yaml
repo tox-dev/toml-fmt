@@ -76,6 +76,7 @@ jobs:
       - name: 📤 Upload coverage
         uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
           flags: rust
 
