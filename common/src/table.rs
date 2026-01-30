@@ -99,9 +99,12 @@ impl Tables {
         }
     }
 
-    pub fn reorder(&self, root_ast: &SyntaxNode, order: &[&str]) {
+    /// Reorder tables according to the given order.
+    /// `multi_level_prefixes` specifies which prefixes should use two-part keys (e.g., `["tool", "env"]` means
+    /// `tool.black` and `env.docs` are treated as distinct base keys instead of grouping under `tool` or `env`).
+    pub fn reorder(&self, root_ast: &SyntaxNode, order: &[&str], multi_level_prefixes: &[&str]) {
         let mut to_insert = Vec::<SyntaxElement>::new();
-        let order = calculate_order(&self.header_to_pos, &self.table_set, order);
+        let order = calculate_order(&self.header_to_pos, &self.table_set, order, multi_level_prefixes);
         let mut next = order.clone();
         if !next.is_empty() {
             next.remove(0);
@@ -116,7 +119,7 @@ impl Tables {
                         continue;
                     }
                     let mut add = got.clone();
-                    if get_key(name) != get_key(next_name) {
+                    if get_key(name, multi_level_prefixes) != get_key(next_name, multi_level_prefixes) {
                         if last.kind() == NEWLINE {
                             // replace existing newline to ensure single newline
                             add.pop();
@@ -134,6 +137,7 @@ fn calculate_order(
     header_to_pos: &HashMap<String, Vec<usize>>,
     table_set: &[RefCell<Vec<SyntaxElement>>],
     ordering: &[&str],
+    multi_level_prefixes: &[&str],
 ) -> Vec<String> {
     let key_to_pos = ordering
         .iter()
@@ -151,7 +155,7 @@ fn calculate_order(
     // Calculate the first file position for each base key (e.g., tool.hatch)
     let mut base_key_first_pos: HashMap<String, usize> = HashMap::new();
     for (k, file_pos) in &header_pos {
-        let base = get_key(k);
+        let base = get_key(k, multi_level_prefixes);
         base_key_first_pos
             .entry(base)
             .and_modify(|p| *p = (*p).min(*file_pos))
@@ -159,8 +163,8 @@ fn calculate_order(
     }
 
     header_pos.sort_by(|(k1, _), (k2, _)| {
-        let key1 = get_key(k1);
-        let key2 = get_key(k2);
+        let key1 = get_key(k1, multi_level_prefixes);
+        let key2 = get_key(k2, multi_level_prefixes);
         let pos1 = key_to_pos.get(&key1.as_str());
         let pos2 = key_to_pos.get(&key2.as_str());
 
@@ -190,10 +194,12 @@ fn calculate_order(
     header_pos.into_iter().map(|(k, _)| k).collect()
 }
 
-fn get_key(k: &str) -> String {
+fn get_key(k: &str, multi_level_prefixes: &[&str]) -> String {
     let parts: Vec<&str> = k.splitn(3, '.').collect();
     if !parts.is_empty() {
-        return if parts[0] == "tool" && parts.len() >= 2 {
+        // Check if the first part is in the multi-level prefixes list
+        let is_multi_level = multi_level_prefixes.iter().any(|prefix| *prefix == parts[0]);
+        return if is_multi_level && parts.len() >= 2 {
             parts[0..2].join(".")
         } else {
             String::from(parts[0])
