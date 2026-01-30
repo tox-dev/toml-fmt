@@ -400,7 +400,7 @@ fn get_python_requires_with_classifier(
     for_entries(table, &mut |key, entry| {
         if key == "requires-python" {
             static RE: LazyLock<Regex> =
-                LazyLock::new(|| Regex::new(r"^(?<op><|<=|==|!=|>=|>)3[.](?<minor>\d+)").unwrap());
+                LazyLock::new(|| Regex::new(r"^(?<op><|<=|==|!=|>=|>|~=)3[.](?<minor>\d+)").unwrap());
             for child in entry.children_with_tokens() {
                 if child.kind() == STRING {
                     let found_str_value = load_text(child.as_token().unwrap().text(), STRING);
@@ -408,7 +408,8 @@ fn get_python_requires_with_classifier(
                         if let Some(caps) = RE.captures(part) {
                             let minor = caps["minor"].parse::<u8>().unwrap();
                             match &caps["op"] {
-                                "==" => {
+                                "==" | "~=" => {
+                                    // ~= is compatible release: ~=3.12.7 means >=3.12.7,<3.13
                                     mins.push(minor);
                                     maxs.push(minor);
                                 }
