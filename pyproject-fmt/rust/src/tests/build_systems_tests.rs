@@ -85,6 +85,27 @@ fn evaluate(start: &str, keep_full_version: bool) -> String {
     "#},
         false
 )]
+#[case::issue_2_python_version_marker(
+        indoc ! {r#"
+    [build-system]
+    requires = [
+      "cython==3.0.11",
+      "numpy==1.22.2; python_version<'3.9'",
+      "numpy>=2; python_version>='3.9'",
+      "setuptools",
+    ]
+    "#},
+        indoc ! {r#"
+    [build-system]
+    requires = [
+      "cython==3.0.11",
+      "numpy==1.22.2; python_version<'3.9'",
+      "numpy>=2; python_version>='3.9'",
+      "setuptools",
+    ]
+    "#},
+        true
+)]
 fn test_format_build_systems(#[case] start: &str, #[case] expected: &str, #[case] keep_full_version: bool) {
     assert_eq!(evaluate(start, keep_full_version), expected);
 }
