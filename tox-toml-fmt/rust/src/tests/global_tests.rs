@@ -32,11 +32,11 @@ use common::table::Tables;
         [env_run_base]
         description = "base"
 
-        [env.type]
-        description = "type"
-
         [env.docs]
         description = "docs"
+
+        [env.type]
+        description = "type"
 
         [demo]
         desc = "demo"
