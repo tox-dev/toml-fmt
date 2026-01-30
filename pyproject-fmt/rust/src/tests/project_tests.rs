@@ -670,6 +670,27 @@ fn evaluate(
     (3, 14),
     false,
 )]
+#[case::issue_20_compatible_release(
+    indoc! {r#"
+    [project]
+    requires-python = "~=3.12.7"
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+    ]
+    "#},
+    indoc! {r#"
+    [project]
+    requires-python = "~=3.12.7"
+    classifiers = [
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.12",
+    ]
+    "#},
+    true,
+    (3, 13),
+    true,
+)]
 fn test_format_project(
     #[case] start: &str,
     #[case] expected: &str,
