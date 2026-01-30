@@ -9,7 +9,13 @@ edition = "2021"
 
 [dependencies]
 regex = { version = "1.12.2" }
-taplo = "0.14.0"                          # formatter
+# Taplo provides TOML parsing and syntax tree manipulation built on rowan
+# Public APIs we use:
+# - taplo::parser::parse - Parse TOML into syntax tree
+# - taplo::syntax - Syntax node types and traversal
+# - taplo::util::{unescape, check_escape} - String escape handling
+# Note: taplo::dom exists but we haven't investigated if it's useful for our mutation patterns
+taplo = "0.14.0"
 
 [dev-dependencies]
 rstest = "0.26.1" # parametrized tests
