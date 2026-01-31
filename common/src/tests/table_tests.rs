@@ -1267,3 +1267,38 @@ fn test_expand_sub_table_with_multiple_dotted_keys() {
     assert!(txt.contains("repository"));
     assert!(txt.contains("documentation"));
 }
+
+#[test]
+fn test_tables_duplicate_merge_adds_newline() {
+    let toml = concat!(
+        "[project]\n",
+        "name = \"foo\"", // no trailing newline here to trigger branch
+        "[tool]\n",
+        "x = 1\n",
+        "[project]\n",
+        "version = \"1.0\"",
+    );
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    assert_eq!(tables.header_to_pos["project"].len(), 1);
+    let project = tables.get("project").unwrap();
+    let table = project[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("name"));
+    assert!(txt.contains("version"));
+}
+
+#[test]
+fn test_tables_from_ast_with_root_comments_only() {
+    let toml = indoc! {r#"
+        # This is a root comment
+        # Another comment
+        [project]
+        name = "foo"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    assert!(tables.header_to_pos.contains_key("project"));
+}

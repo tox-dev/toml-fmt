@@ -276,3 +276,41 @@ fn test_dedupe_strings(#[case] start: &str, #[case] expected: &str) {
     let res = format_syntax(root_ast, opt);
     assert_eq!(res, expected);
 }
+
+#[test]
+fn test_sort_with_duplicate_keys() {
+    let start = indoc! {r#"
+        a = [
+            "pkg; marker1",
+            "other",
+            "pkg; marker2",
+        ]
+    "#};
+    let expected = indoc! {r#"
+        a = [
+          "other",
+          "pkg; marker1",
+          "pkg; marker2",
+        ]
+    "#};
+    let root_ast = parse(start).into_syntax().clone_for_update();
+    for children in root_ast.children_with_tokens() {
+        if children.kind() == ENTRY {
+            for entry in children.as_node().unwrap().children_with_tokens() {
+                if entry.kind() == VALUE {
+                    sort_strings::<String, _, _>(
+                        entry.as_node().unwrap(),
+                        |s| s.split(';').next().unwrap_or(&s).trim().to_lowercase(),
+                        &|lhs, rhs| lhs.cmp(rhs),
+                    );
+                }
+            }
+        }
+    }
+    let opt = Options {
+        column_width: 1,
+        ..Options::default()
+    };
+    let res = format_syntax(root_ast, opt);
+    assert_eq!(res, expected);
+}
