@@ -60,6 +60,8 @@ jobs:
       - name: 🎨 Run pre-commit
         uses: tox-dev/action-pre-commit-uv@v1
         continue-on-error: true
+      - name: 📝 Generate README.rst
+        run: python tasks/generate_readme.py pyproject-fmt
       - name: 👀 Show changes
         run: git diff HEAD -u
       - name: 📤 Upload source

@@ -95,6 +95,13 @@ commands = [
     ],
 ]
 
+[env.readme]
+description = "generate README.rst from docs"
+skip_install = true
+dependency_groups = []
+change_dir = "{tox_root}{/}.."
+commands = [["python", "tasks{/}generate_readme.py", "tox-toml-fmt"]]
+
 [env.dev]
 description = "dev environment with all deps at {envdir}"
 package = "editable"

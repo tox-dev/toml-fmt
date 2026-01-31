@@ -14,6 +14,14 @@ predictability, and smaller diffs.
 Formatting Principles
 ---------------------
 
+``tox-toml-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code.
+The tool intentionally provides minimal configuration options because the goal is to establish a single standard format
+that all ``tox.toml`` files follow. Rather than spending time debating formatting preferences, teams can simply run
+``tox-toml-fmt`` and have consistent, predictable results. This opinionated approach has benefits: less time configuring
+tools, smaller diffs when committing changes, and easier code reviews since formatting is never a question. While a few
+key options exist (``column_width``, ``indent``), the tool does not expose dozens of toggles. You get what the
+maintainers have chosen to be the right balance of readability, consistency, and usability.
+
 ``tox-toml-fmt`` applies the following formatting rules to your ``tox.toml`` file:
 
 **Table Organization** - Tables are reordered into a consistent structure, ensuring that your tox configuration follows

@@ -14,6 +14,14 @@ predictability, and smaller diffs.
 Formatting Principles
 ---------------------
 
+``pyproject-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code.
+The tool intentionally provides minimal configuration options because the goal is to establish a single standard format
+that all ``pyproject.toml`` files follow. Rather than spending time debating formatting preferences, teams can simply
+run ``pyproject-fmt`` and have consistent, predictable results. This opinionated approach has benefits: less time
+configuring tools, smaller diffs when committing changes, and easier code reviews since formatting is never a question.
+While a few key options exist (``column_width``, ``indent``, ``table_format``, etc.), the tool does not expose dozens of
+toggles. You get what the maintainers have chosen to be the right balance of readability, consistency, and usability.
+
 ``pyproject-fmt`` applies the following formatting rules to your ``pyproject.toml`` file:
 
 **Table Organization** - Tables are reordered into a consistent structure. The ``[build-system]`` section appears

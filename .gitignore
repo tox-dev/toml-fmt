@@ -3,3 +3,6 @@ target
 dist
 __pycache__
 _lib.abi3.*
+# Generated files
+pyproject-fmt/README.rst
+tox-toml-fmt/README.rst

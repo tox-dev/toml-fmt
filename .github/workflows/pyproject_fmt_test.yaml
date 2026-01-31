@@ -112,6 +112,9 @@ jobs:
           cache-base: main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 📝 Generate README.rst
+        run: tox run -e readme
+        working-directory: pyproject-fmt
       - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.py }}
       - name: ✅ Run tests
@@ -142,6 +145,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: 🔧 Install tox
         run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: 📝 Generate README.rst
+        run: tox run -e readme
+        working-directory: pyproject-fmt
       - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
       - name: ✅ Run tests

@@ -7,7 +7,7 @@ requires = [
 [project]
 name = "tox-toml-fmt"
 description = "Format your pyproject.toml file"
-readme = "README.md"
+readme = { file = "README.rst", content-type = "text/x-rst" }
 keywords = [
   "format",
   "pyproject",
@@ -84,6 +84,9 @@ python-source = "src"
 strip = true
 include = [
   "rust-toolchain.toml",
+  "docs/",
+  "CHANGELOG.md",
+  "README.rst",
 ]
 
 [tool.cibuildwheel]
