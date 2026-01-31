@@ -6,5 +6,6 @@ build:
     rust: "latest"
   commands:
     - pip install tox-uv
+    - tox -c tox-toml-fmt/tox.toml run -e readme
     - tox -c tox-toml-fmt/tox.toml run -e docs -vv --notest
     - tox -c tox-toml-fmt/tox.toml run -e docs --skip-pkg-install --

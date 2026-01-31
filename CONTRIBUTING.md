@@ -16,6 +16,8 @@ configuration sections. Similarly, `tox-toml-fmt/` is another Python package (al
 
 ```
 toml-fmt/                       # Workspace root
+├── tasks/                      # Development scripts
+│   └── generate_readme.py     # Generates README.rst from docs
 ├── common/                     # Shared Rust library
 │   ├── src/
 │   │   ├── lib.rs             # Module exports
@@ -329,6 +331,22 @@ let new_entry = make_entry_of_string(&"key".to_string(), &"value".to_string());
 ```
 
 ## Development Workflow
+
+After cloning the repository, you need to generate README.rst files before using maturin or `uv build`. The README.rst
+files for PyPI are dynamically generated from docs/index.rst and CHANGELOG.md. Without this step, maturin will fail with
+"Failed to read readme... No such file or directory" since pyproject.toml references README.rst.
+
+```bash
+# Required once after cloning (generates README.rst files)
+cd pyproject-fmt && tox run -e readme
+cd tox-toml-fmt && tox run -e readme
+
+# Now maturin/uv build will work
+cd pyproject-fmt && uv build .
+```
+
+The generated README.rst files are git-ignored and persist until you run `git clean -fdx`. You only need to regenerate
+if you modify docs/index.rst or CHANGELOG.md and want the README.rst updated.
 
 The typical development workflow starts with making changes in the Rust code, then running the test suite with
 `cargo test`. Check coverage using `cargo llvm-cov report` to ensure your changes are well-tested. Format your code with
