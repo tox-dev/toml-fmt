@@ -284,6 +284,34 @@ For example:
   table_format = "short"  # Collapse most tables
   expand_tables = ["project.entry-points"]  # But expand entry-points
 
+Specificity rules
+~~~~~~~~~~~~~~~~~
+
+Table selectors follow CSS-like specificity rules: more specific selectors win over less specific ones. When
+determining whether to collapse or expand a table, the formatter checks from most specific to least specific until it
+finds a match.
+
+For example, with this configuration:
+
+.. code-block:: toml
+
+  [tool.pyproject-fmt]
+  table_format = "long"  # Expand all tables by default
+  collapse_tables = ["project"]  # Collapse project sub-tables
+  expand_tables = ["project.optional-dependencies"]  # But expand this specific one
+
+The behavior will be:
+
+- ``project.urls`` → collapsed (matches ``project`` in collapse_tables)
+- ``project.scripts`` → collapsed (matches ``project`` in collapse_tables)
+- ``project.optional-dependencies`` → expanded (matches exactly in expand_tables, more specific than ``project``)
+- ``tool.ruff.lint`` → expanded (no match in collapse/expand, uses table_format default)
+
+This allows you to set broad rules for parent tables while making exceptions for specific sub-tables. The specificity
+check walks up the table hierarchy: for ``project.optional-dependencies``, it first checks if
+``project.optional-dependencies`` is in collapse_tables or expand_tables, then checks ``project``, then falls back to
+the table_format default.
+
 Supported tables
 ~~~~~~~~~~~~~~~~
 
