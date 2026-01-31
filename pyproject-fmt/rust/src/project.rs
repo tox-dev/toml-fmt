@@ -5,7 +5,9 @@ use common::create::{
 };
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
-use common::table::{collapse_sub_tables, expand_sub_tables, for_entries, reorder_table_keys, Tables};
+use common::table::{
+    collapse_sub_table, collect_all_sub_tables, expand_sub_table, for_entries, reorder_table_keys, Tables,
+};
 use common::taplo::syntax::SyntaxKind::{
     ARRAY, BRACKET_END, BRACKET_START, COMMA, ENTRY, IDENT, INLINE_TABLE, KEY, NEWLINE, STRING, VALUE,
 };
@@ -43,10 +45,19 @@ pub fn fix(
     }
 
     // Handle sub-tables (urls, scripts, gui-scripts, optional-dependencies, entry-points)
-    if table_config.should_collapse("project") {
-        collapse_sub_tables(tables, "project");
-    } else {
-        expand_sub_tables(tables, "project");
+    // Process nested sub-tables first (e.g., project.entry-points.tox before project.entry-points)
+    let mut all_sub_tables: Vec<String> = Vec::new();
+    collect_all_sub_tables(tables, "project", &mut all_sub_tables);
+    all_sub_tables.sort_by_key(|b| std::cmp::Reverse(count_unquoted_dots(b)));
+
+    for full_name in all_sub_tables {
+        if let Some((parent, sub)) = split_table_name(&full_name) {
+            if table_config.should_collapse(&full_name) {
+                collapse_sub_table(tables, parent, sub);
+            } else {
+                expand_sub_table(tables, parent, sub);
+            }
+        }
     }
     let table_element = tables.get("project");
     if table_element.is_none() {
@@ -231,6 +242,32 @@ pub fn fix(
             "entry-points",
         ],
     );
+}
+
+fn count_unquoted_dots(s: &str) -> usize {
+    let mut count = 0;
+    let mut in_quotes = false;
+    for c in s.chars() {
+        match c {
+            '"' => in_quotes = !in_quotes,
+            '.' if !in_quotes => count += 1,
+            _ => {}
+        }
+    }
+    count
+}
+
+fn split_table_name(full_name: &str) -> Option<(&str, &str)> {
+    let mut last_unquoted_dot = None;
+    let mut in_quotes = false;
+    for (i, c) in full_name.char_indices() {
+        match c {
+            '"' => in_quotes = !in_quotes,
+            '.' if !in_quotes => last_unquoted_dot = Some(i),
+            _ => {}
+        }
+    }
+    last_unquoted_dot.map(|i| (&full_name[..i], &full_name[i + 1..]))
 }
 
 fn expand_entry_points_inline_tables(table: &mut RefMut<Vec<SyntaxElement>>) {

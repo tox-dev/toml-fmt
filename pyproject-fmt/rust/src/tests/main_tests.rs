@@ -1004,3 +1004,141 @@ fn test_expand_authors_already_expanded() {
     assert!(got.contains("[[project.authors]]"));
     assert!(got.contains("name = \"John Doe\""));
 }
+
+/// Test issue 146: expand_tables keeps specific sub-table expanded while others collapse
+#[rstest]
+fn test_issue_146_expand_specific_subtable() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        [project.optional-dependencies]
+        a = ["b", "c"]
+        [project.urls]
+        homepage = "https://example.com"
+        "#};
+    let settings = Settings {
+        column_width: 120,
+        indent: 4,
+        keep_full_version: true,
+        max_supported_python: (3, 14),
+        min_supported_python: (3, 14),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("project.optional-dependencies")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(
+        got.contains("[project.optional-dependencies]"),
+        "optional-dependencies should stay expanded"
+    );
+    assert!(got.contains("urls.homepage ="), "urls should be collapsed");
+}
+
+/// Test CSS-like specificity: more specific selector wins
+#[rstest]
+fn test_css_specificity_more_specific_wins() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        [project.urls]
+        homepage = "https://example.com"
+        [project.optional-dependencies]
+        dev = ["pytest"]
+        "#};
+    let settings = Settings {
+        column_width: 120,
+        indent: 4,
+        keep_full_version: true,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("long"),
+        expand_tables: vec![String::from("project.urls")],
+        collapse_tables: vec![String::from("project")],
+    };
+    let got = format_toml(start, &settings);
+    assert!(
+        got.contains("[project.urls]"),
+        "project.urls should be expanded (specific)"
+    );
+    assert!(
+        got.contains("optional-dependencies.dev ="),
+        "optional-dependencies should be collapsed (inherits project)"
+    );
+}
+
+/// Test nested table specificity: project.entry-points.tox can be different from project.entry-points
+#[rstest]
+fn test_nested_table_specificity() {
+    use crate::TableFormatConfig;
+    use std::collections::HashSet;
+
+    let mut expand = HashSet::new();
+    expand.insert(String::from("project.entry-points.special"));
+
+    let mut collapse = HashSet::new();
+    collapse.insert(String::from("project.entry-points"));
+
+    let config = TableFormatConfig {
+        default_collapse: false,
+        expand_tables: expand,
+        collapse_tables: collapse,
+    };
+
+    assert!(
+        config.should_collapse("project.entry-points"),
+        "project.entry-points should collapse"
+    );
+    assert!(
+        config.should_collapse("project.entry-points.tox"),
+        "project.entry-points.tox inherits collapse"
+    );
+    assert!(
+        !config.should_collapse("project.entry-points.special"),
+        "project.entry-points.special should expand"
+    );
+}
+
+/// Test parent inheritance: sub-table inherits from parent setting
+#[rstest]
+fn test_parent_inheritance() {
+    use crate::TableFormatConfig;
+    use std::collections::HashSet;
+
+    let mut expand = HashSet::new();
+    expand.insert(String::from("project"));
+
+    let config = TableFormatConfig {
+        default_collapse: true,
+        expand_tables: expand,
+        collapse_tables: HashSet::new(),
+    };
+
+    assert!(!config.should_collapse("project"), "project should expand");
+    assert!(
+        !config.should_collapse("project.urls"),
+        "project.urls inherits expand from project"
+    );
+    assert!(
+        !config.should_collapse("project.optional-dependencies"),
+        "project.optional-dependencies inherits expand"
+    );
+}
+
+/// Test that default_collapse is used when no specific setting exists
+#[rstest]
+fn test_default_collapse_fallback() {
+    use crate::TableFormatConfig;
+    use std::collections::HashSet;
+
+    let config = TableFormatConfig {
+        default_collapse: true,
+        expand_tables: HashSet::new(),
+        collapse_tables: HashSet::new(),
+    };
+
+    assert!(config.should_collapse("project"));
+    assert!(config.should_collapse("project.urls"));
+    assert!(config.should_collapse("tool.ruff.lint"));
+}

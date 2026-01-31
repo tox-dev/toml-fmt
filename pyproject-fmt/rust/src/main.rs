@@ -78,13 +78,25 @@ impl TableFormatConfig {
     }
 
     /// Determine if a table should be collapsed based on configuration.
-    /// Priority: collapse_tables > expand_tables > default_collapse
+    /// Uses CSS-like specificity: most specific selector wins.
+    /// For "project.entry-points.tox", checks in order:
+    ///   1. "project.entry-points.tox"
+    ///   2. "project.entry-points"
+    ///   3. "project"
+    ///   4. default_collapse
     pub fn should_collapse(&self, table_name: &str) -> bool {
-        if self.collapse_tables.contains(table_name) {
-            return true;
-        }
-        if self.expand_tables.contains(table_name) {
-            return false;
+        let mut current = table_name;
+        loop {
+            if self.collapse_tables.contains(current) {
+                return true;
+            }
+            if self.expand_tables.contains(current) {
+                return false;
+            }
+            match current.rfind('.') {
+                Some(dot_pos) => current = &current[..dot_pos],
+                None => break,
+            }
         }
         self.default_collapse
     }

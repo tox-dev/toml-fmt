@@ -4,7 +4,8 @@ use taplo::formatter::{format_syntax, Options};
 use taplo::parser::parse;
 
 use crate::table::{
-    collapse_sub_tables, expand_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys, Tables,
+    collapse_sub_table, collapse_sub_tables, collect_all_sub_tables, expand_sub_table, expand_sub_tables, find_key,
+    for_entries, get_table_name, reorder_table_keys, Tables,
 };
 
 #[test]
@@ -879,4 +880,390 @@ fn test_expand_and_collapse_are_inverses() {
     let table = main[0].borrow();
     let txt = table.iter().map(|e| e.to_string()).collect::<String>();
     assert!(txt.contains("urls.homepage"));
+}
+
+#[test]
+fn test_collapse_sub_table_single() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+        homepage = "https://example.com"
+
+        [project.scripts]
+        cli = "pkg:main"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "urls");
+
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("urls.homepage"), "urls should be collapsed");
+
+    let scripts = tables.get("project.scripts").unwrap();
+    let scripts_table = scripts[0].borrow();
+    assert!(!scripts_table.is_empty(), "scripts should NOT be collapsed");
+}
+
+#[test]
+fn test_collapse_sub_table_creates_parent() {
+    let toml = indoc! {r#"
+        [project.urls]
+        homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    assert!(!tables.header_to_pos.contains_key("project"));
+    collapse_sub_table(&mut tables, "project", "urls");
+    assert!(tables.header_to_pos.contains_key("project"));
+}
+
+#[test]
+fn test_collapse_sub_table_skips_array_tables() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [[project.authors]]
+        name = "Alice"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "authors");
+
+    let authors = tables.get("project.authors").unwrap();
+    let authors_table = authors[0].borrow();
+    assert!(!authors_table.is_empty(), "array tables should not be collapsed");
+}
+
+#[test]
+fn test_collapse_sub_table_non_existent() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "nonexistent");
+}
+
+#[test]
+fn test_expand_sub_table_single() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+        scripts.cli = "pkg:main"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_table(&mut tables, "project", "urls");
+
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+    assert!(
+        !tables.header_to_pos.contains_key("project.scripts"),
+        "scripts should NOT be expanded"
+    );
+
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("scripts.cli"), "scripts should remain as dotted key");
+    assert!(!txt.contains("urls.homepage"), "urls should be removed from parent");
+}
+
+#[test]
+fn test_expand_sub_table_non_existent_parent() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_table(&mut tables, "nonexistent", "urls");
+}
+
+#[test]
+fn test_expand_sub_table_no_matching_keys() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        version = "1.0"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    let initial_count = tables.header_to_pos.len();
+    expand_sub_table(&mut tables, "project", "urls");
+    assert_eq!(tables.header_to_pos.len(), initial_count);
+}
+
+#[test]
+fn test_collect_all_sub_tables_simple() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+        homepage = "https://example.com"
+
+        [project.scripts]
+        cli = "pkg:main"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "project", &mut result);
+
+    assert!(result.contains(&String::from("project.urls")));
+    assert!(result.contains(&String::from("project.scripts")));
+}
+
+#[test]
+fn test_collect_all_sub_tables_nested() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.entry-points]
+        [project.entry-points.tox]
+        tox = "tox.plugin"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "project", &mut result);
+
+    assert!(result.contains(&String::from("project.entry-points")));
+    assert!(result.contains(&String::from("project.entry-points.tox")));
+}
+
+#[test]
+fn test_collect_all_sub_tables_from_dotted_keys() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "project", &mut result);
+
+    assert!(result.contains(&String::from("project.urls")));
+}
+
+#[test]
+fn test_collect_all_sub_tables_empty() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "project", &mut result);
+
+    assert!(result.is_empty());
+}
+
+#[test]
+fn test_collapse_sub_table_multiple_main_positions() {
+    let toml = indoc! {r#"
+        [[project]]
+        name = "a"
+
+        [[project]]
+        name = "b"
+
+        [project.urls]
+        homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "urls");
+
+    let urls = tables.get("project.urls").unwrap();
+    assert!(
+        !urls[0].borrow().is_empty(),
+        "should not collapse when multiple main positions"
+    );
+}
+
+#[test]
+fn test_expand_sub_table_multiple_main_positions() {
+    let toml = indoc! {r#"
+        [[project]]
+        name = "a"
+        urls.homepage = "https://example.com"
+
+        [[project]]
+        name = "b"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    let initial_count = tables.header_to_pos.len();
+    expand_sub_table(&mut tables, "project", "urls");
+
+    assert_eq!(
+        tables.header_to_pos.len(),
+        initial_count,
+        "should not expand when multiple main positions"
+    );
+}
+
+#[test]
+fn test_collapse_sub_table_multiple_sub_positions() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+        homepage = "https://example.com"
+
+        [project.urls]
+        repository = "https://github.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "urls");
+}
+
+#[test]
+fn test_collect_all_sub_tables_non_existent_parent() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "nonexistent", &mut result);
+
+    assert!(result.is_empty());
+}
+
+#[test]
+fn test_collect_all_sub_tables_deduplication() {
+    let toml = indoc! {r#"
+        [project]
+        urls.homepage = "https://example.com"
+
+        [project.urls]
+        repository = "https://github.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "project", &mut result);
+
+    let urls_count = result.iter().filter(|s| *s == "project.urls").count();
+    assert_eq!(urls_count, 1, "should deduplicate sub-tables");
+}
+
+#[test]
+fn test_collapse_sub_table_empty_sub_table() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "urls");
+}
+
+#[test]
+fn test_expand_sub_table_entry_without_key() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_table(&mut tables, "project", "urls");
+
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+}
+
+#[test]
+fn test_collect_all_sub_tables_parent_without_dotted_keys() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        version = "1.0"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "project", &mut result);
+
+    assert!(result.is_empty());
+}
+
+#[test]
+fn test_collapse_sub_table_with_comments() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+        # This is a comment
+        homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "urls");
+
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("urls.homepage"));
+}
+
+#[test]
+fn test_expand_sub_table_with_multiple_dotted_keys() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+        urls.repository = "https://github.com"
+        urls.documentation = "https://docs.example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    expand_sub_table(&mut tables, "project", "urls");
+
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+    let urls = tables.get("project.urls").unwrap();
+    let table = urls[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("homepage"));
+    assert!(txt.contains("repository"));
+    assert!(txt.contains("documentation"));
 }

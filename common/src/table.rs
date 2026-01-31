@@ -271,11 +271,13 @@ fn load_keys(table: &[SyntaxElement]) -> (HashMap<String, usize>, Vec<Vec<Syntax
                 add_to_key_set(key.clone());
                 cutoff = false;
             }
-            for e in element.as_node().unwrap().children_with_tokens() {
-                if e.kind() == KEY {
-                    key = e.as_node().unwrap().text().to_string().trim().to_string();
-                    break;
-                }
+            if let Some(e) = element
+                .as_node()
+                .unwrap()
+                .children_with_tokens()
+                .find(|e| e.kind() == KEY)
+            {
+                key = e.as_node().unwrap().text().to_string().trim().to_string();
             }
         }
         if [ENTRY, TABLE_HEADER, TABLE_ARRAY_HEADER].contains(&kind) {
@@ -423,30 +425,25 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
 
     {
         let main = tables.table_set[*main_positions.first().unwrap()].borrow();
-        let mut entry_index = 0;
 
-        for element in main.iter() {
-            if element.kind() == ENTRY {
-                let mut key_text = String::new();
-                for child in element.as_node().unwrap().children_with_tokens() {
-                    if child.kind() == KEY {
-                        key_text = child.as_node().unwrap().text().to_string().trim().to_string();
-                        break;
-                    }
-                }
+        for (entry_index, element) in main.iter().filter(|e| e.kind() == ENTRY).enumerate() {
+            let key_text = element
+                .as_node()
+                .unwrap()
+                .children_with_tokens()
+                .find(|c| c.kind() == KEY)
+                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
+                .unwrap_or_default();
 
-                // Check if this is a dotted key (contains a dot)
-                if let Some(dot_pos) = key_text.find('.') {
-                    let prefix = &key_text[..dot_pos];
-                    let rest = &key_text[dot_pos + 1..];
+            if let Some(dot_pos) = key_text.find('.') {
+                let prefix = &key_text[..dot_pos];
+                let rest = &key_text[dot_pos + 1..];
 
-                    groups
-                        .entry(String::from(prefix))
-                        .or_default()
-                        .push((String::from(rest), element.clone()));
-                    entries_to_remove.insert(entry_index);
-                }
-                entry_index += 1;
+                groups
+                    .entry(String::from(prefix))
+                    .or_default()
+                    .push((String::from(rest), element.clone()));
+                entries_to_remove.insert(entry_index);
             }
         }
     }
@@ -492,26 +489,18 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
 
         // Add entries with simplified keys
         for (simple_key, original_entry) in entries {
-            // Rebuild the entry with the simplified key
             let entry_node = original_entry.as_node().unwrap();
-            let mut value_text = String::new();
+            let value_text = entry_node
+                .children_with_tokens()
+                .find(|c| c.kind() == VALUE)
+                .map(|c| c.as_node().unwrap().text().to_string())
+                .unwrap_or_default();
 
-            for child in entry_node.children_with_tokens() {
-                if child.kind() == VALUE {
-                    value_text = child.as_node().unwrap().text().to_string();
-                    break;
-                }
-            }
-
-            // Create a new entry with simplified key
             let new_entry_text = format!("{simple_key} ={value_text}\n");
             let parsed = taplo::parser::parse(&new_entry_text);
             let parsed_root = parsed.into_syntax().clone_for_update();
-            for child in parsed_root.children_with_tokens() {
-                if child.kind() == ENTRY {
-                    new_table.push(child);
-                    break;
-                }
+            if let Some(entry) = parsed_root.children_with_tokens().find(|c| c.kind() == ENTRY) {
+                new_table.push(entry);
             }
         }
 
@@ -519,5 +508,193 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
         let pos = tables.table_set.len();
         tables.table_set.push(RefCell::new(new_table));
         tables.header_to_pos.entry(full_name).or_default().push(pos);
+    }
+}
+
+/// Collapse a single sub-table into dotted keys in the parent table.
+/// For example, `[project.urls]` with `homepage = "..."` becomes `urls.homepage = "..."` in `[project]`.
+pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) {
+    let full_name = format!("{parent_name}.{sub_name}");
+    let sub_positions = match tables.header_to_pos.get(&full_name) {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+    if sub_positions.len() != 1 {
+        return;
+    }
+
+    if !tables.header_to_pos.contains_key(parent_name) {
+        tables
+            .header_to_pos
+            .insert(String::from(parent_name), vec![tables.table_set.len()]);
+        tables.table_set.push(RefCell::new(make_table_entry(parent_name)));
+    }
+    let main_positions = tables.header_to_pos[parent_name].clone();
+    if main_positions.len() != 1 {
+        return;
+    }
+
+    let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
+    let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
+
+    let is_array_table = sub.iter().any(|child| child.kind() == TABLE_ARRAY_HEADER);
+    if is_array_table {
+        return;
+    }
+
+    let mut header = false;
+    for child in sub.iter() {
+        let kind = child.kind();
+        if kind == TABLE_HEADER {
+            header = true;
+            continue;
+        }
+        if header && kind == NEWLINE {
+            continue;
+        }
+        if kind == ENTRY {
+            let mut to_insert = Vec::<SyntaxElement>::new();
+            let child_node = child.as_node().unwrap();
+            for mut entry in child_node.children_with_tokens() {
+                if entry.kind() == KEY {
+                    let mut key_parts = vec![String::from(sub_name)];
+                    for array_entry_value in entry.as_node().unwrap().children_with_tokens() {
+                        if array_entry_value.kind() == IDENT {
+                            let txt = load_text(array_entry_value.as_token().unwrap().text(), IDENT);
+                            key_parts.push(txt);
+                        }
+                    }
+                    entry = make_key(&key_parts.join("."));
+                }
+                to_insert.push(entry);
+            }
+            child_node.splice_children(0..to_insert.len(), to_insert);
+        }
+        if main.last().unwrap().kind() != NEWLINE {
+            main.push(make_newline());
+        }
+        main.push(child.clone());
+    }
+    sub.clear();
+}
+
+/// Expand dotted keys with a specific prefix into a separate sub-table.
+/// For example, `urls.homepage = "..."` becomes a `[project.urls]` table with `homepage = "..."`.
+pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) {
+    let main_positions = match tables.header_to_pos.get(parent_name) {
+        Some(p) if !p.is_empty() => p.clone(),
+        _ => return,
+    };
+    if main_positions.len() != 1 {
+        return;
+    }
+
+    let prefix_with_dot = format!("{sub_name}.");
+    let mut entries: Vec<(String, SyntaxElement)> = Vec::new();
+    let mut entries_to_remove: HashSet<usize> = HashSet::new();
+
+    {
+        let main = tables.table_set[*main_positions.first().unwrap()].borrow();
+
+        for (entry_index, element) in main.iter().filter(|e| e.kind() == ENTRY).enumerate() {
+            let key_text = element
+                .as_node()
+                .unwrap()
+                .children_with_tokens()
+                .find(|c| c.kind() == KEY)
+                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
+                .unwrap_or_default();
+
+            if key_text.starts_with(&prefix_with_dot) {
+                let rest = &key_text[prefix_with_dot.len()..];
+                entries.push((String::from(rest), element.clone()));
+                entries_to_remove.insert(entry_index);
+            }
+        }
+    }
+
+    if entries.is_empty() {
+        return;
+    }
+
+    {
+        let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
+        let mut new_elements = Vec::new();
+        let mut entry_index = 0;
+
+        for element in main.iter() {
+            if element.kind() == ENTRY {
+                if !entries_to_remove.contains(&entry_index) {
+                    new_elements.push(element.clone());
+                }
+                entry_index += 1;
+            } else {
+                new_elements.push(element.clone());
+            }
+        }
+
+        while new_elements.last().is_some_and(|e| e.kind() == NEWLINE) {
+            new_elements.pop();
+        }
+        new_elements.push(make_newline());
+
+        let main_len = main.len();
+        main.splice(0..main_len, new_elements);
+    }
+
+    let full_name = format!("{parent_name}.{sub_name}");
+    let mut new_table = make_table_entry(&full_name);
+
+    for (simple_key, original_entry) in entries {
+        let entry_node = original_entry.as_node().unwrap();
+        let value_text = entry_node
+            .children_with_tokens()
+            .find(|c| c.kind() == VALUE)
+            .map(|c| c.as_node().unwrap().text().to_string())
+            .unwrap_or_default();
+
+        let new_entry_text = format!("{simple_key} ={value_text}\n");
+        let parsed = taplo::parser::parse(&new_entry_text);
+        let parsed_root = parsed.into_syntax().clone_for_update();
+        if let Some(entry) = parsed_root.children_with_tokens().find(|c| c.kind() == ENTRY) {
+            new_table.push(entry);
+        }
+    }
+
+    let pos = tables.table_set.len();
+    tables.table_set.push(RefCell::new(new_table));
+    tables.header_to_pos.entry(full_name).or_default().push(pos);
+}
+
+/// Recursively collect all sub-table full names under a parent.
+/// For "project", returns ["project.urls", "project.entry-points", "project.entry-points.tox", ...].
+pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut Vec<String>) {
+    let prefix = format!("{parent_name}.");
+
+    for key in tables.header_to_pos.keys() {
+        if key.starts_with(&prefix) && key != parent_name {
+            result.push(key.clone());
+        }
+    }
+
+    let Some(pos) = tables.header_to_pos.get(parent_name).and_then(|p| p.first()) else {
+        return;
+    };
+    let main = tables.table_set[*pos].borrow();
+    for element in main.iter().filter(|e| e.kind() == ENTRY) {
+        let key_text = element
+            .as_node()
+            .unwrap()
+            .children_with_tokens()
+            .find(|c| c.kind() == KEY)
+            .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
+            .unwrap_or_default();
+        if let Some(dot_pos) = key_text.find('.') {
+            let sub_name = &key_text[..dot_pos];
+            let full_name = format!("{parent_name}.{sub_name}");
+            if !result.contains(&full_name) {
+                result.push(full_name);
+            }
+        }
     }
 }
