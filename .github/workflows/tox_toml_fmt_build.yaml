@@ -197,6 +197,8 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
       - name: 📥 Download source
         uses: actions/download-artifact@v7
         with:
@@ -226,7 +228,7 @@ jobs:
           args: --non-interactive --skip-existing dist/*
       - name: 📢 Create GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           git pull --rebase origin main
           git push
