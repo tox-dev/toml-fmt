@@ -1,3 +1,10 @@
+<a id="2.12.1"></a>
+
+## 2.12.1 - 2026-01-31
+
+- Fix expand_tables setting for specific sub-tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#$148](https://github.com/tox-dev/toml-fmt/pull/148)
+
 <a id="2.12.0"></a>
 
 ## 2.12.0 - TBD
