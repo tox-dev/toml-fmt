@@ -74,10 +74,13 @@ pub fn fix(
             update_content(entry, |s| String::from(s));
         }
         "license" => {
-            static LICENSE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)\b(and|or|with)\b").unwrap());
+            static LICENSE_RE: LazyLock<Regex> =
+                LazyLock::new(|| Regex::new(r"(?i)([^-])\b(and|or|with)\b([^-])").unwrap());
             update_content(entry, |s| {
                 LICENSE_RE
-                    .replace_all(s, |caps: &regex::Captures| caps[1].to_uppercase())
+                    .replace_all(s, |caps: &regex::Captures| {
+                        format!("{}{}{}", &caps[1], caps[2].to_uppercase(), &caps[3])
+                    })
                     .to_string()
             });
         }

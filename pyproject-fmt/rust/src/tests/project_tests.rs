@@ -298,11 +298,11 @@ fn evaluate(
 #[case::project_license_normalize(
         indoc ! {r#"
     [project]
-    license = "mit or apache-2.0 with llvm-exception and gpl-3.0-only"
+    license = "mit or apache-2.0 with llvm-exception and gpl-3.0-only and AGPL-3.0-or-later"
     "#},
         indoc ! {r#"
     [project]
-    license = "mit OR apache-2.0 WITH llvm-exception AND gpl-3.0-only"
+    license = "mit OR apache-2.0 WITH llvm-exception AND gpl-3.0-only AND AGPL-3.0-or-later"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
