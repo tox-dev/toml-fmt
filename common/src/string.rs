@@ -1,15 +1,11 @@
 use taplo::syntax::SyntaxKind::{IDENT, MULTI_LINE_STRING, MULTI_LINE_STRING_LITERAL, STRING, STRING_LITERAL};
 use taplo::syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
-use taplo::util::{check_escape, unescape};
+use taplo::util::unescape;
 
-use crate::create::make_string_node;
+use crate::create::{make_literal_string_node, make_string_node};
 
-/// Check if a string contains backslash sequences that would be invalid in a TOML basic string.
-/// Valid escapes are: \b, \t, \n, \f, \r, \", \\, \uXXXX, \UXXXXXXXX, and line continuations.
-///
-/// Uses taplo's escape checking for TOML spec compliance.
-fn has_invalid_escapes(s: &str) -> bool {
-    check_escape(s).is_err()
+fn can_use_literal_string(s: &str) -> bool {
+    !s.contains('\'') && !s.chars().any(|c| c.is_control() && c != '\t')
 }
 
 /// Load the text content from a TOML string value, handling all escape sequences.
@@ -79,12 +75,17 @@ where
             let is_literal = kind == STRING_LITERAL || kind == MULTI_LINE_STRING_LITERAL;
             let content_changed = output != found_str_value;
             let multiline_to_single = is_multiline && !output.contains('\n');
-            // prefer "" over ''
-            let normalize_literal = is_literal && !has_invalid_escapes(&output);
 
-            changed = content_changed || multiline_to_single || normalize_literal;
+            let use_literal = output.contains('"') && can_use_literal_string(&output);
+            let quote_style_change = is_literal != use_literal;
+
+            changed = content_changed || multiline_to_single || quote_style_change;
             if changed {
-                child = make_string_node(output.as_str());
+                child = if use_literal {
+                    make_literal_string_node(&output)
+                } else {
+                    make_string_node(&output)
+                };
             }
         }
         to_insert.push(child);

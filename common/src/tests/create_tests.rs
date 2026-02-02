@@ -1,8 +1,8 @@
-use taplo::syntax::SyntaxKind::{COMMA, ENTRY, KEY, NEWLINE, STRING, VALUE};
+use taplo::syntax::SyntaxKind::{COMMA, ENTRY, KEY, NEWLINE, STRING, STRING_LITERAL, VALUE};
 
 use crate::create::{
-    make_array, make_array_entry, make_comma, make_empty_newline, make_entry_of_string, make_key, make_newline,
-    make_string_node, make_table_entry,
+    make_array, make_array_entry, make_comma, make_empty_newline, make_entry_of_string, make_key,
+    make_literal_string_node, make_newline, make_string_node, make_table_entry,
 };
 
 #[test]
@@ -122,4 +122,39 @@ fn test_make_table_entry_dotted() {
         }
     }
     assert!(has_table);
+}
+
+#[test]
+fn test_make_string_node_with_backslash() {
+    let node = make_string_node("path\\to\\file");
+    assert_eq!(node.kind(), STRING);
+    assert_eq!(node.to_string(), "\"path\\\\to\\\\file\"");
+}
+
+#[test]
+fn test_make_string_node_with_newline() {
+    let node = make_string_node("hello\nworld");
+    assert_eq!(node.kind(), STRING);
+    assert_eq!(node.to_string(), "\"hello\\nworld\"");
+}
+
+#[test]
+fn test_make_literal_string_node_simple() {
+    let node = make_literal_string_node("hello");
+    assert_eq!(node.kind(), STRING_LITERAL);
+    assert_eq!(node.to_string(), "'hello'");
+}
+
+#[test]
+fn test_make_literal_string_node_with_backslash() {
+    let node = make_literal_string_node("path\\to\\file");
+    assert_eq!(node.kind(), STRING_LITERAL);
+    assert_eq!(node.to_string(), "'path\\to\\file'");
+}
+
+#[test]
+fn test_make_literal_string_node_with_regex() {
+    let node = make_literal_string_node("MPL-2\\.0");
+    assert_eq!(node.kind(), STRING_LITERAL);
+    assert_eq!(node.to_string(), "'MPL-2\\.0'");
 }

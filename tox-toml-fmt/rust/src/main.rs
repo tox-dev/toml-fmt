@@ -5,7 +5,7 @@ use common::taplo::parser::parse;
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
 
-use crate::global::reorder_tables;
+use crate::global::{normalize_strings, reorder_tables};
 use common::table::Tables;
 mod global;
 #[cfg(test)]
@@ -33,6 +33,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content).into_syntax().clone_for_update();
     let tables = Tables::from_ast(&root_ast);
 
+    normalize_strings(&tables);
     reorder_tables(&root_ast, &tables);
 
     let options = Options {

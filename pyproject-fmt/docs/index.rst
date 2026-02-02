@@ -46,6 +46,10 @@ Normalizations and Transformations
 
 In addition to the formatting principles above, ``pyproject-fmt`` performs the following normalizations:
 
+**String Quotes** - All strings are normalized to use double quotes (``""``) by default. Single-quoted literal strings
+(``''``) are only used when the content contains double quotes, avoiding the need for escape sequences. For example,
+``'hello'`` becomes ``"hello"``, while ``"say \"hello\""`` becomes ``'say "hello"'``.
+
 **Version Specifiers** - All PEP 508 version specifiers are normalized by removing spaces around operators
 (e.g., ``package >= 1.0`` becomes ``package>=1.0``), optionally removing redundant trailing zeros (e.g., ``1.0``
 becomes ``1``) unless ``keep_full_version = true``, and validating against PEP 508 standards.

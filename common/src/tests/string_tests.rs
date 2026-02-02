@@ -120,7 +120,7 @@ fn test_update_content_multi_line_string() {
 }
 
 #[test]
-fn test_issue_22_preserve_raw_string_with_backslash() {
+fn test_issue_22_backslash_uses_basic_string() {
     let toml = r#"regex = 'MPL-2\.0'"#;
     let root_ast = parse(toml).into_syntax().clone_for_update();
 
@@ -135,22 +135,22 @@ fn test_issue_22_preserve_raw_string_with_backslash() {
     }
 
     let result = root_ast.to_string();
-    assert!(result.contains(r#"'MPL-2\.0'"#), "Got: {}", result);
+    assert!(result.contains(r#""MPL-2\\.0""#), "Got: {}", result);
 }
 
 #[rstest]
-#[case::valid_backslash_b(r"'\b'", "\"\\b\"")]
-#[case::valid_backslash_t(r"'\t'", "\"\\t\"")]
-#[case::valid_backslash_n(r"'\n'", "\"\\n\"")]
-#[case::valid_backslash_f(r"'\f'", "\"\\f\"")]
-#[case::valid_backslash_r(r"'\r'", "\"\\r\"")]
-#[case::valid_backslash_backslash(r"'\\'", r#""\\""#)]
-#[case::valid_unicode_4(r"'\u0041'", r#""\u0041""#)]
-#[case::valid_unicode_8(r"'\U00000041'", r#""\U00000041""#)]
-#[case::invalid_backslash_dot(r"'\.'", r"'\.'")]
-#[case::invalid_backslash_s(r"'\s'", r"'\s'")]
-#[case::invalid_unicode_short(r"'\u04'", r"'\u04'")]
-#[case::invalid_unicode_8_short(r"'\U0000004'", r"'\U0000004'")]
+#[case::backslash_b(r"'\b'", r#""\\b""#)]
+#[case::backslash_t(r"'\t'", r#""\\t""#)]
+#[case::backslash_n(r"'\n'", r#""\\n""#)]
+#[case::backslash_f(r"'\f'", r#""\\f""#)]
+#[case::backslash_r(r"'\r'", r#""\\r""#)]
+#[case::backslash_backslash(r"'\\'", r#""\\\\""#)]
+#[case::unicode_4(r"'\u0041'", r#""\\u0041""#)]
+#[case::unicode_8(r"'\U00000041'", r#""\\U00000041""#)]
+#[case::backslash_dot(r"'\.'", r#""\\.""#)]
+#[case::backslash_s(r"'\s'", r#""\\s""#)]
+#[case::unicode_short(r"'\u04'", r#""\\u04""#)]
+#[case::unicode_8_short(r"'\U0000004'", r#""\\U0000004""#)]
 #[case::no_backslash(r"'hello'", r#""hello""#)]
 fn test_literal_string_escape_handling(#[case] input: &str, #[case] expected: &str) {
     let toml = format!("key = {input}");
@@ -244,4 +244,153 @@ fn test_multiline_with_tabs_after_continuation() {
 
     let result = root_ast.to_string();
     assert!(result.contains("\"hello\""), "Got: {}", result);
+}
+
+#[test]
+fn test_basic_string_stays_basic() {
+    let toml = r#"name = "hello""#;
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains("\"hello\""), "Got: {}", result);
+}
+
+#[test]
+fn test_literal_with_single_quote_uses_basic_string() {
+    let toml = r#"name = "it's""#;
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains("\"it's\""), "Got: {}", result);
+}
+
+#[test]
+fn test_basic_string_with_backslash_stays_basic() {
+    let toml = r#"regex = "MPL-2\\.0""#;
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(result.contains(r#""MPL-2\\.0""#), "Got: {}", result);
+}
+
+#[test]
+fn test_issue_150_prefer_double_quotes() {
+    let toml = "name = 'simple-string'";
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(
+        result.contains("\"simple-string\""),
+        "Expected double-quoted string, got: {}",
+        result
+    );
+}
+
+#[test]
+fn test_issue_150_backslash_uses_basic_string() {
+    let toml = r#"regex = 'path\\to\\file'"#;
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(
+        result.contains(r#""path\\\\to\\\\file""#),
+        "Expected basic string (prefer \"\"), got: {}",
+        result
+    );
+}
+
+#[test]
+fn test_string_with_both_quotes_uses_basic_with_escaping() {
+    let toml = r#"msg = "it's a \"test\"""#;
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(
+        result.contains(r#""it's a \"test\"""#),
+        "Expected basic string with escaped quotes (can't use literal due to '), got: {}",
+        result
+    );
+}
+
+#[test]
+fn test_string_with_double_quote_uses_literal() {
+    let toml = r#"msg = "say \"hello\"""#;
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == ENTRY {
+            for child in entry.as_node().unwrap().children_with_tokens() {
+                if child.kind() == VALUE {
+                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                }
+            }
+        }
+    }
+
+    let result = root_ast.to_string();
+    assert!(
+        result.contains(r#"'say "hello"'"#),
+        "Expected literal string (no escaping needed for \" in ''), got: {}",
+        result
+    );
 }
