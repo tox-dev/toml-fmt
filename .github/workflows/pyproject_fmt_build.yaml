@@ -239,3 +239,7 @@ jobs:
           ${{ needs.bump.outputs.changelog }}
           EOM
           )"
+      - name: 🔄 Trigger pre-commit mirror sync
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: gh workflow run main.yaml --repo tox-dev/pyproject-fmt
