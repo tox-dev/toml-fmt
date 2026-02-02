@@ -43,6 +43,10 @@ Normalizations and Transformations
 
 In addition to the formatting principles above, ``tox-toml-fmt`` performs the following normalizations:
 
+**String Quotes** - All strings are normalized to use double quotes (``""``) by default. Single-quoted literal strings
+(``''``) are only used when the content contains double quotes, avoiding the need for escape sequences. For example,
+``'hello'`` becomes ``"hello"``, while ``"say \"hello\""`` becomes ``'say "hello"'``.
+
 **Table Ordering** - The ``tox.toml`` file follows a standard table ordering where root level keys and
 ``[env_run_base]`` appear first, environment-specific sections (``[env.NAME]``) are ordered according to the
 ``env_list`` configuration if present, any additional environments not in ``env_list`` follow at the end, and this

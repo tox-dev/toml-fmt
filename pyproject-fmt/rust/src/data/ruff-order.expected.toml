@@ -146,7 +146,7 @@ lint.flake8-builtins.builtins-ignorelist = [
 ]
 lint.flake8-comprehensions.allow-dict-calls-with-keyword-arguments = true
 lint.flake8-copyright.author = "Ruff"
-lint.flake8-copyright.notice-rgx = "(?i)Copyright \\(C\\) \\d{4}"
+lint.flake8-copyright.notice-rgx = "(?i)Copyright \\\\(C\\\\) \\\\d{4}"
 lint.flake8-errmsg.max-string-length = 20
 lint.flake8-gettext.extend-function-names = [
   "ALPHA",

@@ -1,8 +1,9 @@
-use common::string::load_text;
+use common::string::{load_text, update_content};
 use common::table::{for_entries, Tables};
 use common::taplo::rowan::SyntaxNode;
 use common::taplo::syntax::Lang;
-use common::taplo::syntax::SyntaxKind::{ARRAY, STRING, VALUE};
+use common::taplo::syntax::SyntaxKind::{ARRAY, INLINE_TABLE, STRING, VALUE};
+use common::taplo::syntax::SyntaxNode as TaploSyntaxNode;
 
 /// Extract environment names from env_list array in the root table
 fn get_env_list_order(tables: &Tables) -> Vec<String> {
@@ -34,6 +35,46 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
     }
 
     env_order
+}
+
+fn normalize_value(node: &TaploSyntaxNode) {
+    for child in node.children_with_tokens() {
+        match child.kind() {
+            ARRAY => {
+                if let Some(array_node) = child.as_node() {
+                    for array_child in array_node.children_with_tokens() {
+                        if array_child.kind() == VALUE {
+                            if let Some(value_node) = array_child.as_node() {
+                                normalize_value(value_node);
+                            }
+                        }
+                    }
+                }
+            }
+            INLINE_TABLE => {
+                if let Some(table_node) = child.as_node() {
+                    for table_child in table_node.children_with_tokens() {
+                        if table_child.kind() == VALUE {
+                            if let Some(value_node) = table_child.as_node() {
+                                normalize_value(value_node);
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    update_content(node, |s| s.to_string());
+}
+
+pub fn normalize_strings(tables: &Tables) {
+    for table_ref in &tables.table_set {
+        let table = table_ref.borrow();
+        for_entries(&table, &mut |_, value_node| {
+            normalize_value(value_node);
+        });
+    }
 }
 
 pub fn reorder_tables(root_ast: &SyntaxNode<Lang>, tables: &Tables) {

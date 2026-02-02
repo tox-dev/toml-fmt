@@ -82,3 +82,45 @@ fn test_column_width() {
     let second = format_toml(got.as_str(), &settings);
     assert_eq!(second, got);
 }
+
+#[test]
+fn test_string_quote_normalization() {
+    let start = indoc! {r#"
+        requires = ['tox>=4.22']
+        env_list = ['test']
+
+        [env_run_base]
+        description = 'run tests'
+        "#};
+    let settings = Settings {
+        column_width: 80,
+        indent: 2,
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        requires = [ "tox>=4.22" ]
+        env_list = [ "test" ]
+
+        [env_run_base]
+        description = "run tests"
+        "#};
+    assert_eq!(got, expected);
+}
+
+#[test]
+fn test_string_with_double_quote_uses_literal() {
+    let start = indoc! {r#"
+        [env_run_base]
+        description = "run \"tests\""
+        "#};
+    let settings = Settings {
+        column_width: 80,
+        indent: 2,
+    };
+    let got = format_toml(start, &settings);
+    let expected = indoc! {r#"
+        [env_run_base]
+        description = 'run "tests"'
+        "#};
+    assert_eq!(got, expected);
+}

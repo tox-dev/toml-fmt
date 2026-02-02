@@ -11,15 +11,17 @@
 
 use taplo::parser::parse;
 use taplo::syntax::SyntaxElement;
-use taplo::syntax::SyntaxKind::{ARRAY, COMMA, ENTRY, KEY, NEWLINE, STRING, VALUE};
+use taplo::syntax::SyntaxKind::{ARRAY, COMMA, ENTRY, KEY, NEWLINE, STRING, STRING_LITERAL, VALUE};
+use taplo::util::escape;
 
-/// Create a STRING syntax element by parsing valid TOML.
+/// Create a STRING (basic/double-quoted) syntax element by parsing valid TOML.
 ///
-/// This function ensures proper TOML escaping by using taplo's parser to handle
-/// quote escaping, backslash escaping, and unicode sequences.
+/// This function ensures proper TOML escaping by using taplo's escape function
+/// to handle backslash escaping, quote escaping, and control characters.
 pub fn make_string_node(text: &str) -> SyntaxElement {
-    let expr = &format!("a = \"{}\"", text.replace('"', "\\\""));
-    parse(expr)
+    let escaped = escape(text);
+    let expr = format!("a = \"{escaped}\"");
+    parse(&expr)
         .into_syntax()
         .clone_for_update()
         .first_child()
@@ -32,6 +34,27 @@ pub fn make_string_node(text: &str) -> SyntaxElement {
         .children_with_tokens()
         .find(|n| n.kind() == STRING)
         .expect("VALUE contains STRING")
+}
+
+/// Create a STRING_LITERAL (literal/single-quoted) syntax element by parsing valid TOML.
+///
+/// Use this when content contains backslashes that would need escaping in a basic string.
+/// Content must not contain single quotes (there's no way to escape them in literal strings).
+pub fn make_literal_string_node(text: &str) -> SyntaxElement {
+    let expr = format!("a = '{text}'");
+    parse(&expr)
+        .into_syntax()
+        .clone_for_update()
+        .first_child()
+        .expect("parsed TOML has a child")
+        .children_with_tokens()
+        .find(|n| n.kind() == VALUE)
+        .expect("entry has VALUE")
+        .as_node()
+        .expect("VALUE is a node")
+        .children_with_tokens()
+        .find(|n| n.kind() == STRING_LITERAL)
+        .expect("VALUE contains STRING_LITERAL")
 }
 
 /// Create a NEWLINE token with a blank line (two newlines).
