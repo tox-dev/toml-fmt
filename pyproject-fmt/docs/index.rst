@@ -339,3 +339,23 @@ The following sub-tables can be formatted with this configuration:
 
 - ``project.authors`` - Can be inline tables or ``[[project.authors]]``
 - ``project.maintainers`` - Can be inline tables or ``[[project.maintainers]]``
+- Any ``[[table]]`` entries throughout the file
+
+Array of tables (``[[table]]``) are automatically collapsed to inline arrays when each inline table fits within the
+configured ``column_width``. For example:
+
+.. code-block:: toml
+
+  # Before
+  [[tool.commitizen.customize.questions]]
+  type = "list"
+
+  [[tool.commitizen.customize.questions]]
+  type = "input"
+
+  # After (with table_format = "short")
+  [tool.commitizen]
+  customize.questions = [{ type = "list" }, { type = "input" }]
+
+If any inline table exceeds ``column_width``, the array of tables remains in ``[[...]]`` format to maintain
+readability and TOML 1.0.0 compatibility (inline tables cannot span multiple lines).

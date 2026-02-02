@@ -106,12 +106,9 @@ use crate::{format_toml, Settings};
 
     [tool.coverage]
     a = 0
-    [tool.coverage.paths]
-    a = 1
-    [tool.coverage.report]
-    a = 2
-    [tool.coverage.run]
-    a = 3
+    paths.a = 1
+    report.a = 2
+    run.a = 3
     "#},
         2,
         true,
@@ -134,9 +131,7 @@ use crate::{format_toml, Settings};
     [tool.commitizen]
     name = "cz_customize"
 
-    [tool.commitizen.customize]
-    message_template = ""
-
+    customize.message_template = ""
     [[tool.commitizen.customize.questions]]
     type = "list"
 
@@ -1188,4 +1183,29 @@ fn test_default_collapse_fallback() {
     assert!(config.should_collapse("project"));
     assert!(config.should_collapse("project.urls"));
     assert!(config.should_collapse("tool.ruff.lint"));
+}
+
+/// Test issue 146 with deeply nested ruff table: expand_tables works for deep paths
+#[rstest]
+fn test_issue_146_deeply_nested_ruff_table() {
+    let start = indoc! {r#"
+        [tool.ruff.lint.flake8-tidy-imports.banned-api]
+        "collections.namedtuple".msg = "Use typing.NamedTuple instead"
+        "#};
+    let settings = Settings {
+        column_width: 120,
+        indent: 4,
+        keep_full_version: true,
+        max_supported_python: (3, 14),
+        min_supported_python: (3, 14),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![String::from("tool.ruff.lint.flake8-tidy-imports.banned-api")],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert!(
+        got.contains("[tool.ruff.lint.flake8-tidy-imports.banned-api]"),
+        "deeply nested ruff table should stay expanded. Got:\n{got}"
+    );
 }

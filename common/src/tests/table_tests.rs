@@ -4,8 +4,8 @@ use taplo::formatter::{format_syntax, Options};
 use taplo::parser::parse;
 
 use crate::table::{
-    collapse_sub_table, collapse_sub_tables, collect_all_sub_tables, expand_sub_table, expand_sub_tables, find_key,
-    for_entries, get_table_name, reorder_table_keys, Tables,
+    apply_table_formatting, collapse_sub_table, collapse_sub_tables, collect_all_sub_tables, expand_sub_table,
+    expand_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys, Tables,
 };
 
 #[test]
@@ -933,7 +933,7 @@ fn test_collapse_sub_table_single() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "urls");
+    collapse_sub_table(&mut tables, "project", "urls", 120);
 
     let main = tables.get("project").unwrap();
     let table = main[0].borrow();
@@ -955,12 +955,12 @@ fn test_collapse_sub_table_creates_parent() {
     let mut tables = Tables::from_ast(&root_ast);
 
     assert!(!tables.header_to_pos.contains_key("project"));
-    collapse_sub_table(&mut tables, "project", "urls");
+    collapse_sub_table(&mut tables, "project", "urls", 120);
     assert!(tables.header_to_pos.contains_key("project"));
 }
 
 #[test]
-fn test_collapse_sub_table_skips_array_tables() {
+fn test_collapse_sub_table_converts_array_tables_to_inline() {
     let toml = indoc! {r#"
         [project]
         name = "foo"
@@ -971,11 +971,41 @@ fn test_collapse_sub_table_skips_array_tables() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "authors");
+    collapse_sub_table(&mut tables, "project", "authors", 120);
 
     let authors = tables.get("project.authors").unwrap();
     let authors_table = authors[0].borrow();
-    assert!(!authors_table.is_empty(), "array tables should not be collapsed");
+    assert!(
+        authors_table.is_empty(),
+        "array tables should be collapsed to inline array"
+    );
+
+    let project = tables.get("project").unwrap();
+    let project_table = project[0].borrow();
+    let txt = project_table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(
+        txt.contains("authors = [{ name = \"Alice\" }]"),
+        "should have inline array"
+    );
+}
+
+#[test]
+fn test_collapse_sub_table_keeps_wide_array_tables() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [[project.authors]]
+        name = "This is a very long author name that will definitely exceed the column width limit"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "authors", 80);
+
+    let authors = tables.get("project.authors").unwrap();
+    let authors_table = authors[0].borrow();
+    assert!(!authors_table.is_empty(), "wide array tables should not be collapsed");
 }
 
 #[test]
@@ -987,7 +1017,7 @@ fn test_collapse_sub_table_non_existent() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "nonexistent");
+    collapse_sub_table(&mut tables, "project", "nonexistent", 120);
 }
 
 #[test]
@@ -1131,7 +1161,7 @@ fn test_collapse_sub_table_multiple_main_positions() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "urls");
+    collapse_sub_table(&mut tables, "project", "urls", 120);
 
     let urls = tables.get("project.urls").unwrap();
     assert!(
@@ -1178,7 +1208,7 @@ fn test_collapse_sub_table_multiple_sub_positions() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "urls");
+    collapse_sub_table(&mut tables, "project", "urls", 120);
 }
 
 #[test]
@@ -1226,7 +1256,7 @@ fn test_collapse_sub_table_empty_sub_table() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "urls");
+    collapse_sub_table(&mut tables, "project", "urls", 120);
 }
 
 #[test]
@@ -1273,7 +1303,7 @@ fn test_collapse_sub_table_with_comments() {
     let root_ast = parse(toml).into_syntax().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
 
-    collapse_sub_table(&mut tables, "project", "urls");
+    collapse_sub_table(&mut tables, "project", "urls", 120);
 
     let main = tables.get("project").unwrap();
     let table = main[0].borrow();
@@ -1337,4 +1367,118 @@ fn test_tables_from_ast_with_root_comments_only() {
     let tables = Tables::from_ast(&root_ast);
 
     assert!(tables.header_to_pos.contains_key("project"));
+}
+
+#[test]
+fn test_apply_table_formatting_collapse() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [project.urls]
+        homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(&mut tables, |_| true, &["project"], 120);
+
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    assert!(txt.contains("urls.homepage"));
+}
+
+#[test]
+fn test_apply_table_formatting_expand() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(&mut tables, |_| false, &["project"], 120);
+
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+}
+
+#[test]
+fn test_apply_table_formatting_deeply_nested() {
+    let toml = indoc! {r#"
+        [tool.ruff]
+        line-length = 120
+
+        [tool.ruff.lint.flake8-tidy-imports.banned-api]
+        "collections.namedtuple".msg = "Use typing.NamedTuple"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(
+        &mut tables,
+        |name| name != "tool.ruff.lint.flake8-tidy-imports.banned-api",
+        &["tool.ruff"],
+        120,
+    );
+
+    assert!(
+        tables
+            .header_to_pos
+            .contains_key("tool.ruff.lint.flake8-tidy-imports.banned-api"),
+        "deeply nested table should stay expanded"
+    );
+}
+
+#[test]
+fn test_apply_table_formatting_quoted_keys() {
+    let toml = indoc! {r#"
+        [tool.ruff.lint.flake8-tidy-imports."banned-api"]
+        "typing.Dict".msg = "use dict"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(&mut tables, |_| false, &["tool.ruff"], 120);
+
+    assert!(tables
+        .header_to_pos
+        .contains_key("tool.ruff.lint.flake8-tidy-imports.\"banned-api\""));
+}
+
+#[test]
+fn test_apply_table_formatting_multiple_prefixes() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+        urls.homepage = "https://example.com"
+
+        [build-system]
+        requires.build = "setuptools"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(&mut tables, |_| false, &["project", "build-system"], 120);
+
+    assert!(tables.header_to_pos.contains_key("project.urls"));
+    assert!(tables.header_to_pos.contains_key("build-system.requires"));
+}
+
+#[test]
+fn test_collect_all_sub_tables_includes_intermediate_parents() {
+    let toml = indoc! {r#"
+        [tool.ruff.lint.flake8-tidy-imports.banned-api]
+        "typing.Dict".msg = "use dict"
+    "#};
+    let root_ast = parse(toml).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+
+    let mut result = Vec::new();
+    collect_all_sub_tables(&tables, "tool.ruff", &mut result);
+
+    assert!(result.contains(&String::from("tool.ruff.lint")));
+    assert!(result.contains(&String::from("tool.ruff.lint.flake8-tidy-imports")));
+    assert!(result.contains(&String::from("tool.ruff.lint.flake8-tidy-imports.banned-api")));
 }

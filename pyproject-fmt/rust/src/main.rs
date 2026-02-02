@@ -7,7 +7,7 @@ use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
 
 use crate::global::reorder_tables;
-use common::table::Tables;
+use common::table::{apply_table_formatting, Tables};
 
 mod build_system;
 mod dependency_groups;
@@ -110,6 +110,23 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig::from_settings(opt);
 
+    let mut prefixes: Vec<String> = vec![String::from("build-system"), String::from("project")];
+    for key in tables.header_to_pos.keys() {
+        if let Some(tool_name) = key.strip_prefix("tool.") {
+            let tool_prefix = format!("tool.{}", tool_name.split('.').next().unwrap_or(tool_name));
+            if !prefixes.contains(&tool_prefix) {
+                prefixes.push(tool_prefix);
+            }
+        }
+    }
+    let prefix_refs: Vec<&str> = prefixes.iter().map(|s| s.as_str()).collect();
+    apply_table_formatting(
+        &mut tables,
+        |name| table_config.should_collapse(name),
+        &prefix_refs,
+        opt.column_width,
+    );
+
     build_system::fix(&tables, opt.keep_full_version);
     project::fix(
         &mut tables,
@@ -120,7 +137,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         &table_config,
     );
     dependency_groups::fix(&mut tables, opt.keep_full_version);
-    ruff::fix(&mut tables, &table_config);
+    ruff::fix(&mut tables);
     reorder_tables(&root_ast, &tables);
 
     let options = Options {

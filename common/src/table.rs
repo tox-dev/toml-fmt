@@ -515,15 +515,13 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
 
 /// Collapse a single sub-table into dotted keys in the parent table.
 /// For example, `[project.urls]` with `homepage = "..."` becomes `urls.homepage = "..."` in `[project]`.
-pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) {
+/// For array of tables, converts to inline array if it fits within column_width.
+pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str, column_width: usize) {
     let full_name = format!("{parent_name}.{sub_name}");
     let sub_positions = match tables.header_to_pos.get(&full_name) {
         Some(p) if !p.is_empty() => p.clone(),
         _ => return,
     };
-    if sub_positions.len() != 1 {
-        return;
-    }
 
     if !tables.header_to_pos.contains_key(parent_name) {
         tables
@@ -536,13 +534,21 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         return;
     }
 
-    let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
-    let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
+    let first_sub = tables.table_set[*sub_positions.first().unwrap()].borrow();
+    let is_array_table = first_sub.iter().any(|child| child.kind() == TABLE_ARRAY_HEADER);
+    drop(first_sub);
 
-    let is_array_table = sub.iter().any(|child| child.kind() == TABLE_ARRAY_HEADER);
     if is_array_table {
+        collapse_array_of_tables(tables, parent_name, sub_name, &sub_positions, column_width);
         return;
     }
+
+    if sub_positions.len() != 1 {
+        return;
+    }
+
+    let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
+    let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
 
     let mut header = false;
     for child in sub.iter() {
@@ -578,6 +584,73 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         main.push(child.clone());
     }
     sub.clear();
+}
+
+fn collapse_array_of_tables(
+    tables: &mut Tables,
+    parent_name: &str,
+    sub_name: &str,
+    sub_positions: &[usize],
+    column_width: usize,
+) {
+    let mut inline_tables: Vec<String> = Vec::new();
+
+    for pos in sub_positions {
+        let sub = tables.table_set[*pos].borrow();
+        let mut entries: Vec<String> = Vec::new();
+
+        for child in sub.iter() {
+            if child.kind() != ENTRY {
+                continue;
+            }
+            let entry_node = child.as_node().unwrap();
+            let key = entry_node
+                .children_with_tokens()
+                .find(|c| c.kind() == KEY)
+                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
+                .unwrap_or_default();
+            let value = entry_node
+                .children_with_tokens()
+                .find(|c| c.kind() == VALUE)
+                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
+                .unwrap_or_default();
+            if !key.is_empty() && !value.is_empty() {
+                entries.push(format!("{key} = {value}"));
+            }
+        }
+
+        if !entries.is_empty() {
+            let inline_table = format!("{{ {} }}", entries.join(", "));
+            if inline_table.len() > column_width {
+                return;
+            }
+            inline_tables.push(inline_table);
+        }
+    }
+
+    if inline_tables.is_empty() {
+        return;
+    }
+
+    let array_value = format!("[{}]", inline_tables.join(", "));
+    let entry_text = format!("{sub_name} = {array_value}\n");
+
+    let main_positions = &tables.header_to_pos[parent_name];
+    let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
+
+    if main.last().is_some_and(|e| e.kind() != NEWLINE) {
+        main.push(make_newline());
+    }
+
+    let parsed = taplo::parser::parse(&entry_text);
+    let parsed_root = parsed.into_syntax().clone_for_update();
+    if let Some(entry) = parsed_root.children_with_tokens().find(|c| c.kind() == ENTRY) {
+        main.push(entry);
+    }
+
+    for pos in sub_positions {
+        tables.table_set[*pos].borrow_mut().clear();
+    }
 }
 
 /// Expand dotted keys with a specific prefix into a separate sub-table.
@@ -668,14 +741,73 @@ pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) 
     tables.header_to_pos.entry(full_name).or_default().push(pos);
 }
 
+fn count_unquoted_dots(s: &str) -> usize {
+    let mut count = 0;
+    let mut in_quotes = false;
+    for c in s.chars() {
+        match c {
+            '"' => in_quotes = !in_quotes,
+            '.' if !in_quotes => count += 1,
+            _ => {}
+        }
+    }
+    count
+}
+
+fn split_table_name(full_name: &str) -> Option<(&str, &str)> {
+    let mut depth = 0;
+    for (i, c) in full_name.char_indices().rev() {
+        match c {
+            '"' => depth = 1 - depth,
+            '.' if depth == 0 => return Some((&full_name[..i], &full_name[i + 1..])),
+            _ => {}
+        }
+    }
+    None
+}
+
+/// Apply table formatting (collapse/expand) to all sub-tables under specified prefixes.
+/// The `should_collapse` function determines whether each table should be collapsed.
+/// `column_width` is used to determine if array of tables can fit as inline arrays.
+pub fn apply_table_formatting<F>(tables: &mut Tables, should_collapse: F, prefixes: &[&str], column_width: usize)
+where
+    F: Fn(&str) -> bool,
+{
+    let mut all_sub_tables: Vec<String> = Vec::new();
+    for prefix in prefixes {
+        collect_all_sub_tables(tables, prefix, &mut all_sub_tables);
+    }
+    all_sub_tables.sort_by(|a, b| {
+        let depth_a = count_unquoted_dots(a);
+        let depth_b = count_unquoted_dots(b);
+        match depth_b.cmp(&depth_a) {
+            std::cmp::Ordering::Equal => a.cmp(b),
+            other => other,
+        }
+    });
+    for full_name in all_sub_tables {
+        if let Some((parent, sub)) = split_table_name(&full_name) {
+            if should_collapse(&full_name) {
+                collapse_sub_table(tables, parent, sub, column_width);
+            } else {
+                expand_sub_table(tables, parent, sub);
+            }
+        }
+    }
+}
+
 /// Recursively collect all sub-table full names under a parent.
 /// For "project", returns ["project.urls", "project.entry-points", "project.entry-points.tox", ...].
+/// Also includes intermediate parent tables that don't have explicit headers but are implied
+/// by deeper nested tables.
 pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut Vec<String>) {
     let prefix = format!("{parent_name}.");
+    let prefix_dots = count_unquoted_dots(parent_name);
 
     for key in tables.header_to_pos.keys() {
         if key.starts_with(&prefix) && key != parent_name {
             result.push(key.clone());
+            add_intermediate_parents(key, prefix_dots, result);
         }
     }
 
@@ -698,5 +830,18 @@ pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut V
                 result.push(full_name);
             }
         }
+    }
+}
+
+fn add_intermediate_parents(table_name: &str, prefix_dots: usize, result: &mut Vec<String>) {
+    let mut current = table_name;
+    while let Some((parent, _)) = split_table_name(current) {
+        if count_unquoted_dots(parent) <= prefix_dots {
+            break;
+        }
+        if !result.contains(&String::from(parent)) {
+            result.push(String::from(parent));
+        }
+        current = parent;
     }
 }
