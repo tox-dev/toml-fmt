@@ -777,6 +777,42 @@ fn test_comment_with_blank_line_before_table_header() {
     assert!(res.starts_with("# comment for build-system\n[build-system]"));
 }
 
+#[rstest]
+#[case::issue_124_comment_inside_table_and_before_next_table(
+    indoc! {r#"
+        [project]
+        name = "test"
+        # comment inside project table
+        version = "1.0"
+
+        scripts.main = "app:main"
+
+        # comment for dependency-groups
+        [dependency-groups]
+        test = ["pytest"]
+    "#},
+    &["dependency-groups", "project"],
+    indoc! {r#"
+        # comment for dependency-groups
+        [dependency-groups]
+        test = ["pytest"]
+
+        [project]
+        name = "test"
+        # comment inside project table
+        version = "1.0"
+
+        scripts.main = "app:main"
+    "#}
+)]
+fn test_issue_124(#[case] start: &str, #[case] order: &[&str], #[case] expected: &str) {
+    let root_ast = parse(start).into_syntax().clone_for_update();
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, order, &[]);
+    let result = format_syntax(root_ast, Options::default());
+    assert_eq!(result, expected);
+}
+
 #[test]
 fn test_expand_sub_tables_creates_sub_table() {
     let toml = indoc! {r#"

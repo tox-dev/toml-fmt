@@ -177,6 +177,53 @@ use crate::{format_toml, Settings};
         true,
         (3, 9)
 )]
+#[case::issue_124_comment_before_table(
+        indoc ! {r#"
+    [project]
+    name = "test"
+    requires-python = ">=3.10"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+      "Programming Language :: Python :: 3.14",
+    ]
+    urls."Repository" = "https://github.com/example/test"
+
+    scripts.gha-utils = "gha_utils.__main__:main"
+
+    # Non-runtime development dependency groups.
+    [dependency-groups]
+    test = ["pytest"]
+    "#},
+        indoc ! {r#"
+    [project]
+    name = "test"
+    requires-python = ">=3.10"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+      "Programming Language :: Python :: 3.14",
+    ]
+    urls."Repository" = "https://github.com/example/test"
+
+    scripts.gha-utils = "gha_utils.__main__:main"
+
+    # Non-runtime development dependency groups.
+    [dependency-groups]
+    test = [
+      "pytest",
+    ]
+    "#},
+        2,
+        true,
+        (3, 14)
+)]
 fn test_format_toml(
     #[case] start: &str,
     #[case] expected: &str,

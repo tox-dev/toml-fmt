@@ -75,12 +75,14 @@ impl Tables {
 
                 // Find the first COMMENT after the last ENTRY - that's where we split
                 let last_entry_pos = borrow.iter().rposition(|x| x.kind() == ENTRY);
-                let first_comment_pos = borrow.iter().position(|x| x.kind() == COMMENT);
 
-                let comments_start = match (last_entry_pos, first_comment_pos) {
-                    (Some(entry_pos), Some(comment_pos)) if comment_pos > entry_pos => comment_pos,
-                    (None, Some(comment_pos)) => comment_pos, // No entries, but has comments
-                    _ => borrow.len(),                        // No comments to move
+                let comments_start = match last_entry_pos {
+                    Some(entry_pos) => borrow
+                        .iter()
+                        .skip(entry_pos + 1)
+                        .position(|x| x.kind() == COMMENT)
+                        .map_or(borrow.len(), |p| entry_pos + 1 + p),
+                    None => borrow.iter().position(|x| x.kind() == COMMENT).unwrap_or(borrow.len()),
                 };
 
                 // Split: keep elements for previous table, extract comments for new table
