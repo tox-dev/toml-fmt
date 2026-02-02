@@ -1,13 +1,14 @@
+use std::collections::HashSet;
+
+use common::table::{apply_table_formatting, Tables};
 use common::taplo::formatter::{format_syntax, Options};
 use common::taplo::parser::parse;
 use common::taplo::syntax::SyntaxElement;
 use indoc::indoc;
 use rstest::rstest;
-use std::collections::HashSet;
 
 use crate::project::fix;
 use crate::TableFormatConfig;
-use common::table::Tables;
 
 fn evaluate(
     start: &str,
@@ -23,6 +24,7 @@ fn evaluate(
         expand_tables: HashSet::new(),
         collapse_tables: HashSet::new(),
     };
+    apply_table_formatting(&mut tables, |name| table_config.should_collapse(name), &["project"]);
     fix(
         &mut tables,
         keep_full_version,

@@ -523,6 +523,25 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         return;
     }
 
+    let child_prefix = format!("{full_name}.");
+    let has_array_table_children = tables.header_to_pos.keys().any(|key| {
+        if !key.starts_with(&child_prefix) {
+            return false;
+        }
+        let Some(positions) = tables.header_to_pos.get(key) else {
+            return false;
+        };
+        positions.iter().any(|pos| {
+            tables.table_set[*pos]
+                .borrow()
+                .iter()
+                .any(|child| child.kind() == TABLE_ARRAY_HEADER)
+        })
+    });
+    if has_array_table_children {
+        return;
+    }
+
     if !tables.header_to_pos.contains_key(parent_name) {
         tables
             .header_to_pos
@@ -666,14 +685,65 @@ pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) 
     tables.header_to_pos.entry(full_name).or_default().push(pos);
 }
 
+fn count_unquoted_dots(s: &str) -> usize {
+    let mut count = 0;
+    let mut in_quotes = false;
+    for c in s.chars() {
+        match c {
+            '"' => in_quotes = !in_quotes,
+            '.' if !in_quotes => count += 1,
+            _ => {}
+        }
+    }
+    count
+}
+
+fn split_table_name(full_name: &str) -> Option<(&str, &str)> {
+    let mut depth = 0;
+    for (i, c) in full_name.char_indices().rev() {
+        match c {
+            '"' => depth = 1 - depth,
+            '.' if depth == 0 => return Some((&full_name[..i], &full_name[i + 1..])),
+            _ => {}
+        }
+    }
+    None
+}
+
+/// Apply table formatting (collapse/expand) to all sub-tables under specified prefixes.
+/// The `should_collapse` function determines whether each table should be collapsed.
+pub fn apply_table_formatting<F>(tables: &mut Tables, should_collapse: F, prefixes: &[&str])
+where
+    F: Fn(&str) -> bool,
+{
+    let mut all_sub_tables: Vec<String> = Vec::new();
+    for prefix in prefixes {
+        collect_all_sub_tables(tables, prefix, &mut all_sub_tables);
+    }
+    all_sub_tables.sort_by_key(|b| std::cmp::Reverse(count_unquoted_dots(b)));
+    for full_name in all_sub_tables {
+        if let Some((parent, sub)) = split_table_name(&full_name) {
+            if should_collapse(&full_name) {
+                collapse_sub_table(tables, parent, sub);
+            } else {
+                expand_sub_table(tables, parent, sub);
+            }
+        }
+    }
+}
+
 /// Recursively collect all sub-table full names under a parent.
 /// For "project", returns ["project.urls", "project.entry-points", "project.entry-points.tox", ...].
+/// Also includes intermediate parent tables that don't have explicit headers but are implied
+/// by deeper nested tables.
 pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut Vec<String>) {
     let prefix = format!("{parent_name}.");
+    let prefix_dots = count_unquoted_dots(parent_name);
 
     for key in tables.header_to_pos.keys() {
         if key.starts_with(&prefix) && key != parent_name {
             result.push(key.clone());
+            add_intermediate_parents(key, prefix_dots, result);
         }
     }
 
@@ -696,5 +766,18 @@ pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut V
                 result.push(full_name);
             }
         }
+    }
+}
+
+fn add_intermediate_parents(table_name: &str, prefix_dots: usize, result: &mut Vec<String>) {
+    let mut current = table_name;
+    while let Some((parent, _)) = split_table_name(current) {
+        if count_unquoted_dots(parent) <= prefix_dots {
+            break;
+        }
+        if !result.contains(&String::from(parent)) {
+            result.push(String::from(parent));
+        }
+        current = parent;
     }
 }

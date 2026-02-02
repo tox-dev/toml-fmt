@@ -1,17 +1,10 @@
 use common::array::{sort_strings, transform};
 use common::string::update_content;
-use common::table::{collapse_sub_tables, expand_sub_tables, for_entries, reorder_table_keys, Tables};
+use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-use crate::TableFormatConfig;
-
 #[allow(clippy::too_many_lines)]
-pub fn fix(tables: &mut Tables, table_config: &TableFormatConfig) {
-    if table_config.should_collapse("tool.ruff") {
-        collapse_sub_tables(tables, "tool.ruff");
-    } else {
-        expand_sub_tables(tables, "tool.ruff");
-    }
+pub fn fix(tables: &mut Tables) {
     let table_element = tables.get("tool.ruff");
     if table_element.is_none() {
         return;

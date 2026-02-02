@@ -1,26 +1,20 @@
-use std::collections::HashSet;
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
+use common::table::{apply_table_formatting, Tables};
 use common::taplo::formatter::{format_syntax, Options};
 use common::taplo::parser::parse;
 use common::taplo::syntax::SyntaxElement;
 use rstest::{fixture, rstest};
 
 use crate::ruff::fix;
-use crate::TableFormatConfig;
-use common::table::Tables;
 
 fn evaluate(start: &str) -> String {
     let root_ast = parse(start).into_syntax().clone_for_update();
     let count = root_ast.children_with_tokens().count();
     let mut tables = Tables::from_ast(&root_ast);
-    let table_config = TableFormatConfig {
-        default_collapse: true,
-        expand_tables: HashSet::new(),
-        collapse_tables: HashSet::new(),
-    };
-    fix(&mut tables, &table_config);
+    apply_table_formatting(&mut tables, |_| true, &["tool.ruff"]);
+    fix(&mut tables);
     let entries = tables
         .table_set
         .iter()
