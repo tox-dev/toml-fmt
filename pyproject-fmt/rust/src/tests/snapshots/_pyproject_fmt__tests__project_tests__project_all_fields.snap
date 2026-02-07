@@ -1,0 +1,32 @@
+---
+source: pyproject-fmt/rust/src/tests/project_tests.rs
+expression: result
+---
+[project]
+name = "my-package"
+version = "1.0.0"
+description = "A comprehensive test"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [ { name = "Dev", email = "dev@example.com" } ]
+maintainers = [ { name = "Maintainer" } ]
+keywords = [ "example", "test" ]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
+]
+dependencies = [ "requests>=2.28" ]
+
+[project.optional-dependencies]
+optional-dependencies.dev = [ "pytest>=7" ]
+
+[project.urls]
+urls.Homepage = "https://example.com"
+
+[project.scripts]
+scripts.mytool = "mypackage:main"

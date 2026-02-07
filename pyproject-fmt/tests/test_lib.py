@@ -55,14 +55,20 @@ from pyproject_fmt._lib import Settings, format_toml
             """,
             """\
             [project]
-            keywords = [ "A" ]
+            keywords = [
+                "A",
+            ]
             classifiers = [
                 "Programming Language :: Python :: 3 :: Only",
                 "Programming Language :: Python :: 3.7",
                 "Programming Language :: Python :: 3.8",
             ]
-            dynamic = [ "B" ]
-            dependencies = [ "requests>=2.0" ]
+            dynamic = [
+                "B",
+            ]
+            dependencies = [
+                "requests>=2.0",
+            ]
             """,
             id="collapsed",
         ),

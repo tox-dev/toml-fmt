@@ -1,5 +1,4 @@
-use common::array::{sort_strings, transform};
-use common::string::update_content;
+use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
@@ -11,30 +10,6 @@ pub fn fix(tables: &mut Tables) {
     }
     let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
     for_entries(table, &mut |key, entry| match key.as_str() {
-        "target-version"
-        | "cache-dir"
-        | "extend"
-        | "required-version"
-        | "output-format"
-        | "format.indent-style"
-        | "format.line-ending"
-        | "format.quote-style"
-        | "lint.dummy-variable-rgx"
-        | "lint.flake8-copyright.author"
-        | "lint.flake8-copyright.notice-rgx"
-        | "lint.flake8-pytest-style.parametrize-names-type"
-        | "lint.flake8-pytest-style.parametrize-values-row-type"
-        | "lint.flake8-pytest-style.parametrize-values-type"
-        | "lint.flake8-quotes.docstring-quotes"
-        | "lint.flake8-quotes.multiline-quotes"
-        | "lint.flake8-quotes.inline-quotes"
-        | "lint.flake8-tidy-imports.ban-relative-imports"
-        | "lint.isort.known-first-party"
-        | "lint.isort.known-third-party"
-        | "lint.isort.relative-imports-order"
-        | "lint.pydocstyle.convention" => {
-            update_content(entry, |s| String::from(s));
-        }
         "exclude"
         | "extend-exclude"
         | "builtins"
@@ -91,15 +66,10 @@ pub fn fix(tables: &mut Tables) {
         | "lint.pyflakes.extend-generics"
         | "lint.pylint.allow-dunder-method-names"
         | "lint.pylint.allow-magic-value-types" => {
-            transform(entry, &|s| String::from(s));
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-        "lint.isort.section-order" => {
-            transform(entry, &|s| String::from(s));
         }
         _ => {
             if key.starts_with("lint.extend-per-file-ignores.") || key.starts_with("lint.per-file-ignores.") {
-                transform(entry, &|s| String::from(s));
                 sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
             }
         }

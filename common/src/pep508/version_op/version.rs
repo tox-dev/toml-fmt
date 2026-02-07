@@ -94,11 +94,7 @@ impl Version {
     fn extract_number(s: &str) -> Option<u64> {
         let trimmed = s.trim_start_matches(['-', '_', '.']);
         let (num, _) = trimmed.split_at(trimmed.find(|c: char| !c.is_ascii_digit()).unwrap_or(trimmed.len()));
-        if num.is_empty() {
-            None
-        } else {
-            num.parse().ok()
-        }
+        if num.is_empty() { None } else { num.parse().ok() }
     }
 
     fn trim_separators_end(s: &str) -> &str {

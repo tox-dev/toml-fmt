@@ -140,53 +140,51 @@ cargo clippy --workspace
 
 ## Architecture Overview
 
-This project uses taplo for TOML parsing and syntax tree manipulation. Taplo is built on the rowan library, which
-provides a lossless syntax tree implementation designed specifically for incremental parsing and efficient tree
-modifications.
+This project uses tombi for TOML parsing and syntax tree manipulation. Tombi is built on the rg_tree library, which
+provides a lossless syntax tree implementation designed for incremental parsing and efficient tree modifications.
 
-## Understanding Taplo/Rowan
+## Understanding Tombi/rg_tree
 
-### Green Tree vs Red Tree
+### Syntax Tree Architecture
 
-Rowan uses a two-layer tree architecture that separates immutable data from mutable views. The Green layer represents
-the immutable, memory-efficient core of the syntax tree. Green nodes have no parent pointers and use structural sharing,
-meaning identical subtrees share the same memory. This makes them cheap to clone since they're Arc-based.
-
-The Red layer (SyntaxNode) provides a mutable wrapper around Green nodes. It adds parent pointers for tree traversal and
-provides APIs for inserting and deleting nodes. You make a tree mutable by calling `clone_for_update()`, which doesn't
-deep-copy the tree but creates a mutable wrapper where changes are tracked incrementally.
+Tombi uses rg_tree for its AST representation, which provides a mutable syntax tree where nodes can be modified in
+place. When you parse TOML with tombi, you get an immutable syntax tree. To modify it, you call `clone_for_update()`
+which creates a mutable version that supports structural changes.
 
 ```mermaid
 graph TD
-    A[Parse TOML] --> B[GreenNode - Immutable]
-    B --> C[SyntaxNode - Red Tree Wrapper]
-    C --> D[clone_for_update]
-    D --> E[Mutable SyntaxNode]
-    E --> F[detach / insert / splice_children]
+    A[Parse TOML] --> B[Immutable SyntaxNode]
+    B --> C[clone_for_update]
+    C --> D[Mutable SyntaxNode]
+    D --> E[splice_children / insert / detach]
 ```
 
 ### Mutation Model
 
 When you parse TOML, you get an immutable syntax tree. To modify it, you call `clone_for_update()` which creates a
-mutable version. From there, you can use methods like `detach()` to remove nodes from their parent, `append_child()` to
-add new nodes, or `splice_children()` for batch updates. The key insight is that `clone_for_update()` is efficient
-because it doesn't actually copy the entire tree—it creates a mutable wrapper that tracks changes incrementally.
+mutable version. From there, you can use methods like `splice_children()` for batch updates, `insert_child()` to add
+nodes, or manipulate the tree structure directly. The tree maintains parent-child relationships automatically during
+modifications.
 
 ```rust
-let syntax = parse(toml_str).into_syntax();
-let mutable_tree = syntax.clone_for_update();
+let syntax = tombi_parser::parse(toml_str, TomlVersion::default())
+    .syntax_node()
+    .clone_for_update();
 
-entry.detach();  // Remove from parent
-parent.append_child(new_node);  // Add child
 node.splice_children(range, new_children);  // Batch update
+parent.insert_child(index, new_node);       // Insert at position
 ```
 
-### Node Types
+### Node Types and Comment Handling
 
-The syntax tree consists of tokens (leaf nodes) and composite nodes. Tokens include things like STRING (`"hello"`),
-NEWLINE (`\n`), COMMA (`,`), and IDENT (bare identifiers). Composite nodes include ENTRY (a key-value pair), VALUE (the
-right side of an assignment), ARRAY (an array of values), TABLE_HEADER (`[section]`), and TABLE_ARRAY_HEADER
-(`[[section]]`).
+The syntax tree consists of tokens (leaf nodes) and composite nodes. Tokens include BASIC_STRING (`"hello"`),
+LITERAL_STRING (`'hello'`), LINE_BREAK (`\n`), COMMA (`,`), and WHITESPACE. Composite nodes include KEY_VALUE (a
+key-value pair), VALUE (the right side of an assignment), ARRAY (an array of values), TABLE (a `[section]` header), and
+ARRAY_TABLE (`[[section]]` header).
+
+An important difference from other parsers is how comments are represented. In tombi, inline comments attached to array
+elements are children of COMMA nodes. A COMMA node can contain three children: a COMMA token, a WHITESPACE token, and a
+COMMENT token. This structure is important when manipulating arrays with comments.
 
 Here's an example showing the structure for a simple TOML entry:
 
@@ -198,47 +196,94 @@ This parses into:
 
 ```
 ROOT
-└─ ENTRY
-   ├─ KEY (token): "name "
+└─ KEY_VALUE
+   ├─ KEY
+   │  └─ IDENT (token): "name"
+   ├─ WHITESPACE (token): " "
    ├─ EQ (token): "="
    ├─ WHITESPACE (token): " "
-   └─ VALUE (node)
-      └─ STRING (token): "\"value\""
+   └─ VALUE
+      └─ BASIC_STRING (node)
+```
+
+For arrays with inline comments, the structure is more complex:
+
+```toml
+deps = [
+  "pkg", # comment
+]
+```
+
+This parses into:
+
+```
+ROOT
+└─ KEY_VALUE
+   ├─ KEY
+   │  └─ IDENT: "deps"
+   └─ VALUE
+      └─ ARRAY
+         ├─ BRACKET_START: "["
+         ├─ LINE_BREAK: "\n"
+         ├─ WHITESPACE: "  "
+         ├─ BASIC_STRING: "\"pkg\""
+         ├─ COMMA (node)
+         │  ├─ COMMA (token): ","
+         │  ├─ WHITESPACE (token): "  "
+         │  └─ COMMENT (token): "# comment"
+         ├─ LINE_BREAK: "\n"
+         └─ BRACKET_END: "]"
 ```
 
 ## Design Decisions
 
 ### Why Parse-and-Extract for Node Creation
 
-In `common/src/create.rs`, we use a "parse-and-extract" pattern rather than rowan's `GreenNodeBuilder`. When we need to
-create a STRING node, we format a complete TOML expression like `a = "text"`, parse it, navigate to the ENTRY node, find
-the VALUE child, and extract the STRING token from within it. While this involves parsing overhead, we chose this
-approach for several important reasons.
+In `common/src/create.rs`, we use a "parse-and-extract" pattern. When we need to create a BASIC_STRING node, we format a
+complete TOML expression like `a = "text"`, parse it, navigate to the KEY_VALUE node, find the VALUE child, and extract
+the BASIC_STRING node from within it. While this involves parsing overhead, we chose this approach for several important
+reasons.
 
-First, we can't actually create standalone tokens with `GreenNodeBuilder`. The builder creates complete trees with a
-root node, so to get a single STRING token, we'd need to wrap it in a root and then navigate to extract it anyway—the
-same navigation we do now. Second, we'd need to reimplement all TOML escaping rules (quote escaping, backslash escaping,
-newline escaping, unicode sequences `\uXXXX` and `\UXXXXXXXX`, and line continuations) that taplo's parser already
-handles correctly. Third, parse-and-extract guarantees we always create valid TOML syntax because we're using the actual
-parser. Finally, performance is not a concern here because node creation is a small fraction of total formatting time.
+First, we'd need to reimplement all TOML escaping rules (quote escaping, backslash escaping, newline escaping, unicode
+sequences `\uXXXX` and `\UXXXXXXXX`, and line continuations) that tombi's parser already handles correctly. Second,
+parse-and-extract guarantees we always create valid TOML syntax because we're using the actual parser. Finally,
+performance is not a concern here because node creation is a small fraction of total formatting time.
 
 The trade-off is clear: we accept slightly slower node creation in exchange for guaranteed correctness, simpler code,
 and better maintainability.
 
-### Why We Don't Use Taplo's DOM API
+## Formatting Style
 
-Taplo provides a DOM (Document Object Model) layer on top of the raw syntax trees. The DOM offers type-safe, semantic
-access to TOML structures through types like `Table`, `Array`, and `Str`. You can navigate the DOM structure and read
-values in a type-safe way without manual kind checking.
+### Comment Alignment
 
-We investigated whether the DOM API could simplify our code for semantic operations like reordering dependencies and
-fixing classifiers. Our investigation (documented in `common/src/tests/dom_investigation.rs`) revealed that while the
-DOM provides excellent read-only access to TOML semantics, it does not support mutation operations. The `Table` type has
-methods like `get()` and `entries()` for reading, but no `insert()`, `remove()`, or `update()` methods for modification.
+The formatters implement per-array comment alignment for inline comments. Unlike global alignment where all comments
+across the entire file align to the same column, comments are aligned independently within each array based on that
+array's longest value. This produces cleaner, more readable formatting.
 
-This means the DOM is designed for semantic reading and validation, not for the kind of structural transformations we
-need to perform. We must continue using direct syntax tree manipulation for all mutation operations. However, we could
-potentially use the DOM for read-only analysis tasks if we needed type-safe semantic queries in the future.
+For example, this input:
+
+```toml
+lint.ignore = [
+  "COM812", # Conflict with formatter
+  "CPY",    # No copyright statements
+  "ISC001", # Another long rule
+]
+
+lint.per-file-ignores."tests/**/*.py" = [
+  "D",    # documentation
+  "S101", # asserts
+]
+```
+
+Will be formatted with each array aligning independently. The `lint.ignore` array aligns based on "ISC001" (its longest
+value), while `per-file-ignores` aligns based on "S101". This alignment happens after tombi's primary formatter runs, by
+modifying the WHITESPACE children within COMMA nodes that contain COMMENT children.
+
+### Comment Preservation During Sorting
+
+When arrays contain comments (either inline or standalone), sorting is automatically skipped to preserve the comments in
+their original positions. This ensures that explanatory comments stay with their associated values. The
+`common/src/array.rs::sort()` function checks for comments before sorting and returns early if any are found.
 
 ## Testing Guidelines
 
@@ -259,15 +304,56 @@ fn test_load_text(#[case] input: &str, #[case] kind: SyntaxKind, #[case] expecte
 
 ### Coverage Goals and Measurement
 
-We aim for at least 95% line coverage on all non-PyO3 code. PyO3 bindings are tested through Python integration tests
-rather than Rust unit tests. Use `cargo llvm-cov` to measure coverage, running
+We aim for at least 95% line coverage on all code. Use `cargo llvm-cov` to measure coverage, running
 `cargo llvm-cov --lcov --output-path /tmp/coverage.lcov` to generate a coverage report and
 `cargo llvm-cov report --summary-only` to view the summary.
 
-Some defensive code may not reach 100% coverage, and this is acceptable. For example, `.expect()` calls on
-guaranteed-valid input (like "parsed TOML has a child" after we just parsed valid TOML) are defensive programming but
-will never actually fail in practice. These defensive assertions help catch bugs during development without needing to
-achieve 100% coverage.
+#### Testing PyO3 Code from Rust
+
+PyO3 module registration functions (`_lib`) can be tested from Rust by:
+
+1. Adding `pyo3 = { features = ["auto-initialize"] }` to dev-dependencies
+1. Running tests with `--no-default-features` to disable `extension-module`
+1. Using `pyo3::Python::initialize()` and `pyo3::Python::attach()` to initialize Python
+
+```rust
+#[test]
+fn test_lib_module_registration() {
+    use pyo3::types::PyAnyMethods;
+
+    pyo3::Python::initialize();
+    pyo3::Python::attach(|py| {
+        let module = pyo3::types::PyModule::new(py, "_lib").unwrap();
+        crate::_lib(&module.as_borrowed()).unwrap();
+
+        assert!(module.hasattr("format_toml").unwrap());
+        assert!(module.hasattr("Settings").unwrap());
+    });
+}
+```
+
+Run these tests with: `cargo test --no-default-features`
+
+#### LLVM Coverage Artifacts
+
+LLVM coverage reports closing braces of multi-branch conditionals as separate lines. These often show as uncovered even
+when all code paths are tested. For example:
+
+```rust
+if condition {
+    return Some(value);  // covered
+}                        // reported as uncovered by LLVM
+```
+
+This is a known limitation of LLVM's coverage instrumentation. We do not expect these closing brace lines to be covered
+and they should not block merging code that otherwise meets the 95% threshold.
+
+#### Acceptable Coverage Gaps
+
+Some code may not reach 100% coverage, and this is acceptable:
+
+- **Closing braces** in multi-branch conditionals (LLVM coverage artifacts as described above)
+- **`.expect()` calls** on guaranteed-valid input (like "parsed TOML has a child" after parsing valid TOML)
 
 ### Writing Good Assertions
 
@@ -285,6 +371,44 @@ Bad assertion style uses vague substring matching:
 ```rust
 assert!(result.contains("dependencies"));  // Too vague - doesn't verify structure
 ```
+
+### Snapshot Testing with Insta
+
+For input/output comparison tests (where you verify formatter output against expected results), use the `insta` crate
+instead of inline expected strings. This makes test maintenance significantly easier when formatter behavior changes.
+
+Traditional approach (avoid):
+
+```rust
+#[rstest]
+#[case::simple("input", "expected output")]
+fn test_format(#[case] input: &str, #[case] expected: &str) {
+    let result = format_toml(input);
+    assert_eq!(result, expected);
+}
+```
+
+Snapshot testing approach (preferred):
+
+```rust
+#[rstest]
+#[case::simple("input")]
+fn test_format(#[case] input: &str) {
+    let result = format_toml(input);
+    insta::assert_snapshot!(result);
+}
+```
+
+Snapshot testing workflow:
+
+- Run tests with `cargo insta test` to generate snapshots
+- Review changes with `cargo insta review` (interactive) or view diffs manually
+- Accept all changes with `cargo insta test --accept`
+- Reject changes with `cargo insta reject`
+
+When formatter behavior changes (like switching parsers), you can update all test expectations with a single
+`cargo insta test --accept` instead of manually updating hundreds of inline strings. Snapshots are stored in
+`src/tests/snapshots/` and committed to git.
 
 ## Common Patterns
 

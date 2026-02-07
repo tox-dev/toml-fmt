@@ -6,3 +6,7 @@ _lib.abi3.*
 # Generated files
 pyproject-fmt/README.rst
 tox-toml-fmt/README.rst
+# Insta snapshot testing
+*.snap.new
+*.snap.pending
+lcov.info

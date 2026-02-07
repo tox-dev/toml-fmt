@@ -1,12 +1,12 @@
 use std::string::String;
 
-use common::taplo::formatter::{format_syntax, Options};
-use common::taplo::parser::parse;
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
+use tombi_config::TomlVersion;
 
 use crate::global::{normalize_strings, reorder_tables};
 use common::table::Tables;
+
 mod global;
 #[cfg(test)]
 mod tests;
@@ -26,39 +26,41 @@ impl Settings {
     }
 }
 
-/// Format toml file
+fn parse(source: &str) -> tombi_syntax::SyntaxNode {
+    tombi_parser::parse(source, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update()
+}
+
+async fn format_with_tombi(content: &str, column_width: usize, indent: usize) -> String {
+    let options = common::format_options::create_format_options(column_width, indent);
+    let schema_store = tombi_schema_store::SchemaStore::new();
+    let formatter = tombi_formatter::Formatter::new(TomlVersion::default(), &options, None, &schema_store);
+    formatter.format(content).await.unwrap_or_else(|_| content.to_string())
+}
+
 #[must_use]
 #[pyfunction]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
-    let root_ast = parse(content).into_syntax().clone_for_update();
+    let root_ast = parse(content);
     let tables = Tables::from_ast(&root_ast);
 
     normalize_strings(&tables);
     reorder_tables(&root_ast, &tables);
 
-    let options = Options {
-        align_entries: false,         // do not align by =
-        align_comments: true,         // align inline comments
-        align_single_comments: true,  // align comments after entries
-        array_trailing_comma: true,   // ensure arrays finish with trailing comma
-        array_auto_expand: true,      // arrays go to multi line when too long
-        array_auto_collapse: false,   // do not collapse for easier diffs
-        compact_arrays: false,        // leave whitespace
-        compact_inline_tables: false, // leave whitespace
-        compact_entries: false,       // leave whitespace
-        column_width: opt.column_width,
-        indent_tables: false,
-        indent_entries: false,
-        inline_table_expand: true,
-        trailing_newline: true,
-        allowed_blank_lines: 1, // one blank line to separate
-        indent_string: " ".repeat(opt.indent),
-        reorder_keys: false,   // respect custom order
-        reorder_arrays: false, // for natural sorting we need to this ourselves
-        crlf: false,
-        reorder_inline_tables: false,
-    };
-    format_syntax(root_ast, options)
+    let modified_content = root_ast.to_string();
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let formatted = rt.block_on(format_with_tombi(&modified_content, opt.column_width, opt.indent));
+
+    let formatted_ast = parse(&formatted);
+    common::array::align_array_comments(&formatted_ast);
+    let aligned = formatted_ast.to_string();
+
+    common::util::limit_blank_lines(&aligned, 2)
 }
 
 /// # Errors

@@ -69,7 +69,7 @@ builtins-ignorelist = ['Bar', 'ALPHA']
 allow-dict-calls-with-keyword-arguments = true
 [tool.ruff.lint.flake8-copyright]
 author = 'Ruff'
-notice-rgx = '(?i)Copyright \\(C\\) \\d{4}'
+notice-rgx = '(?i)Copyright \(C\) \d{4}'
 [tool.ruff.lint.flake8-errmsg]
 max-string-length = 20
 [tool.ruff.lint.flake8-gettext]

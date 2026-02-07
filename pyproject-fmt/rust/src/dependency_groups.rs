@@ -1,11 +1,12 @@
+use std::cmp::Ordering;
+
+use lexical_sort::natural_lexical_cmp;
+use tombi_syntax::SyntaxKind::{BASIC_STRING, INLINE_TABLE};
+
 use common::array::{sort, transform};
 use common::pep508::Requirement;
-use common::string::{load_text, update_content};
+use common::string::load_text;
 use common::table::{collapse_sub_tables, find_key, for_entries, reorder_table_keys, Tables};
-use common::taplo::syntax::SyntaxKind::{ARRAY, ENTRY, INLINE_TABLE, STRING, VALUE};
-use common::util::iter;
-use lexical_sort::natural_lexical_cmp;
-use std::cmp::Ordering;
 
 pub fn fix(tables: &mut Tables, keep_full_version: bool) {
     collapse_sub_tables(tables, "dependency-groups");
@@ -16,43 +17,27 @@ pub fn fix(tables: &mut Tables, keep_full_version: bool) {
 
     let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
     for_entries(table, &mut |_key, entry| {
-        // format dependency specifications
         transform(entry, &|s| {
             Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
         });
 
-        // update inline table values to double-quoted string, e.g. include-group
-        iter(entry, [ARRAY, VALUE, INLINE_TABLE, ENTRY, VALUE].as_ref(), &|node| {
-            update_content(node, |s| String::from(s));
-        });
-
-        // sort array elements
         sort::<(u8, String, String), _, _>(
             entry,
-            |node| {
-                for child in node.children_with_tokens() {
-                    match child.kind() {
-                        STRING => {
-                            let val = load_text(child.as_token().unwrap().text(), STRING);
-                            let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                            return Some((0, package_name, val));
-                        }
-                        INLINE_TABLE => {
-                            match find_key(child.as_node().unwrap(), "include-group") {
-                                None => {}
-                                Some(n) => {
-                                    return Some((
-                                        1,
-                                        load_text(n.first_token().unwrap().text(), STRING),
-                                        String::from(""),
-                                    ));
-                                }
-                            };
-                        }
-                        _ => {}
-                    }
+            |node| match node.kind() {
+                BASIC_STRING => {
+                    let token = node.first_token().expect("BASIC_STRING has token");
+                    let val = load_text(token.text(), BASIC_STRING);
+                    let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
+                    Some((0, package_name, val))
                 }
-                None
+                INLINE_TABLE => find_key(node, "include-group").map(|n| {
+                    (
+                        1,
+                        load_text(n.first_token().expect("key has token").text(), BASIC_STRING),
+                        String::new(),
+                    )
+                }),
+                _ => None,
             },
             &|lhs, rhs| {
                 let mut res = lhs.0.cmp(&rhs.0);

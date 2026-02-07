@@ -7,20 +7,26 @@ license = "MIT"
 edition = "2021"
 
 [lib]
-name = "_lib"
+name = "_tox_toml_fmt"
 path = "rust/src/main.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-common = {path = "../common" }
-regex = { version = "1.12.2" }
-pyo3 = { version = "0.26.0", features = ["abi3-py39"] } # integration with Python
-lexical-sort = { version = "0.3.1" }
+common = { path = "../common" }
+pyo3 = { version = "0.26.0", features = ["abi3-py39"] }
+tombi-parser = { workspace = true }
+tombi-syntax = { workspace = true }
+tombi-formatter = { workspace = true }
+tombi-config = { workspace = true }
+tombi-schema-store = { workspace = true }
+tokio = { version = "1", features = ["rt"] }
 
 [features]
 extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
 
 [dev-dependencies]
-rstest = "0.26.1" # parametrized tests
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+insta = { version = "1.42.0", features = ["redactions"] } # snapshot testing
+pyo3 = { version = "0.26.0", features = ["auto-initialize"] }

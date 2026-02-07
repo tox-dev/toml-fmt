@@ -5,18 +5,24 @@ description = "Common code for formatting TOML files"
 repository = "https://github.com/tox-dev/toml-fmt"
 readme = "README.md"
 license = "MIT"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 regex = { version = "1.12.2" }
-# Taplo provides TOML parsing and syntax tree manipulation built on rowan
+# Tombi provides TOML parsing, syntax tree manipulation, and formatting
 # Public APIs we use:
-# - taplo::parser::parse - Parse TOML into syntax tree
-# - taplo::syntax - Syntax node types and traversal
-# - taplo::util::{unescape, check_escape} - String escape handling
-# Note: taplo::dom exists but we haven't investigated if it's useful for our mutation patterns
-taplo = "0.14.0"
+# - tombi_parser::parse - Parse TOML into syntax tree
+# - tombi_syntax - Syntax node types and traversal
+# - tombi_toml_text - String escape/unescape handling
+# - tombi_formatter - TOML formatting
+tombi-parser = { workspace = true }
+tombi-syntax = { workspace = true }
+tombi-formatter = { workspace = true }
+tombi-toml-text = { workspace = true }
+tombi-config = { workspace = true }
+tombi-schema-store = { workspace = true }
 
 [dev-dependencies]
-rstest = "0.26.1" # parametrized tests
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+insta = { version = "1.42.0", features = ["redactions"] } # snapshot testing

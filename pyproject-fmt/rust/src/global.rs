@@ -1,9 +1,7 @@
-use common::taplo::rowan::SyntaxNode;
-use common::taplo::syntax::Lang;
-
 use common::table::Tables;
+use tombi_syntax::SyntaxNode;
 
-pub fn reorder_tables(root_ast: &SyntaxNode<Lang>, tables: &Tables) {
+pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
     tables.reorder(
         root_ast,
         &[
