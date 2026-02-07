@@ -3,14 +3,14 @@
 ## 2.13.0 - 2026-02-07
 
 - 📝 docs(formatting): restructure docs and fix array formatting behavior by
-  [@gaborbernat](https://github.com/gaborbernat) in [#$164](https://github.com/tox-dev/toml-fmt/pull/164)
+  [@gaborbernat](https://github.com/gaborbernat) in [#164](https://github.com/tox-dev/toml-fmt/pull/164)
 
 <a id="2.12.1"></a>
 
 ## 2.12.1 - 2026-01-31
 
 - Fix expand_tables setting for specific sub-tables by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$148](https://github.com/tox-dev/toml-fmt/pull/148)
+  [#148](https://github.com/tox-dev/toml-fmt/pull/148)
 
 <a id="2.12.0"></a>
 
@@ -24,62 +24,62 @@
 ## 2.11.1 - 2026-01-07
 
 - Fix parsing of versions in parentheses by [@jamesbursa](https://github.com/jamesbursa) in
-  [#$122](https://github.com/tox-dev/toml-fmt/pull/122)
+  [#122](https://github.com/tox-dev/toml-fmt/pull/122)
 
 <a id="2.11.0"></a>
 
 ## 2.11.0 - 2025-10-15
 
 - Allow to opt out of the Python version classifier generation by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$102](https://github.com/tox-dev/toml-fmt/pull/102)
+  [#102](https://github.com/tox-dev/toml-fmt/pull/102)
 
 <a id="2.10.0"></a>
 
 ## 2.10.0 - 2025-10-09
 
 - Add a few more type checkers to top level tables by [@browniebroke](https://github.com/browniebroke) in
-  [#$98](https://github.com/tox-dev/toml-fmt/pull/98)
+  [#98](https://github.com/tox-dev/toml-fmt/pull/98)
 
 <a id="2.9.0"></a>
 
 ## 2.9.0 - 2025-10-08
 
 - Sort [tool.uv] higher in the pyproject.toml by [@browniebroke](https://github.com/browniebroke) in
-  [#$97](https://github.com/tox-dev/toml-fmt/pull/97)
+  [#97](https://github.com/tox-dev/toml-fmt/pull/97)
 
 <a id="2.8.0"></a>
 
 ## 2.8.0 - 2025-10-08
 
 - Fix parsing of version pre labels by [@adamchainz](https://github.com/adamchainz) in
-  [#$89](https://github.com/tox-dev/toml-fmt/pull/89)
+  [#89](https://github.com/tox-dev/toml-fmt/pull/89)
 
 <a id="2.7.0"></a>
 
 ## 2.7.0 - 2025-10-01
 
 - Macos 26 is not yet ready for wide usage by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$86](https://github.com/tox-dev/toml-fmt/pull/86)
+  [#86](https://github.com/tox-dev/toml-fmt/pull/86)
 
 <a id="2.6.0"></a>
 
 ## 2.6.0 - 2025-05-19
 
-- Use abi3-py39 by [@gaborbernat](https://github.com/gaborbernat) in [#$58](https://github.com/tox-dev/toml-fmt/pull/58)
+- Use abi3-py39 by [@gaborbernat](https://github.com/gaborbernat) in [#58](https://github.com/tox-dev/toml-fmt/pull/58)
 
 <a id="2.5.0"></a>
 
 ## 2.5.0 - 2024-10-30
 
 - Add support for PEP 735 dependency-groups by [@browniebroke](https://github.com/browniebroke) in
-  [#$16](https://github.com/tox-dev/toml-fmt/pull/16)
+  [#16](https://github.com/tox-dev/toml-fmt/pull/16)
 
 <a id="2.4.3"></a>
 
 ## 2.4.3 - 2024-10-17
 
 - Fix tomli not present for Python<3.11 by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$9](https://github.com/tox-dev/toml-fmt/pull/9)
+  [#9](https://github.com/tox-dev/toml-fmt/pull/9)
 
 <a id="2.4.2"></a>
 
@@ -92,7 +92,7 @@
 ## 2.4.1 - 2024-10-17
 
 - Fix release script by [@gaborbernat](https://github.com/gaborbernat) in
-  [#$8](https://github.com/tox-dev/toml-fmt/pull/8)
+  [#8](https://github.com/tox-dev/toml-fmt/pull/8)
 
 <a id="2.4.0"></a>
 

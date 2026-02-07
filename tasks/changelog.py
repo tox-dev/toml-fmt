@@ -50,8 +50,8 @@ def run() -> None:
     github = Github(auth=Token(os.environ["GITHUB_TOKEN"]))
     at = "tox-dev/toml-fmt"
     gh_repo = github.get_repo(at)
-    for title, pr, by in entries(gh_repo, git_repo, options.pr, options.base):
-        suffix = f" in [#${pr}](https://github.com/{at}/pull/{pr})" if pr else ""
+    for title, pr, by in entries(gh_repo, git_repo, options.pr, options.base, options.project):
+        suffix = f" in [#{pr}](https://github.com/{at}/pull/{pr})" if pr else ""
         logs.append(f"{title} by [@{by}](https://github.com/{by}){suffix}")
 
     if logs:
@@ -94,7 +94,7 @@ def get_version(base: Path) -> str:
 
 
 def entries(
-    gh_repo: GitHubRepository, git_repo: Repository, pr: int | None, base: str | None
+    gh_repo: GitHubRepository, git_repo: Repository, pr: int | None, base: str | None, project: str
 ) -> Iterator[tuple[str, str, str]]:
     if pr:
         pull = gh_repo.get_pull(pr)
@@ -108,6 +108,8 @@ def entries(
         found_base = found_base or change.hexsha == base
         if not found_base or change.author.name in {"pre-commit-ci[bot]", "dependabot[bot]"}:
             continue
+        if not commit_affects_project(change, project):
+            continue
         title = change.message.split("\n")[0].strip()
         by = gh_repo.get_commit(change.hexsha).author.login
         if match := pr_re.match(title):
@@ -115,6 +117,11 @@ def entries(
             yield group["title"].strip(), group["pr"], by
         else:
             yield title, "", by
+
+
+def commit_affects_project(commit: object, project: str) -> bool:
+    changed_files = list(commit.stats.files.keys())
+    return any(file_path.startswith(("common/", f"{project}/")) for file_path in changed_files)
 
 
 if __name__ == "__main__":

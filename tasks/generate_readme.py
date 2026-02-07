@@ -13,11 +13,11 @@ def main(package: str) -> None:
     if not (index_path := docs_dir / "index.rst").exists():
         return
 
-    processed = process_rst_for_pypi(index_path.read_text())
+    processed = process_rst_for_pypi(index_path.read_text(encoding="utf-8"))
 
     changelog_rst = ""
     if (changelog_path := pkg / "CHANGELOG.md").exists() and (
-        extracted := extract_latest_changelog_as_rst(changelog_path.read_text())
+        extracted := extract_latest_changelog_as_rst(changelog_path.read_text(encoding="utf-8"))
     ):
         changelog_rst = extracted
     if changelog_rst:
@@ -27,12 +27,12 @@ def main(package: str) -> None:
             processed = processed + "\n\n" + changelog_rst
 
     if (config_path := docs_dir / "configuration.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(config_path.read_text()))
+        processed += "\n\n" + process_rst_for_pypi(strip_main_title(config_path.read_text(encoding="utf-8")))
 
     if (formatting_path := docs_dir / "formatting.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(formatting_path.read_text()))
+        processed += "\n\n" + process_rst_for_pypi(strip_main_title(formatting_path.read_text(encoding="utf-8")))
 
-    (pkg / "README.rst").write_text(processed)
+    (pkg / "README.rst").write_text(processed, encoding="utf-8")
 
 
 def strip_main_title(content: str) -> str:
