@@ -1,3 +1,10 @@
+<a id="1.4.0"></a>
+
+## 1.4.0 - 2026-02-07
+
+- 📝 docs(formatting): restructure docs and fix array formatting behavior by
+  [@gaborbernat](https://github.com/gaborbernat) in [#$164](https://github.com/tox-dev/toml-fmt/pull/164)
+
 <a id="1.2.2"></a>
 
 ## 1.2.2 - 2026-01-07
