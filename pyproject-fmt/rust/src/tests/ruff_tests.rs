@@ -25,7 +25,7 @@ fn evaluate(start: &str) -> String {
     fix(&mut tables);
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     format_syntax(root_ast, 120)
 }
 
@@ -54,11 +54,9 @@ fn test_ruff_comment_21() {
     unfixable = ["ERA001"]
     "#};
     let result = evaluate(start);
-    assert_snapshot!(result, @r###"
+    assert_snapshot!(result, @r#"
     [tool.ruff]
-    lint.select = [
-      "ALL",
-    ]
+    lint.select = [ "ALL" ]
     lint.ignore = [
       # Missing type annotation for **{name}.
       "ANN003",
@@ -66,10 +64,8 @@ fn test_ruff_comment_21() {
     # Do not automatically remove commented out code.
     # We comment out code during development, and with VSCode auto-save, this code
     # is sometimes annoyingly removed.
-    lint.unfixable = [
-      "ERA001",
-    ]
-    "###);
+    lint.unfixable = [ "ERA001" ]
+    "#);
 }
 
 #[test]
@@ -102,11 +98,7 @@ fn test_ruff_per_file_ignores() {
     let result = evaluate(start);
     assert_snapshot!(result, @r#"
     [tool.ruff]
-    lint.per-file-ignores."tests/**/*.py" = [
-      "ARG001",
-      "D103",
-      "S101",
-    ]
+    lint.per-file-ignores."tests/**/*.py" = [ "ARG001", "D103", "S101" ]
     "#);
 }
 
@@ -119,9 +111,6 @@ fn test_ruff_extend_per_file_ignores() {
     let result = evaluate(start);
     assert_snapshot!(result, @r#"
     [tool.ruff]
-    lint.extend-per-file-ignores."docs/*.py" = [
-      "D100",
-      "E501",
-    ]
+    lint.extend-per-file-ignores."docs/*.py" = [ "D100", "E501" ]
     "#);
 }

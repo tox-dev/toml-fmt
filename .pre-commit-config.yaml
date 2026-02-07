@@ -4,12 +4,12 @@ ci:
 repos:
   # Priority 0: Formatters + read-only validators (all in parallel)
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.11.1"
+    rev: "v2.12.1"
     hooks:
       - id: pyproject-fmt
         priority: 0
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.14.14"
+    rev: "v0.15.0"
     hooks:
       - id: ruff-format
         args: ["--config", "pyproject.toml"]
@@ -43,7 +43,7 @@ repos:
         additional_dependencies: ["tomli>=2.4"]
         priority: 0 # read-only
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.24.1
+    rev: v0.25
     hooks:
       - id: validate-pyproject
         priority: 0 # read-only

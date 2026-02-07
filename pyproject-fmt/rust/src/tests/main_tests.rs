@@ -47,22 +47,20 @@ fn test_format_toml_simple() {
 
     [build-system]
     build-backend="backend"
-    requires=[
-    "c>=1.5", "d==2",
-    ]
+    requires=["c>=1.5", "d==2"]
 
     [project]
     name="alpha"
     classifiers = [
-    "Programming Language :: Python :: 3 :: Only","Programming Language :: Python :: 3.9","Programming Language :: Python :: 3.10","Programming Language :: Python :: 3.11","Programming Language :: Python :: 3.12","Programming Language :: Python :: 3.13",
-    ]dependencies=[
-    "e>=1.5",
-    ]
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+      "Programming Language :: Python :: 3.12",
+      "Programming Language :: Python :: 3.13",
+    ]dependencies=["e>=1.5"]
 
     [dependency-groups]
-    test=[
-    "p>1",
-    ]
+    test=["p>1"]
 
     [tool.mypy]
     mk="mv"
@@ -114,9 +112,7 @@ fn test_expand_tables_with_project() {
     name = "example"
 
     [project.optional-dependencies]
-    dev = [
-      "pytest",
-    ]
+    dev = [ "pytest" ]
 
     [project.urls]
     homepage = "https://example.com"
@@ -145,13 +141,11 @@ fn test_collapse_project_authors() {
         collapse_tables: vec![String::from("project.authors")],
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r###"
-        [project]
-        name = "example"
-        authors = [
-          { name = "John Doe", email = "john@example.com" },
-        ]
-        "###);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "example"
+    authors = [ { name = "John Doe", email = "john@example.com" } ]
+    "#);
 }
 
 /// Test collapse_tables with project.maintainers
@@ -176,13 +170,11 @@ fn test_collapse_project_maintainers() {
         collapse_tables: vec![String::from("project.maintainers")],
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r###"
-        [project]
-        name = "example"
-        maintainers = [
-          { name = "Jane Doe", email = "jane@example.com" },
-        ]
-        "###);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "example"
+    maintainers = [ { name = "Jane Doe", email = "jane@example.com" } ]
+    "#);
 }
 
 /// Test table_format="long" with entry-points
@@ -346,14 +338,14 @@ fn test_collapse_authors_with_url_field() {
         collapse_tables: vec![],
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r###"
-        [project]
-        name = "test"
-        authors = [
-          { name = "Alice", email = "alice@example.com" },
-          { name = "Bob", email = "bob@example.com", url = "https://bob.com" },
-        ]
-        "###);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "test"
+    authors = [
+      { name = "Alice", email = "alice@example.com" },
+      { name = "Bob", email = "bob@example.com", url = "https://bob.com" }
+    ]
+    "#);
 }
 /// Test collapse empty authors (covers line 653 in project.rs)
 #[test]
@@ -666,9 +658,7 @@ fn test_table_format_long_removes_blank_lines_between_same_group() {
     [project]
     name = "test"
     [project.optional-dependencies]
-    dev = [
-      "pytest",
-    ]
+    dev = [ "pytest" ]
     [project.urls]
     homepage = "https://example.com"
     "#);
@@ -702,10 +692,7 @@ fn test_table_format_long_with_tool_tables() {
     [tool.ruff]
     line-length = 120
     [tool.ruff.lint]
-    select = [
-      "E",
-      "W",
-    ]
+    select = [ "E", "W" ]
 
     [tool.mypy]
     strict = true
@@ -735,9 +722,7 @@ fn test_table_format_long_preserves_blank_lines_between_different_groups() {
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
     [build-system]
-    requires = [
-      "setuptools",
-    ]
+    requires = [ "setuptools" ]
 
     [project]
     name = "test"

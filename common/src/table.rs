@@ -271,10 +271,14 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
             handled_positions.insert(position);
         }
     }
-    for (position, entries) in key_set.into_iter().enumerate() {
-        if !handled_positions.contains(&position) {
-            to_insert.extend(entries);
-        }
+    let mut unhandled: Vec<(String, usize)> = key_to_position
+        .iter()
+        .filter(|(_, position)| !handled_positions.contains(position))
+        .map(|(key, position)| (key.clone(), *position))
+        .collect();
+    unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+    for (_, position) in unhandled {
+        to_insert.extend(key_set[position].clone());
     }
     table.splice(0..size, to_insert);
 }

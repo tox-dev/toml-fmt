@@ -142,10 +142,8 @@ fn test_order_array_newline_single_comment() {
     "#};
     let res = sort_array_helper(start);
     insta::assert_snapshot!(res, @r#"
-    a = [
-      # comment
+    a = [] # comment
       "A"
-    ]
     "#);
 }
 
@@ -159,27 +157,86 @@ fn test_order_array_double() {
 }
 
 #[test]
-fn test_order_array_with_comments_skips_sorting() {
+fn test_order_array_with_inline_comments() {
     let start = indoc! {r#"
-    a=["B", "D",
-       # C comment
-       "C", # C trailing
-       # A comment
-       "A" # A trailing
-      # extra
-    ] # array comment
+    a = [
+      "zebra",  # last letter
+      "alpha",  # first letter
+    ]
     "#};
     let res = sort_array_helper(start);
     insta::assert_snapshot!(res, @r#"
     a = [
-      "B",
-      "D",
-      # C comment
-      "C", # C trailing
+      "alpha", # first letter
+      "zebra", # last letter
+    ]
+    "#);
+}
+
+#[test]
+fn test_order_array_with_leading_comments() {
+    let start = indoc! {r#"
+    a = [
+      # zebra comment
+      "zebra",
+      # alpha comment
+      "alpha",
+    ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      # alpha comment
+      "alpha",
+      # zebra comment
+      "zebra",
+    ]
+    "#);
+}
+
+#[test]
+fn test_order_array_with_mixed_comments() {
+    let start = indoc! {r#"
+    a = [
+      # B leading
+      "B",  # B inline
+      # A leading
+      "A",  # A inline
+    ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      # A leading
+      "A", # A inline
+      # B leading
+      "B", # B inline
+    ]
+    "#);
+}
+
+#[test]
+fn test_order_array_with_comments_multiline() {
+    let start = indoc! {r#"
+    a = [
+       # C comment
+       "C", # C trailing
+       # A comment
+       "A", # A trailing
+       # B comment
+       "B",
+    ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
       # A comment
       "A", # A trailing
-      # extra
-    ]  # array comment
+      # B comment
+      "B",
+      # C comment
+      "C", # C trailing
+    ]
     "#);
 }
 
@@ -408,7 +465,7 @@ requires = ["c", "d"]
     let root_ast = tombi_parser::parse(input, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
 
     let count = result.matches("requires").count();
@@ -421,7 +478,7 @@ fn test_ensure_all_arrays_multiline_empty_array() {
     let root_ast = tombi_parser::parse(input, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert_eq!(result, r#"a = []"#);
 }
@@ -432,7 +489,7 @@ fn test_ensure_all_arrays_multiline_already_multiline() {
     let root_ast = tombi_parser::parse(input, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(result.contains("\n"), "Should remain multiline");
     assert!(result.ends_with(",\n]"), "Should have trailing comma");
@@ -444,20 +501,57 @@ fn test_ensure_all_arrays_multiline_has_trailing_but_no_newline() {
     let root_ast = tombi_parser::parse(input, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(result.contains("\n"), "Should add newlines, got: {}", result);
 }
 
 #[test]
-fn test_ensure_all_arrays_multiline_nested_arrays() {
+fn test_ensure_all_arrays_multiline_nested_arrays_no_trailing() {
     let input = r#"a = [["x", "y"], ["z"]]"#;
     let root_ast = tombi_parser::parse(input, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    ensure_all_arrays_multiline(&root_ast);
-    let result = root_ast.to_string();
-    assert!(result.contains("\n"), "Should add newlines to nested arrays");
+    ensure_all_arrays_multiline(&root_ast, 120);
+    insta::assert_snapshot!(root_ast.to_string(), @r#"a = [["x", "y"], ["z"]]"#);
+}
+
+#[test]
+fn test_ensure_all_arrays_multiline_nested_arrays_with_trailing() {
+    let input = r#"a = [["x", "y",], ["z",],]"#;
+    let root_ast = tombi_parser::parse(input, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update();
+    ensure_all_arrays_multiline(&root_ast, 120);
+    insta::assert_snapshot!(root_ast.to_string(), @r#"
+    a = [
+    [
+    "x", "y",
+    ], [
+    "z",
+    ],
+    ]
+    "#);
+}
+
+#[test]
+fn test_ensure_all_arrays_multiline_no_magic_comma() {
+    let input = indoc! {r#"
+        a = [
+          "x",
+          "y"
+        ]
+    "#};
+    let root_ast = tombi_parser::parse(input, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update();
+    ensure_all_arrays_multiline(&root_ast, 120);
+    insta::assert_snapshot!(root_ast.to_string(), @r#"
+    a = [
+      "x",
+      "y"
+    ]
+    "#);
 }
 
 #[test]
@@ -766,7 +860,7 @@ fn test_sort_multiline_no_trailing_comma() {
     insta::assert_snapshot!(res, @r#"
     a = [
       "A",
-    "B"
+      "B"
     ]
     "#);
 }

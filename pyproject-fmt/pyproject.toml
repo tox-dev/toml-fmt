@@ -88,6 +88,11 @@ include = [
   "CHANGELOG.md",
   "README.rst",
 ]
+exclude = [
+  "**/__pycache__/**",
+  "**/*.pyc",
+  "**/*.pyo",
+]
 
 [tool.cibuildwheel]
 skip = [
