@@ -639,6 +639,38 @@ fn test_reorder_table_keys_consecutive_entries() {
 }
 
 #[test]
+fn test_reorder_table_keys_unhandled_sorted_alphabetically() {
+    let toml = indoc! {r#"
+        [dependency-groups]
+        zebra = ["z"]
+        alpha = ["a"]
+        dev = ["dev-dep"]
+        beta = ["b"]
+        test = ["test-dep"]
+    "#};
+    let root_ast = parse(toml);
+    let tables = Tables::from_ast(&root_ast);
+
+    if let Some(table_refs) = tables.get("dependency-groups") {
+        for table_ref in table_refs {
+            let mut table = table_ref.borrow_mut();
+            reorder_table_keys(&mut table, &["", "dev", "test", "type", "docs"]);
+        }
+    }
+
+    if let Some(table_refs) = tables.get("dependency-groups") {
+        for table_ref in table_refs {
+            let table = table_ref.borrow();
+            let mut keys = Vec::new();
+            for_entries(&table, &mut |key, _node| {
+                keys.push(key);
+            });
+            insta::assert_snapshot!(keys.join(", "), @"dev, test, alpha, beta, zebra");
+        }
+    }
+}
+
+#[test]
 fn test_collapse_multiple_main_tables() {
     let toml = indoc! {r#"
         [[project]]

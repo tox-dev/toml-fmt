@@ -12,7 +12,7 @@ fn format_build_systems_helper(start: &str, keep_full_version: bool) -> String {
     fix(&tables, keep_full_version);
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     format_syntax(root_ast, 120)
 }
 
@@ -33,10 +33,7 @@ fn test_format_build_systems_build_system_requires_no_keep() {
     let res = format_build_systems_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [build-system]
-    requires = [
-      "a>=1",
-      "b-c>=1.5",
-    ]
+    requires = [ "a>=1", "b-c>=1.5" ]
     "#);
 }
 
@@ -49,10 +46,7 @@ fn test_format_build_systems_build_system_requires_keep() {
     let res = format_build_systems_helper(start, true);
     insta::assert_snapshot!(res, @r#"
     [build-system]
-    requires = [
-      "a>=1.0.0",
-      "b-c>=1.5.0",
-    ]
+    requires = [ "a>=1.0.0", "b-c>=1.5.0" ]
     "#);
 }
 
@@ -73,9 +67,7 @@ fn test_format_build_systems_join() {
     insta::assert_snapshot!(res, @r#"
     [build-system]
     build-backend = "hatchling.build"[build-system]
-    requires=[
-    "a",
-    ]
+    requires=["a"]
     [[build-system.a]]
     name = "Hammer"[[build-system.a]]  # empty table within the array
     [[build-system.a]]
@@ -117,10 +109,6 @@ fn test_format_build_systems_backend_path_sorting() {
     insta::assert_snapshot!(res, @r#"
     [build-system]
     build-backend = "backend"
-    backend-path = [
-      "another",
-      "lib",
-      "src",
-    ]
+    backend-path = [ "another", "lib", "src" ]
     "#);
 }

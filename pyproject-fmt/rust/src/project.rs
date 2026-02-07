@@ -11,10 +11,10 @@ use tombi_syntax::SyntaxKind::{
 };
 use tombi_syntax::{SyntaxElement, SyntaxNode};
 
-use common::array::{dedupe_strings, sort, sort_strings, transform};
+use common::array::{dedupe_strings, ensure_trailing_comma, sort, sort_strings, transform};
 use common::create::{
     make_array, make_array_entry, make_comma, make_entry_of_string, make_key, make_newline,
-    make_table_array_with_entries,
+    make_table_array_with_entries, make_whitespace_n,
 };
 use common::pep508::Requirement;
 use common::string::{load_text, update_content};
@@ -338,6 +338,7 @@ fn generate_classifiers_to_entry(
     for array in node.children_with_tokens() {
         if array.kind() == ARRAY {
             let array_node = array.as_node().unwrap();
+            ensure_trailing_comma(array_node);
             let mut must_have: HashSet<String> = HashSet::new();
             must_have.insert(String::from("Programming Language :: Python :: 3 :: Only"));
             must_have.extend(
@@ -413,6 +414,8 @@ fn generate_classifiers_to_entry(
                 }
                 let trail = to_insert.split_off(trail_at);
                 for add in to_add {
+                    to_insert.push(make_newline());
+                    to_insert.push(make_whitespace_n(2));
                     to_insert.push(make_array_entry(add));
                     to_insert.push(make_comma());
                 }

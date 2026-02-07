@@ -9,7 +9,7 @@ fn reorder_table_helper(start: &str) -> String {
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
     reorder_tables(&root_ast, &tables);
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     format_syntax(root_ast, 120)
 }
 
@@ -59,25 +59,15 @@ fn test_reorder_table_reorder() {
 
     [build-system]
     build-backend = "backend"
-    requires = [
-      "c",
-      "d",
-    ]
+    requires = [ "c", "d" ]
 
     [project]
     name = "alpha"
-    dependencies = [
-      "e",
-    ]
+    dependencies = [ "e" ]
 
     [dependency-groups]
-    docs = [
-      "s",
-    ]
-    test = [
-      "p",
-      "q",
-    ]
+    docs = [ "s" ]
+    test = [ "p", "q" ]
 
     [tool.uv]
     vu = "uv"

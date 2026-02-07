@@ -12,7 +12,7 @@ fn format_dependency_groups_helper(start: &str, keep_full_version: bool) -> Stri
     fix(&mut tables, keep_full_version);
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
-    ensure_all_arrays_multiline(&root_ast);
+    ensure_all_arrays_multiline(&root_ast, 120);
     format_syntax(root_ast, 120)
 }
 
@@ -33,9 +33,7 @@ fn test_format_dependency_groups_single_group_single_dep() {
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
-    test = [
-      "a>1",
-    ]
+    test = [ "a>1" ]
     "#);
 }
 
@@ -48,9 +46,7 @@ fn test_format_dependency_groups_single_group_single_dep_full_version() {
     let res = format_dependency_groups_helper(start, true);
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
-    test = [
-      "a>1.0.0",
-    ]
+    test = [ "a>1.0.0" ]
     "#);
 }
 
@@ -63,10 +59,7 @@ fn test_format_dependency_groups_single_group_multiple_deps() {
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
-    test = [
-      "a>1",
-      "b==2.0.*",
-    ]
+    test = [ "a>1", "b==2.0.*" ]
     "#);
 }
 
@@ -81,18 +74,10 @@ fn test_format_dependency_groups_multiple_groups() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    dev=[
-    "d>=2",
-    ]test=[
-    "a>1",
-    ]
-    docs=[
-    "b==1",
-    ]
+    dev=["d>=2"]test=["a>1"]
+    docs=["b==1"]
     [dependency-groups]
-    example=[
-    "c<1",
-    ]
+    example=["c<1"]
     "#);
 }
 
@@ -107,17 +92,11 @@ fn test_format_dependency_groups_multiple_groups_and_extra_line() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    type = [
-      "a>1",
-    ]
+    type = [ "a>1" ]
+    coverage = [ "b<2" ]
 
     [dependency-groups]
-    example = [
-      "c<1",
-    ]
-    coverage = [
-      "b<2",
-    ]
+    example = [ "c<1" ]
     "#);
 }
 
@@ -130,12 +109,8 @@ fn test_format_dependency_groups_include_single_group() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    test=[
-    "a>1",{include-group="docs"},
-    ][dependency-groups]
-    docs=[
-    "b==1",
-    ]
+    test=["a>1",{include-group="docs"}][dependency-groups]
+    docs=["b==1"]
     "#);
 }
 
@@ -149,15 +124,9 @@ fn test_format_dependency_groups_include_many_groups() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    test = [
-    "a>1",
-    ]docs = [
-    "b==1",
-    ]
+    test = ["a>1"]docs = ["b==1"]
     [dependency-groups]
-    all=[
-    {include-group='docs'}, "c<1", {include-group='test'}, "d>1",
-    ]
+    all=[{include-group='docs'}, "c<1", {include-group='test'}, "d>1"]
     "#);
 }
 
@@ -170,11 +139,7 @@ fn test_format_dependency_groups_duplicate_package_names() {
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
-    test = [
-      "other",
-      "pkg>=1",
-      "pkg>=2",
-    ]
+    test = [ "other", "pkg>=1", "pkg>=2" ]
     "#);
 }
 
@@ -187,10 +152,7 @@ fn test_format_dependency_groups_inline_table_without_include_group() {
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
-    test = [
-      "pkg>=1",
-      { some-key = "value" },
-    ]
+    test = [ "pkg>=1", { some-key = "value" } ]
     "#);
 }
 
@@ -209,17 +171,11 @@ fn test_format_dependency_groups_multiple_include_groups_sorted() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    dev = [
-      "c>=1",
-    ]
+    dev = [ "c>=1" ]
 
     [dependency-groups]
-    test = [
-      "a>=1",
-    ]
-    docs = [
-      "b>=1",
-    ]
+    test = [ "a>=1" ]
+    docs = [ "b>=1" ]
     all = [
       { include-group = "dev" },
       { include-group = "docs" },
@@ -251,9 +207,7 @@ fn test_format_dependency_groups_array_with_comments() {
       { include-group = "docs" },
       # Another comment
     ]
-    docs = [
-      "sphinx>=5",
-    ]
+    docs = [ "sphinx>=5" ]
     "#);
 }
 
@@ -272,9 +226,7 @@ fn test_format_dependency_groups_mixed_packages_and_include_groups() {
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
-    base = [
-      "requests>=2",
-    ]
+    base = [ "requests>=2" ]
     extended = [
       { include-group = "base" },
       "pytest>=7",
@@ -332,15 +284,9 @@ fn test_dependency_groups_ordering_dev_test_docs() {
         "#};
     let result = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(result, @r#"
-    dev = [
-    "ruff>=0.4",
-    ]
-    test = [
-    "pytest>=7",
-    ][dependency-groups]
-    docs = [
-    "sphinx>=5",
-    ]
+    dev = ["ruff>=0.4"]
+    test = ["pytest>=7"][dependency-groups]
+    docs = ["sphinx>=5"]
     "#);
 }
 
@@ -354,16 +300,9 @@ fn test_dependency_groups_unknown_group_name() {
         "#};
     let result = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(result, @r#"
-    [dependency-groups]
-    custom = [
-      "pkg>=1",
-    ]
-    zebra = [
-      "other>=2",
-    ]
-    alpha = [
-      "third>=3",
-    ]
+    alpha = ["third>=3"][dependency-groups]
+    custom = ["pkg>=1"]
+    zebra = ["other>=2"]
     "#);
 }
 
@@ -412,9 +351,7 @@ fn test_dependency_groups_empty_group() {
         "#};
     let result = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(result, @r#"
-    test = [
-    "pkg>=1",
-    ][dependency-groups]
+    test = ["pkg>=1"][dependency-groups]
     empty = []
     "#);
 }
@@ -454,15 +391,11 @@ fn test_dependency_groups_with_nested_inline_table() {
     insta::assert_snapshot!(result, @r#"
     [dependency-groups]
     test = [
-    "pkg>=1",
+      "pkg>=1",
       {include-group = "base"},
       {include-group = "docs"},
     ]
-    docs = [
-    "sphinx",
-    ]base = [
-    "base-pkg",
-    ]
+    docs = ["sphinx"]base = ["base-pkg"]
     "#);
 }
 
@@ -487,15 +420,9 @@ fn test_dependency_groups_include_groups_sorted_alphabetically() {
       { include-group = "beta" },
       { include-group = "zebra" },
     ]
-    alpha = [
-      "a",
-    ]
-    beta = [
-      "b",
-    ]
-    zebra = [
-      "z",
-    ]
+    alpha = [ "a" ]
+    beta = [ "b" ]
+    zebra = [ "z" ]
     "#);
 }
 
@@ -518,8 +445,6 @@ fn test_dependency_groups_packages_before_include_groups() {
       "zz-pkg",
       { include-group = "base" },
     ]
-    base = [
-      "x",
-    ]
+    base = [ "x" ]
     "#);
 }

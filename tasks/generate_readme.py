@@ -9,9 +9,12 @@ from pathlib import Path
 
 def main(package: str) -> None:
     pkg = Path(package)
-    if not (docs_path := pkg / "docs" / "index.rst").exists():
+    docs_dir = pkg / "docs"
+    if not (index_path := docs_dir / "index.rst").exists():
         return
-    processed = process_rst_for_pypi(docs_path.read_text())
+
+    processed = process_rst_for_pypi(index_path.read_text())
+
     changelog_rst = ""
     if (changelog_path := pkg / "CHANGELOG.md").exists() and (
         extracted := extract_latest_changelog_as_rst(changelog_path.read_text())
@@ -19,17 +22,30 @@ def main(package: str) -> None:
         changelog_rst = extracted
     if changelog_rst:
         if (pos := processed.find("\nPhilosophy")) != -1:
-            result = processed[:pos] + f"\n{changelog_rst}\n" + processed[pos:]
+            processed = processed[:pos] + f"\n{changelog_rst}\n" + processed[pos:]
         else:
-            result = processed + "\n\n" + changelog_rst
-    else:
-        result = processed
-    (pkg / "README.rst").write_text(result)
+            processed = processed + "\n\n" + changelog_rst
+
+    if (config_path := docs_dir / "configuration.rst").exists():
+        processed += "\n\n" + process_rst_for_pypi(strip_main_title(config_path.read_text()))
+
+    if (formatting_path := docs_dir / "formatting.rst").exists():
+        processed += "\n\n" + process_rst_for_pypi(strip_main_title(formatting_path.read_text()))
+
+    (pkg / "README.rst").write_text(processed)
+
+
+def strip_main_title(content: str) -> str:
+    lines = content.splitlines()
+    if len(lines) >= 2 and lines[1] and all(c == "=" for c in lines[1]):  # noqa: PLR2004
+        return "\n".join(lines[2:]).lstrip()
+    return content
 
 
 def process_rst_for_pypi(content: str) -> str:
     content = re.sub(r":pypi:`([^`]+)`", r"`\1 <https://pypi.org/project/\1>`_", content)
     content = re.sub(r":gh:`([^`]+)`", r"`\1 <https://github.com/\1>`_", content)
+    content = re.sub(r"^See :doc:`[^`]+`.*$\n?", "", content, flags=re.MULTILINE)
     result: list[str] = []
     skip_section = False
     skip_tab = False

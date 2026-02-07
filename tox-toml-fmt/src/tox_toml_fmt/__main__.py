@@ -32,7 +32,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
     @property
     def filename(self) -> str:
         """:return: filename operating on"""
-        return "pyproject.toml"
+        return "tox.toml"
 
     def add_format_flags(self, parser: ArgumentGroup) -> None:
         """
