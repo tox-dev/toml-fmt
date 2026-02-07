@@ -103,20 +103,18 @@ impl Requirement {
 
     pub fn normalize(mut self, keep_full_version: bool) -> Self {
         self.name = self.canonical_name();
-        if !keep_full_version {
-            if let Some(VersionOrUrl::Versions(ref mut specs)) = self.version_or_url {
-                for version_op in specs.iter_mut() {
-                    // Only strip trailing .0 if there are no pre, post, dev, or local segments
-                    if version_op.op != Operator::Compatible
-                        && !version_op.version.has_wildcard
-                        && version_op.version.pre.is_none()
-                        && version_op.version.post.is_none()
-                        && version_op.version.dev.is_none()
-                        && version_op.version.local.is_none()
-                    {
-                        while version_op.version.release.len() > 1 && *version_op.version.release.last().unwrap() == 0 {
-                            version_op.version.release.pop();
-                        }
+        if !keep_full_version && let Some(VersionOrUrl::Versions(ref mut specs)) = self.version_or_url {
+            for version_op in specs.iter_mut() {
+                // Only strip trailing .0 if there are no pre, post, dev, or local segments
+                if version_op.op != Operator::Compatible
+                    && !version_op.version.has_wildcard
+                    && version_op.version.pre.is_none()
+                    && version_op.version.post.is_none()
+                    && version_op.version.dev.is_none()
+                    && version_op.version.local.is_none()
+                {
+                    while version_op.version.release.len() > 1 && *version_op.version.release.last().unwrap() == 0 {
+                        version_op.version.release.pop();
                     }
                 }
             }

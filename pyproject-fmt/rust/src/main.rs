@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 use std::string::String;
 
-use common::taplo::formatter::{format_syntax, Options};
-use common::taplo::parser::parse;
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
+use tombi_config::TomlVersion;
 
 use crate::global::reorder_tables;
+use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, Tables};
 
 mod build_system;
@@ -77,13 +77,6 @@ impl TableFormatConfig {
         }
     }
 
-    /// Determine if a table should be collapsed based on configuration.
-    /// Uses CSS-like specificity: most specific selector wins.
-    /// For "project.entry-points.tox", checks in order:
-    ///   1. "project.entry-points.tox"
-    ///   2. "project.entry-points"
-    ///   3. "project"
-    ///   4. default_collapse
     pub fn should_collapse(&self, table_name: &str) -> bool {
         let mut current = table_name;
         loop {
@@ -102,11 +95,24 @@ impl TableFormatConfig {
     }
 }
 
+fn parse(source: &str) -> tombi_syntax::SyntaxNode {
+    tombi_parser::parse(source, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update()
+}
+
+async fn format_with_tombi(content: &str, column_width: usize, indent: usize) -> String {
+    let options = common::format_options::create_format_options(column_width, indent);
+    let schema_store = tombi_schema_store::SchemaStore::new();
+    let formatter = tombi_formatter::Formatter::new(TomlVersion::default(), &options, None, &schema_store);
+    formatter.format(content).await.unwrap_or_else(|_| content.to_string())
+}
+
 /// Format toml file
 #[must_use]
 #[pyfunction]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
-    let root_ast = parse(content).into_syntax().clone_for_update();
+    let root_ast = parse(content);
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig::from_settings(opt);
 
@@ -127,6 +133,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.column_width,
     );
 
+    let indent_string = " ".repeat(opt.indent);
     build_system::fix(&tables, opt.keep_full_version);
     project::fix(
         &mut tables,
@@ -139,30 +146,106 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables);
     reorder_tables(&root_ast, &tables);
+    ensure_all_arrays_multiline(&root_ast);
+    common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string);
 
-    let options = Options {
-        align_entries: false,         // do not align by =
-        align_comments: true,         // align inline comments
-        align_single_comments: true,  // align comments after entries
-        array_trailing_comma: true,   // ensure arrays finish with trailing comma
-        array_auto_expand: true,      // arrays go to multi line when too long
-        array_auto_collapse: false,   // do not collapse for easier diffs
-        compact_arrays: false,        // leave whitespace
-        compact_inline_tables: false, // leave whitespace
-        compact_entries: false,       // leave whitespace
-        column_width: opt.column_width,
-        indent_tables: false,
-        indent_entries: false,
-        inline_table_expand: true,
-        trailing_newline: true,
-        allowed_blank_lines: 1, // one blank line to separate
-        indent_string: " ".repeat(opt.indent),
-        reorder_keys: false,   // respect custom order
-        reorder_arrays: false, // for natural sorting we need to this ourselves
-        crlf: false,
-        reorder_inline_tables: false,
+    let modified_content = root_ast.to_string();
+
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let formatted = rt.block_on(format_with_tombi(&modified_content, opt.column_width, opt.indent));
+
+    let formatted_ast = parse(&formatted);
+    common::array::align_array_comments(&formatted_ast);
+    let formatted = formatted_ast.to_string();
+
+    // Remove blank lines that tombi adds between tables in the same group
+    // but only when table_format is "long" (compact formatting)
+    let result = if opt.table_format == "long" {
+        remove_blank_lines_between_same_group_tables(&formatted, &prefix_refs)
+    } else {
+        formatted
     };
-    format_syntax(root_ast, options)
+    common::util::limit_blank_lines(&result, 2)
+}
+
+fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefixes: &[&str]) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    let mut result = Vec::new();
+    let mut skip_next = false;
+
+    for i in 0..lines.len() {
+        if skip_next {
+            skip_next = false;
+            continue;
+        }
+
+        // Check if this is a blank line between two table headers in the same group
+        if lines[i].is_empty() && i > 0 && i + 1 < lines.len() {
+            let trimmed_next = lines[i + 1].trim();
+            let next_is_table = trimmed_next.starts_with('[');
+
+            if next_is_table {
+                // Look backwards to find the previous table header
+                let mut prev_table_name = None;
+                for j in (0..i).rev() {
+                    if let Some(name) = extract_any_table_name(lines[j]) {
+                        prev_table_name = Some(name);
+                        break;
+                    }
+                }
+
+                let next_table_name = extract_any_table_name(lines[i + 1]);
+
+                if let (Some(prev), Some(next)) = (prev_table_name, next_table_name) {
+                    let prev_key = get_table_key(&prev, multi_level_prefixes);
+                    let next_key = get_table_key(&next, multi_level_prefixes);
+
+                    if prev_key == next_key {
+                        // Same group - skip this blank line
+                        skip_next = false;
+                        continue;
+                    }
+                }
+            }
+        }
+
+        result.push(lines[i]);
+    }
+
+    let mut output = result.join("\n");
+    // Preserve trailing newline if original content had one
+    if content.ends_with('\n') && !output.ends_with('\n') {
+        output.push('\n');
+    }
+    output
+}
+
+fn extract_any_table_name(line: &str) -> Option<String> {
+    let trimmed = line.trim();
+    if trimmed.starts_with("[[") {
+        let end = trimmed.find("]]")?;
+        Some(trimmed[2..end].to_string())
+    } else if trimmed.starts_with('[') {
+        let end = trimmed.find(']')?;
+        Some(trimmed[1..end].to_string())
+    } else {
+        None
+    }
+}
+
+fn get_table_key(name: &str, multi_level_prefixes: &[&str]) -> String {
+    for prefix in multi_level_prefixes {
+        if name == *prefix || name.starts_with(&format!("{}.", prefix)) {
+            return prefix.to_string();
+        }
+    }
+    name.split('.')
+        .next()
+        .expect("split returns at least one element")
+        .to_string()
 }
 
 /// # Errors

@@ -1,11 +1,9 @@
-use common::string::{load_text, update_content};
-use common::table::{for_entries, Tables};
-use common::taplo::rowan::SyntaxNode;
-use common::taplo::syntax::Lang;
-use common::taplo::syntax::SyntaxKind::{ARRAY, INLINE_TABLE, STRING, VALUE};
-use common::taplo::syntax::SyntaxNode as TaploSyntaxNode;
+use tombi_syntax::SyntaxKind::{ARRAY, BASIC_STRING, INLINE_TABLE};
+use tombi_syntax::SyntaxNode;
 
-/// Extract environment names from env_list array in the root table
+use common::string::load_text;
+use common::table::{for_entries, Tables};
+
 fn get_env_list_order(tables: &Tables) -> Vec<String> {
     let mut env_order = Vec::new();
 
@@ -13,20 +11,11 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
         for table_ref in root_tables {
             let table = table_ref.borrow();
             for_entries(&table, &mut |key, entry| {
-                if key == "env_list" {
-                    // Iterate over the array to extract environment names
-                    for child in entry.children_with_tokens() {
-                        if child.kind() == ARRAY {
-                            for array_child in child.as_node().unwrap().children_with_tokens() {
-                                if array_child.kind() == VALUE {
-                                    for value_child in array_child.as_node().unwrap().children_with_tokens() {
-                                        if value_child.kind() == STRING {
-                                            let env_name = load_text(value_child.as_token().unwrap().text(), STRING);
-                                            env_order.push(format!("env.{env_name}"));
-                                        }
-                                    }
-                                }
-                            }
+                if key == "env_list" && entry.kind() == ARRAY {
+                    for array_child in entry.children_with_tokens() {
+                        if array_child.kind() == BASIC_STRING {
+                            let env_name = load_text(&array_child.to_string(), BASIC_STRING);
+                            env_order.push(format!("env.{env_name}"));
                         }
                     }
                 }
@@ -37,35 +26,22 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
     env_order
 }
 
-fn normalize_value(node: &TaploSyntaxNode) {
+fn normalize_value(node: &SyntaxNode) {
     for child in node.children_with_tokens() {
         match child.kind() {
             ARRAY => {
                 if let Some(array_node) = child.as_node() {
-                    for array_child in array_node.children_with_tokens() {
-                        if array_child.kind() == VALUE {
-                            if let Some(value_node) = array_child.as_node() {
-                                normalize_value(value_node);
-                            }
-                        }
-                    }
+                    normalize_value(array_node);
                 }
             }
             INLINE_TABLE => {
                 if let Some(table_node) = child.as_node() {
-                    for table_child in table_node.children_with_tokens() {
-                        if table_child.kind() == VALUE {
-                            if let Some(value_node) = table_child.as_node() {
-                                normalize_value(value_node);
-                            }
-                        }
-                    }
+                    normalize_value(table_node);
                 }
             }
             _ => {}
         }
     }
-    update_content(node, |s| s.to_string());
 }
 
 pub fn normalize_strings(tables: &Tables) {
@@ -77,7 +53,7 @@ pub fn normalize_strings(tables: &Tables) {
     }
 }
 
-pub fn reorder_tables(root_ast: &SyntaxNode<Lang>, tables: &Tables) {
+pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
     // Build dynamic order based on env_list
     let env_list_order = get_env_list_order(tables);
     let has_env_list = !env_list_order.is_empty();

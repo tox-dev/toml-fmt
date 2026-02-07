@@ -1,14 +1,21 @@
-use common::taplo::formatter::{format_syntax, Options};
-use common::taplo::parser::parse;
-use indoc::indoc;
-use rstest::rstest;
-
-use crate::global::reorder_tables;
+use common::array::ensure_all_arrays_multiline;
 use common::table::Tables;
+use indoc::indoc;
 
-#[rstest]
-#[case::reorder(
-        indoc ! {r#"
+use super::{format_syntax, parse};
+use crate::global::reorder_tables;
+
+fn reorder_table_helper(start: &str) -> String {
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    reorder_tables(&root_ast, &tables);
+    ensure_all_arrays_multiline(&root_ast);
+    format_syntax(root_ast, 120)
+}
+
+#[test]
+fn test_reorder_table_reorder() {
+    let start = indoc! {r#"
     # comment
     a= "b"
     [project]
@@ -44,8 +51,9 @@ use common::table::Tables;
     mk="mv"
     [tool.uv]
     vu="uv"
-    "#},
-        indoc ! {r#"
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
     # comment
     a = "b"
 
@@ -76,6 +84,7 @@ use common::table::Tables;
 
     [tool.ruff]
     mr = "vr"
+
     [tool.ruff.test]
     mrt = "vrt"
 
@@ -84,34 +93,26 @@ use common::table::Tables;
 
     [tool.coverage]
     aa = "bb"
+
     [tool.coverage.paths]
     ab = "bc"
+
     [tool.coverage.report]
     cd = "de"
+
     [tool.coverage.run]
     ef = "fg"
 
     [tool.mypy]
     mk = "mv"
 
-    [extra]
-    ek = "ev"
-
     [tool.undefined]
     mu = "mu"
 
+    [extra]
+    ek = "ev"
+
     [demo]
     ed = "ed"
-    "#},
-)]
-fn test_reorder_table(#[case] start: &str, #[case] expected: &str) {
-    let root_ast = parse(start).into_syntax().clone_for_update();
-    let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
-    let opt = Options {
-        column_width: 1,
-        ..Options::default()
-    };
-    let got = format_syntax(root_ast, opt);
-    assert_eq!(got, expected);
+    "#);
 }

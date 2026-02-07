@@ -46,9 +46,9 @@ if TYPE_CHECKING:
             id="formatted",
         ),
         pytest.param(
-            'requires = ["tox>=4.22"]\n',
+            "requires = ['tox>=4.22']\n",
             'requires = [ "tox>=4.22" ]\n',
-            '--- {0}\n\n+++ {0}\n\n@@ -1 +1 @@\n\n-requires = ["tox>=4.22"]\n+requires = [ "tox>=4.22" ]\n',
+            "--- {0}\n\n+++ {0}\n\n@@ -1 +1 @@\n\n-requires = ['tox>=4.22']\n+requires = [ \"tox>=4.22\" ]\n",
             id="format",
         ),
     ],
@@ -104,18 +104,20 @@ def test_main(
 def test_indent(tmp_path: Path, indent: int) -> None:
     start = """\
     requires = [
-     "a"
+     "tox>=4.22",
+     "packaging>=24"
     ]
     """
 
     expected = f"""\
     requires = [
-    {" " * indent}"a",
+    {" " * indent}"tox>=4.22",
+    {" " * indent}"packaging>=24"
     ]
     """
     pyproject_toml = tmp_path / "tox.toml"
     pyproject_toml.write_text(dedent(start))
-    args = [str(pyproject_toml), "--indent", str(indent)]
+    args = [str(pyproject_toml), "--indent", str(indent), "--column-width", "40"]
     run(args)
     output = pyproject_toml.read_text()
     assert output == dedent(expected)

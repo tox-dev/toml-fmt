@@ -2,140 +2,261 @@ use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
-use taplo::syntax::SyntaxKind::{ARRAY, BRACKET_END, COMMA, NEWLINE, STRING, VALUE, WHITESPACE};
-use taplo::syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
+use tombi_syntax::SyntaxKind::{
+    ARRAY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMA, COMMENT, DOUBLE_BRACKET_END, DOUBLE_BRACKET_START,
+    LINE_BREAK, LITERAL_STRING, WHITESPACE,
+};
+use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
-use crate::create::{make_comma, make_newline};
+use crate::create::{make_comma, make_newline, make_whitespace_n};
 use crate::string::{load_text, update_content};
-use crate::util::{find_first, iter};
 
-pub fn transform<F>(node: &SyntaxNode, transform: &F)
+fn is_array_value(kind: SyntaxKind) -> bool {
+    !matches!(
+        kind,
+        BRACKET_START
+            | BRACKET_END
+            | DOUBLE_BRACKET_START
+            | DOUBLE_BRACKET_END
+            | COMMA
+            | LINE_BREAK
+            | WHITESPACE
+            | COMMENT
+    )
+}
+
+pub fn ensure_trailing_comma(array: &SyntaxNode) {
+    let has_value = array.children_with_tokens().any(|x| is_array_value(x.kind()));
+    if !has_value {
+        return;
+    }
+
+    let has_trailing = array
+        .children_with_tokens()
+        .filter(|x| x.kind() == COMMA || is_array_value(x.kind()))
+        .last()
+        .is_some_and(|x| x.kind() == COMMA);
+
+    let is_multiline = array.children_with_tokens().any(|x| x.kind() == LINE_BREAK);
+
+    if has_trailing && is_multiline {
+        return;
+    }
+
+    if !has_trailing
+        && let Some((i, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .filter(|(_, x)| is_array_value(x.kind()))
+            .last()
+    {
+        array.splice_children(i + 1..i + 1, vec![make_comma()]);
+    }
+
+    if !is_multiline {
+        if let Some((start_idx, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .find(|(_, x)| x.kind() == BRACKET_START)
+        {
+            array.splice_children(start_idx + 1..start_idx + 1, vec![make_newline()]);
+        }
+        if let Some((end_idx, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .find(|(_, x)| x.kind() == BRACKET_END)
+        {
+            array.splice_children(end_idx..end_idx, vec![make_newline()]);
+        }
+    }
+}
+
+pub fn ensure_all_arrays_multiline(root: &SyntaxNode) {
+    for descendant in root.descendants() {
+        if descendant.kind() == ARRAY {
+            ensure_array_multiline(&descendant);
+        }
+    }
+}
+
+fn ensure_array_multiline(array: &SyntaxNode) {
+    let has_value = array.children_with_tokens().any(|x| is_array_value(x.kind()));
+    if !has_value {
+        return;
+    }
+
+    let has_trailing = array
+        .children_with_tokens()
+        .filter(|x| x.kind() == COMMA || is_array_value(x.kind()))
+        .last()
+        .is_some_and(|x| x.kind() == COMMA);
+
+    let is_multiline = array.children_with_tokens().any(|x| x.kind() == LINE_BREAK);
+
+    if has_trailing && is_multiline {
+        return;
+    }
+
+    if !has_trailing
+        && let Some((i, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .filter(|(_, x)| is_array_value(x.kind()))
+            .last()
+    {
+        array.splice_children(i + 1..i + 1, vec![make_comma()]);
+    }
+
+    if !is_multiline {
+        if let Some((start_idx, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .find(|(_, x)| x.kind() == BRACKET_START)
+        {
+            array.splice_children(start_idx + 1..start_idx + 1, vec![make_newline()]);
+        }
+        if let Some((end_idx, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .find(|(_, x)| x.kind() == BRACKET_END)
+        {
+            array.splice_children(end_idx..end_idx, vec![make_newline()]);
+        }
+    }
+}
+
+pub fn transform<F>(array: &SyntaxNode, transform: &F)
 where
     F: Fn(&str) -> String,
 {
-    iter(node, [ARRAY, VALUE].as_ref(), &|array_entry| {
-        update_content(array_entry, transform);
-    });
+    for entry in array.children_with_tokens() {
+        if (entry.kind() == BASIC_STRING || entry.kind() == LITERAL_STRING)
+            && let Some(string_node) = entry.as_node()
+        {
+            update_content(string_node, transform);
+        }
+    }
 }
 
 #[allow(clippy::range_plus_one, clippy::too_many_lines)]
-pub fn sort<T, K, C>(node: &SyntaxNode, to_key: K, cmp: &C)
+pub fn sort<T, K, C>(array: &SyntaxNode, to_key: K, cmp: &C)
 where
     K: Fn(&SyntaxNode) -> Option<T>,
     C: Fn(&T, &T) -> Ordering,
     T: Clone + Eq + Hash,
 {
-    iter(node, [ARRAY].as_ref(), &|array| {
-        let has_trailing_comma = array
-            .children_with_tokens()
-            .map(|x| x.kind())
-            .filter(|x| *x == COMMA || *x == VALUE)
-            .last()
-            == Some(COMMA);
-        let multiline = array.children_with_tokens().any(|e| e.kind() == NEWLINE);
+    let has_comment = array
+        .descendants_with_tokens()
+        .any(|e| e.kind() == tombi_syntax::SyntaxKind::COMMENT);
+    if has_comment {
+        return;
+    }
 
-        let mut entries = Vec::<SyntaxElement>::new();
-        let mut order_sets = Vec::<Vec<SyntaxElement>>::new();
-        let mut key_to_order_set = HashMap::<T, usize>::new();
-        let current_set = RefCell::new(Vec::<SyntaxElement>::new());
-        let mut current_set_value: Option<T> = None;
-        let mut previous_is_bracket_open = false;
+    let has_trailing_comma = array
+        .children_with_tokens()
+        .map(|x| x.kind())
+        .filter(|x| *x == COMMA || is_array_value(*x))
+        .last()
+        == Some(COMMA);
+    let multiline = array.children_with_tokens().any(|e| e.kind() == LINE_BREAK);
 
-        let mut add_to_order_sets = |entry: T| {
-            let mut entry_set_borrow = current_set.borrow_mut();
-            if !entry_set_borrow.is_empty() {
-                if let Some(&existing_idx) = key_to_order_set.get(&entry) {
-                    // Append to existing order set for duplicate keys (e.g., same package with different markers)
-                    order_sets[existing_idx].extend(entry_set_borrow.clone());
-                } else {
-                    key_to_order_set.insert(entry, order_sets.len());
-                    order_sets.push(entry_set_borrow.clone());
-                }
-                entry_set_borrow.clear();
+    let mut entries = Vec::<SyntaxElement>::new();
+    let mut order_sets = Vec::<Vec<SyntaxElement>>::new();
+    let mut key_to_order_set = HashMap::<T, usize>::new();
+    let current_set = RefCell::new(Vec::<SyntaxElement>::new());
+    let mut current_set_value: Option<T> = None;
+    let mut previous_is_bracket_open = false;
+
+    let mut add_to_order_sets = |entry: T| {
+        let mut entry_set_borrow = current_set.borrow_mut();
+        if !entry_set_borrow.is_empty() {
+            if let Some(&existing_idx) = key_to_order_set.get(&entry) {
+                order_sets[existing_idx].extend(entry_set_borrow.clone());
+            } else {
+                key_to_order_set.insert(entry, order_sets.len());
+                order_sets.push(entry_set_borrow.clone());
             }
-        };
+            entry_set_borrow.clear();
+        }
+    };
 
-        let mut count = 0;
+    let mut count = 0;
 
-        // collect elements to order into to_order_sets, the rest goes into entries
-        for entry in array.children_with_tokens() {
-            count += 1;
-            if previous_is_bracket_open {
-                // make sure ends with trailing comma
-                if entry.kind() == NEWLINE || entry.kind() == WHITESPACE {
-                    continue;
-                }
-                previous_is_bracket_open = false;
+    for entry in array.children_with_tokens() {
+        count += 1;
+        if previous_is_bracket_open {
+            if entry.kind() == LINE_BREAK || entry.kind() == WHITESPACE {
+                continue;
             }
-            match &entry.kind() {
-                SyntaxKind::BRACKET_START => {
-                    entries.push(entry);
-                    if multiline {
-                        entries.push(make_newline());
-                    }
-                    previous_is_bracket_open = true;
+            previous_is_bracket_open = false;
+        }
+        match &entry.kind() {
+            BRACKET_START => {
+                entries.push(entry);
+                if multiline {
+                    entries.push(make_newline());
                 }
-                SyntaxKind::BRACKET_END => {
-                    match current_set_value.take() {
-                        None => {
-                            entries.extend(current_set.borrow_mut().clone());
-                        }
-                        Some(val) => {
-                            add_to_order_sets(val);
-                        }
+                previous_is_bracket_open = true;
+            }
+            SyntaxKind::BRACKET_END => {
+                match current_set_value.take() {
+                    None => {
+                        entries.extend(current_set.borrow_mut().clone());
                     }
-                    entries.push(entry);
+                    Some(val) => {
+                        add_to_order_sets(val);
+                    }
                 }
-                VALUE => {
-                    match current_set_value.take() {
-                        None => {}
-                        Some(val) => {
-                            if multiline {
-                                current_set.borrow_mut().push(make_newline());
-                            }
-                            add_to_order_sets(val);
-                        }
+                entries.push(entry);
+            }
+            LINE_BREAK => {
+                current_set.borrow_mut().push(entry);
+                if current_set_value.is_some() {
+                    add_to_order_sets(current_set_value.unwrap());
+                    current_set_value = None;
+                }
+            }
+            COMMA => {}
+            kind if is_array_value(*kind) => {
+                match current_set_value.take() {
+                    None => {}
+                    Some(val) => {
+                        add_to_order_sets(val);
                     }
-                    let value_node = entry.as_node().unwrap();
+                }
+                // In tombi, array values can be either nodes or tokens
+                // For tokens (like BASIC_STRING), we can't extract a key
+                if let Some(value_node) = entry.as_node() {
                     current_set_value = to_key(value_node);
+                }
 
-                    current_set.borrow_mut().push(entry);
-                    current_set.borrow_mut().push(make_comma());
-                }
-                NEWLINE => {
-                    current_set.borrow_mut().push(entry);
-                    if current_set_value.is_some() {
-                        add_to_order_sets(current_set_value.unwrap());
-                        current_set_value = None;
-                    }
-                }
-                COMMA => {}
-                _ => {
-                    current_set.borrow_mut().push(entry);
-                }
+                current_set.borrow_mut().push(entry);
+                current_set.borrow_mut().push(make_comma());
+            }
+            _ => {
+                current_set.borrow_mut().push(entry);
             }
         }
+    }
 
-        let trailing_content = entries.split_off(if multiline { 2 } else { 1 });
-        let mut order: Vec<T> = key_to_order_set.keys().cloned().collect();
-        order.sort_by(&cmp);
-        for key in order {
-            entries.extend(order_sets[key_to_order_set[&key]].clone());
-        }
-        entries.extend(trailing_content);
-        array.splice_children(0..count, entries);
+    let trailing_content = entries.split_off(if multiline { 2 } else { 1 });
+    let mut order: Vec<T> = key_to_order_set.keys().cloned().collect();
+    order.sort_by(&cmp);
+    for key in order {
+        entries.extend(order_sets[key_to_order_set[&key]].clone());
+    }
+    entries.extend(trailing_content);
+    array.splice_children(0..count, entries);
 
-        if !has_trailing_comma {
-            if let Some((i, _)) = array
-                .children_with_tokens()
-                .enumerate()
-                .filter(|(_, x)| x.kind() == COMMA)
-                .last()
-            {
-                array.splice_children(i..i + 1, vec![]);
-            }
-        }
-    });
+    if !has_trailing_comma
+        && let Some((i, _)) = array
+            .children_with_tokens()
+            .enumerate()
+            .filter(|(_, x)| x.kind() == COMMA)
+            .last()
+    {
+        array.splice_children(i..i + 1, vec![]);
+    }
 }
 
 #[allow(clippy::range_plus_one, clippy::too_many_lines)]
@@ -148,53 +269,56 @@ where
     sort(
         node,
         |e| -> Option<String> {
-            find_first(e, &[STRING], &|s| -> String {
-                to_key(load_text(s.as_token().unwrap().text(), STRING))
-            })
+            let kind = e.kind();
+            if kind == BASIC_STRING || kind == LITERAL_STRING {
+                let token = e.first_token().expect("string has token");
+                Some(to_key(load_text(token.text(), kind)))
+            } else {
+                None
+            }
         },
         cmp,
     );
 }
 
 /// Remove duplicate string entries from an array (case-insensitive comparison)
-pub fn dedupe_strings<K>(node: &SyntaxNode, to_key: K)
+pub fn dedupe_strings<K>(array: &SyntaxNode, to_key: K)
 where
     K: Fn(&str) -> String,
 {
-    iter(node, [ARRAY].as_ref(), &|array| {
-        let mut seen: HashSet<String> = HashSet::new();
-        let mut to_insert: Vec<SyntaxElement> = Vec::new();
-        let mut skip_until_next_value = false;
-        let count = array.children_with_tokens().count();
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut to_insert: Vec<SyntaxElement> = Vec::new();
+    let mut skip_until_next_value = false;
+    let count = array.children_with_tokens().count();
 
-        for entry in array.children_with_tokens() {
-            match entry.kind() {
-                VALUE => {
-                    let mut key: Option<String> = None;
-                    for child in entry.as_node().unwrap().children_with_tokens() {
-                        if child.kind() == STRING {
-                            let text = load_text(child.as_token().unwrap().text(), STRING);
-                            key = Some(to_key(&text));
-                            break;
-                        }
-                    }
-                    if let Some(k) = key {
-                        if seen.contains(&k) {
-                            skip_until_next_value = true;
-                            continue;
-                        }
-                        seen.insert(k);
-                    }
-                    skip_until_next_value = false;
-                    to_insert.push(entry);
+    for entry in array.children_with_tokens() {
+        let kind = entry.kind();
+        if is_array_value(kind) {
+            let key = if kind == BASIC_STRING || kind == LITERAL_STRING {
+                entry
+                    .as_node()
+                    .and_then(|n| n.first_token())
+                    .map(|token| to_key(&load_text(token.text(), kind)))
+            } else {
+                None
+            };
+            if let Some(k) = key {
+                if seen.contains(&k) {
+                    skip_until_next_value = true;
+                    continue;
                 }
-                COMMA | NEWLINE | WHITESPACE if skip_until_next_value => {
+                seen.insert(k);
+            }
+            skip_until_next_value = false;
+            to_insert.push(entry);
+        } else {
+            match kind {
+                COMMA | LINE_BREAK | WHITESPACE if skip_until_next_value => {
                     continue;
                 }
                 BRACKET_END if skip_until_next_value => {
-                    // Remove trailing comma before bracket if we skipped last value
                     while let Some(last) = to_insert.last() {
-                        if last.kind() == COMMA || last.kind() == NEWLINE || last.kind() == WHITESPACE {
+                        if last.kind() == COMMA || last.kind() == LINE_BREAK || last.kind() == WHITESPACE {
                             to_insert.pop();
                         } else {
                             break;
@@ -207,6 +331,84 @@ where
                 }
             }
         }
-        array.splice_children(0..count, to_insert);
-    });
+    }
+    array.splice_children(0..count, to_insert);
+}
+
+pub fn align_array_comments(root: &SyntaxNode) {
+    for descendant in root.descendants() {
+        if descendant.kind() == ARRAY {
+            align_comments_in_array(&descendant);
+        }
+    }
+}
+
+fn align_comments_in_array(array: &SyntaxNode) {
+    let mut max_value_len = 0;
+    let elements: Vec<_> = array.children_with_tokens().collect();
+    let mut value_indices = Vec::new();
+
+    for (i, child) in elements.iter().enumerate() {
+        if (child.kind() == BASIC_STRING || child.kind() == LITERAL_STRING)
+            && let Some(node) = child.as_node()
+            && let Some(token) = node.first_token()
+        {
+            let text = load_text(token.text(), child.kind());
+            let quoted_len = text.len() + 2 + 1;
+            max_value_len = max_value_len.max(quoted_len);
+
+            let mut j = i + 1;
+            let mut comma_idx = None;
+
+            while j < elements.len() {
+                match elements[j].kind() {
+                    COMMA => {
+                        if let Some(comma_node) = elements[j].as_node() {
+                            let has_comment = comma_node.children_with_tokens().any(|child| child.kind() == COMMENT);
+                            if has_comment {
+                                comma_idx = Some(j);
+                                break;
+                            }
+                        }
+                        j += 1;
+                    }
+                    WHITESPACE => j += 1,
+                    COMMENT => {
+                        comma_idx = Some(j);
+                        break;
+                    }
+                    _ => break,
+                }
+            }
+
+            if let Some(idx) = comma_idx {
+                value_indices.push((i, quoted_len, idx));
+            }
+        }
+    }
+
+    if value_indices.is_empty() {
+        return;
+    }
+
+    for &(_value_idx, value_len, comma_idx) in &value_indices {
+        if let Some(comma_elem) = elements.get(comma_idx)
+            && let Some(comma_node) = comma_elem.as_node()
+        {
+            let comma_children: Vec<_> = comma_node.children_with_tokens().collect();
+            let spaces_needed = max_value_len - value_len + 1;
+
+            let mut new_comma_children = Vec::new();
+            for child in comma_children {
+                if child.kind() == WHITESPACE {
+                    new_comma_children.push(make_whitespace_n(spaces_needed));
+                } else {
+                    new_comma_children.push(child);
+                }
+            }
+
+            let count = comma_node.children_with_tokens().count();
+            comma_node.splice_children(0..count, new_comma_children);
+        }
+    }
 }

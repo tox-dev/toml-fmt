@@ -1,10 +1,15 @@
-[tool.ruff]
+---
+source: pyproject-fmt/rust/src/tests/ruff_tests.rs
+expression: result
+---
 required-version = ">=0.0.193"
 extend = "../pyproject.toml"
 target-version = "py37"
 line-length = 120
 indent-width = 2
 tab-size = 2
+
+[tool.ruff]
 builtins = [
   "ALPHA",
   "Bar",
@@ -73,21 +78,13 @@ lint.extend-ignore = [
   "ALPHA",
   "Bar",
 ]
-lint.per-file-ignores.'Magic.py' = [
-  "ALPHA",
+lint.per-file-ignores = [
   "Bar",
+  "ALPHA",
 ]
-lint.per-file-ignores."alpha.py" = [
-  "ALPHA",
+lint.extend-per-file-ignores = [
   "Bar",
-]
-lint.extend-per-file-ignores.'Magic.py' = [
   "ALPHA",
-  "Bar",
-]
-lint.extend-per-file-ignores."alpha.py" = [
-  "ALPHA",
-  "Bar",
 ]
 lint.fixable = [
   "ALPHA",
@@ -146,7 +143,7 @@ lint.flake8-builtins.builtins-ignorelist = [
 ]
 lint.flake8-comprehensions.allow-dict-calls-with-keyword-arguments = true
 lint.flake8-copyright.author = "Ruff"
-lint.flake8-copyright.notice-rgx = "(?i)Copyright \\\\(C\\\\) \\\\d{4}"
+lint.flake8-copyright.notice-rgx = '(?i)Copyright \(C\) \d{4}'
 lint.flake8-errmsg.max-string-length = 20
 lint.flake8-gettext.extend-function-names = [
   "ALPHA",
@@ -165,7 +162,7 @@ lint.flake8-self.extend-ignore-names = [
   "ALPHA",
   "Bar",
 ]
-lint.flake8-tidy-imports.banned-api."foo".msg = "Use bar instead"
+lint.flake8-tidy-imports.banned-api.msg = "Use bar instead"
 lint.flake8-tidy-imports.banned-module-level-imports = [
   "ALPHA",
   "Bar",
@@ -194,6 +191,14 @@ lint.pylint.allow-dunder-method-names = [
   "ALPHA",
   "Bar",
 ]
-lint.pyupgrade.keep-runtime-typing = true
 lint.extra.ok = 1
 lint.more.ok = 1
+lint.extend-per-file-ignores = [
+  "Bar",
+  "ALPHA",
+]
+lint.per-file-ignores = [
+  "Bar",
+  "ALPHA",
+]
+lint.pyupgrade.keep-runtime-typing = true

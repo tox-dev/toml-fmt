@@ -72,7 +72,7 @@ jobs:
         with:
           tool: cargo-llvm-cov
       - name: ✅ Run tests with coverage
-        run: cargo llvm-cov -p pyproject-fmt --locked --codecov --output-path coverage.json --ignore-filename-regex 'main\.rs'
+        run: cargo llvm-cov -p pyproject-fmt --no-default-features --locked --codecov --output-path coverage.json --ignore-filename-regex 'main\.rs'
       - name: 📤 Upload coverage
         uses: codecov/codecov-action@v5
         with:
