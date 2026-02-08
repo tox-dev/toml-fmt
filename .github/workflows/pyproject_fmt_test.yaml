@@ -185,3 +185,17 @@ jobs:
         run: tox run --skip-pkg-install -e ${{ matrix.env }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
+
+  all-pass:
+    name: ✅ pyproject-fmt
+    if: always()
+    needs: [changes, clippy, fmt, build, test, py, check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether all jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs failed or were canceled"
+            exit 1
+          fi
+          echo "All jobs passed or were skipped"
