@@ -285,8 +285,10 @@ where
         |e| -> Option<String> {
             let kind = e.kind();
             if kind == BASIC_STRING || kind == LITERAL_STRING {
-                let token = e.last_token().expect("string has token");
-                Some(to_key(load_text(token.text(), kind)))
+                e.descendants_with_tokens()
+                    .filter_map(|elem| elem.into_token())
+                    .find(|token| token.kind() == kind)
+                    .map(|token| to_key(load_text(token.text(), kind)))
             } else {
                 None
             }
@@ -311,7 +313,11 @@ where
             let key = if kind == BASIC_STRING || kind == LITERAL_STRING {
                 entry
                     .as_node()
-                    .and_then(|n| n.first_token())
+                    .and_then(|n| {
+                        n.descendants_with_tokens()
+                            .filter_map(|e| e.into_token())
+                            .find(|token| token.kind() == kind)
+                    })
                     .map(|token| to_key(&load_text(token.text(), kind)))
             } else {
                 None
@@ -365,7 +371,10 @@ fn align_comments_in_array(array: &SyntaxNode) {
     for (i, child) in elements.iter().enumerate() {
         if (child.kind() == BASIC_STRING || child.kind() == LITERAL_STRING)
             && let Some(node) = child.as_node()
-            && let Some(token) = node.first_token()
+            && let Some(token) = node
+                .descendants_with_tokens()
+                .filter_map(|e| e.into_token())
+                .find(|token| token.kind() == child.kind())
         {
             let text = load_text(token.text(), child.kind());
             let quoted_len = text.len() + 2 + 1;

@@ -7,7 +7,7 @@ use crate::array::{
     transform,
 };
 use crate::pep508::Requirement;
-use crate::tests::format_toml;
+use crate::tests::{format_toml, format_toml_str};
 
 fn apply_to_arrays<F>(source: &str, mut f: F) -> String
 where
@@ -967,4 +967,42 @@ fn test_dedupe_array_with_non_string_values() {
     }
     let res = root_ast.to_string();
     insta::assert_snapshot!(res, @r#"a = [1, "foo", 2, 3]"#);
+}
+
+#[test]
+fn test_issue_184_comment_with_double_quotes() {
+    let start = indoc! {r#"
+    [tool.something]
+    items = [
+        # A "quoted" word.
+        "value",
+    ]
+    "#};
+    let res = format_toml_str(start, 120);
+    insta::assert_snapshot!(res, @r#"
+    [tool.something]
+    items = [
+      # A "quoted" word.
+      "value",
+    ]
+    "#);
+}
+
+#[test]
+fn test_issue_184_comment_with_double_quotes_sort() {
+    let start = indoc! {r#"
+    items = [
+        # A "quoted" word.
+        "zebra",
+        "alpha",
+    ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    items = [
+      "alpha",
+      # A "quoted" word.
+      "zebra",
+    ]
+    "#);
 }
