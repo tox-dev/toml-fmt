@@ -1,9 +1,10 @@
-requires = ["tox>=4.34.1"]
+requires = ["tox>=4.34", "tox-uv>=1.25"]
 env_list = ["fix", "3.14", "3.13", "3.12", "3.11", "3.10", "type", "docs", "pkg_meta"]
 skip_missing_interpreters = true
 
 [env_run_base]
 description = "run the tests with pytest under {env_name}"
+runner = "uv-venv-lock-runner"
 package = "wheel"
 wheel_build_env = ".pkg"
 dependency_groups = ["test"]
@@ -45,6 +46,7 @@ commands = [["mypy", "src{/}pyproject_fmt"], ["mypy", "tests"]]
 
 [env.docs]
 description = "build documentation"
+base_python = ["3.14"]
 dependency_groups = ["docs"]
 commands = [
     [
@@ -72,7 +74,7 @@ commands = [
 [env.pkg_meta]
 description = "check that the long description is valid"
 skip_install = true
-dependency_groups = ["pkg_meta"]
+dependency_groups = ["pkg-meta"]
 commands = [
     [
         "uv",
@@ -98,6 +100,7 @@ commands = [
 [env.readme]
 description = "generate README.rst from docs"
 skip_install = true
+package = "skip"
 dependency_groups = []
 change_dir = "{tox_root}{/}.."
 commands = [["python", "tasks{/}generate_readme.py", "pyproject-fmt"]]

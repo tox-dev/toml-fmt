@@ -4,6 +4,7 @@ from textwrap import dedent
 from typing import TYPE_CHECKING
 
 import pytest
+
 from tox_toml_fmt.__main__ import runner as run
 
 if TYPE_CHECKING:

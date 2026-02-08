@@ -1,0 +1,72 @@
+name: 🧪 toml-fmt-common
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    tags-ignore: ["**"]
+  pull_request:
+  schedule:
+    - cron: "0 8 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: 🔍 changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🔍 Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'toml-fmt-common/**'
+              - '.github/workflows/toml_fmt_common_test.yaml'
+
+  test:
+    name: 🐍 ${{ matrix.env }}
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: ["3.14", "3.13", "3.12", "3.11", "3.10", type, pkg_meta]
+    defaults:
+      run:
+        working-directory: toml-fmt-common
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: 🔧 Install tox
+        run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
+      - name: 🐍 Install Python
+        if: startsWith(matrix.env, '3.') && matrix.env != '3.14'
+        run: uv python install --python-preference only-managed ${{ matrix.env }}
+      - name: 🔧 Setup test suite
+        run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
+      - name: ✅ Run test suite
+        run: tox run --skip-pkg-install -e ${{ matrix.env }}
+        env:
+          PYTEST_ADDOPTS: "-vv --durations=20"
+      - name: 📤 Upload coverage
+        if: startsWith(matrix.env, '3.')
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: toml-fmt-common/.tox/${{ matrix.env }}
+          flags: python-${{ matrix.env }}
