@@ -22,6 +22,32 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 
 use crate::TableFormatConfig;
 
+fn normalize_and_sort_requirements(entry: &SyntaxNode, keep_full_version: bool) {
+    transform(entry, &|s| {
+        Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
+    });
+    sort::<(String, String), _, _>(
+        entry,
+        |node| {
+            if node.kind() == BASIC_STRING {
+                return get_string_token(node).map(|token| {
+                    let val = load_text(token.text(), BASIC_STRING);
+                    let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
+                    (package_name, val)
+                });
+            }
+            None
+        },
+        &|lhs, rhs| {
+            let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
+            if res == Ordering::Equal {
+                res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
+            }
+            res
+        },
+    );
+}
+
 pub fn fix(
     tables: &mut Tables,
     keep_full_version: bool,
@@ -85,29 +111,7 @@ pub fn fix(
             update_content(entry, |s| s.split_whitespace().collect());
         }
         "dependencies" | "optional-dependencies" => {
-            transform(entry, &|s| {
-                Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
-            });
-            sort::<(String, String), _, _>(
-                entry,
-                |node| {
-                    if node.kind() == BASIC_STRING {
-                        return get_string_token(node).map(|token| {
-                            let val = load_text(token.text(), BASIC_STRING);
-                            let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                            (package_name, val)
-                        });
-                    }
-                    None
-                },
-                &|lhs, rhs| {
-                    let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
-                    if res == Ordering::Equal {
-                        res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
-                    }
-                    res
-                },
-            );
+            normalize_and_sort_requirements(entry, keep_full_version);
         }
         "dynamic" => {
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
@@ -220,29 +224,7 @@ pub fn fix(
         for table_ref in opt_deps_tables {
             let opt_deps_table = &mut table_ref.borrow_mut();
             for_entries(opt_deps_table, &mut |_key, entry| {
-                transform(entry, &|s| {
-                    Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
-                });
-                sort::<(String, String), _, _>(
-                    entry,
-                    |node| {
-                        if node.kind() == BASIC_STRING {
-                            return get_string_token(node).map(|token| {
-                                let val = load_text(token.text(), BASIC_STRING);
-                                let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                                (package_name, val)
-                            });
-                        }
-                        None
-                    },
-                    &|lhs, rhs| {
-                        let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
-                        if res == Ordering::Equal {
-                            res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
-                        }
-                        res
-                    },
-                );
+                normalize_and_sort_requirements(entry, keep_full_version);
             });
         }
     }

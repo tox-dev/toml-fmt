@@ -17,6 +17,8 @@ fn data_dir() -> PathBuf {
         .join("data")
 }
 
+use super::assert_valid_toml;
+
 fn evaluate(start: &str) -> String {
     let root_ast = parse(start);
     let count = root_ast.children_with_tokens().count();
@@ -26,7 +28,9 @@ fn evaluate(start: &str) -> String {
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
     ensure_all_arrays_multiline(&root_ast, 120);
-    format_syntax(root_ast, 120)
+    let result = format_syntax(root_ast, 120);
+    assert_valid_toml(&result);
+    result
 }
 
 #[test]

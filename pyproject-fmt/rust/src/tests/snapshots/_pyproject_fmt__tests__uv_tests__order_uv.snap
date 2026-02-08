@@ -2,6 +2,7 @@
 source: pyproject-fmt/rust/src/tests/uv_tests.rs
 expression: result
 ---
+[tool.uv]
 required-version = ">=0.4.0"
 python-preference = "managed"
 python-downloads = "automatic"
@@ -132,6 +133,4 @@ pip.universal = true
 pip.upgrade = true
 pip.upgrade-package = [ "requests" ]
 preview = true
-
-[tool.uv]
 torch-backend = "cu124"

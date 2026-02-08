@@ -1,6 +1,7 @@
 use indoc::indoc;
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE};
+use tombi_syntax::SyntaxNode;
 
 use crate::array::{
     align_array_comments, dedupe_strings, ensure_all_arrays_multiline, ensure_trailing_comma, sort, sort_strings,
@@ -9,14 +10,11 @@ use crate::array::{
 use crate::pep508::Requirement;
 use crate::tests::{format_toml, format_toml_str};
 
-fn apply_to_arrays<F>(source: &str, mut f: F) -> String
+fn for_each_array<F>(root: &SyntaxNode, mut f: F)
 where
-    F: FnMut(&tombi_syntax::SyntaxNode),
+    F: FnMut(&SyntaxNode),
 {
-    let root_ast = tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
-    for children in root_ast.children_with_tokens() {
+    for children in root.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
                 if entry.kind() == ARRAY {
@@ -25,12 +23,35 @@ where
             }
         }
     }
+}
+
+fn apply_to_arrays<F>(source: &str, mut f: F) -> String
+where
+    F: FnMut(&SyntaxNode),
+{
+    let root_ast = tombi_parser::parse(source, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update();
+    for_each_array(&root_ast, &mut f);
     let formatted = format_toml(&root_ast, 120);
     let formatted_ast = tombi_parser::parse(&formatted, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&formatted_ast);
+    align_array_comments(&formatted_ast);
     formatted_ast.to_string()
+}
+
+fn apply_to_arrays_raw<F>(source: &str, mut f: F) -> String
+where
+    F: FnMut(&SyntaxNode),
+{
+    let root_ast = tombi_parser::parse(source, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update();
+    for_each_array(&root_ast, &mut f);
+    let mut res = root_ast.to_string();
+    res.retain(|x| !x.is_whitespace());
+    res
 }
 
 fn normalize_requirement_helper(start: &str, keep_full_version: bool) -> String {
@@ -266,85 +287,36 @@ fn test_order_array_with_comments_multiline() {
 #[test]
 fn test_reorder_no_trailing_comma_reorder_no_trailing_comma() {
     let start = indoc! {r#"a=["B","A"]"#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort_strings::<String, _, _>(entry.as_node().unwrap(), |s| s.to_lowercase(), &|lhs, rhs| {
-                        lhs.cmp(rhs)
-                    });
-                }
-            }
-        }
-    }
-    let mut res = root_ast.to_string();
-    res.retain(|x| !x.is_whitespace());
+    let res = apply_to_arrays_raw(start, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
     insta::assert_snapshot!(res, @r#"a=["A","B"]"#);
 }
 
 #[test]
 fn test_reorder_no_trailing_comma_single_element_no_comma() {
     let start = indoc! {r#"a=["A"]"#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort_strings::<String, _, _>(entry.as_node().unwrap(), |s| s.to_lowercase(), &|lhs, rhs| {
-                        lhs.cmp(rhs)
-                    });
-                }
-            }
-        }
-    }
-    let mut res = root_ast.to_string();
-    res.retain(|x| !x.is_whitespace());
+    let res = apply_to_arrays_raw(start, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
     insta::assert_snapshot!(res, @r#"a=["A"]"#);
 }
 
 #[test]
 fn test_reorder_no_trailing_comma_empty_array() {
     let start = indoc! {r#"a=[]"#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort_strings::<String, _, _>(entry.as_node().unwrap(), |s| s.to_lowercase(), &|lhs, rhs| {
-                        lhs.cmp(rhs)
-                    });
-                }
-            }
-        }
-    }
-    let mut res = root_ast.to_string();
-    res.retain(|x| !x.is_whitespace());
+    let res = apply_to_arrays_raw(start, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
     insta::assert_snapshot!(res, @"a=[]");
 }
 
 #[test]
 fn test_sort_empty_array_direct() {
     let start = r#"a=[]"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort::<String, _, _>(entry.as_node().unwrap(), |_| None, &|lhs, rhs| lhs.cmp(rhs));
-                }
-            }
-        }
-    }
-    let res = root_ast.to_string();
+    let res = apply_to_arrays_raw(start, |array| {
+        sort::<String, _, _>(array, |_| None, &|lhs, rhs| lhs.cmp(rhs));
+    });
     assert_eq!(res, "a=[]");
 }
 
@@ -588,7 +560,7 @@ fn test_align_simple() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
 
     assert!(result.contains("\"COM812\", # Comment 1"));
@@ -610,7 +582,7 @@ fn test_align_multiple_arrays() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     a = [
@@ -636,7 +608,7 @@ fn test_align_mixed_comments() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     a = [
@@ -655,7 +627,7 @@ fn test_align_no_comments() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"a = ["A", "B", "C"]"#);
 }
@@ -671,7 +643,7 @@ fn test_align_very_long_value() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     a = [
@@ -689,7 +661,7 @@ fn test_align_single_item_with_comment() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"a = ["ITEM", # Comment]"#);
 }
@@ -710,7 +682,7 @@ fn test_align_nested_structure() {
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
-    crate::array::align_array_comments(&root_ast);
+    align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     [section]

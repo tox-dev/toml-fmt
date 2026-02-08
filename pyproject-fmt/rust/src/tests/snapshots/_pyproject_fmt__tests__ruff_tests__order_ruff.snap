@@ -2,14 +2,13 @@
 source: pyproject-fmt/rust/src/tests/ruff_tests.rs
 expression: result
 ---
+[tool.ruff]
 required-version = ">=0.0.193"
 extend = "../pyproject.toml"
 target-version = "py37"
 line-length = 120
 indent-width = 2
 tab-size = 2
-
-[tool.ruff]
 builtins = [ "ALPHA", "Bar" ]
 namespace-packages = [ "ALPHA", "Bar" ]
 src = [ "ALPHA", "Bar" ]
@@ -42,8 +41,10 @@ lint.extend-select = [ "ALPHA", "Bar" ]
 lint.explicit-preview-rules = true
 lint.exclude = [ "ALPHA", "Bar" ]
 lint.extend-ignore = [ "ALPHA", "Bar" ]
-lint.per-file-ignores = [ "Bar", "ALPHA" ]
-lint.extend-per-file-ignores = [ "Bar", "ALPHA" ]
+lint.per-file-ignores.'Magic.py' = [ "ALPHA", "Bar" ]
+lint.per-file-ignores."alpha.py" = [ "ALPHA", "Bar" ]
+lint.extend-per-file-ignores.'Magic.py' = [ "ALPHA", "Bar" ]
+lint.extend-per-file-ignores."alpha.py" = [ "ALPHA", "Bar" ]
 lint.fixable = [ "ALPHA", "Bar" ]
 lint.extend-fixable = [ "ALPHA", "Bar" ]
 lint.unfixable = [ "ALPHA", "Bar" ]
@@ -71,7 +72,7 @@ lint.flake8-pytest-style.parametrize-names-type = "list"
 lint.flake8-pytest-style.raises-extend-require-match-for = [ "ALPHA", "Bar" ]
 lint.flake8-quotes.docstring-quotes = "single"
 lint.flake8-self.extend-ignore-names = [ "ALPHA", "Bar" ]
-lint.flake8-tidy-imports.banned-api.msg = "Use bar instead"
+lint.flake8-tidy-imports.banned-api."foo".msg = "Use bar instead"
 lint.flake8-tidy-imports.banned-module-level-imports = [ "ALPHA", "Bar" ]
 lint.flake8-type-checking.exempt-modules = [ "ALPHA", "Bar" ]
 lint.flake8-unused-arguments.ignore-variadic-names = true

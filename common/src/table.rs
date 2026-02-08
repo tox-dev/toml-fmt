@@ -5,8 +5,8 @@ use std::ops::Index;
 
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{
-    ARRAY_OF_TABLE, BARE_KEY, BRACKET_END, BRACKET_START, COMMENT, DOUBLE_BRACKET_START, EQUAL, KEY_VALUE, KEYS,
-    LINE_BREAK, TABLE, WHITESPACE,
+    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMENT, DOUBLE_BRACKET_START, EQUAL,
+    KEY_VALUE, KEYS, LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -14,7 +14,60 @@ fn is_value_kind(kind: SyntaxKind) -> bool {
     !matches!(kind, KEYS | EQUAL | WHITESPACE | LINE_BREAK | COMMENT)
 }
 
+fn get_key_text(element: &SyntaxElement) -> String {
+    element
+        .as_node()
+        .unwrap()
+        .children_with_tokens()
+        .find(|c| c.kind() == KEYS)
+        .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
+        .unwrap_or_default()
+}
+
+fn get_value_text(element: &SyntaxElement) -> String {
+    element
+        .as_node()
+        .unwrap()
+        .children_with_tokens()
+        .find(|c| is_value_kind(c.kind()))
+        .map(|c| c.as_node().unwrap().text().to_string())
+        .unwrap_or_default()
+}
+
 use crate::create::{make_empty_newline, make_key, make_newline, make_table_entry};
+
+fn ensure_table_exists(tables: &mut Tables, name: &str) {
+    if !tables.header_to_pos.contains_key(name) {
+        tables
+            .header_to_pos
+            .insert(String::from(name), vec![tables.table_set.len()]);
+        tables.table_set.push(RefCell::new(make_table_entry(name)));
+    }
+}
+
+fn filter_entries(table: &mut RefMut<Vec<SyntaxElement>>, entries_to_remove: &HashSet<usize>) {
+    let mut new_elements = Vec::new();
+    let mut entry_index = 0;
+
+    for element in table.iter() {
+        if element.kind() == KEY_VALUE {
+            if !entries_to_remove.contains(&entry_index) {
+                new_elements.push(element.clone());
+            }
+            entry_index += 1;
+        } else {
+            new_elements.push(element.clone());
+        }
+    }
+
+    while new_elements.last().is_some_and(|e| e.kind() == LINE_BREAK) {
+        new_elements.pop();
+    }
+    new_elements.push(make_newline());
+
+    let table_len = table.len();
+    table.splice(0..table_len, new_elements);
+}
 use crate::string::load_text;
 
 fn parse(source: &str) -> SyntaxNode {
@@ -324,7 +377,7 @@ fn load_keys(table: &[SyntaxElement]) -> (HashMap<String, usize>, Vec<Vec<Syntax
                 key = e.as_node().unwrap().text().to_string().trim().to_string();
             }
         }
-        if [KEY_VALUE, TABLE, ARRAY_OF_TABLE].contains(&kind) {
+        if [KEY_VALUE, TABLE, ARRAY_OF_TABLE, BRACKET_START, DOUBLE_BRACKET_START].contains(&kind) {
             cutoff = true;
         }
         entry_set.borrow_mut().push(element.clone());
@@ -389,12 +442,7 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
     if sub_table_keys.is_empty() {
         return;
     }
-    if !tables.header_to_pos.contains_key(name) {
-        tables
-            .header_to_pos
-            .insert(String::from(name), vec![tables.table_set.len()]);
-        tables.table_set.push(RefCell::new(make_table_entry(name)));
-    }
+    ensure_table_exists(tables, name);
     let main_positions = tables.header_to_pos[name].clone();
     if main_positions.len() != 1 {
         return;
@@ -478,13 +526,7 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
         let main = tables.table_set[*main_positions.first().unwrap()].borrow();
 
         for (entry_index, element) in main.iter().filter(|e| e.kind() == KEY_VALUE).enumerate() {
-            let key_text = element
-                .as_node()
-                .unwrap()
-                .children_with_tokens()
-                .find(|c| c.kind() == KEYS)
-                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
-                .unwrap_or_default();
+            let key_text = get_key_text(element);
 
             if let Some(dot_pos) = key_text.find('.') {
                 let prefix = &key_text[..dot_pos];
@@ -503,30 +545,10 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
         return;
     }
 
-    {
-        let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
-        let mut new_elements = Vec::new();
-        let mut entry_index = 0;
-
-        for element in main.iter() {
-            if element.kind() == KEY_VALUE {
-                if !entries_to_remove.contains(&entry_index) {
-                    new_elements.push(element.clone());
-                }
-                entry_index += 1;
-            } else {
-                new_elements.push(element.clone());
-            }
-        }
-
-        while new_elements.last().is_some_and(|e| e.kind() == LINE_BREAK) {
-            new_elements.pop();
-        }
-        new_elements.push(make_newline());
-
-        let main_len = main.len();
-        main.splice(0..main_len, new_elements);
-    }
+    filter_entries(
+        &mut tables.table_set[*main_positions.first().unwrap()].borrow_mut(),
+        &entries_to_remove,
+    );
 
     for (sub_name, entries) in groups {
         let full_name = format!("{name}.{sub_name}");
@@ -534,12 +556,7 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
         let mut new_table = make_table_entry(&full_name);
 
         for (simple_key, original_entry) in entries {
-            let entry_node = original_entry.as_node().unwrap();
-            let value_text = entry_node
-                .children_with_tokens()
-                .find(|c| is_value_kind(c.kind()))
-                .map(|c| c.as_node().unwrap().text().to_string())
-                .unwrap_or_default();
+            let value_text = get_value_text(&original_entry);
 
             let new_entry_text = format!("{simple_key} ={value_text}\n");
             let parsed_root = parse(&new_entry_text);
@@ -561,12 +578,7 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         _ => return,
     };
 
-    if !tables.header_to_pos.contains_key(parent_name) {
-        tables
-            .header_to_pos
-            .insert(String::from(parent_name), vec![tables.table_set.len()]);
-        tables.table_set.push(RefCell::new(make_table_entry(parent_name)));
-    }
+    ensure_table_exists(tables, parent_name);
     let main_positions = tables.header_to_pos[parent_name].clone();
     if main_positions.len() != 1 {
         return;
@@ -617,9 +629,12 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
                 if entry.kind() == KEYS {
                     let mut key_parts = vec![String::from(sub_name)];
                     for array_entry_value in entry.as_node().unwrap().children_with_tokens() {
-                        if array_entry_value.kind() == BARE_KEY {
+                        let entry_kind = array_entry_value.kind();
+                        if entry_kind == BARE_KEY {
                             let txt = load_text(&array_entry_value.to_string(), BARE_KEY);
                             key_parts.push(txt);
+                        } else if entry_kind == BASIC_STRING || entry_kind == LITERAL_STRING {
+                            key_parts.push(array_entry_value.to_string());
                         }
                     }
                     entry = make_key(&key_parts.join("."));
@@ -653,17 +668,8 @@ fn collapse_array_of_tables(
             if child.kind() != KEY_VALUE {
                 continue;
             }
-            let entry_node = child.as_node().unwrap();
-            let key = entry_node
-                .children_with_tokens()
-                .find(|c| c.kind() == KEYS)
-                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
-                .unwrap_or_default();
-            let value = entry_node
-                .children_with_tokens()
-                .find(|c| is_value_kind(c.kind()))
-                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
-                .unwrap_or_default();
+            let key = get_key_text(child);
+            let value = get_value_text(child).trim().to_string();
             if !key.is_empty() && !value.is_empty() {
                 entries.push(format!("{key} = {value}"));
             }
@@ -719,13 +725,7 @@ pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) 
         let main = tables.table_set[*main_positions.first().unwrap()].borrow();
 
         for (entry_index, element) in main.iter().filter(|e| e.kind() == KEY_VALUE).enumerate() {
-            let key_text = element
-                .as_node()
-                .unwrap()
-                .children_with_tokens()
-                .find(|c| c.kind() == KEYS)
-                .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
-                .unwrap_or_default();
+            let key_text = get_key_text(element);
 
             if key_text.starts_with(&prefix_with_dot) {
                 let rest = &key_text[prefix_with_dot.len()..];
@@ -739,45 +739,19 @@ pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) 
         return;
     }
 
-    {
-        let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
-        let mut new_elements = Vec::new();
-        let mut entry_index = 0;
-
-        for element in main.iter() {
-            if element.kind() == KEY_VALUE {
-                if !entries_to_remove.contains(&entry_index) {
-                    new_elements.push(element.clone());
-                }
-                entry_index += 1;
-            } else {
-                new_elements.push(element.clone());
-            }
-        }
-
-        while new_elements.last().is_some_and(|e| e.kind() == LINE_BREAK) {
-            new_elements.pop();
-        }
-        new_elements.push(make_newline());
-
-        let main_len = main.len();
-        main.splice(0..main_len, new_elements);
-    }
+    filter_entries(
+        &mut tables.table_set[*main_positions.first().unwrap()].borrow_mut(),
+        &entries_to_remove,
+    );
 
     let full_name = format!("{parent_name}.{sub_name}");
     let mut new_table = make_table_entry(&full_name);
 
     for (simple_key, original_entry) in entries {
-        let entry_node = original_entry.as_node().unwrap();
-        let value_text = entry_node
-            .children_with_tokens()
-            .find(|c| is_value_kind(c.kind()))
-            .map(|c| c.as_node().unwrap().text().to_string())
-            .unwrap_or_default();
+        let value_text = get_value_text(&original_entry);
 
         let new_entry_text = format!("{simple_key} ={value_text}\n");
         let parsed_root = parse(&new_entry_text);
-        // Push both KEY_VALUE and LINE_BREAK
         for child in parsed_root.children_with_tokens() {
             if child.kind() == KEY_VALUE || child.kind() == LINE_BREAK {
                 new_table.push(child);
@@ -858,13 +832,7 @@ pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut V
     };
     let main = tables.table_set[*pos].borrow();
     for element in main.iter().filter(|e| e.kind() == KEY_VALUE) {
-        let key_text = element
-            .as_node()
-            .unwrap()
-            .children_with_tokens()
-            .find(|c| c.kind() == KEYS)
-            .map(|c| c.as_node().unwrap().text().to_string().trim().to_string())
-            .unwrap_or_default();
+        let key_text = get_key_text(element);
         if let Some(dot_pos) = key_text.find('.') {
             let sub_name = &key_text[..dot_pos];
             let full_name = format!("{parent_name}.{sub_name}");

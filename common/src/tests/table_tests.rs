@@ -20,27 +20,26 @@ fn tables_reorder_helper(start: &str, order: &[&str]) -> String {
     format_toml(&root_ast, 120)
 }
 
-fn reorder_table_keys_helper(start: &str, order: &[&str], expected_order: Vec<&str>) {
-    let root_ast = parse(start);
-    let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project") {
+fn reorder_and_get_keys(tables: &Tables, table_name: &str, order: &[&str]) -> Vec<String> {
+    let mut keys = Vec::new();
+    if let Some(table_refs) = tables.get(table_name) {
         for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, order);
-        }
-    }
+            reorder_table_keys(&mut table_ref.borrow_mut(), order);
 
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
             let table = table_ref.borrow();
-            let mut keys = Vec::new();
             for_entries(&table, &mut |key, _node| {
                 keys.push(key);
             });
-            assert_eq!(keys, expected_order);
         }
     }
+    keys
+}
+
+fn reorder_table_keys_helper(start: &str, order: &[&str], expected_order: Vec<&str>) {
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    let keys = reorder_and_get_keys(&tables, "project", order);
+    assert_eq!(keys, expected_order);
 }
 
 fn collapse_sub_tables_helper(start: &str, table_name: &str, has_sub_tables: bool) {
@@ -515,24 +514,8 @@ fn test_reorder_table_keys_unordered_keys_at_end() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["name"]);
-        }
-    }
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let table = table_ref.borrow();
-            let mut keys = Vec::new();
-            for_entries(&table, &mut |key, _node| {
-                keys.push(key);
-            });
-            assert_eq!(keys[0], "name");
-        }
-    }
+    let keys = reorder_and_get_keys(&tables, "project", &["name"]);
+    assert_eq!(keys[0], "name");
 }
 
 #[test]
@@ -585,13 +568,7 @@ fn test_reorder_keys_with_table_header_entry() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project.nested") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["a"]);
-        }
-    }
+    reorder_and_get_keys(&tables, "project.nested", &["a"]);
 }
 
 #[test]
@@ -599,13 +576,7 @@ fn test_reorder_table_no_trailing_newline() {
     let toml = "[project]\nname = \"foo\"";
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["name"]);
-        }
-    }
+    reorder_and_get_keys(&tables, "project", &["name"]);
 }
 
 #[test]
@@ -618,24 +589,8 @@ fn test_reorder_table_keys_consecutive_entries() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["c", "b", "a"]);
-        }
-    }
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let table = table_ref.borrow();
-            let mut keys = Vec::new();
-            for_entries(&table, &mut |key, _node| {
-                keys.push(key);
-            });
-            assert_eq!(keys, vec!["c", "b", "a"]);
-        }
-    }
+    let keys = reorder_and_get_keys(&tables, "project", &["c", "b", "a"]);
+    assert_eq!(keys, vec!["c", "b", "a"]);
 }
 
 #[test]
@@ -650,24 +605,8 @@ fn test_reorder_table_keys_unhandled_sorted_alphabetically() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("dependency-groups") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["", "dev", "test", "type", "docs"]);
-        }
-    }
-
-    if let Some(table_refs) = tables.get("dependency-groups") {
-        for table_ref in table_refs {
-            let table = table_ref.borrow();
-            let mut keys = Vec::new();
-            for_entries(&table, &mut |key, _node| {
-                keys.push(key);
-            });
-            insta::assert_snapshot!(keys.join(", "), @"dev, test, alpha, beta, zebra");
-        }
-    }
+    let keys = reorder_and_get_keys(&tables, "dependency-groups", &["", "dev", "test", "type", "docs"]);
+    insta::assert_snapshot!(keys.join(", "), @"dev, test, alpha, beta, zebra");
 }
 
 #[test]
@@ -693,13 +632,7 @@ fn test_reorder_keys_consecutive_no_newline() {
     let toml = "[project]\na = 1\nb = 2";
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["b", "a"]);
-        }
-    }
+    reorder_and_get_keys(&tables, "project", &["b", "a"]);
 }
 
 #[test]
@@ -737,24 +670,8 @@ fn test_load_keys_entries_without_newline() {
     let toml = "[project]\na = 1\nb = 2\nc = 3";
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let mut table = table_ref.borrow_mut();
-            reorder_table_keys(&mut table, &["c", "b", "a"]);
-        }
-    }
-
-    if let Some(table_refs) = tables.get("project") {
-        for table_ref in table_refs {
-            let table = table_ref.borrow();
-            let mut keys = Vec::new();
-            for_entries(&table, &mut |key, _node| {
-                keys.push(key);
-            });
-            assert_eq!(keys, vec!["c", "b", "a"]);
-        }
-    }
+    let keys = reorder_and_get_keys(&tables, "project", &["c", "b", "a"]);
+    assert_eq!(keys, vec!["c", "b", "a"]);
 }
 
 #[test]
@@ -1528,5 +1445,177 @@ fn test_tables_reorder_with_empty_key() {
     insta::assert_snapshot!(result, @r#"
     [tool]
     key = "value"
+    "#);
+}
+
+#[test]
+fn test_expand_sub_table_multiple_main_positions_no_expand() {
+    let toml = indoc! {r#"
+        [project]
+        name = "pkg1"
+
+        [other]
+        key = "value"
+
+        [project]
+        version = "1.0"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    expand_sub_table(&mut tables, "project", "scripts");
+    tables.reorder(&root_ast, &["project", "other"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "pkg1"
+
+    [project]
+    version = "1.0"
+
+    [other]
+    key = "value"
+    "#);
+}
+
+#[test]
+fn test_collapse_sub_table_multiple_sub_positions_unchanged() {
+    let toml = indoc! {r#"
+        [project]
+        name = "pkg"
+
+        [project.scripts]
+        script1 = "cmd1"
+
+        [project.scripts]
+        script2 = "cmd2"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    collapse_sub_table(&mut tables, "project", "scripts", 120);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "pkg"
+    scripts.script1 = "cmd1"
+    scripts.script2 = "cmd2"
+    "#);
+}
+
+#[test]
+fn test_apply_table_formatting_expand_mode() {
+    let toml = indoc! {r#"
+        [project]
+        scripts.run = "python main.py"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    apply_table_formatting(&mut tables, |_name| false, &["project"], 120);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    [project.scripts]
+    run = "python main.py"
+    "#);
+}
+
+#[test]
+fn test_expand_dotted_to_sub_tables_array_of_tables_unchanged() {
+    let toml = indoc! {r#"
+        [[tool]]
+        a.b = 1
+
+        [[tool]]
+        c.d = 2
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    expand_sub_tables(&mut tables, "tool");
+    tables.reorder(&root_ast, &["tool"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [[tool]]
+    a.b = 1
+
+    [[tool]]
+    c.d = 2
+    "#);
+}
+
+#[test]
+fn test_tables_from_ast_with_table_children() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+        version = "1.0"
+    "#};
+    let root_ast = parse(toml);
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &["project"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+    version = "1.0"
+    "#);
+}
+
+#[test]
+fn test_split_quoted_key_no_dot() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    apply_table_formatting(&mut tables, |_| true, &["project"], 120);
+    tables.reorder(&root_ast, &["project"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+    "#);
+}
+
+#[test]
+fn test_collapse_sub_table_with_quoted_key() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+
+        [project.scripts]
+        "quoted-key" = "value"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    collapse_sub_table(&mut tables, "project", "scripts", 120);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+    scripts."quoted-key" = "value"
+    "#);
+}
+
+#[test]
+fn test_collapse_sub_table_with_literal_quoted_key() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+
+        [project.scripts]
+        'literal-key' = "value"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    collapse_sub_table(&mut tables, "project", "scripts", 120);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+    scripts.'literal-key' = "value"
     "#);
 }
