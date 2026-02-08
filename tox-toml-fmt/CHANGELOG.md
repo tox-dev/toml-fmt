@@ -1,4 +1,23 @@
-<a id="1.5.0"></a>
+<a id="1.5.1"></a>
+
+## 1.5.1 - 2026-02-08
+
+- 🐛 fix(table): preserve table headers and reduce duplication by [@gaborbernat](https://github.com/gaborbernat) in
+  [#192](https://github.com/tox-dev/toml-fmt/pull/192)
+- 🐛 fix(array): preserve comments with strings by [@gaborbernat](https://github.com/gaborbernat) in
+  [#191](https://github.com/tox-dev/toml-fmt/pull/191)
+- 🧪 test: add idempotency tests for string wrapping by [@gaborbernat](https://github.com/gaborbernat) in
+  [#190](https://github.com/tox-dev/toml-fmt/pull/190)
+- 🐛 fix(parser): handle comments with double quotes in arrays by [@gaborbernat](https://github.com/gaborbernat) in
+  [#189](https://github.com/tox-dev/toml-fmt/pull/189)
+- 🐛 fix(array): sort by value not comment for entries with leading comments by
+  [@gaborbernat](https://github.com/gaborbernat) in [#188](https://github.com/tox-dev/toml-fmt/pull/188)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#183](https://github.com/tox-dev/toml-fmt/pull/183)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#178](https://github.com/tox-dev/toml-fmt/pull/178)
+- ✨ feat(workspace): internalize toml-fmt-common as workspace member by [@gaborbernat](https://github.com/gaborbernat)
+  in [#170](https://github.com/tox-dev/toml-fmt/pull/170) <a id="1.5.0"></a>
 
 ## 1.5.0 - 2026-02-08
 
