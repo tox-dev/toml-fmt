@@ -143,7 +143,7 @@ jobs:
       - name: 🐍 Setup Python 3.10
         uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.14"
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@v1.49.4
