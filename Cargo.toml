@@ -12,11 +12,11 @@ pedantic = "warn"
 nursery = "warn"
 
 [workspace.dependencies]
-tombi-parser = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.25" }
-tombi-syntax = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.25" }
-tombi-formatter = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.25" }
-tombi-toml-text = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.25" }
-tombi-config = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.25" }
-tombi-schema-store = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.25" }
+tombi-parser = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.27" }
+tombi-syntax = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.27" }
+tombi-formatter = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.27" }
+tombi-toml-text = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.27" }
+tombi-config = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.27" }
+tombi-schema-store = { git = "https://github.com/tombi-toml/tombi", tag = "v0.7.27" }
 
 [workspace.lints.rust]
