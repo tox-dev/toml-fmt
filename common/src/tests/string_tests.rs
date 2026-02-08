@@ -574,12 +574,12 @@ fn test_wrap_string_with_spaces_at_break_points() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 40, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     description = """\
       First part of the description and \
       second part of the description\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -597,12 +597,12 @@ fn test_wrap_string_preserves_special_chars() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 50, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     msg = """\
       String with \n newline \t tab and \\ backslash \
       that is very long and needs wrapping\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -611,12 +611,12 @@ fn test_wrap_string_with_unicode() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 50, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     description = """\
       Unicode string with émojis 🎉 and special \
       characters: αβγ that is quite long\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -634,13 +634,13 @@ fn test_wrap_string_single_word_longer_than_width() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 40, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     url = """\
       https://example.com/very/long/path/th\
       at/exceeds/column/width/limit/signifi\
       cantly\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -653,21 +653,21 @@ fn test_wrap_multiple_strings_in_document() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 50, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
 
-            description = """\
-      This is a very long description that needs \
-      wrapping\
-      """
-            summary = """\
-      This is another very long summary that also \
-      needs wrapping\
-      """
-            details = """\
-      And yet another long text field that requires \
-      wrapping\
-      """
-    "###);
+          description = """\
+    This is a very long description that needs \
+    wrapping\
+    """
+          summary = """\
+    This is another very long summary that also \
+    needs wrapping\
+    """
+          details = """\
+    And yet another long text field that requires \
+    wrapping\
+    """
+    "#);
 }
 
 #[test]
@@ -676,12 +676,12 @@ fn test_wrap_string_with_double_quotes_inside() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 50, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     msg = """\
       Text with \"quotes\" inside that is very long \
       and needs wrapping for sure\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -690,12 +690,12 @@ fn test_wrap_nested_in_array() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 50, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     items = ["""\
       This is a very long string in an array that \
       might need wrapping\
       """]
-    "###);
+    "#);
 }
 
 #[test]
@@ -719,12 +719,12 @@ fn test_update_content_wrapped() {
     }
 
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     name = """\
       short but now it's very long and will need \
       wrapping at some point\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -763,12 +763,12 @@ fn test_wrap_string_with_double_colon() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 50, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     classifier = """\
       Programming Language :: Python :: 3 :: \
       Only and more text here\
       """
-    "###);
+    "#);
 }
 
 #[test]
@@ -791,12 +791,12 @@ fn test_wrap_with_control_characters() {
     let root_ast = parse(toml);
     wrap_all_long_strings(&root_ast, 40, "  ");
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r###"
+    insta::assert_snapshot!(result, @r#"
     desc = """\
       has\ttab\nand newline that is quite \
       long for wrapping\
       """
-    "###);
+    "#);
 }
 
 #[test]

@@ -13,7 +13,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 common = { path = "../common" }
-pyo3 = { version = "0.26.0", features = ["abi3-py39"] }
+pyo3 = { version = "0.28.0", features = ["abi3-py39"] }
 tombi-parser = { workspace = true }
 tombi-syntax = { workspace = true }
 tombi-formatter = { workspace = true }
@@ -28,5 +28,5 @@ default = ["extension-module"]
 [dev-dependencies]
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-insta = { version = "1.42.0", features = ["redactions"] } # snapshot testing
-pyo3 = { version = "0.26.0", features = ["auto-initialize"] }
+insta = { version = "1.46.3", features = ["redactions"] } # snapshot testing
+pyo3 = { version = "0.28.0", features = ["auto-initialize"] }

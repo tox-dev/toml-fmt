@@ -65,20 +65,20 @@ fn test_column_width() {
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
-        # comment
-        requires = [ "tox>=4.22" ]
-        env_list = [
-            "fix",
-            "3.13",
-            "3.12",
-            "3.11",
-            "3.10",
-            "3.9",
-            "type",
-            "docs",
-            "pkg_meta"
-        ]
-        "#);
+    # comment
+    requires = [ "tox>=4.22" ]
+    env_list = [
+        "fix",
+        "3.13",
+        "3.12",
+        "3.11",
+        "3.10",
+        "3.9",
+        "type",
+        "docs",
+        "pkg_meta"
+    ]
+    "#);
 }
 
 #[test]
@@ -95,13 +95,13 @@ fn test_string_quote_normalization() {
         indent: 2,
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r###"
+    assert_snapshot!(got, @r#"
     requires = [ "tox>=4.22" ]
     env_list = [ "test" ]
 
     [env_run_base]
     description = "run tests"
-    "###);
+    "#);
 }
 
 #[test]
@@ -246,10 +246,10 @@ fn test_format_with_boolean_values() {
         parallel_show_output = false
         "#};
     let got = format_toml_helper(start, 2);
-    assert_snapshot!(got, @r#"
+    assert_snapshot!(got, @"
     skip_missing_interpreters = true
     parallel_show_output = false
-    "#);
+    ");
 }
 
 #[test]
@@ -298,9 +298,7 @@ fn test_format_with_large_indent() {
         indent: 4,
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r#"
-    env_list = [ "test" ]
-    "#);
+    assert_snapshot!(got, @r#"env_list = [ "test" ]"#);
 }
 
 #[test]

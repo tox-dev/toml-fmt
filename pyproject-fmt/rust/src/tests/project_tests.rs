@@ -49,8 +49,7 @@ fn evaluate_project(
 fn test_project_no_project_section() {
     let start = "";
     let result = evaluate_project(start, false, (3, 9), true);
-    insta::assert_snapshot!(result, @"
-");
+    insta::assert_snapshot!(result, @"");
 }
 
 #[test]
@@ -1844,7 +1843,7 @@ fn test_project_optional_deps_empty_group() {
     insta::assert_snapshot!(result, @r#"
     [project]
     name = "test"
-    optional-dependencies.dev = [  ]
+    optional-dependencies.dev = []
     "#);
 }
 

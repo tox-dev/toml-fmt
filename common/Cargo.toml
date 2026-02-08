@@ -8,7 +8,7 @@ license = "MIT"
 edition = "2024"
 
 [dependencies]
-regex = { version = "1.12.2" }
+regex = { version = "1.12.3" }
 # Tombi provides TOML parsing, syntax tree manipulation, and formatting
 # Public APIs we use:
 # - tombi_parser::parse - Parse TOML into syntax tree
@@ -25,4 +25,4 @@ tombi-schema-store = { workspace = true }
 [dev-dependencies]
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-insta = { version = "1.42.0", features = ["redactions"] } # snapshot testing
+insta = { version = "1.46.3", features = ["redactions"] } # snapshot testing

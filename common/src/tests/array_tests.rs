@@ -112,7 +112,7 @@ fn test_order_array_empty() {
     a = []
     "};
     let res = sort_array_helper(start);
-    insta::assert_snapshot!(res, @"a = [  ]");
+    insta::assert_snapshot!(res, @"a = []");
 }
 
 #[test]
@@ -349,7 +349,7 @@ fn test_dedupe_strings_empty_array() {
     a = []
     "};
     let res = dedupe_strings_helper(start);
-    insta::assert_snapshot!(res, @"a = [  ]");
+    insta::assert_snapshot!(res, @"a = []");
 }
 
 #[test]
@@ -915,7 +915,7 @@ fn test_transform_empty_array() {
     let res = apply_to_arrays(start, |array| {
         transform(array, &|s| s.to_uppercase());
     });
-    insta::assert_snapshot!(res, @"a = [  ]");
+    insta::assert_snapshot!(res, @"a = []");
 }
 
 #[test]

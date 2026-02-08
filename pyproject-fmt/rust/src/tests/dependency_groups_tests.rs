@@ -20,8 +20,7 @@ fn format_dependency_groups_helper(start: &str, keep_full_version: bool) -> Stri
 fn test_format_dependency_groups_no_groups() {
     let start = indoc! {r""};
     let res = format_dependency_groups_helper(start, false);
-    insta::assert_snapshot!(res, @"
-");
+    insta::assert_snapshot!(res, @"");
 }
 
 #[test]
