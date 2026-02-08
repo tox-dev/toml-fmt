@@ -1,4 +1,62 @@
-<a id="1.3.0"></a>
+<a id="1.5.0"></a>
+
+## 1.5.0 - 2026-02-08
+
+- ✨ feat(changelog): add --regenerate flag for full changelog rebuild by [@gaborbernat](https://github.com/gaborbernat)
+  in [#166](https://github.com/tox-dev/toml-fmt/pull/166)
+- 🐛 fix(readme): use explicit UTF-8 encoding for file operations by [@gaborbernat](https://github.com/gaborbernat) in
+  [#165](https://github.com/tox-dev/toml-fmt/pull/165)
+- Release tox-toml-fmt 1.4.0 by [@gaborbernat](https://github.com/gaborbernat)
+- 📝 docs(formatting): restructure docs and fix array formatting behavior by
+  [@gaborbernat](https://github.com/gaborbernat) in [#164](https://github.com/tox-dev/toml-fmt/pull/164)
+- ♻️ refactor(parser): migrate from taplo to tombi by [@gaborbernat](https://github.com/gaborbernat) in
+  [#159](https://github.com/tox-dev/toml-fmt/pull/159)
+- Fix expand_tables setting for deeply nested tables (#146) by [@gaborbernat](https://github.com/gaborbernat) in
+  [#160](https://github.com/tox-dev/toml-fmt/pull/160)
+- Prefer double quotes, use single quotes to avoid escaping by [@gaborbernat](https://github.com/gaborbernat) in
+  [#162](https://github.com/tox-dev/toml-fmt/pull/162)
+- Fix comment before table moving incorrectly when table has comments by [@gaborbernat](https://github.com/gaborbernat)
+  in [#158](https://github.com/tox-dev/toml-fmt/pull/158)
+- Add tests to improve coverage for edge cases by [@gaborbernat](https://github.com/gaborbernat) in
+  [#155](https://github.com/tox-dev/toml-fmt/pull/155)
+- Fix expand_tables setting for specific sub-tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#148](https://github.com/tox-dev/toml-fmt/pull/148)
+- Use RELEASE_TOKEN to bypass branch protection for releases by [@gaborbernat](https://github.com/gaborbernat) in
+  [#147](https://github.com/tox-dev/toml-fmt/pull/147)
+- Generate README.rst dynamically from docs at build time by [@gaborbernat](https://github.com/gaborbernat) in
+  [#145](https://github.com/tox-dev/toml-fmt/pull/145)
+- 📚 Document formatting principles and normalizations by [@gaborbernat](https://github.com/gaborbernat) in
+  [#144](https://github.com/tox-dev/toml-fmt/pull/144)
+- Improve maintainalibility by [@gaborbernat](https://github.com/gaborbernat) in
+  [#143](https://github.com/tox-dev/toml-fmt/pull/143)
+- Add configurable table formatting to pyproject-fmt and order tox env tables by env_list by
+  [@gaborbernat](https://github.com/gaborbernat) in [#142](https://github.com/tox-dev/toml-fmt/pull/142)
+- Order tox env tables according to env_list and add codecov token by [@gaborbernat](https://github.com/gaborbernat) in
+  [#141](https://github.com/tox-dev/toml-fmt/pull/141)
+- Fix comments before table headers staying with correct table by [@gaborbernat](https://github.com/gaborbernat) in
+  [#140](https://github.com/tox-dev/toml-fmt/pull/140)
+- Sort subtables alphabetically within the same tool by [@gaborbernat](https://github.com/gaborbernat) in
+  [#139](https://github.com/tox-dev/toml-fmt/pull/139)
+- Collapse [[project.authors]] array of tables to inline format by [@gaborbernat](https://github.com/gaborbernat) in
+  [#137](https://github.com/tox-dev/toml-fmt/pull/137)
+- Bump toml-fmt-common to 1.2 by [@gaborbernat](https://github.com/gaborbernat) in
+  [#138](https://github.com/tox-dev/toml-fmt/pull/138)
+- Add keyword and classifier deduplication by [@gaborbernat](https://github.com/gaborbernat) in
+  [#133](https://github.com/tox-dev/toml-fmt/pull/133)
+- Fix crash on multi-line strings with line continuation by [@gaborbernat](https://github.com/gaborbernat) in
+  [#132](https://github.com/tox-dev/toml-fmt/pull/132)
+- Add PEP 794 private dependency support by [@gaborbernat](https://github.com/gaborbernat) in
+  [#131](https://github.com/tox-dev/toml-fmt/pull/131)
+- Fix literal strings with invalid escapes being corrupted by [@gaborbernat](https://github.com/gaborbernat) in
+  [#130](https://github.com/tox-dev/toml-fmt/pull/130)
+- Remove testpaths config to fix sdist warning (#120) by [@gaborbernat](https://github.com/gaborbernat) in
+  [#129](https://github.com/tox-dev/toml-fmt/pull/129)
+- Fix build requirements with duplicate package names being removed (#2) by
+  [@gaborbernat](https://github.com/gaborbernat) in [#127](https://github.com/tox-dev/toml-fmt/pull/127)
+- Improve CI: add Rust coverage thresholds and prek parallel hooks by [@gaborbernat](https://github.com/gaborbernat) in
+  [#126](https://github.com/tox-dev/toml-fmt/pull/126)
+- Improve GitHub Actions workflows by [@gaborbernat](https://github.com/gaborbernat) in
+  [#125](https://github.com/tox-dev/toml-fmt/pull/125) <a id="1.3.0"></a>
 
 ## 1.3.0 - 2026-01-30
 
