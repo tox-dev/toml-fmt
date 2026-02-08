@@ -104,7 +104,7 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 pypy3.10" }
+          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 pypy3.11" }
           - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
           - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true }
           - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
@@ -176,7 +176,7 @@ jobs:
         uses: PyO3/maturin-action@v1.50.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.10" --target-dir target
+          args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
           sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@v6
