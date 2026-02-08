@@ -148,10 +148,10 @@ fn test_uv_no_uv_section() {
     line-length = 120
     "#};
     let result = evaluate(start);
-    assert_snapshot!(result, @r#"
+    assert_snapshot!(result, @"
     [tool.ruff]
     line-length = 120
-    "#);
+    ");
 }
 
 #[test]

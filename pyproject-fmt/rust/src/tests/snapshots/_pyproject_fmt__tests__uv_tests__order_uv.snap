@@ -7,17 +7,17 @@ python-preference = "managed"
 python-downloads = "automatic"
 dev-dependencies = [ "black", "mypy", "pytest" ]
 default-groups = [ "dev" ]
-dependency-groups = {  }
+dependency-groups = {}
 constraint-dependencies = [ "flask>=2", "requests<3" ]
 override-dependencies = [ "numpy==1.24", "pandas>=2" ]
 exclude-dependencies = [ "unwanted" ]
-dependency-metadata = [  ]
-sources = {  }
+dependency-metadata = []
+sources = {}
 sources.alpha = { path = "../alpha" }
 sources.beta = { url = "https://example.com/beta.whl" }
 sources.mango = { workspace = true }
 sources.zebra = { git = "https://github.com/example/zebra" }
-index = [  ]
+index = []
 index-url = "https://pypi.org/simple"
 extra-index-url = "https://example.com/simple"
 find-links = [ "https://example.com/packages" ]
@@ -42,13 +42,13 @@ fork-strategy = "fewest"
 environments = [ "python_version >= '3.10'", "sys_platform == 'darwin'" ]
 required-environments = [ "python_version >= '3.8'", "sys_platform == 'linux'" ]
 exclude-newer = "2024-01-01"
-exclude-newer-package = {  }
+exclude-newer-package = {}
 compile-bytecode = true
 link-mode = "clone"
-config-settings = {  }
-config-settings-package = {  }
-extra-build-dependencies = [  ]
-extra-build-variables = {  }
+config-settings = {}
+config-settings-package = {}
+extra-build-dependencies = []
+extra-build-variables = {}
 concurrent-builds = 4
 concurrent-downloads = 4
 concurrent-installs = 4
@@ -68,11 +68,11 @@ pypy-install-mirror = "https://example.com"
 python-downloads-json-url = "https://example.com"
 managed = true
 package = true
-workspace = {  }
-conflicts = [  ]
-cache-keys = [  ]
-build-backend = {  }
-pip = {  }
+workspace = {}
+conflicts = []
+cache-keys = []
+build-backend = {}
+pip = {}
 pip.all-extras = true
 pip.allow-empty-requirements = true
 pip.allow-insecure-host = [ "internal.corp.com" ]
@@ -80,7 +80,7 @@ pip.annotation-style = "line"
 pip.break-system-packages = true
 pip.cache-dir = "~/.cache/uv"
 pip.compile-bytecode = true
-pip.config-settings = {  }
+pip.config-settings = {}
 pip.custom-compile-command = "uv pip compile"
 pip.emit-build-options = true
 pip.emit-find-links = true
@@ -88,7 +88,7 @@ pip.emit-index-annotation = true
 pip.emit-index-url = true
 pip.emit-marker-expression = true
 pip.exclude-newer = "2024-01-01"
-pip.exclude-newer-package = {  }
+pip.exclude-newer-package = {}
 pip.extra = [ "dev", "test" ]
 pip.extra-index-url = "https://example.com/simple"
 pip.find-links = [ "https://example.com/packages" ]

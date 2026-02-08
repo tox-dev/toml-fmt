@@ -198,13 +198,13 @@ fn test_table_format_long_with_entry_points() {
         collapse_tables: vec![],
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r###"
-        [project]
-        name = "example"
-        [project.entry-points]
-        "console_scripts".mycli = "pkg:main"
-        "console_scripts".othercli = "pkg:other"
-        "###);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "example"
+    [project.entry-points]
+    "console_scripts".mycli = "pkg:main"
+    "console_scripts".othercli = "pkg:other"
+    "#);
 }
 
 /// Test expand_tables with project.authors

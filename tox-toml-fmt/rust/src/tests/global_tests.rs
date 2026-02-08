@@ -120,10 +120,10 @@ fn test_reorder_no_root_table() {
     let tables = Tables::from_ast(&root_ast);
     reorder_tables(&root_ast, &tables);
     let got = format_syntax(root_ast, 120);
-    assert_snapshot!(got, @r###"
-        [env.test]
-        description = "test"
-    "###);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    description = "test"
+    "#);
 }
 
 #[test]
@@ -161,15 +161,15 @@ fn test_reorder_env_list_not_array() {
     let tables = Tables::from_ast(&root_ast);
     reorder_tables(&root_ast, &tables);
     let got = format_syntax(root_ast, 120);
-    assert_snapshot!(got, @r###"
-        env_list = "test"
+    assert_snapshot!(got, @r#"
+    env_list = "test"
 
-        [env.docs]
-        description = "docs"
+    [env.docs]
+    description = "docs"
 
-        [env.type]
-        description = "type"
-    "###);
+    [env.type]
+    description = "type"
+    "#);
 }
 
 #[test]
@@ -188,7 +188,7 @@ fn test_reorder_empty_env_list() {
     reorder_tables(&root_ast, &tables);
     let got = format_syntax(root_ast, 120);
     assert_snapshot!(got, @r#"
-    env_list = [  ]
+    env_list = []
 
     [env.docs]
     description = "docs"

@@ -20,8 +20,7 @@ fn format_build_systems_helper(start: &str, keep_full_version: bool) -> String {
 fn test_format_build_systems_no_build_system() {
     let start = indoc! {r""};
     let res = format_build_systems_helper(start, false);
-    insta::assert_snapshot!(res, @"
-");
+    insta::assert_snapshot!(res, @"");
 }
 
 #[test]
