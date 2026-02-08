@@ -5,7 +5,7 @@ use tombi_syntax::SyntaxKind::{BASIC_STRING, INLINE_TABLE};
 
 use common::array::{sort, transform};
 use common::pep508::Requirement;
-use common::string::load_text;
+use common::string::{get_string_token, load_text};
 use common::table::{collapse_sub_tables, find_key, for_entries, reorder_table_keys, Tables};
 
 pub fn fix(tables: &mut Tables, keep_full_version: bool) {
@@ -24,18 +24,13 @@ pub fn fix(tables: &mut Tables, keep_full_version: bool) {
         sort::<(u8, String, String), _, _>(
             entry,
             |node| match node.kind() {
-                BASIC_STRING => {
-                    let token = node.first_token().expect("BASIC_STRING has token");
+                BASIC_STRING => get_string_token(node).map(|token| {
                     let val = load_text(token.text(), BASIC_STRING);
                     let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                    Some((0, package_name, val))
-                }
-                INLINE_TABLE => find_key(node, "include-group").map(|n| {
-                    (
-                        1,
-                        load_text(n.first_token().expect("key has token").text(), BASIC_STRING),
-                        String::new(),
-                    )
+                    (0, package_name, val)
+                }),
+                INLINE_TABLE => find_key(node, "include-group").and_then(|n| {
+                    get_string_token(&n).map(|token| (1, load_text(token.text(), BASIC_STRING), String::new()))
                 }),
                 _ => None,
             },

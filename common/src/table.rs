@@ -267,6 +267,9 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
         matching_keys.sort_by_key(|key| key.to_lowercase().replace('"', ""));
         for key in matching_keys {
             let position = key_to_position[key];
+            if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
+                to_insert.push(make_newline());
+            }
             to_insert.extend(key_set[position].clone());
             handled_positions.insert(position);
         }
@@ -278,6 +281,9 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
         .collect();
     unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
     for (_, position) in unhandled {
+        if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
+            to_insert.push(make_newline());
+        }
         to_insert.extend(key_set[position].clone());
     }
     table.splice(0..size, to_insert);

@@ -102,6 +102,13 @@ pub fn strip_quotes(s: &str) -> String {
         .to_string()
 }
 
+pub fn get_string_token(node: &SyntaxNode) -> Option<tombi_syntax::SyntaxToken> {
+    let kind = node.kind();
+    node.descendants_with_tokens()
+        .filter_map(|elem| elem.into_token())
+        .find(|token| token.kind() == kind)
+}
+
 pub fn load_text(value: &str, kind: SyntaxKind) -> String {
     let offset = if [BASIC_STRING, LITERAL_STRING].contains(&kind) {
         1
@@ -260,7 +267,15 @@ fn wrap_string_node_if_needed(string_node: &SyntaxNode, column_width: usize, ind
         } else {
             make_string_node(&text)
         };
+        let mut new_children: Vec<SyntaxElement> = Vec::new();
         let count = string_node.children_with_tokens().count();
-        string_node.splice_children(0..count, vec![new_element]);
+        for child in string_node.children_with_tokens() {
+            if is_string_kind(child.kind()) {
+                new_children.push(new_element.clone());
+            } else {
+                new_children.push(child);
+            }
+        }
+        string_node.splice_children(0..count, new_children);
     }
 }

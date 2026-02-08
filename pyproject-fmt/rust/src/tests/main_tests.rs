@@ -43,27 +43,29 @@ fn test_format_toml_simple() {
     let res = format_toml_helper(start, 2, false, (3, 13), true);
     assert_snapshot!(res, @r#"
     # comment
-    a= "b"
+    a = "b"
 
     [build-system]
-    build-backend="backend"
-    requires=["c>=1.5", "d==2"]
+    build-backend = "backend"
+    requires = [ "c>=1.5", "d==2" ]
 
     [project]
-    name="alpha"
+    name = "alpha"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
       "Programming Language :: Python :: 3.13",
-    ]dependencies=["e>=1.5"]
+    ]
+    dependencies = [ "e>=1.5" ]
 
     [dependency-groups]
-    test=["p>1"]
+    test = [ "p>1" ]
 
     [tool.mypy]
-    mk="mv"
+    mk = "mv"
     "#);
 }
 
@@ -936,4 +938,36 @@ fn test_idempotent_formatting() {
     let third = format_toml(&second, &settings);
     assert_eq!(first, second, "formatting should be idempotent (first->second)");
     assert_eq!(second, third, "formatting should be idempotent (second->third)");
+}
+
+#[test]
+fn test_issue_186_single_quote_with_comments() {
+    let start = indoc! {r#"
+    [tool.something]
+    items = [
+        'first',
+        # A comment
+        'second',
+    ]
+    "#};
+    let settings = Settings {
+        column_width: 120,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert_snapshot!(got, @r#"
+    [tool.something]
+    items = [
+      "first",
+      # A comment
+      "second",
+    ]
+    "#);
 }
