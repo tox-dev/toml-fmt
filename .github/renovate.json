@@ -16,5 +16,10 @@
       "matchManagers": ["cargo"],
       "groupName": "rust dependencies"
     }
-  ]
+  ],
+  "postUpgradeTasks": {
+    "commands": ["python tasks/generate_readme.py pyproject-fmt", "python tasks/generate_readme.py tox-toml-fmt"],
+    "fileFilters": ["**/README.rst"],
+    "executionMode": "branch"
+  }
 }
