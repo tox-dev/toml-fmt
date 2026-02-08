@@ -48,3 +48,17 @@ jobs:
         uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           attestations: true
+
+  all-pass:
+    name: ✅ toml-fmt-common-build
+    if: always()
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether all jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs failed or were canceled"
+            exit 1
+          fi
+          echo "All jobs passed or were skipped"

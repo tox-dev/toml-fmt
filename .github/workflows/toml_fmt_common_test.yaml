@@ -70,3 +70,17 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: toml-fmt-common/.tox/${{ matrix.env }}
           flags: python-${{ matrix.env }}
+
+  all-pass:
+    name: ✅ toml-fmt-common
+    if: always()
+    needs: [changes, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether all jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs failed or were canceled"
+            exit 1
+          fi
+          echo "All jobs passed or were skipped"

@@ -264,3 +264,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: gh workflow run main.yaml --repo tox-dev/tox-toml-fmt
+
+  all-pass:
+    name: ✅ tox-toml-fmt-build
+    if: always()
+    needs: [changes, bump, linux, windows, macos, sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether all jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs failed or were canceled"
+            exit 1
+          fi
+          echo "All jobs passed or were skipped"
