@@ -1,0 +1,58 @@
+name: 📦 update dependencies
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: 📦 update
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: 🐍 Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 🧪 Install tox
+        run: uv tool install tox --with tox-uv
+
+      - name: 📝 Generate README.rst
+        run: |
+          tox r -e readme -c pyproject-fmt
+          tox r -e readme -c tox-toml-fmt
+
+      - name: ⬆️ Bump dependencies
+        run: |
+          uvx bump-deps-index -i https://pypi.org/simple -f pyproject.toml tox.toml
+          uvx bump-deps-index -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
+          uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
+          uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
+
+      - name: 🔒 Update lock file
+        run: uv lock --upgrade
+
+      - name: 🎨 Run prek
+        run: uvx prek run --all-files || true
+
+      - name: 🔀 Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          commit-message: "Update Python dependencies"
+          title: "Update Python dependencies"
+          body: |
+            Automated Python dependency update.
+
+            - Bumped dependency version constraints in `pyproject.toml` and `tox.toml`
+            - Updated `uv.lock` with latest compatible versions
+          branch: update-python-dependencies
+          delete-branch: true

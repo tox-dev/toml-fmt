@@ -1,10 +1,19 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
     groups:
       github-actions:
         patterns:
-          - "*" # Group all Actions updates into a single larger pull request
+          - "*"
+
+  - package-ecosystem: cargo
+    directory: /
     schedule:
-      interval: "daily"
+      interval: daily
+    groups:
+      rust:
+        patterns:
+          - "*"
