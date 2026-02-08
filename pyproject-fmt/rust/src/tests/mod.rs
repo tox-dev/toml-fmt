@@ -12,6 +12,7 @@ mod global_tests;
 mod main_tests;
 mod project_tests;
 mod ruff_tests;
+mod uv_tests;
 
 static TOKIO_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
 

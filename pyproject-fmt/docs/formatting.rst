@@ -369,6 +369,62 @@ Plugin arrays:
   ``lint.pydocstyle.ignore-decorators``, ``lint.pydocstyle.property-decorators``, ``lint.pyflakes.extend-generics``,
   ``lint.pylint.allow-dunder-method-names``, ``lint.pylint.allow-magic-value-types``
 
+``[tool.uv]``
+~~~~~~~~~~~~~
+
+**Key ordering:**
+
+Keys are grouped by functionality:
+
+1. Version & Python: ``required-version`` → ``python-preference`` → ``python-downloads``
+2. Dependencies: ``dev-dependencies`` → ``default-groups`` → ``dependency-groups`` → ``constraint-dependencies`` →
+   ``override-dependencies`` → ``exclude-dependencies`` → ``dependency-metadata``
+3. Sources & indexes: ``sources`` → ``index`` → ``index-url`` → ``extra-index-url`` → ``find-links`` → ``no-index`` →
+   ``index-strategy`` → ``keyring-provider``
+4. Package handling: ``no-binary*`` → ``no-build*`` → ``no-sources*`` → ``reinstall*`` → ``upgrade*``
+5. Resolution: ``resolution`` → ``prerelease`` → ``fork-strategy`` → ``environments`` → ``required-environments`` →
+   ``exclude-newer*``
+6. Build & Install: ``compile-bytecode`` → ``link-mode`` → ``config-settings*`` → ``extra-build-*`` →
+   ``concurrent-builds`` → ``concurrent-downloads`` → ``concurrent-installs``
+7. Network & Security: ``allow-insecure-host`` → ``native-tls`` → ``offline`` → ``no-cache`` → ``cache-dir`` →
+   ``http-proxy`` → ``https-proxy`` → ``no-proxy``
+8. Publishing: ``publish-url`` → ``check-url`` → ``trusted-publishing``
+9. Python management: ``python-install-mirror`` → ``pypy-install-mirror`` → ``python-downloads-json-url``
+10. Workspace & Project: ``managed`` → ``package`` → ``workspace`` → ``conflicts`` → ``cache-keys`` → ``build-backend``
+11. Other: ``pip`` → ``preview`` → ``torch-backend``
+
+**Sorted arrays:**
+
+Package name arrays (sorted alphabetically):
+  ``constraint-dependencies``, ``override-dependencies``, ``dev-dependencies``, ``exclude-dependencies``,
+  ``no-binary-package``, ``no-build-package``, ``no-build-isolation-package``, ``no-sources-package``,
+  ``reinstall-package``, ``upgrade-package``
+
+Other arrays:
+  ``environments``, ``required-environments``, ``allow-insecure-host``, ``no-proxy``, ``workspace.members``,
+  ``workspace.exclude``
+
+**Sources table:**
+
+The ``sources`` table entries are sorted alphabetically by package name:
+
+.. code-block:: toml
+
+    # Before
+    [tool.uv.sources]
+    zebra = { git = "..." }
+    alpha = { path = "..." }
+
+    # After
+    [tool.uv.sources]
+    alpha = { path = "..." }
+    zebra = { git = "..." }
+
+**pip subsection:**
+
+The ``[tool.uv.pip]`` subsection follows similar formatting rules, with arrays like ``extra``, ``no-binary-package``,
+``no-build-package``, ``reinstall-package``, and ``upgrade-package`` sorted alphabetically.
+
 Other Tables
 ~~~~~~~~~~~~
 
