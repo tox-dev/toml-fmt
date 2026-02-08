@@ -146,12 +146,16 @@ tox run -e 3.13
 Sometimes you need to run commands across all packages at once. This is especially useful for CI-like validation before
 committing or when you've modified common code that affects multiple packages.
 
+**Important:** The CI runs tests with `--no-default-features` to disable the PyO3 `extension-module` feature, which
+allows tests to link against Python. Always use this flag when running workspace-wide tests locally to match CI
+behavior.
+
 ```bash
 # Run all tests in workspace (common, pyproject-fmt, tox-toml-fmt)
-cargo test --workspace
+cargo test --workspace --no-default-features
 
 # Check workspace-wide coverage
-cargo llvm-cov --workspace --summary-only
+cargo llvm-cov --workspace --no-default-features --summary-only
 
 # Format all Rust code
 cargo fmt --all
