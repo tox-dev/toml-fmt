@@ -1,0 +1,57 @@
+name: "🐛 tox-toml-fmt: Bug Report"
+description: Report a bug in tox-toml-fmt
+labels: ["bug", "tox-toml-fmt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug in tox-toml-fmt.
+        Please fill out the sections below to help us understand and reproduce the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the issue you encountered...
+    validations:
+      required: true
+
+  - type: textarea
+    id: input
+    attributes:
+      label: 📄 Input tox.toml
+      description: The tox.toml content that triggers the bug.
+      placeholder: Paste the relevant portion of your tox.toml here
+      render: toml
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected output
+      description: What you expected the formatted output to look like.
+      render: toml
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual output
+      description: What actually happened (formatted output or error message).
+      render: toml
+
+  - type: input
+    id: version
+    attributes:
+      label: 🏷️ Version
+      description: Output of `tox-toml-fmt --version`
+      placeholder: "tox-toml-fmt 1.x.x"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📎 Additional context
+      description: Any other relevant context (OS, Python version, configuration options used).
