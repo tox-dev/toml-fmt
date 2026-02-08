@@ -285,7 +285,7 @@ where
         |e| -> Option<String> {
             let kind = e.kind();
             if kind == BASIC_STRING || kind == LITERAL_STRING {
-                let token = e.first_token().expect("string has token");
+                let token = e.last_token().expect("string has token");
                 Some(to_key(load_text(token.text(), kind)))
             } else {
                 None

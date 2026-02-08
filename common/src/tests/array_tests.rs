@@ -195,6 +195,29 @@ fn test_order_array_with_leading_comments() {
 }
 
 #[test]
+fn test_order_array_with_some_leading_comments() {
+    let start = indoc! {r#"
+    a = [
+      "aaa",
+      "bbb",
+      # A comment about ddd.
+      "ddd",
+      "ccc",
+    ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      "aaa",
+      "bbb",
+      "ccc",
+      # A comment about ddd.
+      "ddd",
+    ]
+    "#);
+}
+
+#[test]
 fn test_order_array_with_mixed_comments() {
     let start = indoc! {r#"
     a = [
