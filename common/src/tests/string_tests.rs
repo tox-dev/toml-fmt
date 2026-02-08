@@ -308,6 +308,29 @@ fn test_line_continuation_with_crlf() {
 }
 
 #[test]
+fn test_wrap_long_string_is_idempotent() {
+    use crate::string::wrap_all_long_strings;
+
+    let original_text = "This is a long description string that needs to exceed the default column width of one hundred and twenty characters to trigger wrapping.";
+    let toml = format!("[project]\ndescription = \"{}\"", original_text);
+
+    let root_ast = parse(&toml);
+    wrap_all_long_strings(&root_ast, 120, "  ");
+    let after_first = root_ast.to_string();
+
+    let root_ast2 = parse(&after_first);
+    wrap_all_long_strings(&root_ast2, 120, "  ");
+    let after_second = root_ast2.to_string();
+
+    let root_ast3 = parse(&after_second);
+    wrap_all_long_strings(&root_ast3, 120, "  ");
+    let after_third = root_ast3.to_string();
+
+    assert_eq!(after_first, after_second, "wrap_all_long_strings should be idempotent (first->second)");
+    assert_eq!(after_second, after_third, "wrap_all_long_strings should be idempotent (second->third)");
+}
+
+#[test]
 fn test_multiline_with_regular_escapes() {
     let toml = "desc = \"\"\"hello\\nworld\"\"\"";
     let root_ast = parse(toml);

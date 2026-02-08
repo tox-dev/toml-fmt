@@ -912,3 +912,28 @@ fn test_lib_module_registration() {
         assert!(module.hasattr("Settings").unwrap());
     });
 }
+
+#[test]
+fn test_idempotent_formatting() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        description = "This is a long description string that needs to exceed the default column width of one hundred and twenty characters to trigger wrapping."
+    "#};
+    let settings = Settings {
+        column_width: 120,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    };
+    let first = format_toml(start, &settings);
+    let second = format_toml(&first, &settings);
+    let third = format_toml(&second, &settings);
+    assert_eq!(first, second, "formatting should be idempotent (first->second)");
+    assert_eq!(second, third, "formatting should be idempotent (second->third)");
+}
