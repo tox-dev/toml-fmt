@@ -167,7 +167,23 @@ where
         ]
         .contains(&kind)
         {
-            let found_str_value = load_text(&child.to_string(), kind);
+            let string_text = if let Some(token) = child.as_token() {
+                token.text().to_string()
+            } else if let Some(node) = child.as_node() {
+                let Some(token) = node
+                    .descendants_with_tokens()
+                    .filter_map(|e| e.into_token())
+                    .find(|t| t.kind() == kind)
+                else {
+                    to_insert.push(child);
+                    continue;
+                };
+                token.text().to_string()
+            } else {
+                to_insert.push(child);
+                continue;
+            };
+            let found_str_value = load_text(&string_text, kind);
             let output = transform(found_str_value.as_str());
 
             let is_multiline = kind == MULTI_LINE_BASIC_STRING || kind == MULTI_LINE_LITERAL_STRING;
@@ -212,7 +228,13 @@ pub fn wrap_all_long_strings(root: &SyntaxNode, column_width: usize, indent: &st
 
 fn wrap_string_node_if_needed(string_node: &SyntaxNode, column_width: usize, indent: &str) {
     let kind = string_node.kind();
-    let token = string_node.first_token().expect("string node has token");
+    let Some(token) = string_node
+        .descendants_with_tokens()
+        .filter_map(|e| e.into_token())
+        .find(|token| token.kind() == kind)
+    else {
+        return;
+    };
 
     let text = load_text(token.text(), kind);
 
