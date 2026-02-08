@@ -14,7 +14,8 @@ Apply a consistent format to your `pyproject.toml` file with comment support.
 - 📦 [PyPI](https://pypi.org/project/pyproject-fmt)
 - 📖 [Documentation](https://pyproject-fmt.readthedocs.io)
 - 🔧 [pre-commit hook](https://github.com/tox-dev/pyproject-fmt)
-- 📝 [Source & Changelog](./pyproject-fmt)
+- 💻 [Source](./pyproject-fmt)
+- 📝 [Changelog](./pyproject-fmt/CHANGELOG.md)
 
 ## tox-toml-fmt
 
@@ -28,4 +29,5 @@ Apply a consistent format to your `tox.toml` file with comment support.
 - 📦 [PyPI](https://pypi.org/project/tox-toml-fmt)
 - 📖 [Documentation](https://tox-toml-fmt.readthedocs.io)
 - 🔧 [pre-commit hook](https://github.com/tox-dev/tox-toml-fmt)
-- 📝 [Source & Changelog](./tox-toml-fmt)
+- 💻 [Source](./tox-toml-fmt)
+- 📝 [Changelog](./tox-toml-fmt/CHANGELOG.md)
