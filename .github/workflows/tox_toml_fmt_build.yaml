@@ -41,6 +41,8 @@ jobs:
           crate: cargo-edit
       - name: 📥 Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: 🔖 Bump version
         run: cargo set-version -p tox-toml-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
       - name: 📦 Setup uv
