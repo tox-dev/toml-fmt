@@ -212,10 +212,12 @@ fn test_uv_pip_table_no_collapse() {
     "#};
     let result = evaluate_with_collapse(start, false);
     assert_snapshot!(result, @r#"
-    index-url = "https://pypi.org/simple"no-binary-package = ["numpy","scipy" ]
-    extra = ["dev", "docs","test" ]
+    index-url = "https://pypi.org/simple"
+    no-binary-package = [ "numpy", "scipy" ]
+    extra = [ "dev", "docs", "test" ]
+
     [tool.uv.pip]
-    upgrade-package = ["flask","requests" ]
+    upgrade-package = [ "flask", "requests" ]
     "#);
 }
 
@@ -230,7 +232,9 @@ fn test_uv_sources_table_no_collapse() {
     let result = evaluate_with_collapse(start, false);
     assert_snapshot!(result, @r#"
     alpha = { path = "../alpha" }
-    mango = { workspace = true }[tool.uv.sources]
+    mango = { workspace = true }
+
+    [tool.uv.sources]
     zebra = { git = "https://github.com/example/zebra" }
     "#);
 }

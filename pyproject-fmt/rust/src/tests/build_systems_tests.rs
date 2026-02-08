@@ -65,7 +65,8 @@ fn test_format_build_systems_join() {
     let res = format_build_systems_helper(start, false);
     insta::assert_snapshot!(res, @r#"
     [build-system]
-    build-backend = "hatchling.build"[build-system]
+    build-backend = "hatchling.build"
+    [build-system]
     requires=["a"]
     [[build-system.a]]
     name = "Hammer"[[build-system.a]]  # empty table within the array

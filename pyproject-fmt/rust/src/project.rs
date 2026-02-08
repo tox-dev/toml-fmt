@@ -17,7 +17,7 @@ use common::create::{
     make_table_array_with_entries, make_whitespace_n,
 };
 use common::pep508::Requirement;
-use common::string::{load_text, update_content};
+use common::string::{get_string_token, load_text, update_content};
 use common::table::{for_entries, reorder_table_keys, Tables};
 
 use crate::TableFormatConfig;
@@ -92,10 +92,11 @@ pub fn fix(
                 entry,
                 |node| {
                     if node.kind() == BASIC_STRING {
-                        let token = node.first_token().expect("BASIC_STRING has token");
-                        let val = load_text(token.text(), BASIC_STRING);
-                        let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                        return Some((package_name, val));
+                        return get_string_token(node).map(|token| {
+                            let val = load_text(token.text(), BASIC_STRING);
+                            let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
+                            (package_name, val)
+                        });
                     }
                     None
                 },
@@ -226,10 +227,11 @@ pub fn fix(
                     entry,
                     |node| {
                         if node.kind() == BASIC_STRING {
-                            let token = node.first_token().expect("BASIC_STRING has token");
-                            let val = load_text(token.text(), BASIC_STRING);
-                            let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                            return Some((package_name, val));
+                            return get_string_token(node).map(|token| {
+                                let val = load_text(token.text(), BASIC_STRING);
+                                let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
+                                (package_name, val)
+                            });
                         }
                         None
                     },
@@ -265,7 +267,7 @@ fn expand_entry_points_inline_tables(table: &mut RefMut<Vec<SyntaxElement>>) {
                                     with_key = s_in_entry.as_node().unwrap().text().to_string().trim().to_string();
                                 } else if s_in_entry.kind() == BASIC_STRING {
                                     if let Some(string_node) = s_in_entry.as_node() {
-                                        if let Some(token) = string_node.first_token() {
+                                        if let Some(token) = get_string_token(string_node) {
                                             let value = load_text(token.text(), BASIC_STRING);
                                             if !to_insert.is_empty() && to_insert.last().unwrap().kind() != LINE_BREAK {
                                                 to_insert.push(make_newline());
@@ -364,7 +366,7 @@ fn generate_classifiers_to_entry(
                     }
                 } else if kind == BASIC_STRING {
                     if let Some(string_node) = array_entry.as_node() {
-                        if let Some(token) = string_node.first_token() {
+                        if let Some(token) = get_string_token(string_node) {
                             let txt = load_text(token.text(), BASIC_STRING);
                             delete_mode = delete.contains(&txt);
                             if delete_mode {
@@ -482,11 +484,13 @@ fn get_python_requires_with_classifier(
             let mut found_elements = HashSet::<String>::new();
             for array_child in entry.children_with_tokens() {
                 if array_child.kind() == BASIC_STRING {
-                    let string_node = array_child.as_node().expect("BASIC_STRING is a node");
-                    let token = string_node.first_token().expect("string has token");
-                    let found = token.text();
-                    let found_str_value: String = String::from(&found[1..found.len() - 1]);
-                    found_elements.insert(found_str_value);
+                    if let Some(string_node) = array_child.as_node() {
+                        if let Some(token) = get_string_token(string_node) {
+                            let found = token.text();
+                            let found_str_value: String = String::from(&found[1..found.len() - 1]);
+                            found_elements.insert(found_str_value);
+                        }
+                    }
                 }
             }
             classifiers = Some(found_elements);

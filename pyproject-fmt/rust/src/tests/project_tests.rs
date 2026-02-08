@@ -62,8 +62,11 @@ fn test_project_dependencies_normalize_no_keep() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",][project]
-    dependencies=["a>=1", "b-c>=1.5"]
+      "Programming Language :: Python :: 3.9",
+    ]
+
+    [project]
+    dependencies = [ "a>=1", "b-c>=1.5" ]
     "#);
 }
 
@@ -77,8 +80,11 @@ fn test_project_dependencies_normalize_keep_version() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",][project]
-    dependencies=["a>=1.0.0", "b-c>=1.5.0"]
+      "Programming Language :: Python :: 3.9",
+    ]
+
+    [project]
+    dependencies = [ "a>=1.0.0", "b-c>=1.5.0" ]
     "#);
 }
 
@@ -92,17 +98,16 @@ fn test_project_optional_dependencies() {
     let result = evaluate_project(start, false, (3, 13), true);
     insta::assert_snapshot!(result, @r#"
     [project]
-
-
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
       "Programming Language :: Python :: 3.13",
-    ]optional-dependencies.dev = ["pytest>=7"]
-
-    optional-dependencies.docs = ["sphinx>=4"]
+    ]
+    optional-dependencies.dev = [ "pytest>=7" ]
+    optional-dependencies.docs = [ "sphinx>=4" ]
     "#);
 }
 
@@ -315,13 +320,13 @@ fn test_project_gui_scripts() {
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
     [project]
-
-
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ]gui-scripts.mygui = "mypackage.gui:main"
+    ]
+    gui-scripts.mygui = "mypackage.gui:main"
     "#);
 }
 
@@ -335,10 +340,13 @@ fn test_project_dynamic_fields() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dynamic = ["description","version" ]
+    ]
+
+    [project]
+    dynamic = [ "description", "version" ]
     "#);
 }
 
@@ -361,10 +369,12 @@ fn test_project_full_metadata() {
     requires-python = ">=3.9"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
-    ]dependencies = ["requests>=2.28"]
+    ]
+    dependencies = [ "requests>=2.28" ]
     "#);
 }
 
@@ -402,17 +412,15 @@ fn test_project_optional_dependencies_multiple_groups() {
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
     [project]
-
-
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ]optional-dependencies.dev = ["black>=22","pytest>=7" ]
-
-    optional-dependencies.docs = ["myst-parser>=0.18","sphinx>=4" ]
-
-    optional-dependencies.test = ["coverage>=6"]
+    ]
+    optional-dependencies.dev = [ "black>=22", "pytest>=7" ]
+    optional-dependencies.docs = [ "myst-parser>=0.18", "sphinx>=4" ]
+    optional-dependencies.test = [ "coverage>=6" ]
     "#);
 }
 
@@ -546,10 +554,13 @@ fn test_project_dependencies_with_extras() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = ["click[colorama]>=8","requests[security]>=2.28" ]
+    ]
+
+    [project]
+    dependencies = [ "click[colorama]>=8", "requests[security]>=2.28" ]
     "#);
 }
 
@@ -566,13 +577,13 @@ fn test_project_dependencies_with_markers() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = [
-        "importlib-metadata>=4; python_version<'3.10'",
-        "typing-extensions>=4; python_version<'3.11'"
     ]
+
+    [project]
+    dependencies = [ "importlib-metadata>=4; python_version<'3.10'", "typing-extensions>=4; python_version<'3.11'" ]
     "#);
 }
 
@@ -639,9 +650,12 @@ fn test_project_empty_dependencies() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
+    ]
+
+    [project]
     dependencies = []
     "#);
 }
@@ -655,13 +669,13 @@ fn test_project_empty_optional_dependencies() {
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
     [project]
-
-
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ]optional-dependencies.dev = []
+    ]
+    optional-dependencies.dev = []
     "#);
 }
 
@@ -675,10 +689,13 @@ fn test_project_normalize_package_name_underscores() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = ["another-package>=2","my-package>=1" ]
+    ]
+
+    [project]
+    dependencies = [ "another-package>=2", "my-package>=1" ]
     "#);
 }
 
@@ -692,10 +709,13 @@ fn test_project_dependencies_git_urls() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = ["pkg @ git+https://github.com/user/repo.git@main"]
+    ]
+
+    [project]
+    dependencies = [ "pkg @ git+https://github.com/user/repo.git@main" ]
     "#);
 }
 
@@ -709,10 +729,13 @@ fn test_project_dependencies_local_paths() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = ["pkg @ file:///path/to/package"]
+    ]
+
+    [project]
+    dependencies = [ "pkg @ file:///path/to/package" ]
     "#);
 }
 
@@ -810,23 +833,23 @@ fn test_project_all_fields() {
     version = "1.0.0"
     description = "A comprehensive test"
     readme = "README.md"
-    keywords = ["example","test" ]
+    keywords = [ "example", "test" ]
     license = { text = "MIT" }
-    maintainers = [{ name = "Maintainer" }]
-    authors = [{ name = "Dev", email = "dev@example.com" }]
+    maintainers = [ { name = "Maintainer" } ]
+    authors = [ { name = "Dev", email = "dev@example.com" } ]
     requires-python = ">=3.9"
     classifiers = [
-    "Development Status :: 4 - Beta",
+      "Development Status :: 4 - Beta",
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
     ]
-    dependencies = ["requests>=2.28"]
-    optional-dependencies.dev = ["pytest>=7"]
-
-    urls.Homepage = "https://example.com"scripts.mytool = "mypackage:main"
+    dependencies = [ "requests>=2.28" ]
+    optional-dependencies.dev = [ "pytest>=7" ]
+    urls.Homepage = "https://example.com"
+    scripts.mytool = "mypackage:main"
     "#);
 }
 
@@ -907,11 +930,14 @@ fn test_project_dependencies_url_format() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
+    ]
+
+    [project]
     dependencies = [
-        "pkg @ https://example.com/pkg-1.0.tar.gz",
+      "pkg @ https://example.com/pkg-1.0.tar.gz",
     ]
     "#);
 }
@@ -926,12 +952,13 @@ fn test_project_entry_points_inline_tables() {
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
     [project]
-
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ]entry-points = [{ name = "console_scripts", value = { mytool = "mypackage:main", another = "mypackage:other" } }]
+    ]
+    entry-points = [ { name = "console_scripts", value = { mytool = "mypackage:main", another = "mypackage:other" } } ]
     "#);
 }
 
@@ -945,9 +972,12 @@ fn test_project_scripts_inline_table() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
+    ]
+
+    [project]
     scripts = { mytool = "mypackage:main", helper = "mypackage.cli:run" }
     "#);
 }
@@ -962,9 +992,12 @@ fn test_project_gui_scripts_inline_table() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
+    ]
+
+    [project]
     gui-scripts = { mygui = "mypackage.gui:main" }
     "#);
 }
@@ -1184,13 +1217,16 @@ fn test_project_dependencies_complex_markers() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
-    ][project]
+    ]
+
+    [project]
     dependencies = [
-        "other>=2; (python_version>='3.10' or sys_platform!='win32')",
-        "pkg>=1; python_version<'3.10' and platform_system=='Linux'",
+      "other>=2; (python_version>='3.10' or sys_platform!='win32')",
+      "pkg>=1; python_version<'3.10' and platform_system=='Linux'",
     ]
     "#);
 }
@@ -1205,10 +1241,13 @@ fn test_project_dependencies_multiple_extras() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = ["pkg[extra1,extra2,extra3]>=1"]
+    ]
+
+    [project]
+    dependencies = [ "pkg[extra1,extra2,extra3]>=1" ]
     "#);
 }
 
@@ -1283,9 +1322,11 @@ fn test_project_dynamic_version_only() {
     name = "test"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ]dynamic = ["version"]
+    ]
+    dynamic = [ "version" ]
     "#);
 }
 
@@ -1299,10 +1340,13 @@ fn test_project_dependencies_duplicate_handling() {
     insta::assert_snapshot!(result, @r#"
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.9",  "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
-    ][project]
-    dependencies = ["requests>=2.28", "requests>=2.30"]
+    ]
+
+    [project]
+    dependencies = [ "requests>=2.28", "requests>=2.30" ]
     "#);
 }
 
@@ -1599,7 +1643,8 @@ fn test_project_entry_points_inline_table_expansion() {
     insta::assert_snapshot!(result, @r#"
     [project]
     name = "test"
-    entry-points.console_scripts.bar = "pkg:bar"entry-points.console_scripts.foo = "pkg:main"
+    entry-points.console_scripts.bar = "pkg:bar"
+    entry-points.console_scripts.foo = "pkg:main"
     "#);
 }
 

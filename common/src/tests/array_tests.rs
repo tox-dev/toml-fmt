@@ -815,6 +815,27 @@ fn test_transform_with_literal_string() {
 }
 
 #[test]
+fn test_transform_literal_string_with_comment() {
+    let start = indoc! {r"
+    a = [
+        'first',
+        # A comment
+        'second',
+    ]
+    "};
+    let res = apply_to_arrays(start, |array| {
+        transform(array, &|s| s.to_uppercase());
+    });
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      "FIRST",
+      # A comment
+      "SECOND",
+    ]
+    "#);
+}
+
+#[test]
 fn test_align_empty_array() {
     let start = r#"a = []"#;
     let root_ast = tombi_parser::parse(start, TomlVersion::default())

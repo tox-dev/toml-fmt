@@ -73,10 +73,12 @@ fn test_format_dependency_groups_multiple_groups() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    dev=["d>=2"]test=["a>1"]
-    docs=["b==1"]
+    dev = [ "d>=2" ]
+    test = [ "a>1" ]
+    docs = [ "b==1" ]
+
     [dependency-groups]
-    example=["c<1"]
+    example = [ "c<1" ]
     "#);
 }
 
@@ -108,8 +110,10 @@ fn test_format_dependency_groups_include_single_group() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    test=["a>1",{include-group="docs"}][dependency-groups]
-    docs=["b==1"]
+    test = [ "a>1", { include-group = "docs" } ]
+
+    [dependency-groups]
+    docs = [ "b==1" ]
     "#);
 }
 
@@ -123,9 +127,11 @@ fn test_format_dependency_groups_include_many_groups() {
     "#};
     let res = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(res, @r#"
-    test = ["a>1"]docs = ["b==1"]
+    test = [ "a>1" ]
+    docs = [ "b==1" ]
+
     [dependency-groups]
-    all=[{include-group='docs'}, "c<1", {include-group='test'}, "d>1"]
+    all = [ { include-group = "docs" }, "c<1", { include-group = "test" }, "d>1" ]
     "#);
 }
 
@@ -200,9 +206,9 @@ fn test_format_dependency_groups_array_with_comments() {
     insta::assert_snapshot!(res, @r#"
     [dependency-groups]
     test = [
-      "pytest>=7",
       # This is a comment
       "black>=23",
+      "pytest>=7",
       { include-group = "docs" },
       # Another comment
     ]
@@ -283,9 +289,11 @@ fn test_dependency_groups_ordering_dev_test_docs() {
         "#};
     let result = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(result, @r#"
-    dev = ["ruff>=0.4"]
-    test = ["pytest>=7"][dependency-groups]
-    docs = ["sphinx>=5"]
+    dev = [ "ruff>=0.4" ]
+    test = [ "pytest>=7" ]
+
+    [dependency-groups]
+    docs = [ "sphinx>=5" ]
     "#);
 }
 
@@ -299,9 +307,11 @@ fn test_dependency_groups_unknown_group_name() {
         "#};
     let result = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(result, @r#"
-    alpha = ["third>=3"][dependency-groups]
-    custom = ["pkg>=1"]
-    zebra = ["other>=2"]
+    alpha = [ "third>=3" ]
+
+    [dependency-groups]
+    custom = [ "pkg>=1" ]
+    zebra = [ "other>=2" ]
     "#);
 }
 
@@ -350,7 +360,9 @@ fn test_dependency_groups_empty_group() {
         "#};
     let result = format_dependency_groups_helper(start, false);
     insta::assert_snapshot!(result, @r#"
-    test = ["pkg>=1"][dependency-groups]
+    test = [ "pkg>=1" ]
+
+    [dependency-groups]
     empty = []
     "#);
 }
@@ -391,10 +403,11 @@ fn test_dependency_groups_with_nested_inline_table() {
     [dependency-groups]
     test = [
       "pkg>=1",
-      {include-group = "base"},
-      {include-group = "docs"},
+      { include-group = "base" },
+      { include-group = "docs" },
     ]
-    docs = ["sphinx"]base = ["base-pkg"]
+    docs = [ "sphinx" ]
+    base = [ "base-pkg" ]
     "#);
 }
 
