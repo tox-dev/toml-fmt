@@ -4,7 +4,7 @@ requires = [ "uv-build<0.8,>=0.7.22" ]
 
 [project]
 name = "toml-fmt-common"
-version = "1.0.0"
+version = "1.2.0"
 description = "Common logic to the TOML formatter."
 readme = "README.md"
 license = "MIT"
