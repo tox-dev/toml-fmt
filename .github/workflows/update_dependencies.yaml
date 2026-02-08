@@ -9,8 +9,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  update:
-    name: 📦 update
+  python:
+    name: 🐍 python
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -37,6 +37,9 @@ jobs:
           uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
           uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
 
+      - name: 🔧 Fix workspace deps
+        run: sed -i 's/toml-fmt-common>=.*/toml-fmt-common",/' pyproject-fmt/pyproject.toml tox-toml-fmt/pyproject.toml
+
       - name: 🔒 Update lock file
         run: uv lock --upgrade
 
@@ -55,4 +58,30 @@ jobs:
             - Bumped dependency version constraints in `pyproject.toml` and `tox.toml`
             - Updated `uv.lock` with latest compatible versions
           branch: update-python-dependencies
+          delete-branch: true
+
+  rust:
+    name: 🦀 rust
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+
+      - name: 🦀 Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: ⬆️ Update Cargo.lock
+        run: cargo update
+
+      - name: 🔀 Create Pull Request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          commit-message: "Update Rust dependencies"
+          title: "Update Rust dependencies"
+          body: |
+            Automated Rust dependency update.
+
+            - Updated `Cargo.lock` with latest compatible versions
+          branch: update-rust-dependencies
           delete-branch: true
