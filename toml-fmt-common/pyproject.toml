@@ -1,10 +1,10 @@
 [build-system]
 build-backend = "uv_build"
-requires = [ "uv-build>=0.7.14,<0.8" ]
+requires = [ "uv-build<0.8,>=0.7.22" ]
 
 [project]
 name = "toml-fmt-common"
-version = "1.0.0"
+version = "1.2.0"
 description = "Common logic to the TOML formatter."
 readme = "README.md"
 license = "MIT"
@@ -29,7 +29,7 @@ classifiers = [
   "Topic :: System",
 ]
 dependencies = [
-  "tomli>=2.2.1; python_version<'3.11'",
+  "tomli>=2.4; python_version<'3.11'",
 ]
 urls.Changelog = "https://github.com/tox-dev/toml-fmt/releases"
 urls.Documentation = "https://github.com/tox-dev/toml-fmt/tree/main/toml-fmt-common#toml-fmt-common"
@@ -44,7 +44,7 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
-  "pytest>=8.4.2",
+  "pytest>=9.0.2",
   "pytest-cov>=7",
   "pytest-mock>=3.15.1",
 ]
@@ -55,7 +55,7 @@ type = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.9",
+  "uv>=0.10",
 ]
 
 [tool.pyproject-fmt]
