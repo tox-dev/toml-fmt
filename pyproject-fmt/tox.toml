@@ -99,6 +99,7 @@ commands = [
 
 [env.readme]
 description = "generate README.rst from docs"
+runner = "uv-venv-runner"
 skip_install = true
 package = "skip"
 dependency_groups = []
