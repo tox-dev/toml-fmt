@@ -134,9 +134,9 @@ fn test_uv_preserve_comments() {
     assert_snapshot!(result, @r#"
     [tool.uv]
     dev-dependencies = [
+      "coverage",
       # Testing tools
       "pytest",
-      "coverage",
     ]
     "#);
 }
