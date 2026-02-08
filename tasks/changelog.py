@@ -179,7 +179,7 @@ def entries(
     if pr:
         pull = gh_repo.get_pull(pr)
         yield pull.title, str(pr), pull.user.login
-    tags = {tag.commit.hexsha for tag in git_repo.tags}
+    tags = {tag.commit.hexsha for tag in git_repo.tags if tag.name.startswith(f"{project}/")}
     pr_re = re.compile(r"(?P<title>.*)[(]#(?P<pr>\d+)[)]")
     found_base = not base
     for change in git_repo.iter_commits():
