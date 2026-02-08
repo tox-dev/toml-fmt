@@ -3,6 +3,7 @@ from __future__ import annotations
 from textwrap import dedent
 
 import pytest
+
 from tox_toml_fmt._lib import Settings, format_toml
 
 

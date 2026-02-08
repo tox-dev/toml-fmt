@@ -6,13 +6,14 @@ This repository is a Cargo workspace containing multiple Rust crates and Python 
 formatting infrastructure. The project follows a layered architecture where low-level TOML manipulation code is shared
 across multiple high-level formatter tools.
 
-The workspace is organized into three main packages. At the foundation is `common/`, a pure Rust library that provides
+The workspace is organized into four main packages. At the foundation is `common/`, a pure Rust library that provides
 all the core TOML parsing, syntax tree manipulation, and formatting utilities. This crate contains no Python bindings
-and serves as the shared infrastructure for all formatters in this repository. On top of common, we have
-`pyproject-fmt/`, which is a Python package (with Rust internals via PyO3) that formats `pyproject.toml` files according
-to PEP 621 and community standards. It handles project metadata, dependencies, classifiers, and tool-specific
-configuration sections. Similarly, `tox-toml-fmt/` is another Python package (also with Rust internals) that formats
-`tox.toml` files used by the tox test automation tool.
+and serves as the shared infrastructure for all formatters in this repository. Alongside it is `toml-fmt-common/`, a
+pure Python package providing CLI utilities, argument parsing, and diff output shared by all Python formatter tools. On
+top of these, we have `pyproject-fmt/`, which is a Python package (with Rust internals via PyO3) that formats
+`pyproject.toml` files according to PEP 621 and community standards. It handles project metadata, dependencies,
+classifiers, and tool-specific configuration sections. Similarly, `tox-toml-fmt/` is another Python package (also with
+Rust internals) that formats `tox.toml` files used by the tox test automation tool.
 
 ```
 toml-fmt/                       # Workspace root
@@ -28,6 +29,10 @@ toml-fmt/                       # Workspace root
 │   │   ├── pep508.rs          # PEP 508 dependency parsing
 │   │   └── tests/             # Unit tests
 │   └── Cargo.toml
+├── toml-fmt-common/            # Shared Python library
+│   ├── src/toml_fmt_common/   # CLI utilities, arg parsing, diff output
+│   ├── tests/                 # Python tests
+│   └── pyproject.toml
 ├── pyproject-fmt/              # pyproject.toml formatter
 │   ├── rust/src/              # Rust implementation
 │   │   ├── lib.rs            # PyO3 bindings
@@ -73,6 +78,23 @@ cargo fmt -p common
 
 # Run linter
 cargo clippy -p common
+```
+
+#### Working on `toml-fmt-common/` (Python library)
+
+The toml-fmt-common package is a pure Python library providing CLI utilities shared by all formatter tools. Since it has
+no Rust code, development is straightforward Python testing with tox.
+
+```bash
+# Set up development environment
+cd toml-fmt-common
+tox run -e dev
+
+# Run tests
+tox run -e 3.13
+
+# Run type checking
+tox run -e type
 ```
 
 #### Working on `pyproject-fmt/` or `tox-toml-fmt/` (Python packages with Rust internals)
@@ -304,7 +326,7 @@ fn test_load_text(#[case] input: &str, #[case] kind: SyntaxKind, #[case] expecte
 
 ### Coverage Goals and Measurement
 
-We aim for at least 95% line coverage on all code. Use `cargo llvm-cov` to measure coverage, running
+We aim for at least 96% line coverage on all code. Use `cargo llvm-cov` to measure coverage, running
 `cargo llvm-cov --lcov --output-path /tmp/coverage.lcov` to generate a coverage report and
 `cargo llvm-cov report --summary-only` to view the summary.
 

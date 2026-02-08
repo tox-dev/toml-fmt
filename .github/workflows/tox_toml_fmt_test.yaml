@@ -3,17 +3,36 @@ on:
   workflow_dispatch:
   push:
     branches: ["main"]
-    paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_test.yaml"]
   pull_request:
-    paths: ["common/**", "tox-toml-fmt/**", ".github/workflows/tox_toml_fmt_test.yaml"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: 🔍 changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🔍 Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'common/**'
+              - 'toml-fmt-common/**'
+              - 'tox-toml-fmt/**'
+              - '.github/workflows/tox_toml_fmt_test.yaml'
+
   clippy:
     name: 📎 clippy
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -29,6 +48,8 @@ jobs:
 
   fmt:
     name: 🎨 fmt
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -44,6 +65,8 @@ jobs:
 
   build:
     name: 🔨 build
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -57,6 +80,8 @@ jobs:
 
   test:
     name: ✅ test
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -82,6 +107,8 @@ jobs:
 
   py:
     name: 🐍 ${{ matrix.py }} @ ${{ matrix.os }}
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -124,6 +151,8 @@ jobs:
 
   check:
     name: 🔎 ${{ matrix.env }}
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false

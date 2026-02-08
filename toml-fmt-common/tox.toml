@@ -1,5 +1,5 @@
 requires = ["tox>=4.34", "tox-uv>=1.25"]
-env_list = ["fix", "3.14", "3.13", "3.12", "3.11", "3.10", "type", "docs", "pkg_meta"]
+env_list = ["fix", "3.14", "3.13", "3.12", "3.11", "3.10", "type", "pkg_meta"]
 skip_missing_interpreters = true
 
 [env_run_base]
@@ -21,7 +21,7 @@ commands = [
             "{work_dir}{/}junit.{env_name}.xml",
             "--no-cov-on-fail",
             "--cov",
-            "{env_site_packages_dir}{/}tox_toml_fmt",
+            "{env_site_packages_dir}{/}toml_fmt_common",
             "--cov",
             "{tox_root}{/}tests",
             "--cov-config",
@@ -42,34 +42,7 @@ commands = [
 [env.type]
 description = "run type check on code base"
 dependency_groups = ["type"]
-commands = [["mypy", "src{/}tox_toml_fmt"], ["mypy", "tests"]]
-
-[env.docs]
-description = "build documentation"
-base_python = ["3.14"]
-dependency_groups = ["docs"]
-commands = [
-    [
-        "sphinx-build",
-        "-d",
-        "{env_tmp_dir}{/}docs_tree",
-        "docs",
-        "{env:READTHEDOCS_OUTPUT:{work_dir}{/}docs_out}/html",
-        "--color",
-        "-b",
-        "html",
-        { replace = "posargs", default = [
-            "-b",
-            "linkcheck",
-        ], extend = true },
-        "-W",
-    ],
-    [
-        "python",
-        "-c",
-        'print(r"documentation available under file://{work_dir}{/}docs_out{/}html{/}index.html")',
-    ],
-]
+commands = [["mypy", "src{/}toml_fmt_common", "tests"]]
 
 [env.pkg_meta]
 description = "check that the long description is valid"
@@ -97,16 +70,15 @@ commands = [
     ],
 ]
 
-[env.readme]
-description = "generate README.rst from docs"
-skip_install = true
-package = "skip"
-dependency_groups = []
-change_dir = "{tox_root}{/}.."
-commands = [["python", "tasks{/}generate_readme.py", "tox-toml-fmt"]]
-
 [env.dev]
 description = "dev environment with all deps at {envdir}"
 package = "editable"
 dependency_groups = ["dev"]
 commands = [["uv", "pip", "tree"], ["python", "-c", 'print(r"{env_python}")']]
+
+[env.fix]
+description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
+skip_install = true
+deps = ["pre-commit-uv>=4.1.3"]
+pass_env = [{ replace = "ref", of = ["env_run_base", "pass_env"], extend = true }, "PROGRAMDATA"]
+commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure", { replace = "posargs", extend = true }]]

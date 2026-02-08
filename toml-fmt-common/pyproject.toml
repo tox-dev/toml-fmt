@@ -1,0 +1,87 @@
+[build-system]
+build-backend = "uv_build"
+requires = [ "uv-build>=0.7.14,<0.8" ]
+
+[project]
+name = "toml-fmt-common"
+version = "1.0.0"
+description = "Common logic to the TOML formatter."
+readme = "README.md"
+license = "MIT"
+maintainers = [
+  { name = "Bernát Gábor", email = "gaborjbernat@gmail.com" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Internet",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: System",
+]
+dependencies = [
+  "tomli>=2.2.1; python_version<'3.11'",
+]
+urls.Changelog = "https://github.com/tox-dev/toml-fmt/releases"
+urls.Documentation = "https://github.com/tox-dev/toml-fmt/tree/main/toml-fmt-common#toml-fmt-common"
+urls.Homepage = "https://github.com/tox-dev/toml-fmt"
+urls.Source = "https://github.com/tox-dev/toml-fmt/tree/main/toml-fmt-common"
+urls.Tracker = "https://github.com/tox-dev/toml-fmt/issues"
+
+[dependency-groups]
+dev = [
+  { include-group = "test" },
+  { include-group = "type" },
+]
+test = [
+  "covdefaults>=2.3",
+  "pytest>=8.4.2",
+  "pytest-cov>=7",
+  "pytest-mock>=3.15.1",
+]
+type = [
+  "mypy==1.19.1",
+  { include-group = "test" },
+]
+pkg-meta = [
+  "check-wheel-contents>=0.6.3",
+  "twine>=6.2",
+  "uv>=0.9",
+]
+
+[tool.pyproject-fmt]
+max_supported_python = "3.14"
+
+[tool.coverage]
+html.show_contexts = true
+html.skip_covered = false
+paths.source = [
+  "src",
+  ".tox/*/lib/*/site-packages",
+  ".tox\\*\\Lib\\site-packages",
+  "**/src",
+  "**\\src",
+]
+paths.other = [
+  ".",
+  "*/toml_fmt_common",
+  "*\\toml_fmt_common",
+]
+report.fail_under = 100
+run.parallel = true
+run.plugins = [
+  "covdefaults",
+]
+
+[tool.mypy]
+show_error_codes = true
+strict = true

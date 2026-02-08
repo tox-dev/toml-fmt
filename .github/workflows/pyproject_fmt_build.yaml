@@ -10,9 +10,7 @@ on:
         options: ["no", patch, minor, major]
   push:
     branches: ["main"]
-    paths: ["common/**", "pyproject-fmt/**", ".github/workflows/pyproject_fmt_build.yaml"]
   pull_request:
-    paths: ["common/**", "pyproject-fmt/**", ".github/workflows/pyproject_fmt_build.yaml"]
   schedule:
     - cron: "0 8 * * *"
 
@@ -24,8 +22,29 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: 🔍 changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🔍 Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'common/**'
+              - 'toml-fmt-common/**'
+              - 'pyproject-fmt/**'
+              - '.github/workflows/pyproject_fmt_build.yaml'
+
   bump:
     name: 🔖 bump
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: read
