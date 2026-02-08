@@ -17,11 +17,9 @@ fn data_dir() -> PathBuf {
         .join("data")
 }
 
-fn evaluate(start: &str) -> String {
-    evaluate_with_collapse(start, true)
-}
+use super::assert_valid_toml;
 
-fn evaluate_with_collapse(start: &str, collapse: bool) -> String {
+fn evaluate_core(start: &str, collapse: bool) -> String {
     let root_ast = parse(start);
     let count = root_ast.children_with_tokens().count();
     let mut tables = Tables::from_ast(&root_ast);
@@ -33,11 +31,21 @@ fn evaluate_with_collapse(start: &str, collapse: bool) -> String {
     format_syntax(root_ast, 120)
 }
 
+fn evaluate(start: &str) -> String {
+    evaluate_with_collapse(start, true)
+}
+
+fn evaluate_with_collapse(start: &str, collapse: bool) -> String {
+    let result = evaluate_core(start, collapse);
+    assert_valid_toml(&result);
+    result
+}
+
 #[test]
 fn test_order_uv() {
     let data = data_dir();
     let start = read_to_string(data.join("uv-order.toml")).unwrap();
-    let result = evaluate(&start);
+    let result = evaluate_core(&start, true);
     assert_snapshot!(result);
 }
 
@@ -212,11 +220,10 @@ fn test_uv_pip_table_no_collapse() {
     "#};
     let result = evaluate_with_collapse(start, false);
     assert_snapshot!(result, @r#"
+    [tool.uv.pip]
     index-url = "https://pypi.org/simple"
     no-binary-package = [ "numpy", "scipy" ]
     extra = [ "dev", "docs", "test" ]
-
-    [tool.uv.pip]
     upgrade-package = [ "flask", "requests" ]
     "#);
 }
@@ -231,10 +238,9 @@ fn test_uv_sources_table_no_collapse() {
     "#};
     let result = evaluate_with_collapse(start, false);
     assert_snapshot!(result, @r#"
+    [tool.uv.sources]
     alpha = { path = "../alpha" }
     mango = { workspace = true }
-
-    [tool.uv.sources]
     zebra = { git = "https://github.com/example/zebra" }
     "#);
 }

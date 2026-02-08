@@ -1,7 +1,29 @@
 use indoc::indoc;
 use insta::assert_snapshot;
 
+use super::assert_valid_toml;
 use crate::{format_toml, Settings};
+
+fn default_settings() -> Settings {
+    Settings {
+        column_width: 120,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 9),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+    }
+}
+
+fn long_format_settings() -> Settings {
+    Settings {
+        table_format: String::from("long"),
+        ..default_settings()
+    }
+}
 
 fn format_toml_helper(
     start: &str,
@@ -11,17 +33,15 @@ fn format_toml_helper(
     generate_python_version_classifiers: bool,
 ) -> String {
     let settings = Settings {
-        column_width: 120,
         indent,
         keep_full_version,
         max_supported_python,
-        min_supported_python: (3, 9),
         generate_python_version_classifiers,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
+        ..default_settings()
     };
-    format_toml(start, &settings)
+    let result = format_toml(start, &settings);
+    assert_valid_toml(&result);
+    result
 }
 
 #[test]
@@ -188,18 +208,7 @@ fn test_table_format_long_with_entry_points() {
         entry-points."console_scripts".mycli = "pkg:main"
         entry-points."console_scripts".othercli = "pkg:other"
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &long_format_settings());
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -221,15 +230,8 @@ fn test_expand_project_authors() {
         ]
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
         expand_tables: vec![String::from("project.authors")],
-        collapse_tables: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -258,15 +260,8 @@ fn test_expand_project_maintainers() {
         ]
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
         expand_tables: vec![String::from("project.maintainers")],
-        collapse_tables: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -294,15 +289,8 @@ fn test_expand_single_author() {
         ]
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
         expand_tables: vec![String::from("project.authors")],
-        collapse_tables: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -328,18 +316,7 @@ fn test_collapse_authors_with_url_field() {
         name = "Alice"
         email = "alice@example.com"
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -358,18 +335,7 @@ fn test_collapse_empty_authors() {
         [[project.authors]]
         [[project.authors]]
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -384,18 +350,7 @@ fn test_collapse_empty_authors() {
 #[test]
 fn test_collapse_authors_without_trailing_newline() {
     let start = "[project]\nname = \"test\"\n[[project.authors]]\nname = \"Alice\"\nemail = \"alice@example.com\"";
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     assert!(got.contains("authors = ["));
     assert!(got.contains("{ name = \"Alice\", email = \"alice@example.com\" }"));
 }
@@ -405,18 +360,7 @@ fn test_collapse_authors_without_trailing_newline() {
 fn test_collapse_authors_compact_parent() {
     let start =
         "[project]\nname=\"test\"\nversion=\"1.0\"\n[[project.authors]]\nname=\"Alice\"\nemail=\"alice@example.com\"";
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     assert!(got.contains("authors = ["));
 }
 
@@ -431,15 +375,8 @@ fn test_expand_authors_already_expanded() {
         email = "john@example.com"
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
         expand_tables: vec![String::from("project.authors")],
-        collapse_tables: vec![],
+        ..long_format_settings()
     };
     let got = format_toml(start, &settings);
     assert!(got.contains("[[project.authors]]"));
@@ -616,18 +553,7 @@ fn test_no_duplicate_requires() {
         build-backend = "backend"
         requires = ["c", "d"]
     "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     let count = got.matches("requires").count();
     assert_eq!(count, 1, "requires should appear exactly once, but got:\n{}", got);
 }
@@ -644,18 +570,7 @@ fn test_table_format_long_removes_blank_lines_between_same_group() {
         [project.optional-dependencies]
         dev = ["pytest"]
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &long_format_settings());
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -678,18 +593,7 @@ fn test_table_format_long_with_tool_tables() {
         [tool.mypy]
         strict = true
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &long_format_settings());
     assert_snapshot!(got, @r#"
     [tool.ruff]
     line-length = 120
@@ -710,18 +614,7 @@ fn test_table_format_long_preserves_blank_lines_between_different_groups() {
         [project]
         name = "test"
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &long_format_settings());
     assert_snapshot!(got, @r#"
     [build-system]
     requires = [ "setuptools" ]
@@ -763,18 +656,7 @@ fn test_extract_table_names_from_array_tables() {
 #[test]
 fn test_format_with_trailing_newline_preserved() {
     let start = "[project]\nname = \"test\"\n";
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -790,18 +672,7 @@ fn test_tool_prefix_extraction_with_dotted_keys() {
         [tool.coverage.report]
         precision = 2
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &long_format_settings());
     assert_snapshot!(got, @"
     [tool.coverage.report]
     precision = 2
@@ -835,18 +706,7 @@ fn test_format_with_non_table_lines_between_headers() {
         [project.urls]
         homepage = "https://example.com"
         "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &long_format_settings());
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -950,18 +810,7 @@ fn test_issue_186_single_quote_with_comments() {
         'second',
     ]
     "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-    };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &default_settings());
     assert_snapshot!(got, @r#"
     [tool.something]
     items = [

@@ -7,6 +7,9 @@ readme = "README.md"
 license = "MIT"
 edition = "2024"
 
+[features]
+test-util = ["dep:toml", "dep:tokio"]
+
 [dependencies]
 regex = { version = "1.12.3" }
 # Tombi provides TOML parsing, syntax tree manipulation, and formatting
@@ -21,8 +24,11 @@ tombi-formatter = { workspace = true }
 tombi-toml-text = { workspace = true }
 tombi-config = { workspace = true }
 tombi-schema-store = { workspace = true }
+toml = { version = "0.9.11", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 
 [dev-dependencies]
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 insta = { version = "1.46.3", features = ["redactions"] } # snapshot testing
+toml = "0.9.11"

@@ -22,21 +22,43 @@ fn load_text_helper(input: &str, kind: tombi_syntax::SyntaxKind) -> String {
     load_text(input, kind)
 }
 
-fn literal_string_escape_helper(input: &str) -> String {
-    let toml = format!("key = {input}");
-    let root_ast = parse(&toml);
-
-    for entry in root_ast.children_with_tokens() {
+fn for_each_string<F>(root: &tombi_syntax::SyntaxNode, mut f: F)
+where
+    F: FnMut(&tombi_syntax::SyntaxNode),
+{
+    for entry in root.children_with_tokens() {
         if entry.kind() == KEY_VALUE {
             for child in entry.as_node().unwrap().children_with_tokens() {
                 if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
+                    f(child.as_node().unwrap());
                 }
             }
         }
     }
+}
 
+fn apply_update_content<F>(toml: &str, transform: F) -> String
+where
+    F: Fn(&str) -> String,
+{
+    let root_ast = parse(toml);
+    for_each_string(&root_ast, |node| update_content(node, &transform));
     root_ast.to_string()
+}
+
+fn apply_update_content_wrapped<F>(toml: &str, transform: F, column_width: usize, indent: &str) -> String
+where
+    F: Fn(&str) -> String,
+{
+    let root_ast = parse(toml);
+    for_each_string(&root_ast, |node| {
+        update_content_wrapped(node, &transform, column_width, indent)
+    });
+    root_ast.to_string()
+}
+
+fn literal_string_escape_helper(input: &str) -> String {
+    apply_update_content(&format!("key = {input}"), |s| s.to_string())
 }
 
 #[test]
@@ -98,96 +120,31 @@ fn test_load_text_escape_sequences() {
 
 #[test]
 fn test_update_content_basic() {
-    let toml = r#"name = "foo""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_uppercase());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"name = "foo""#, |s| s.to_uppercase());
     assert!(result.contains("FOO"));
 }
 
 #[test]
 fn test_update_content_no_change() {
-    let toml = r#"name = "foo""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"name = "foo""#, |s| s.to_string());
     assert!(result.contains("foo"));
 }
 
 #[test]
 fn test_update_content_string_literal_normalized() {
-    let toml = "name = 'foo'";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("name = 'foo'", |s| s.to_string());
     assert!(result.contains("\"foo\""), "Got: {}", result);
 }
 
 #[test]
 fn test_update_content_multi_line_string() {
-    let toml = "desc = \"\"\"multi\nline\"\"\"";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.replace('\n', " "));
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("desc = \"\"\"multi\nline\"\"\"", |s| s.replace('\n', " "));
     assert!(result.contains("\"multi line\""));
 }
 
 #[test]
 fn test_issue_22_backslash_uses_basic_string() {
-    let toml = r#"regex = 'MPL-2\.0'"#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"regex = 'MPL-2\.0'"#, |s| s.to_string());
     assert!(result.contains(r#""MPL-2\\.0""#), "Got: {}", result);
 }
 
@@ -271,39 +228,13 @@ fn test_literal_string_escape_handling_case_no_backslash() {
 
 #[test]
 fn test_issue_36_line_continuation() {
-    let toml = "desc = \"\"\"\\\n    hello\\\n\"\"\"";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("desc = \"\"\"\\\n    hello\\\n\"\"\"", |s| s.to_string());
     assert!(result.contains("\"hello\""), "Got: {}", result);
 }
 
 #[test]
 fn test_line_continuation_with_crlf() {
-    let toml = "desc = \"\"\"\\\r\n    hello\"\"\"";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("desc = \"\"\"\\\r\n    hello\"\"\"", |s| s.to_string());
     assert!(result.contains("\"hello\""), "Got: {}", result);
 }
 
@@ -326,121 +257,49 @@ fn test_wrap_long_string_is_idempotent() {
     wrap_all_long_strings(&root_ast3, 120, "  ");
     let after_third = root_ast3.to_string();
 
-    assert_eq!(after_first, after_second, "wrap_all_long_strings should be idempotent (first->second)");
-    assert_eq!(after_second, after_third, "wrap_all_long_strings should be idempotent (second->third)");
+    assert_eq!(
+        after_first, after_second,
+        "wrap_all_long_strings should be idempotent (first->second)"
+    );
+    assert_eq!(
+        after_second, after_third,
+        "wrap_all_long_strings should be idempotent (second->third)"
+    );
 }
 
 #[test]
 fn test_multiline_with_regular_escapes() {
-    let toml = "desc = \"\"\"hello\\nworld\"\"\"";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("desc = \"\"\"hello\\nworld\"\"\"", |s| s.to_string());
     assert!(result.contains("\"hello\\nworld\""), "Got: {}", result);
 }
 
 #[test]
 fn test_multiline_with_tabs_after_continuation() {
-    let toml = "desc = \"\"\"\\\n\t\thello\"\"\"";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("desc = \"\"\"\\\n\t\thello\"\"\"", |s| s.to_string());
     assert!(result.contains("\"hello\""), "Got: {}", result);
 }
 
 #[test]
 fn test_basic_string_stays_basic() {
-    let toml = r#"name = "hello""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"name = "hello""#, |s| s.to_string());
     assert!(result.contains("\"hello\""), "Got: {}", result);
 }
 
 #[test]
 fn test_literal_with_single_quote_uses_basic_string() {
-    let toml = r#"name = "it's""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"name = "it's""#, |s| s.to_string());
     assert!(result.contains("\"it's\""), "Got: {}", result);
 }
 
 #[test]
 fn test_basic_string_with_backslash_stays_basic() {
-    let toml = r#"regex = "MPL-2\\.0""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"regex = "MPL-2\\.0""#, |s| s.to_string());
     assert!(result.contains(r#""MPL-2\\.0""#), "Got: {}", result);
 }
 
 #[test]
 fn test_issue_150_prefer_double_quotes() {
-    let toml = "name = 'simple-string'";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("name = 'simple-string'", |s| s.to_string());
     assert!(
         result.contains("\"simple-string\""),
         "Expected double-quoted string, got: {}",
@@ -450,20 +309,7 @@ fn test_issue_150_prefer_double_quotes() {
 
 #[test]
 fn test_issue_150_backslash_uses_basic_string() {
-    let toml = r#"regex = 'path\\to\\file'"#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"regex = 'path\\to\\file'"#, |s| s.to_string());
     assert!(
         result.contains(r#""path\\\\to\\\\file""#),
         "Expected basic string (prefer \"\"), got: {}",
@@ -473,20 +319,7 @@ fn test_issue_150_backslash_uses_basic_string() {
 
 #[test]
 fn test_string_with_both_quotes_uses_basic_with_escaping() {
-    let toml = r#"msg = "it's a \"test\"""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"msg = "it's a \"test\"""#, |s| s.to_string());
     assert!(
         result.contains(r#""it's a \"test\"""#),
         "Expected basic string with escaped quotes (can't use literal due to '), got: {}",
@@ -496,20 +329,7 @@ fn test_string_with_both_quotes_uses_basic_with_escaping() {
 
 #[test]
 fn test_string_with_double_quote_uses_literal() {
-    let toml = r#"msg = "say \"hello\"""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content(r#"msg = "say \"hello\"""#, |s| s.to_string());
     assert!(
         result.contains(r#"'say "hello"'"#),
         "Expected literal string (no escaping needed for \" in ''), got: {}",
@@ -723,25 +543,12 @@ fn test_wrap_nested_in_array() {
 
 #[test]
 fn test_update_content_wrapped() {
-    let toml = r#"name = "short""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content_wrapped(
-                        child.as_node().unwrap(),
-                        |s| format!("{} but now it's very long and will need wrapping at some point", s),
-                        50,
-                        "  ",
-                    );
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content_wrapped(
+        r#"name = "short""#,
+        |s| format!("{} but now it's very long and will need wrapping at some point", s),
+        50,
+        "  ",
+    );
     insta::assert_snapshot!(result, @r#"
     name = """\
       short but now it's very long and will need \
@@ -854,38 +661,17 @@ fn test_load_text_multiline_with_crlf() {
 
 #[test]
 fn test_update_content_with_very_long_key() {
-    let toml = r#"this_is_a_very_long_key_name_that_takes_up_space = "short value""#;
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content_wrapped(child.as_node().unwrap(), |s| s.to_string(), 80, "  ");
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content_wrapped(
+        r#"this_is_a_very_long_key_name_that_takes_up_space = "short value""#,
+        |s| s.to_string(),
+        80,
+        "  ",
+    );
     insta::assert_snapshot!(result, @r#"this_is_a_very_long_key_name_that_takes_up_space = "short value""#);
 }
 
 #[test]
 fn test_string_with_control_char_uses_basic() {
-    let toml = "key = 'has\\ttab'";
-    let root_ast = parse(toml);
-
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
-            for child in entry.as_node().unwrap().children_with_tokens() {
-                if is_string_kind(child.kind()) {
-                    update_content(child.as_node().unwrap(), |s| s.to_string());
-                }
-            }
-        }
-    }
-
-    let result = root_ast.to_string();
+    let result = apply_update_content("key = 'has\\ttab'", |s| s.to_string());
     insta::assert_snapshot!(result, @r#"key = "has\\ttab""#);
 }

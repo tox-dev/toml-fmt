@@ -339,14 +339,21 @@ fn test_marker_expression_ident_rhs() {
 fn test_marker_expression_in_operator() {
     let input = "sys_platform in 'linux'";
     let result = format_marker_helper(input);
-    insta::assert_snapshot!(result, @"sys_platformin'linux'");
+    insta::assert_snapshot!(result, @"sys_platform in 'linux'");
 }
 
 #[test]
 fn test_marker_expression_not_in_operator() {
     let input = "sys_platform not in 'win32'";
     let result = format_marker_helper(input);
-    insta::assert_snapshot!(result, @"sys_platformnot in'win32'");
+    insta::assert_snapshot!(result, @"sys_platform not in 'win32'");
+}
+
+#[test]
+fn test_marker_expression_compatible_release() {
+    let input = "python_version ~= '3.8'";
+    let result = format_marker_helper(input);
+    insta::assert_snapshot!(result, @"python_version~='3.8'");
 }
 
 #[test]

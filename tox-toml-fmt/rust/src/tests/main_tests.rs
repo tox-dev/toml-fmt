@@ -1,6 +1,7 @@
 use indoc::indoc;
 use insta::assert_snapshot;
 
+use super::assert_valid_toml;
 use crate::{format_toml, Settings};
 
 fn format_toml_helper(start: &str, indent: usize) -> String {
@@ -9,6 +10,7 @@ fn format_toml_helper(start: &str, indent: usize) -> String {
         indent,
     };
     let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
     let second = format_toml(got.as_str(), &settings);
     assert_eq!(second, got, "formatting should be idempotent");
     got

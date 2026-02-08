@@ -25,93 +25,30 @@ fn is_array_value(kind: SyntaxKind) -> bool {
     )
 }
 
-pub fn ensure_trailing_comma(array: &SyntaxNode) {
-    let has_value = array.children_with_tokens().any(|x| is_array_value(x.kind()));
-    if !has_value {
-        return;
-    }
-
-    let has_trailing = array
+fn has_trailing_comma(array: &SyntaxNode) -> bool {
+    array
         .children_with_tokens()
         .filter(|x| x.kind() == COMMA || is_array_value(x.kind()))
         .last()
-        .is_some_and(|x| x.kind() == COMMA);
-
-    let is_multiline = array.children_with_tokens().any(|x| x.kind() == LINE_BREAK);
-
-    if has_trailing && is_multiline {
-        return;
-    }
-
-    if !has_trailing
-        && let Some((i, _)) = array
-            .children_with_tokens()
-            .enumerate()
-            .filter(|(_, x)| is_array_value(x.kind()))
-            .last()
-    {
-        array.splice_children(i + 1..i + 1, vec![make_comma()]);
-    }
-
-    if !is_multiline {
-        if let Some((start_idx, _)) = array
-            .children_with_tokens()
-            .enumerate()
-            .find(|(_, x)| x.kind() == BRACKET_START)
-        {
-            array.splice_children(start_idx + 1..start_idx + 1, vec![make_newline()]);
-        }
-        if let Some((end_idx, _)) = array
-            .children_with_tokens()
-            .enumerate()
-            .find(|(_, x)| x.kind() == BRACKET_END)
-        {
-            array.splice_children(end_idx..end_idx, vec![make_newline()]);
-        }
-    }
+        .is_some_and(|x| x.kind() == COMMA)
 }
 
-pub fn ensure_all_arrays_multiline(root: &SyntaxNode, column_width: usize) {
-    for descendant in root.descendants() {
-        if descendant.kind() == ARRAY {
-            ensure_array_multiline(&descendant, column_width);
-        }
-    }
+fn is_multiline(array: &SyntaxNode) -> bool {
+    array.children_with_tokens().any(|x| x.kind() == LINE_BREAK)
 }
 
-fn ensure_array_multiline(array: &SyntaxNode, column_width: usize) {
-    let has_value = array.children_with_tokens().any(|x| is_array_value(x.kind()));
-    if !has_value {
-        return;
-    }
-
-    let has_trailing = array
+fn add_trailing_comma_if_missing(array: &SyntaxNode) {
+    if let Some((i, _)) = array
         .children_with_tokens()
-        .filter(|x| x.kind() == COMMA || is_array_value(x.kind()))
+        .enumerate()
+        .filter(|(_, x)| is_array_value(x.kind()))
         .last()
-        .is_some_and(|x| x.kind() == COMMA);
-
-    let is_multiline = array.children_with_tokens().any(|x| x.kind() == LINE_BREAK);
-    if is_multiline {
-        return;
-    }
-
-    let has_comment = array.descendants_with_tokens().any(|x| x.kind() == COMMENT);
-    let exceeds_width = array.text().to_string().len() > column_width;
-    if !has_trailing && !exceeds_width && !has_comment {
-        return;
-    }
-
-    if !has_trailing
-        && let Some((i, _)) = array
-            .children_with_tokens()
-            .enumerate()
-            .filter(|(_, x)| is_array_value(x.kind()))
-            .last()
     {
         array.splice_children(i + 1..i + 1, vec![make_comma()]);
     }
+}
 
+fn insert_newlines_around_content(array: &SyntaxNode) {
     if let Some((start_idx, _)) = array
         .children_with_tokens()
         .enumerate()
@@ -126,6 +63,58 @@ fn ensure_array_multiline(array: &SyntaxNode, column_width: usize) {
     {
         array.splice_children(end_idx..end_idx, vec![make_newline()]);
     }
+}
+
+pub fn ensure_trailing_comma(array: &SyntaxNode) {
+    if !array.children_with_tokens().any(|x| is_array_value(x.kind())) {
+        return;
+    }
+
+    let has_trailing = has_trailing_comma(array);
+    let multiline = is_multiline(array);
+
+    if has_trailing && multiline {
+        return;
+    }
+
+    if !has_trailing {
+        add_trailing_comma_if_missing(array);
+    }
+
+    if !multiline {
+        insert_newlines_around_content(array);
+    }
+}
+
+pub fn ensure_all_arrays_multiline(root: &SyntaxNode, column_width: usize) {
+    for descendant in root.descendants() {
+        if descendant.kind() == ARRAY {
+            ensure_array_multiline(&descendant, column_width);
+        }
+    }
+}
+
+fn ensure_array_multiline(array: &SyntaxNode, column_width: usize) {
+    if !array.children_with_tokens().any(|x| is_array_value(x.kind())) {
+        return;
+    }
+
+    let has_trailing = has_trailing_comma(array);
+    if is_multiline(array) {
+        return;
+    }
+
+    let has_comment = array.descendants_with_tokens().any(|x| x.kind() == COMMENT);
+    let exceeds_width = array.text().to_string().len() > column_width;
+    if !has_trailing && !exceeds_width && !has_comment {
+        return;
+    }
+
+    if !has_trailing {
+        add_trailing_comma_if_missing(array);
+    }
+
+    insert_newlines_around_content(array);
 }
 
 pub fn transform<F>(array: &SyntaxNode, transform: &F)
@@ -192,7 +181,7 @@ where
                 entries.push(entry);
                 after_bracket_start = true;
             }
-            SyntaxKind::BRACKET_END => {
+            BRACKET_END => {
                 match current_set_value.take() {
                     None => {
                         entries.extend(current_set.borrow_mut().clone());

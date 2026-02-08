@@ -7,7 +7,7 @@ use indoc::indoc;
 use tombi_config::TomlVersion;
 
 use crate::project::fix;
-use crate::tests::{collect_entries, format_syntax, format_toml_str, parse};
+use crate::tests::{assert_valid_toml, collect_entries, format_syntax, format_toml_str, parse};
 use crate::TableFormatConfig;
 
 fn evaluate_project(
@@ -42,7 +42,9 @@ fn evaluate_project(
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
     ensure_all_arrays_multiline(&root_ast, 120);
-    format_syntax(root_ast, 120)
+    let result = format_syntax(root_ast, 120);
+    assert_valid_toml(&result);
+    result
 }
 
 #[test]
@@ -60,12 +62,11 @@ fn test_project_dependencies_normalize_no_keep() {
     "#};
     let result = evaluate_project(start, false, (3, 9), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
     ]
-
-    [project]
     dependencies = [ "a>=1", "b-c>=1.5" ]
     "#);
 }
@@ -78,12 +79,11 @@ fn test_project_dependencies_normalize_keep_version() {
     "#};
     let result = evaluate_project(start, true, (3, 9), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
     ]
-
-    [project]
     dependencies = [ "a>=1.0.0", "b-c>=1.5.0" ]
     "#);
 }
@@ -219,9 +219,8 @@ fn test_project_authors_maintainers() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
-    maintainers = [ { email = "maintain@example.com" } ]
-
     [project]
+    maintainers = [ { email = "maintain@example.com" } ]
     authors = [ { name = "Jane Smith" }, { name = "John Doe", email = "john@example.com" } ]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
@@ -286,7 +285,7 @@ fn test_project_entry_points() {
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-    entry-points.mytool = "mypackage:main"
+    entry-points."console_scripts".mytool = "mypackage:main"
     "#);
 }
 
@@ -338,14 +337,13 @@ fn test_project_dynamic_fields() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dynamic = [ "description", "version" ]
     "#);
 }
@@ -517,8 +515,8 @@ fn test_project_multiple_entry_point_groups() {
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-    entry-points.myplugin = "mypackage.plugin:pytest_plugin"
-    entry-points.mytool = "mypackage:main"
+    entry-points."console_scripts".mytool = "mypackage:main"
+    entry-points."pytest11".myplugin = "mypackage.plugin:pytest_plugin"
     "#);
 }
 
@@ -552,14 +550,13 @@ fn test_project_dependencies_with_extras() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "click[colorama]>=8", "requests[security]>=2.28" ]
     "#);
 }
@@ -575,14 +572,13 @@ fn test_project_dependencies_with_markers() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "importlib-metadata>=4; python_version<'3.10'", "typing-extensions>=4; python_version<'3.11'" ]
     "#);
 }
@@ -606,7 +602,7 @@ fn test_project_urls_multiple() {
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-    urls = "https://github.com/example/repo/issues"
+    urls."Bug Tracker" = "https://github.com/example/repo/issues"
     urls.Changelog = "https://github.com/example/repo/blob/main/CHANGELOG.md"
     urls.Documentation = "https://docs.example.com"
     urls.Homepage = "https://example.com"
@@ -648,14 +644,13 @@ fn test_project_empty_dependencies() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = []
     "#);
 }
@@ -687,14 +682,13 @@ fn test_project_normalize_package_name_underscores() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "another-package>=2", "my-package>=1" ]
     "#);
 }
@@ -707,14 +701,13 @@ fn test_project_dependencies_git_urls() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "pkg @ git+https://github.com/user/repo.git@main" ]
     "#);
 }
@@ -727,14 +720,13 @@ fn test_project_dependencies_local_paths() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "pkg @ file:///path/to/package" ]
     "#);
 }
@@ -928,14 +920,13 @@ fn test_project_dependencies_url_format() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [
       "pkg @ https://example.com/pkg-1.0.tar.gz",
     ]
@@ -970,14 +961,13 @@ fn test_project_scripts_inline_table() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     scripts = { mytool = "mypackage:main", helper = "mypackage.cli:run" }
     "#);
 }
@@ -990,14 +980,13 @@ fn test_project_gui_scripts_inline_table() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     gui-scripts = { mygui = "mypackage.gui:main" }
     "#);
 }
@@ -1215,6 +1204,7 @@ fn test_project_dependencies_complex_markers() {
     "#};
     let result = evaluate_project(start, false, (3, 12), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
@@ -1222,8 +1212,6 @@ fn test_project_dependencies_complex_markers() {
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
     ]
-
-    [project]
     dependencies = [
       "other>=2; (python_version>='3.10' or sys_platform!='win32')",
       "pkg>=1; python_version<'3.10' and platform_system=='Linux'",
@@ -1239,14 +1227,13 @@ fn test_project_dependencies_multiple_extras() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "pkg[extra1,extra2,extra3]>=1" ]
     "#);
 }
@@ -1267,7 +1254,8 @@ fn test_project_urls_with_special_chars() {
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-    urls = "https://github.com/user/repo"
+    urls."Bug Tracker" = "https://github.com/user/repo/issues"
+    urls."Source Code" = "https://github.com/user/repo"
     "#);
 }
 
@@ -1338,14 +1326,13 @@ fn test_project_dependencies_duplicate_handling() {
     "#};
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
+    [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
       "Programming Language :: Python :: 3.10",
       "Programming Language :: Python :: 3.11",
     ]
-
-    [project]
     dependencies = [ "requests>=2.28", "requests>=2.30" ]
     "#);
 }
@@ -1751,7 +1738,7 @@ fn test_project_urls_all_common() {
     insta::assert_snapshot!(result, @r#"
     [project]
     name = "test"
-    urls = "https://github.com/user/repo/issues"
+    urls."Bug Tracker" = "https://github.com/user/repo/issues"
     urls.Changelog = "https://example.com/changelog"
     urls.Documentation = "https://example.com/docs"
     urls.Homepage = "https://example.com"

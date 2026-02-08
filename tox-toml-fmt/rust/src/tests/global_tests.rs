@@ -1,7 +1,7 @@
 use indoc::indoc;
 use insta::assert_snapshot;
 
-use super::{format_syntax, parse};
+use super::{assert_valid_toml, format_syntax, parse};
 use crate::global::reorder_tables;
 use common::table::Tables;
 
@@ -9,7 +9,9 @@ fn reorder_table_helper(start: &str) -> String {
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
     reorder_tables(&root_ast, &tables);
-    format_syntax(root_ast, 120)
+    let result = format_syntax(root_ast, 120);
+    assert_valid_toml(&result);
+    result
 }
 
 #[test]

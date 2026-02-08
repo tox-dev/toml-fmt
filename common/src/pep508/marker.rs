@@ -44,9 +44,9 @@ fn tokenize(input: &str) -> Result<Vec<Token<'_>>, String> {
                 tokens.push(Token::RParen);
                 i += 1;
             }
-            '=' | '!' | '>' | '<' => {
+            '=' | '!' | '>' | '<' | '~' => {
                 let mut j = i + 1;
-                while j < chars.len() && "=<>!".contains(chars[j]) {
+                while j < chars.len() && "=<>!~".contains(chars[j]) {
                     j += 1;
                 }
                 tokens.push(Token::Op(&input[i..j]));
@@ -199,7 +199,11 @@ impl std::fmt::Display for MarkerExpr {
                 } else {
                     right.to_string()
                 };
-                write!(f, "{left}{op}{formatted}")
+                if op == "in" || op == "not in" {
+                    write!(f, "{left} {op} {formatted}")
+                } else {
+                    write!(f, "{left}{op}{formatted}")
+                }
             }
             MarkerExpr::Paren(expr) => {
                 write!(f, "({})", expr)
