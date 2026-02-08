@@ -1,0 +1,137 @@
+---
+source: pyproject-fmt/rust/src/tests/uv_tests.rs
+expression: result
+---
+required-version = ">=0.4.0"
+python-preference = "managed"
+python-downloads = "automatic"
+dev-dependencies = [ "black", "mypy", "pytest" ]
+default-groups = [ "dev" ]
+dependency-groups = {  }
+constraint-dependencies = [ "flask>=2", "requests<3" ]
+override-dependencies = [ "numpy==1.24", "pandas>=2" ]
+exclude-dependencies = [ "unwanted" ]
+dependency-metadata = [  ]
+sources = {  }
+sources.alpha = { path = "../alpha" }
+sources.beta = { url = "https://example.com/beta.whl" }
+sources.mango = { workspace = true }
+sources.zebra = { git = "https://github.com/example/zebra" }
+index = [  ]
+index-url = "https://pypi.org/simple"
+extra-index-url = "https://example.com/simple"
+find-links = [ "https://example.com/packages" ]
+no-index = true
+index-strategy = "first-index"
+keyring-provider = "subprocess"
+no-binary = true
+no-binary-package = [ "numpy", "pillow", "scipy" ]
+no-build = true
+no-build-package = [ "tensorflow", "torch" ]
+no-build-isolation = true
+no-build-isolation-package = [ "numpy", "scipy" ]
+no-sources = true
+no-sources-package = [ "pkg1", "pkg2" ]
+reinstall = true
+reinstall-package = [ "black", "mypy" ]
+upgrade = true
+upgrade-package = [ "flask", "requests" ]
+resolution = "highest"
+prerelease = "disallow"
+fork-strategy = "fewest"
+environments = [ "python_version >= '3.10'", "sys_platform == 'darwin'" ]
+required-environments = [ "python_version >= '3.8'", "sys_platform == 'linux'" ]
+exclude-newer = "2024-01-01"
+exclude-newer-package = {  }
+compile-bytecode = true
+link-mode = "clone"
+config-settings = {  }
+config-settings-package = {  }
+extra-build-dependencies = [  ]
+extra-build-variables = {  }
+concurrent-builds = 4
+concurrent-downloads = 4
+concurrent-installs = 4
+allow-insecure-host = [ "build.corp.com", "internal.corp.com" ]
+native-tls = true
+offline = true
+no-cache = true
+cache-dir = "~/.cache/uv"
+http-proxy = "http://proxy.example.com"
+https-proxy = "https://proxy.example.com"
+no-proxy = [ "*.internal.com", "localhost" ]
+publish-url = "https://example.com"
+check-url = "https://example.com"
+trusted-publishing = "always"
+python-install-mirror = "https://example.com"
+pypy-install-mirror = "https://example.com"
+python-downloads-json-url = "https://example.com"
+managed = true
+package = true
+workspace = {  }
+conflicts = [  ]
+cache-keys = [  ]
+build-backend = {  }
+pip = {  }
+pip.all-extras = true
+pip.allow-empty-requirements = true
+pip.allow-insecure-host = [ "internal.corp.com" ]
+pip.annotation-style = "line"
+pip.break-system-packages = true
+pip.cache-dir = "~/.cache/uv"
+pip.compile-bytecode = true
+pip.config-settings = {  }
+pip.custom-compile-command = "uv pip compile"
+pip.emit-build-options = true
+pip.emit-find-links = true
+pip.emit-index-annotation = true
+pip.emit-index-url = true
+pip.emit-marker-expression = true
+pip.exclude-newer = "2024-01-01"
+pip.exclude-newer-package = {  }
+pip.extra = [ "dev", "test" ]
+pip.extra-index-url = "https://example.com/simple"
+pip.find-links = [ "https://example.com/packages" ]
+pip.fork-strategy = "fewest"
+pip.generate-hashes = true
+pip.index-strategy = "first-index"
+pip.index-url = "https://pypi.org/simple"
+pip.keyring-provider = "subprocess"
+pip.link-mode = "clone"
+pip.native-tls = true
+pip.no-annotate = true
+pip.no-binary = true
+pip.no-binary-package = [ "scipy" ]
+pip.no-build = true
+pip.no-build-isolation = true
+pip.no-build-isolation-package = [ "scipy" ]
+pip.no-build-package = [ "torch" ]
+pip.no-cache = true
+pip.no-deps = true
+pip.no-emit-package = [ "pip", "setuptools" ]
+pip.no-header = true
+pip.no-index = true
+pip.no-strip-extras = true
+pip.no-strip-markers = true
+pip.offline = true
+pip.only-binary = true
+pip.only-binary-package = [ "numpy" ]
+pip.output-file = "requirements.txt"
+pip.prefix = "/usr/local"
+pip.prerelease = "disallow"
+pip.python = "3.10"
+pip.python-platform = "linux"
+pip.python-version = "3.10"
+pip.reinstall = true
+pip.reinstall-package = [ "mypy" ]
+pip.resolution = "highest"
+pip.strict = true
+pip.system = true
+pip.target = "/tmp/install"
+pip.universal = true
+pip.upgrade = true
+pip.upgrade-package = [ "requests" ]
+preview = true
+
+[tool.uv]
+torch-backend = "cu124"

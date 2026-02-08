@@ -1,0 +1,136 @@
+[tool.uv]
+torch-backend = "cu124"
+preview = true
+pip = {}
+build-backend = {}
+cache-keys = []
+conflicts = []
+workspace = {}
+package = true
+managed = true
+python-downloads-json-url = "https://example.com"
+pypy-install-mirror = "https://example.com"
+python-install-mirror = "https://example.com"
+trusted-publishing = "always"
+check-url = "https://example.com"
+publish-url = "https://example.com"
+no-proxy = ["localhost", "*.internal.com"]
+https-proxy = "https://proxy.example.com"
+http-proxy = "http://proxy.example.com"
+cache-dir = "~/.cache/uv"
+no-cache = true
+offline = true
+native-tls = true
+allow-insecure-host = ["internal.corp.com", "build.corp.com"]
+concurrent-installs = 4
+concurrent-downloads = 4
+concurrent-builds = 4
+extra-build-variables = {}
+extra-build-dependencies = []
+config-settings-package = {}
+config-settings = {}
+link-mode = "clone"
+compile-bytecode = true
+exclude-newer-package = {}
+exclude-newer = "2024-01-01"
+required-environments = ["sys_platform == 'linux'", "python_version >= '3.8'"]
+environments = ["sys_platform == 'darwin'", "python_version >= '3.10'"]
+fork-strategy = "fewest"
+prerelease = "disallow"
+resolution = "highest"
+upgrade-package = ["requests", "flask"]
+upgrade = true
+reinstall-package = ["mypy", "black"]
+reinstall = true
+no-sources-package = ["pkg1", "pkg2"]
+no-sources = true
+no-build-isolation-package = ["scipy", "numpy"]
+no-build-isolation = true
+no-build-package = ["torch", "tensorflow"]
+no-build = true
+no-binary-package = ["scipy", "numpy", "pillow"]
+no-binary = true
+keyring-provider = "subprocess"
+index-strategy = "first-index"
+no-index = true
+find-links = ["https://example.com/packages"]
+extra-index-url = "https://example.com/simple"
+index-url = "https://pypi.org/simple"
+index = []
+sources = {}
+dependency-metadata = []
+exclude-dependencies = ["unwanted"]
+override-dependencies = ["numpy==1.24", "pandas>=2"]
+constraint-dependencies = ["requests<3", "flask>=2"]
+dependency-groups = {}
+default-groups = ["dev"]
+dev-dependencies = ["pytest", "black", "mypy"]
+python-downloads = "automatic"
+python-preference = "managed"
+required-version = ">=0.4.0"
+
+[tool.uv.sources]
+zebra = { git = "https://github.com/example/zebra" }
+alpha = { path = "../alpha" }
+mango = { workspace = true }
+beta = { url = "https://example.com/beta.whl" }
+
+[tool.uv.pip]
+universal = true
+output-file = "requirements.txt"
+no-strip-markers = true
+no-strip-extras = true
+no-header = true
+no-emit-package = ["setuptools", "pip"]
+no-annotate = true
+generate-hashes = true
+emit-marker-expression = true
+emit-index-url = true
+emit-index-annotation = true
+emit-find-links = true
+emit-build-options = true
+custom-compile-command = "uv pip compile"
+annotation-style = "line"
+exclude-newer-package = {}
+strict = true
+python-version = "3.10"
+python-platform = "linux"
+upgrade-package = ["requests"]
+upgrade = true
+reinstall-package = ["mypy"]
+reinstall = true
+allow-empty-requirements = true
+no-deps = true
+extra = ["dev", "test"]
+all-extras = true
+cache-dir = "~/.cache/uv"
+no-cache = true
+offline = true
+native-tls = true
+allow-insecure-host = ["internal.corp.com"]
+config-settings = {}
+link-mode = "clone"
+compile-bytecode = true
+exclude-newer = "2024-01-01"
+fork-strategy = "fewest"
+prerelease = "disallow"
+resolution = "highest"
+no-build-isolation-package = ["scipy"]
+no-build-isolation = true
+no-build-package = ["torch"]
+no-build = true
+only-binary-package = ["numpy"]
+only-binary = true
+no-binary-package = ["scipy"]
+no-binary = true
+keyring-provider = "subprocess"
+index-strategy = "first-index"
+no-index = true
+find-links = ["https://example.com/packages"]
+extra-index-url = "https://example.com/simple"
+index-url = "https://pypi.org/simple"
+prefix = "/usr/local"
+target = "/tmp/install"
+break-system-packages = true
+system = true
+python = "3.10"
