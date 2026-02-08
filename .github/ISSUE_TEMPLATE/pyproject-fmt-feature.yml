@@ -1,0 +1,40 @@
+name: "✨ pyproject-fmt: Feature Request"
+description: Suggest an enhancement for pyproject-fmt
+labels: ["enhancement", "pyproject-fmt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an improvement to pyproject-fmt.
+        Please describe your idea so we can understand the use case and potential implementation.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Description
+      description: A clear and concise description of the feature you'd like.
+      placeholder: Describe the feature or improvement...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: 🎯 Use case
+      description: Explain the problem this would solve or the workflow it would improve.
+      placeholder: This would help when...
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: 📄 Example
+      description: If applicable, show an example of the desired input/output behavior.
+      render: toml
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternatives considered
+      description: Any alternative solutions or workarounds you've considered.

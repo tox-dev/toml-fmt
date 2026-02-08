@@ -1,0 +1,57 @@
+name: "🐛 pyproject-fmt: Bug Report"
+description: Report a bug in pyproject-fmt
+labels: ["bug", "pyproject-fmt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug in pyproject-fmt.
+        Please fill out the sections below to help us understand and reproduce the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 📝 Description
+      description: A clear and concise description of what the bug is.
+      placeholder: Describe the issue you encountered...
+    validations:
+      required: true
+
+  - type: textarea
+    id: input
+    attributes:
+      label: 📄 Input pyproject.toml
+      description: The pyproject.toml content that triggers the bug.
+      placeholder: Paste the relevant portion of your pyproject.toml here
+      render: toml
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected output
+      description: What you expected the formatted output to look like.
+      render: toml
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: ❌ Actual output
+      description: What actually happened (formatted output or error message).
+      render: toml
+
+  - type: input
+    id: version
+    attributes:
+      label: 🏷️ Version
+      description: Output of `pyproject-fmt --version`
+      placeholder: "pyproject-fmt 2.x.x"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📎 Additional context
+      description: Any other relevant context (OS, Python version, configuration options used).
