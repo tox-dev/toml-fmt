@@ -1,4 +1,13 @@
-<a id="2.14.2"></a>
+<a id="2.15.0"></a>
+
+## 2.15.0 - 2026-02-09
+
+- 🐛 fix(table): preserve comments when collapsing array of tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#198](https://github.com/tox-dev/toml-fmt/pull/198)
+- ✨ feat(pyproject-fmt): add tool.coverage key ordering and array sorting by
+  [@gaborbernat](https://github.com/gaborbernat) in [#199](https://github.com/tox-dev/toml-fmt/pull/199)
+- 🐛 fix(changelog): stop at release commits for orphaned tags by [@gaborbernat](https://github.com/gaborbernat) in
+  [#200](https://github.com/tox-dev/toml-fmt/pull/200) <a id="2.14.2"></a>
 
 ## 2.14.2 - 2026-02-09
 
