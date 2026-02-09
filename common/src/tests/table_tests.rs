@@ -1619,3 +1619,54 @@ fn test_collapse_sub_table_with_literal_quoted_key() {
     scripts.'literal-key' = "value"
     "#);
 }
+
+#[test]
+fn test_collapse_sub_tables_skips_array_of_tables() {
+    let toml = indoc! {r#"
+        [project]
+        name = "test"
+
+        [[project.authors]]
+        name = "Alice"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    collapse_sub_tables(&mut tables, "project");
+    tables.reorder(&root_ast, &["project", "project.authors"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+
+    [[project.authors]]
+    name = "Alice"
+    "#);
+}
+
+#[test]
+fn test_reorder_array_of_tables_multiple_entries() {
+    let toml = indoc! {r#"
+        [[project.authors]]
+        name = "Alice"
+
+        [[project.authors]]
+        name = "Bob"
+
+        [project]
+        name = "test"
+    "#};
+    let root_ast = parse(toml);
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &["project", "project.authors"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+
+    [[project.authors]]
+    name = "Alice"
+
+    [[project.authors]]
+    name = "Bob"
+    "#);
+}

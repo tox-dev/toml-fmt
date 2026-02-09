@@ -1,6 +1,6 @@
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{
-    BARE_KEY, BASIC_STRING, INLINE_TABLE, KEY, LITERAL_STRING, MULTI_LINE_BASIC_STRING, MULTI_LINE_LITERAL_STRING,
+    BARE_KEY, BASIC_STRING, INLINE_TABLE, KEYS, LITERAL_STRING, MULTI_LINE_BASIC_STRING, MULTI_LINE_LITERAL_STRING,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -37,7 +37,7 @@ fn is_inside_inline_table(node: &SyntaxNode) -> bool {
 fn get_key_prefix_len(value_node: &SyntaxNode) -> usize {
     if let Some(entry_node) = value_node.parent() {
         for child in entry_node.children_with_tokens() {
-            if child.kind() == KEY {
+            if child.kind() == KEYS {
                 return child.as_node().map_or(0, |n| n.text().to_string().len()) + 3;
             }
         }
@@ -76,10 +76,7 @@ fn wrap_string_with_continuations(text: &str, max_line_len: usize, indent: &str)
 }
 
 fn find_best_wrap_point(text: &str, max_len: usize) -> usize {
-    if max_len >= text.len() {
-        return text.len();
-    }
-    let search_text = &text[..max_len];
+    let search_text = &text[..max_len.min(text.len())];
     if let Some(pos) = search_text.rfind(" :: ") {
         return (pos + 4).min(text.len());
     }
@@ -174,22 +171,11 @@ where
         ]
         .contains(&kind)
         {
-            let string_text = if let Some(token) = child.as_token() {
-                token.text().to_string()
-            } else if let Some(node) = child.as_node() {
-                let Some(token) = node
-                    .descendants_with_tokens()
-                    .filter_map(|e| e.into_token())
-                    .find(|t| t.kind() == kind)
-                else {
-                    to_insert.push(child);
-                    continue;
-                };
-                token.text().to_string()
-            } else {
-                to_insert.push(child);
-                continue;
-            };
+            let string_text = child
+                .as_token()
+                .expect("string kinds are always tokens")
+                .text()
+                .to_string();
             let found_str_value = load_text(&string_text, kind);
             let output = transform(found_str_value.as_str());
 

@@ -330,9 +330,9 @@ fn test_load_text(#[case] input: &str, #[case] kind: SyntaxKind, #[case] expecte
 
 ### Coverage Goals and Measurement
 
-We aim for at least 96% line coverage on all code. Use `cargo llvm-cov` to measure coverage, running
-`cargo llvm-cov --lcov --output-path /tmp/coverage.lcov` to generate a coverage report and
-`cargo llvm-cov report --summary-only` to view the summary.
+We require **98% line coverage for Rust code** and **100% coverage for Python code**. To generate an HTML coverage
+report for Rust code, run `tox r -e coverage` from the repository root. This generates lcov output and opens an HTML
+report in your browser. For a quick summary, use `cargo llvm-cov --workspace --no-default-features --summary-only`.
 
 #### Testing PyO3 Code from Rust
 
@@ -372,7 +372,7 @@ if condition {
 ```
 
 This is a known limitation of LLVM's coverage instrumentation. We do not expect these closing brace lines to be covered
-and they should not block merging code that otherwise meets the 95% threshold.
+and they should not block merging code that otherwise meets the 98% threshold.
 
 #### Acceptable Coverage Gaps
 
@@ -481,22 +481,6 @@ let new_entry = make_entry_of_string(&"key".to_string(), &"value".to_string());
 ```
 
 ## Development Workflow
-
-After cloning the repository, you need to generate README.rst files before using maturin or `uv build`. The README.rst
-files for PyPI are dynamically generated from docs/index.rst and CHANGELOG.md. Without this step, maturin will fail with
-"Failed to read readme... No such file or directory" since pyproject.toml references README.rst.
-
-```bash
-# Required once after cloning (generates README.rst files)
-cd pyproject-fmt && tox run -e readme
-cd tox-toml-fmt && tox run -e readme
-
-# Now maturin/uv build will work
-cd pyproject-fmt && uv build .
-```
-
-The generated README.rst files are git-ignored and persist until you run `git clean -fdx`. You only need to regenerate
-if you modify docs/index.rst or CHANGELOG.md and want the README.rst updated.
 
 The typical development workflow starts with making changes in the Rust code, then running the test suite with
 `cargo test`. Check coverage using `cargo llvm-cov report` to ensure your changes are well-tested. Format your code with

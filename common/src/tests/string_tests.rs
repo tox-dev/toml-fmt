@@ -675,3 +675,71 @@ fn test_string_with_control_char_uses_basic() {
     let result = apply_update_content("key = 'has\\ttab'", |s| s.to_string());
     insta::assert_snapshot!(result, @r#"key = "has\\ttab""#);
 }
+
+#[test]
+fn test_wrap_string_short_text_no_wrap_needed() {
+    let toml = r#"k = "hi""#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 200, "  ");
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"k = "hi""#);
+}
+
+#[test]
+fn test_wrap_string_text_shorter_than_max_len() {
+    let toml = r#"x = "short""#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 100, "  ");
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"x = "short""#);
+}
+
+#[test]
+fn test_wrap_string_in_inline_table_no_wrap() {
+    let toml = r#"config = { description = "A very long description that would normally be wrapped but inline tables should not wrap" }"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 40, "  ");
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"config = { description = "A very long description that would normally be wrapped but inline tables should not wrap" }"#);
+}
+
+#[test]
+fn test_update_content_wrapped_short_no_wrap() {
+    let result = apply_update_content_wrapped(r#"a = "b""#, |s| s.to_string(), 100, "  ");
+    insta::assert_snapshot!(result, @r#"a = "b""#);
+}
+
+#[test]
+fn test_update_content_wrapped_in_inline_table() {
+    let toml = r#"x = { y = "very long string that would be wrapped in normal context but not in inline table" }"#;
+    let root_ast = parse(toml);
+    for entry in root_ast.children_with_tokens() {
+        if entry.kind() == KEY_VALUE
+            && let Some(node) = entry.as_node()
+        {
+            for child in node.children_with_tokens() {
+                if is_string_kind(child.kind())
+                    && let Some(string_node) = child.as_node()
+                {
+                    update_content_wrapped(string_node, |s| s.to_string(), 40, "  ");
+                }
+            }
+        }
+    }
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"x = { y = "very long string that would be wrapped in normal context but not in inline table" }"#);
+}
+
+#[test]
+fn test_wrap_considers_key_length() {
+    let toml = r#"k = "This is a very long description that will definitely need wrapping""#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 40, "  ");
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    k = """\
+      This is a very long description that \
+      will definitely need wrapping\
+      """
+    "#);
+}

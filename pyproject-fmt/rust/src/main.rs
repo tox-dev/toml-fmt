@@ -176,14 +176,8 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
 fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefixes: &[&str]) -> String {
     let lines: Vec<&str> = content.lines().collect();
     let mut result = Vec::new();
-    let mut skip_next = false;
 
     for i in 0..lines.len() {
-        if skip_next {
-            skip_next = false;
-            continue;
-        }
-
         // Check if this is a blank line between two table headers in the same group
         if lines[i].is_empty() && i > 0 && i + 1 < lines.len() {
             let trimmed_next = lines[i + 1].trim();
@@ -207,7 +201,6 @@ fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefi
 
                     if prev_key == next_key {
                         // Same group - skip this blank line
-                        skip_next = false;
                         continue;
                     }
                 }

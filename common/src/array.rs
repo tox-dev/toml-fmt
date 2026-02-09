@@ -271,16 +271,14 @@ where
 {
     sort(
         node,
-        |e| -> Option<String> {
+        |e| {
             let kind = e.kind();
-            if kind == BASIC_STRING || kind == LITERAL_STRING {
+            (kind == BASIC_STRING || kind == LITERAL_STRING).then(|| {
                 e.descendants_with_tokens()
                     .filter_map(|elem| elem.into_token())
                     .find(|token| token.kind() == kind)
                     .map(|token| to_key(load_text(token.text(), kind)))
-            } else {
-                None
-            }
+            })?
         },
         cmp,
     );
@@ -385,10 +383,6 @@ fn align_comments_in_array(array: &SyntaxNode) {
                         j += 1;
                     }
                     WHITESPACE => j += 1,
-                    COMMENT => {
-                        comma_idx = Some(j);
-                        break;
-                    }
                     _ => break,
                 }
             }

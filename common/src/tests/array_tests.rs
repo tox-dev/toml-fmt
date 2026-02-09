@@ -656,14 +656,20 @@ fn test_align_very_long_value() {
 #[test]
 fn test_align_single_item_with_comment() {
     let start = indoc! {r#"
-    a = ["ITEM", # Comment]
+    a = [
+      "ITEM", # Comment
+    ]
     "#};
     let root_ast = tombi_parser::parse(start, TomlVersion::default())
         .syntax_node()
         .clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
-    insta::assert_snapshot!(result, @r#"a = ["ITEM", # Comment]"#);
+    insta::assert_snapshot!(result, @r#"
+    a = [
+      "ITEM", # Comment
+    ]
+    "#);
 }
 
 #[test]
@@ -996,6 +1002,36 @@ fn test_issue_184_comment_with_double_quotes_sort() {
       "alpha",
       # A "quoted" word.
       "zebra",
+    ]
+    "#);
+}
+
+#[test]
+fn test_ensure_multiline_no_trailing_comma_exceeds_width() {
+    let input = r#"a = ["very long string that exceeds column width"]"#;
+    let root_ast = tombi_parser::parse(input, TomlVersion::default())
+        .syntax_node()
+        .clone_for_update();
+    ensure_all_arrays_multiline(&root_ast, 30);
+    insta::assert_snapshot!(root_ast.to_string(), @r#"
+    a = [
+    "very long string that exceeds column width",
+    ]
+    "#);
+}
+
+#[test]
+fn test_format_trailing_comment_no_comma() {
+    let start = indoc! {r#"
+    a = ["a",
+      "b" # comment
+    ]
+    "#};
+    let res = format_toml_str(start, 120);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      "a",
+      "b",  # comment
     ]
     "#);
 }

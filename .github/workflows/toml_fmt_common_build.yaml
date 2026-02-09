@@ -1,13 +1,50 @@
 name: 📦 toml-fmt-common
 on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "🚀 Release?"
+        required: true
+        default: "no"
+        type: choice
+        options: ["no", "yes"]
   push:
-    tags: ["toml-fmt-common/*"]
+    branches: ["main"]
+  pull_request:
+  schedule:
+    - cron: "0 8 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
+
+permissions:
+  contents: read
 
 env:
   dists-artifact-name: python-package-distributions
 
 jobs:
+  changes:
+    name: 🔍 changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v6
+      - name: 🔍 Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'toml-fmt-common/**'
+              - '.github/workflows/toml_fmt_common_build.yaml'
+
   build:
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -38,6 +75,7 @@ jobs:
       url: https://pypi.org/project/toml-fmt-common/${{ github.ref_name }}
     permissions:
       id-token: write
+    if: github.event.inputs.release == 'yes' && github.ref == 'refs/heads/main'
     steps:
       - name: 📥 Download all the dists
         uses: actions/download-artifact@v7
@@ -52,7 +90,7 @@ jobs:
   all-pass:
     name: ✅ toml-fmt-common-build
     if: always()
-    needs: [build]
+    needs: [changes, build]
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether all jobs passed or were skipped
