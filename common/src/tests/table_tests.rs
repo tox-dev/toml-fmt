@@ -956,6 +956,155 @@ fn test_collapse_sub_table_keeps_wide_array_tables() {
 }
 
 #[test]
+fn test_collapse_array_of_tables_preserves_comments() {
+    let toml = indoc! {r#"
+        [tool.cibuildwheel]
+        name = "foo"
+
+        [[tool.cibuildwheel.overrides]]
+        # iOS environment comment
+        select = "*_iphoneos"
+
+        [[tool.cibuildwheel.overrides]]
+        # iOS simulator comment
+        select = "*_iphonesimulator"
+
+        [[tool.cibuildwheel.overrides]]
+        select = "*-win32"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "tool.cibuildwheel", "overrides", 120);
+
+    let parent = tables.get("tool.cibuildwheel").unwrap();
+    let parent_table = parent[0].borrow();
+    let result = parent_table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(result, @r#"
+    [tool.cibuildwheel]
+    name = "foo"
+    overrides = [
+      # iOS environment comment
+      { select = "*_iphoneos" },
+      # iOS simulator comment
+      { select = "*_iphonesimulator" },
+      { select = "*-win32" },
+    ]
+    "#);
+}
+
+#[test]
+fn test_collapse_array_of_tables_preserves_multiple_comments_per_entry() {
+    let toml = indoc! {r#"
+        [tool.cibuildwheel]
+        name = "foo"
+
+        [[tool.cibuildwheel.overrides]]
+        # iOS environment comment
+        # yeah
+        select = "*_iphoneos"
+        # s
+        pure = "ss"
+        # oh yeah
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "tool.cibuildwheel", "overrides", 120);
+
+    let parent = tables.get("tool.cibuildwheel").unwrap();
+    let parent_table = parent[0].borrow();
+    let result = parent_table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(result, @r#"
+    [tool.cibuildwheel]
+    name = "foo"
+    overrides = [
+      # iOS environment comment
+      # yeah
+      { select = "*_iphoneos" },
+      # s
+      # oh yeah
+      { pure = "ss" },
+    ]
+    "#);
+}
+
+#[test]
+fn test_collapse_array_of_tables_no_comments() {
+    let toml = indoc! {r#"
+        [project]
+        name = "foo"
+
+        [[project.authors]]
+        name = "Alice"
+
+        [[project.authors]]
+        name = "Bob"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "authors", 120);
+
+    let parent = tables.get("project").unwrap();
+    let parent_table = parent[0].borrow();
+    let result = parent_table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "foo"
+    authors = [{ name = "Alice" }, { name = "Bob" }]
+    "#);
+}
+
+#[test]
+fn test_collapse_array_of_tables_wide_with_comments_between_keys() {
+    let toml = indoc! {r#"
+        [tool.test]
+        name = "foo"
+
+        [[tool.test.items]]
+        # comment before first key
+        first = "value"
+        # comment before second key
+        second = "another"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "tool.test", "items", 20);
+
+    let items = tables.get("tool.test.items").unwrap();
+    let items_table = items[0].borrow();
+    assert!(
+        !items_table.is_empty(),
+        "wide entries with comments between keys should not be collapsed"
+    );
+}
+
+#[test]
+fn test_collapse_array_of_tables_wide_with_leading_comments() {
+    let toml = indoc! {r#"
+        [tool.test]
+        name = "foo"
+
+        [[tool.test.items]]
+        # leading comment
+        key = "this-is-a-very-long-value-that-exceeds-column-width"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "tool.test", "items", 30);
+
+    let items = tables.get("tool.test.items").unwrap();
+    let items_table = items[0].borrow();
+    assert!(
+        !items_table.is_empty(),
+        "wide entries with leading comments should not be collapsed"
+    );
+}
+
+#[test]
 fn test_collapse_sub_table_non_existent() {
     let toml = indoc! {r#"
         [project]

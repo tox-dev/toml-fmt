@@ -641,6 +641,24 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
     sub.clear();
 }
 
+struct KeyValueWithComments {
+    comments: Vec<String>,
+    key: String,
+    value: String,
+}
+
+fn extract_comments_from_key_value(element: &SyntaxElement) -> Vec<String> {
+    element
+        .as_node()
+        .map(|node| {
+            node.children_with_tokens()
+                .filter(|c| c.kind() == COMMENT)
+                .map(|c| c.to_string().trim().to_string())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 fn collapse_array_of_tables(
     tables: &mut Tables,
     parent_name: &str,
@@ -648,37 +666,98 @@ fn collapse_array_of_tables(
     sub_positions: &[usize],
     column_width: usize,
 ) {
-    let mut inline_tables: Vec<String> = Vec::new();
+    let mut all_entries: Vec<Vec<KeyValueWithComments>> = Vec::new();
 
     for pos in sub_positions {
         let sub = tables.table_set[*pos].borrow();
-        let mut entries: Vec<String> = Vec::new();
+        let mut pending_comments: Vec<String> = Vec::new();
+        let mut entries_for_this_aot: Vec<KeyValueWithComments> = Vec::new();
 
         for child in sub.iter() {
-            if child.kind() != KEY_VALUE {
-                continue;
-            }
-            let key = get_key_text(child);
-            let value = get_value_text(child).trim().to_string();
-            if !key.is_empty() && !value.is_empty() {
-                entries.push(format!("{key} = {value}"));
+            match child.kind() {
+                KEY_VALUE => {
+                    let mut comments = std::mem::take(&mut pending_comments);
+                    comments.extend(extract_comments_from_key_value(child));
+                    let key = get_key_text(child);
+                    let value = get_value_text(child).trim().to_string();
+                    if !key.is_empty() && !value.is_empty() {
+                        entries_for_this_aot.push(KeyValueWithComments { comments, key, value });
+                    }
+                }
+                COMMENT => {
+                    pending_comments.push(child.to_string().trim().to_string());
+                }
+                _ => {}
             }
         }
 
-        if !entries.is_empty() {
-            let inline_table = format!("{{ {} }}", entries.join(", "));
-            if inline_table.len() > column_width {
-                return;
-            }
-            inline_tables.push(inline_table);
+        if !pending_comments.is_empty()
+            && let Some(last) = entries_for_this_aot.last_mut()
+        {
+            last.comments.extend(pending_comments);
+        }
+
+        if !entries_for_this_aot.is_empty() {
+            all_entries.push(entries_for_this_aot);
         }
     }
 
-    if inline_tables.is_empty() {
+    if all_entries.is_empty() {
         return;
     }
 
-    let array_value = format!("[{}]", inline_tables.join(", "));
+    let has_comments_between_keys = all_entries
+        .iter()
+        .any(|aot_entries| aot_entries.iter().skip(1).any(|entry| !entry.comments.is_empty()));
+
+    let array_value = if has_comments_between_keys {
+        let mut parts: Vec<String> = Vec::new();
+        for aot_entries in &all_entries {
+            for entry in aot_entries {
+                for comment in &entry.comments {
+                    parts.push(format!("  {comment}"));
+                }
+                let inline_table = format!("{{ {} = {} }}", entry.key, entry.value);
+                if inline_table.len() > column_width {
+                    return;
+                }
+                parts.push(format!("  {inline_table},"));
+            }
+        }
+        format!("[\n{}\n]", parts.join("\n"))
+    } else {
+        let has_leading_comments = all_entries
+            .iter()
+            .any(|aot_entries| aot_entries.first().is_some_and(|e| !e.comments.is_empty()));
+        if has_leading_comments {
+            let mut parts: Vec<String> = Vec::new();
+            for aot_entries in &all_entries {
+                if let Some(first) = aot_entries.first() {
+                    for comment in &first.comments {
+                        parts.push(format!("  {comment}"));
+                    }
+                }
+                let kv_pairs: Vec<String> = aot_entries.iter().map(|e| format!("{} = {}", e.key, e.value)).collect();
+                let inline_table = format!("{{ {} }}", kv_pairs.join(", "));
+                if inline_table.len() > column_width {
+                    return;
+                }
+                parts.push(format!("  {inline_table},"));
+            }
+            format!("[\n{}\n]", parts.join("\n"))
+        } else {
+            let mut inline_tables: Vec<String> = Vec::new();
+            for aot_entries in &all_entries {
+                let kv_pairs: Vec<String> = aot_entries.iter().map(|e| format!("{} = {}", e.key, e.value)).collect();
+                let inline_table = format!("{{ {} }}", kv_pairs.join(", "));
+                if inline_table.len() > column_width {
+                    return;
+                }
+                inline_tables.push(inline_table);
+            }
+            format!("[{}]", inline_tables.join(", "))
+        }
+    };
     let entry_text = format!("{sub_name} = {array_value}\n");
 
     let main_positions = &tables.header_to_pos[parent_name];
