@@ -425,6 +425,77 @@ The ``sources`` table entries are sorted alphabetically by package name:
 The ``[tool.uv.pip]`` subsection follows similar formatting rules, with arrays like ``extra``, ``no-binary-package``,
 ``no-build-package``, ``reinstall-package``, and ``upgrade-package`` sorted alphabetically.
 
+``[tool.coverage]``
+~~~~~~~~~~~~~~~~~~~
+
+**Key ordering:**
+
+Keys are reordered to follow coverage.py's workflow phases:
+
+1. **Run phase** (``run.*``): Data collection settings
+
+   - Source selection: ``source`` → ``source_pkgs`` → ``source_dirs``
+   - File filtering: ``include`` → ``omit``
+   - Measurement: ``branch`` → ``cover_pylib`` → ``timid``
+   - Execution context: ``command_line`` → ``concurrency`` → ``context`` → ``dynamic_context``
+   - Data management: ``data_file`` → ``parallel`` → ``relative_files``
+   - Extensions: ``plugins``
+   - Debugging: ``debug`` → ``debug_file`` → ``disable_warnings``
+   - Other: ``core`` → ``patch`` → ``sigterm``
+
+2. **Paths** (``paths.*``): Path mapping between source locations
+
+3. **Report phase** (``report.*``): General reporting
+
+   - Thresholds: ``fail_under`` → ``precision``
+   - File filtering: ``include`` → ``omit`` → ``include_namespace_packages``
+   - Line exclusion: ``exclude_lines`` → ``exclude_also``
+   - Partial branches: ``partial_branches`` → ``partial_also``
+   - Output control: ``skip_covered`` → ``skip_empty`` → ``show_missing``
+   - Formatting: ``format`` → ``sort``
+   - Error handling: ``ignore_errors``
+
+4. **Output formats** (after report):
+
+   - ``html.*``: ``directory`` → ``title`` → ``extra_css`` → ``show_contexts`` → ``skip_covered`` → ``skip_empty``
+   - ``json.*``: ``output`` → ``pretty_print`` → ``show_contexts``
+   - ``lcov.*``: ``output`` → ``line_checksums``
+   - ``xml.*``: ``output`` → ``package_depth``
+
+**Grouping principle:**
+
+Related options are grouped together:
+
+- File selection: ``include``/``omit`` are adjacent
+- Exclusion patterns: ``exclude_lines``/``exclude_also`` are adjacent
+- Partial branches: ``partial_branches``/``partial_also`` are adjacent
+- Skip options: ``skip_covered``/``skip_empty`` are adjacent
+
+**Sorted arrays:**
+
+Run phase:
+  ``source``, ``source_pkgs``, ``source_dirs``, ``include``, ``omit``, ``concurrency``, ``plugins``, ``debug``,
+  ``disable_warnings``
+
+Report phase:
+  ``include``, ``omit``, ``exclude_lines``, ``exclude_also``, ``partial_branches``, ``partial_also``
+
+.. code-block:: toml
+
+    # Before (alphabetical)
+    [tool.coverage]
+    report.exclude_also = ["if TYPE_CHECKING:"]
+    report.omit = ["tests/*"]
+    run.branch = true
+    run.omit = ["tests/*"]
+
+    # After (workflow order with groupings)
+    [tool.coverage]
+    run.branch = true
+    run.omit = ["tests/*"]
+    report.omit = ["tests/*"]
+    report.exclude_also = ["if TYPE_CHECKING:"]
+
 Other Tables
 ~~~~~~~~~~~~
 
