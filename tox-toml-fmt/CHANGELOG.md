@@ -1,4 +1,9 @@
-<a id="1.5.1"></a>
+<a id="1.5.2"></a>
+
+## 1.5.2 - 2026-02-09
+
+- 🧪 test(coverage): increase coverage to 98% and fix bugs by [@gaborbernat](https://github.com/gaborbernat) in
+  [#194](https://github.com/tox-dev/toml-fmt/pull/194) <a id="1.5.1"></a>
 
 ## 1.5.1 - 2026-02-08
 
