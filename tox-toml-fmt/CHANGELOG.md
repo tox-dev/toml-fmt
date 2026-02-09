@@ -1,4 +1,11 @@
-<a id="1.5.2"></a>
+<a id="1.5.3"></a>
+
+## 1.5.3 - 2026-02-09
+
+- 🐛 fix(table): preserve comments when collapsing array of tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#198](https://github.com/tox-dev/toml-fmt/pull/198)
+- 🐛 fix(changelog): stop at release commits for orphaned tags by [@gaborbernat](https://github.com/gaborbernat) in
+  [#200](https://github.com/tox-dev/toml-fmt/pull/200) <a id="1.5.2"></a>
 
 ## 1.5.2 - 2026-02-09
 
