@@ -13,6 +13,7 @@ mod build_system;
 mod dependency_groups;
 mod project;
 
+mod coverage;
 mod global;
 mod ruff;
 #[cfg(test)]
@@ -147,6 +148,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables);
     uv::fix(&mut tables);
+    coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
     common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string);
