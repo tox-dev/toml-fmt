@@ -181,16 +181,19 @@ def entries(
         yield pull.title, str(pr), pull.user.login
     tags = {tag.commit.hexsha for tag in git_repo.tags if tag.name.startswith(f"{project}/")}
     pr_re = re.compile(r"(?P<title>.*)[(]#(?P<pr>\d+)[)]")
+    release_re = re.compile(rf"^Release {re.escape(project)} \d+\.\d+\.\d+")
     found_base = not base
     for change in git_repo.iter_commits():
         if change.hexsha in tags:
+            break
+        title = change.message.split("\n")[0].strip()
+        if release_re.match(title):
             break
         found_base = found_base or change.hexsha == base
         if not found_base or change.author.name in {"pre-commit-ci[bot]", "dependabot[bot]"}:
             continue
         if not commit_affects_project(change, project):
             continue
-        title = change.message.split("\n")[0].strip()
         by = get_author_login(gh_repo, change)
         if match := pr_re.match(title):
             group = match.groupdict()

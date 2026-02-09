@@ -2,49 +2,13 @@
 
 ## 2.14.2 - 2026-02-09
 
+- Release pyproject-fmt 2.14.2 [skip ci] by [@gaborbernat](https://github.com/gaborbernat)
 - 🧪 test(coverage): increase coverage to 98% and fix bugs by [@gaborbernat](https://github.com/gaborbernat) in
   [#194](https://github.com/tox-dev/toml-fmt/pull/194)
-- Release pyproject-fmt 2.14.1 by [@gaborbernat](https://github.com/gaborbernat)
-- 🐛 fix(table): preserve table headers and reduce duplication by [@gaborbernat](https://github.com/gaborbernat) in
-  [#192](https://github.com/tox-dev/toml-fmt/pull/192)
-- 🐛 fix(array): preserve comments with strings by [@gaborbernat](https://github.com/gaborbernat) in
-  [#191](https://github.com/tox-dev/toml-fmt/pull/191)
-- 🧪 test: add idempotency tests for string wrapping by [@gaborbernat](https://github.com/gaborbernat) in
-  [#190](https://github.com/tox-dev/toml-fmt/pull/190)
-- 🐛 fix(parser): handle comments with double quotes in arrays by [@gaborbernat](https://github.com/gaborbernat) in
-  [#189](https://github.com/tox-dev/toml-fmt/pull/189)
-- 🐛 fix(array): sort by value not comment for entries with leading comments by
-  [@gaborbernat](https://github.com/gaborbernat) in [#188](https://github.com/tox-dev/toml-fmt/pull/188)
-- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
-  [#183](https://github.com/tox-dev/toml-fmt/pull/183)
-- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
-  [#178](https://github.com/tox-dev/toml-fmt/pull/178)
-- ✨ feat(workspace): internalize toml-fmt-common as workspace member by [@gaborbernat](https://github.com/gaborbernat)
-  in [#170](https://github.com/tox-dev/toml-fmt/pull/170)
-- ✨ feat(pyproject-fmt): add tool.uv section formatting by [@gaborbernat](https://github.com/gaborbernat) in
-  [#169](https://github.com/tox-dev/toml-fmt/pull/169)
-- Release pyproject-fmt 2.14.0 by [@gaborbernat](https://github.com/gaborbernat)
-- ✨ feat(changelog): add --regenerate flag for full changelog rebuild by [@gaborbernat](https://github.com/gaborbernat)
-  in [#166](https://github.com/tox-dev/toml-fmt/pull/166)
-- 🐛 fix(readme): use explicit UTF-8 encoding for file operations by [@gaborbernat](https://github.com/gaborbernat) in
-  [#165](https://github.com/tox-dev/toml-fmt/pull/165)
-- Release pyproject-fmt 2.13.0 by [@gaborbernat](https://github.com/gaborbernat)
-- 📝 docs(formatting): restructure docs and fix array formatting behavior by
-  [@gaborbernat](https://github.com/gaborbernat) in [#164](https://github.com/tox-dev/toml-fmt/pull/164)
-- ♻️ refactor(parser): migrate from taplo to tombi by [@gaborbernat](https://github.com/gaborbernat) in
-  [#159](https://github.com/tox-dev/toml-fmt/pull/159)
-- Fix expand_tables setting for deeply nested tables (#146) by [@gaborbernat](https://github.com/gaborbernat) in
-  [#160](https://github.com/tox-dev/toml-fmt/pull/160)
-- Prefer double quotes, use single quotes to avoid escaping by [@gaborbernat](https://github.com/gaborbernat) in
-  [#162](https://github.com/tox-dev/toml-fmt/pull/162)
-- Fix comment before table moving incorrectly when table has comments by [@gaborbernat](https://github.com/gaborbernat)
-  in [#158](https://github.com/tox-dev/toml-fmt/pull/158)
-- Fix regex for SPDX license normalization by [@alexfikl](https://github.com/alexfikl) in
-  [#156](https://github.com/tox-dev/toml-fmt/pull/156)
-- Add tests to improve coverage for edge cases by [@gaborbernat](https://github.com/gaborbernat) in
-  [#155](https://github.com/tox-dev/toml-fmt/pull/155) <a id="2.14.1"></a>
 
-## 2.14.1 - 2026-02-08
+<a id="2.14.1"></a>
+
+## 2.14.1 - 2026-02-09
 
 - 🐛 fix(table): preserve table headers and reduce duplication by [@gaborbernat](https://github.com/gaborbernat) in
   [#192](https://github.com/tox-dev/toml-fmt/pull/192)
@@ -64,26 +28,8 @@
   in [#170](https://github.com/tox-dev/toml-fmt/pull/170)
 - ✨ feat(pyproject-fmt): add tool.uv section formatting by [@gaborbernat](https://github.com/gaborbernat) in
   [#169](https://github.com/tox-dev/toml-fmt/pull/169)
-- Release pyproject-fmt 2.14.0 by [@gaborbernat](https://github.com/gaborbernat)
-- ✨ feat(changelog): add --regenerate flag for full changelog rebuild by [@gaborbernat](https://github.com/gaborbernat)
-  in [#166](https://github.com/tox-dev/toml-fmt/pull/166)
-- 🐛 fix(readme): use explicit UTF-8 encoding for file operations by [@gaborbernat](https://github.com/gaborbernat) in
-  [#165](https://github.com/tox-dev/toml-fmt/pull/165)
-- Release pyproject-fmt 2.13.0 by [@gaborbernat](https://github.com/gaborbernat)
-- 📝 docs(formatting): restructure docs and fix array formatting behavior by
-  [@gaborbernat](https://github.com/gaborbernat) in [#164](https://github.com/tox-dev/toml-fmt/pull/164)
-- ♻️ refactor(parser): migrate from taplo to tombi by [@gaborbernat](https://github.com/gaborbernat) in
-  [#159](https://github.com/tox-dev/toml-fmt/pull/159)
-- Fix expand_tables setting for deeply nested tables (#146) by [@gaborbernat](https://github.com/gaborbernat) in
-  [#160](https://github.com/tox-dev/toml-fmt/pull/160)
-- Prefer double quotes, use single quotes to avoid escaping by [@gaborbernat](https://github.com/gaborbernat) in
-  [#162](https://github.com/tox-dev/toml-fmt/pull/162)
-- Fix comment before table moving incorrectly when table has comments by [@gaborbernat](https://github.com/gaborbernat)
-  in [#158](https://github.com/tox-dev/toml-fmt/pull/158)
-- Fix regex for SPDX license normalization by [@alexfikl](https://github.com/alexfikl) in
-  [#156](https://github.com/tox-dev/toml-fmt/pull/156)
-- Add tests to improve coverage for edge cases by [@gaborbernat](https://github.com/gaborbernat) in
-  [#155](https://github.com/tox-dev/toml-fmt/pull/155) <a id="2.14.0"></a>
+
+<a id="2.14.0"></a>
 
 ## 2.14.0 - 2026-02-08
 
@@ -91,7 +37,6 @@
   in [#166](https://github.com/tox-dev/toml-fmt/pull/166)
 - 🐛 fix(readme): use explicit UTF-8 encoding for file operations by [@gaborbernat](https://github.com/gaborbernat) in
   [#165](https://github.com/tox-dev/toml-fmt/pull/165)
-- Release pyproject-fmt 2.13.0 by [@gaborbernat](https://github.com/gaborbernat)
 - 📝 docs(formatting): restructure docs and fix array formatting behavior by
   [@gaborbernat](https://github.com/gaborbernat) in [#164](https://github.com/tox-dev/toml-fmt/pull/164)
 - ♻️ refactor(parser): migrate from taplo to tombi by [@gaborbernat](https://github.com/gaborbernat) in
@@ -105,7 +50,9 @@
 - Fix regex for SPDX license normalization by [@alexfikl](https://github.com/alexfikl) in
   [#156](https://github.com/tox-dev/toml-fmt/pull/156)
 - Add tests to improve coverage for edge cases by [@gaborbernat](https://github.com/gaborbernat) in
-  [#155](https://github.com/tox-dev/toml-fmt/pull/155) <a id="2.12.1"></a>
+  [#155](https://github.com/tox-dev/toml-fmt/pull/155)
+
+<a id="2.12.1"></a>
 
 ## 2.12.1 - 2026-01-31
 
