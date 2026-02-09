@@ -34,6 +34,12 @@ lint.per-file-ignores."**/tests/**/*.py" = [
   "S101",    # asserts allowed in tests...
   "S603",    # `subprocess` call: check for execution of untrusted input
 ]
+lint.per-file-ignores."**/toxfile.py" = [
+  "D",      # don't care about documentation in tox plugins
+  "INP001", # is not a namespace
+  "S404",   # subprocess is required for tox plugin
+  "S607",   # partial path is fine for tox command
+]
 lint.per-file-ignores."tasks/**.py" = [
   "D",      # don't care about documentation in tests
   "INP001", # is not a namespace

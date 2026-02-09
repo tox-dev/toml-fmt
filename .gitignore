@@ -1,12 +1,13 @@
-.tox
-target
-dist
 __pycache__
 _lib.abi3.*
-# Generated files
-pyproject-fmt/README.rst
-tox-toml-fmt/README.rst
-# Insta snapshot testing
+.tox
+*.pending-snap
 *.snap.new
 *.snap.pending
+/cov-html
+coverage.lcov
+dist
 lcov.info
+pyproject-fmt/README.rst
+target
+tox-toml-fmt/README.rst

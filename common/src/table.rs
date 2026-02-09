@@ -191,9 +191,6 @@ impl Tables {
                 let got = entries.borrow_mut();
                 if !got.is_empty() {
                     let last = got.last().unwrap();
-                    if name.is_empty() && last.kind() == LINE_BREAK && got.len() == 1 {
-                        continue;
-                    }
                     let mut add = got.clone();
 
                     // Determine if we need spacing after this entry
@@ -219,9 +216,6 @@ impl Tables {
                         }
                     } else {
                         // Not the last entry - add blank line before next entry of same table
-                        if last.kind() == LINE_BREAK {
-                            add.pop();
-                        }
                         add.extend(make_empty_newline());
                     }
 
@@ -596,10 +590,6 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         return;
     }
 
-    if sub_positions.len() != 1 {
-        return;
-    }
-
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
     let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
 
@@ -777,16 +767,16 @@ fn count_unquoted_dots(s: &str) -> usize {
     count
 }
 
-fn split_table_name(full_name: &str) -> Option<(&str, &str)> {
+fn split_table_name(full_name: &str) -> (&str, &str) {
     let mut depth = 0;
     for (i, c) in full_name.char_indices().rev() {
         match c {
             '"' => depth = 1 - depth,
-            '.' if depth == 0 => return Some((&full_name[..i], &full_name[i + 1..])),
+            '.' if depth == 0 => return (&full_name[..i], &full_name[i + 1..]),
             _ => {}
         }
     }
-    None
+    unreachable!("split_table_name called with name without dots: {full_name}")
 }
 
 pub fn apply_table_formatting<F>(tables: &mut Tables, should_collapse: F, prefixes: &[&str], column_width: usize)
@@ -806,12 +796,11 @@ where
         }
     });
     for full_name in all_sub_tables {
-        if let Some((parent, sub)) = split_table_name(&full_name) {
-            if should_collapse(&full_name) {
-                collapse_sub_table(tables, parent, sub, column_width);
-            } else {
-                expand_sub_table(tables, parent, sub);
-            }
+        let (parent, sub) = split_table_name(&full_name);
+        if should_collapse(&full_name) {
+            collapse_sub_table(tables, parent, sub, column_width);
+        } else {
+            expand_sub_table(tables, parent, sub);
         }
     }
 }
@@ -845,7 +834,8 @@ pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut V
 
 fn add_intermediate_parents(table_name: &str, prefix_dots: usize, result: &mut Vec<String>) {
     let mut current = table_name;
-    while let Some((parent, _)) = split_table_name(current) {
+    loop {
+        let (parent, _) = split_table_name(current);
         if count_unquoted_dots(parent) <= prefix_dots {
             break;
         }

@@ -820,3 +820,44 @@ fn test_issue_186_single_quote_with_comments() {
     ]
     "#);
 }
+
+#[test]
+fn test_remove_blank_lines_between_same_group_tables_long_format() {
+    let start = indoc! {r#"
+    [tool.ruff]
+    line-length = 100
+
+    [tool.ruff.lint]
+    select = ["ALL"]
+
+    [tool.ruff.format]
+    quote-style = "double"
+    "#};
+    let got = format_toml(start, &long_format_settings());
+    assert_snapshot!(got, @r#"
+    [tool.ruff]
+    line-length = 100
+    [tool.ruff.format]
+    quote-style = "double"
+    [tool.ruff.lint]
+    select = [ "ALL" ]
+    "#);
+}
+
+#[test]
+fn test_table_key_without_prefix_match_long_format() {
+    let start = indoc! {r#"
+    [custom]
+    key = "value"
+
+    [custom.nested]
+    other = "data"
+    "#};
+    let got = format_toml(start, &long_format_settings());
+    assert_snapshot!(got, @r#"
+    [custom]
+    key = "value"
+    [custom.nested]
+    other = "data"
+    "#);
+}

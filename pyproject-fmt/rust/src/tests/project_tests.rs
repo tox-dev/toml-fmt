@@ -2298,3 +2298,27 @@ fn test_project_classifiers_single_line_array() {
     ]
     "#);
 }
+
+#[test]
+fn test_project_classifiers_no_trailing_comma_multiline() {
+    let start = indoc! {r#"
+        [project]
+        requires-python = ">=3.9"
+        classifiers = [
+            "License :: OSI Approved :: MIT License",
+            "Development Status :: 5 - Production/Stable"
+        ]
+    "#};
+    let result = evaluate_project(start, false, (3, 10), true);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    requires-python = ">=3.9"
+    classifiers = [
+      "Development Status :: 5 - Production/Stable",
+      "License :: OSI Approved :: MIT License",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
+    ]
+    "#);
+}

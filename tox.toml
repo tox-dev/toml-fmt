@@ -7,3 +7,18 @@ skip_install = true
 deps = ["pre-commit-uv>=4.2"]
 pass_env = [{ replace = "ref", of = ["env_run_base", "pass_env"], extend = true }, "PROGRAMDATA"]
 commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure", { replace = "posargs", extend = true }]]
+
+[env.coverage]
+description = "generate HTML coverage report"
+skip_install = true
+allowlist_externals = ["cargo", "genhtml", "open"]
+commands = [
+  ["cargo", "llvm-cov", "--workspace", "--no-default-features", "--lcov", "--output-path", "coverage.lcov"],
+  [
+    "genhtml", "coverage.lcov", "-o", "cov-html",
+    "--legend", "--branch-coverage", "--function-coverage",
+    "--hierarchical", "--show-navigation",
+    "--num-spaces", "4", "--precision", "2", "--title", "toml-fmt Coverage",
+  ],
+  ["open", "cov-html/index.html"],
+]

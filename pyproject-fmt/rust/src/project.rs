@@ -29,14 +29,11 @@ fn normalize_and_sort_requirements(entry: &SyntaxNode, keep_full_version: bool) 
     sort::<(String, String), _, _>(
         entry,
         |node| {
-            if node.kind() == BASIC_STRING {
-                return get_string_token(node).map(|token| {
-                    let val = load_text(token.text(), BASIC_STRING);
-                    let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                    (package_name, val)
-                });
-            }
-            None
+            get_string_token(node).map(|token| {
+                let val = load_text(token.text(), node.kind());
+                let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
+                (package_name, val)
+            })
         },
         &|lhs, rhs| {
             let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
@@ -390,10 +387,6 @@ fn generate_classifiers_to_entry(
                         break;
                     } else if v.kind() == BRACKET_START {
                         break;
-                    } else if v.kind() == BASIC_STRING {
-                        to_insert.insert(trail_at, make_comma());
-                        trail_at += 1;
-                        break;
                     }
                 }
                 let trail = to_insert.split_off(trail_at);
@@ -511,12 +504,7 @@ fn normalize_extra_names(table: &mut RefMut<Vec<SyntaxElement>>) {
 }
 
 fn expand_array_of_tables(tables: &mut Tables, full_name: &str, key_order: &[&str]) {
-    let parts: Vec<&str> = full_name.splitn(2, '.').collect();
-    if parts.len() != 2 {
-        return;
-    }
-    let parent_name = parts[0];
-    let field_name = parts[1];
+    let (parent_name, field_name) = full_name.split_once('.').expect("full_name must contain '.'");
 
     if let Some(positions) = tables.header_to_pos.get(full_name) {
         if !positions.is_empty() {
