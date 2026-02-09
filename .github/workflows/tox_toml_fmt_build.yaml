@@ -15,7 +15,7 @@ on:
     - cron: "0 8 * * *"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.inputs.release && github.event.inputs.release != 'no' && '-release' || '' }}
   cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
 
 permissions:
@@ -231,9 +231,7 @@ jobs:
         run: |
           git config --global user.name 'Bernat Gabor'
           git config --global user.email 'gaborbernat@users.noreply.github.com'
-          git commit -am "Release tox-toml-fmt ${{needs.bump.outputs.version}}"
-      - name: 🏷️ Tag release
-        run: git tag tox-toml-fmt/${{needs.bump.outputs.version}}
+          git commit -am "Release tox-toml-fmt ${{needs.bump.outputs.version}} [skip ci]"
       - name: 📥 Download wheels
         uses: actions/download-artifact@v7
         with:
@@ -243,15 +241,15 @@ jobs:
       - name: 👀 Show wheels
         run: ls -lth dist
       - name: 🚀 Publish to PyPI
-        uses: PyO3/maturin-action@v1.50.0
+        uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
-          command: upload
-          args: --non-interactive --skip-existing dist/*
+          skip-existing: true
       - name: 📢 Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
           git pull --rebase origin main
+          git tag tox-toml-fmt/${{needs.bump.outputs.version}}
           git push
           git push --tags
           gh release create "tox-toml-fmt/${{needs.bump.outputs.version}}" \
