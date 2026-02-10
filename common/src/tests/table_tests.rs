@@ -1353,6 +1353,36 @@ fn test_collapse_sub_table_empty_sub_table() {
     let mut tables = Tables::from_ast(&root_ast);
 
     collapse_sub_table(&mut tables, "project", "urls", 120);
+
+    let main = tables.get("project").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(txt, @r#"
+    [project]
+    name = "foo"
+    urls = {}
+    "#);
+}
+
+#[test]
+fn test_collapse_sub_tables_deeply_nested_empty_table() {
+    let toml = indoc! {r#"
+        [tool.hatch]
+
+        [tool.hatch.metadata.hooks.docstring-description]
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_tables(&mut tables, "tool.hatch");
+
+    let main = tables.get("tool.hatch").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(txt, @r#"
+    [tool.hatch]
+    metadata.hooks.docstring-description = {}
+    "#);
 }
 
 #[test]
@@ -1817,5 +1847,104 @@ fn test_reorder_array_of_tables_multiple_entries() {
 
     [[project.authors]]
     name = "Bob"
+    "#);
+}
+
+#[test]
+fn test_apply_table_formatting_with_nested_subtables_and_direct_entries() {
+    let toml = indoc! {r#"
+        [tool.ruff]
+        line-length = 120
+
+        [tool.ruff.lint]
+        select = ["ALL"]
+
+        [tool.ruff.lint.extra]
+        ok = 1
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    let mut all_sub_tables: Vec<String> = Vec::new();
+    collect_all_sub_tables(&tables, "tool.ruff", &mut all_sub_tables);
+    eprintln!("All sub-tables: {:?}", all_sub_tables);
+
+    apply_table_formatting(&mut tables, |_| true, &["tool.ruff"], 120);
+
+    let main = tables.get("tool.ruff").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(txt, @r#"
+    [tool.ruff]
+    line-length = 120
+    lint.select = ["ALL"]
+
+    lint.extra.ok = 1
+    "#);
+}
+
+#[test]
+fn test_apply_table_formatting_with_empty_intermediate_table() {
+    let toml = indoc! {r#"
+        [tool.ruff]
+        line-length = 120
+
+        [tool.ruff.lint]
+
+        [tool.ruff.lint.extra]
+        ok = 1
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(&mut tables, |_| true, &["tool.ruff"], 120);
+
+    let main = tables.get("tool.ruff").unwrap();
+    let table = main[0].borrow();
+    let txt = table.iter().map(|e| e.to_string()).collect::<String>();
+    insta::assert_snapshot!(txt, @r#"
+    [tool.ruff]
+    line-length = 120
+    lint.extra.ok = 1
+    "#);
+}
+
+#[test]
+fn test_collapse_sub_table_empty_parent_with_subtable() {
+    let toml = indoc! {r#"
+        [parent]
+        name = "test"
+
+        [parent.child]
+
+        [parent.child.nested]
+        value = 1
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "parent.child", "nested", 120);
+
+    let txt = {
+        let main = tables.get("parent.child").unwrap();
+        let table = main[0].borrow();
+        table.iter().map(|e| e.to_string()).collect::<String>()
+    };
+    insta::assert_snapshot!(txt, @r#"
+    [parent.child]
+    nested.value = 1
+    "#);
+
+    collapse_sub_table(&mut tables, "parent", "child", 120);
+
+    let txt2 = {
+        let main2 = tables.get("parent").unwrap();
+        let table2 = main2[0].borrow();
+        table2.iter().map(|e| e.to_string()).collect::<String>()
+    };
+    insta::assert_snapshot!(txt2, @r#"
+    [parent]
+    name = "test"
+    child.nested.value = 1
     "#);
 }

@@ -34,7 +34,7 @@ fn get_value_text(element: &SyntaxElement) -> String {
         .unwrap_or_default()
 }
 
-use crate::create::{make_empty_newline, make_key, make_newline, make_table_entry};
+use crate::create::{make_empty_inline_table, make_empty_newline, make_key, make_newline, make_table_entry};
 
 fn ensure_table_exists(tables: &mut Tables, name: &str) {
     if !tables.header_to_pos.contains_key(name) {
@@ -458,6 +458,17 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
         }
 
         let sub_name = key.strip_prefix(sub_name_prefix.as_str()).unwrap();
+
+        let is_empty_table = !sub.iter().any(|child| child.kind() == KEY_VALUE);
+        if is_empty_table {
+            if main.last().is_some_and(|e| e.kind() != LINE_BREAK) {
+                main.push(make_newline());
+            }
+            main.push(make_empty_inline_table(sub_name));
+            sub.clear();
+            continue;
+        }
+
         let mut in_header = false;
         let mut skip_next_line_break = false;
         for child in sub.iter() {
@@ -592,6 +603,16 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
 
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
     let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
+
+    let is_empty_table = !sub.iter().any(|child| child.kind() == KEY_VALUE);
+    if is_empty_table {
+        if main.last().is_some_and(|e| e.kind() != LINE_BREAK) {
+            main.push(make_newline());
+        }
+        main.push(make_empty_inline_table(sub_name));
+        sub.clear();
+        return;
+    }
 
     let mut in_header = false;
     let mut skip_next_line_break = false;
@@ -889,7 +910,7 @@ pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut V
     let prefix_dots = count_unquoted_dots(parent_name);
 
     for key in tables.header_to_pos.keys() {
-        if key.starts_with(&prefix) && key != parent_name {
+        if key.starts_with(&prefix) && key != parent_name && !result.contains(key) {
             result.push(key.clone());
             add_intermediate_parents(key, prefix_dots, result);
         }
