@@ -1,4 +1,11 @@
-<a id="2.15.0"></a>
+<a id="2.15.1"></a>
+
+## 2.15.1 - 2026-02-10
+
+- 🐛 fix(array): preserve single-line arrays with trailing comments by [@gaborbernat](https://github.com/gaborbernat) in
+  [#204](https://github.com/tox-dev/toml-fmt/pull/204)
+- 🐛 fix(table): preserve empty tables as inline empty tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#203](https://github.com/tox-dev/toml-fmt/pull/203) <a id="2.15.0"></a>
 
 ## 2.15.0 - 2026-02-09
 
