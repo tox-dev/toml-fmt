@@ -158,6 +158,14 @@ pub fn make_entry_of_string(key: &String, value: &String) -> SyntaxElement {
         .expect("parsed entry has KEY_VALUE")
 }
 
+pub fn make_empty_inline_table(key: &str) -> SyntaxElement {
+    let txt = format!("{key} = {{}}\n");
+    parse(txt.as_str())
+        .first_child()
+        .map(SyntaxElement::Node)
+        .expect("parsed entry has KEY_VALUE")
+}
+
 pub fn make_table_entry(key: &str) -> Vec<SyntaxElement> {
     let txt = format!("[{key}]\n");
     parse(txt.as_str()).children_with_tokens().collect()
