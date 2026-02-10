@@ -203,7 +203,7 @@ where
             BRACKET_END => {
                 match current_set_value.take() {
                     None => {
-                        entries.extend(current_set.borrow_mut().clone());
+                        entries.extend(current_set.borrow_mut().drain(..));
                     }
                     Some(val) => {
                         add_to_order_sets(val);
@@ -246,6 +246,8 @@ where
         }
     }
 
+    let remaining: Vec<SyntaxElement> = current_set.borrow_mut().drain(..).collect();
+
     let trailing_content = entries.split_off(if multiline { 2 } else { 1 });
     let mut order: Vec<T> = key_to_order_set.keys().cloned().collect();
     order.sort_by(&cmp);
@@ -261,6 +263,7 @@ where
         entries.extend(order_sets[key_to_order_set[&key]].clone());
     }
     entries.extend(trailing_content);
+    entries.extend(remaining);
     array.splice_children(0..count, entries);
 
     if !has_trailing_comma {
