@@ -861,3 +861,16 @@ fn test_table_key_without_prefix_match_long_format() {
     other = "data"
     "#);
 }
+
+#[test]
+fn test_issue_202_preserve_inline_comment_after_array() {
+    let start = indoc! {r#"
+    [tool.uv]
+    lint.per-file-ignores."docs/**/*.py" = [ "INP001" ] # No __init__.py in docs
+    "#};
+    let got = format_toml(start, &default_settings());
+    assert_snapshot!(got, @r#"
+    [tool.uv]
+    lint.per-file-ignores."docs/**/*.py" = [ "INP001" ]  # No __init__.py in docs
+    "#);
+}
