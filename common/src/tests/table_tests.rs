@@ -1910,6 +1910,25 @@ fn test_apply_table_formatting_with_empty_intermediate_table() {
 }
 
 #[test]
+fn test_collapse_sub_table_trailing_comment_on_single_line_array() {
+    let toml = indoc! {r#"
+        [tool.coverage.run]
+        core = "sysmon" # default for 3.14+, available for 3.12+
+        disable_warnings = [ "no-sysmon" ] # 3.11 and earlier
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+    collapse_sub_table(&mut tables, "tool.coverage", "run", 120);
+    tables.reorder(&root_ast, &["tool.coverage", "tool.coverage.run"], &[]);
+    let result = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(result, @r#"
+    [tool.coverage]
+    run.core = "sysmon"  # default for 3.14+, available for 3.12+
+    run.disable_warnings = [ "no-sysmon" ]  # 3.11 and earlier
+    "#);
+}
+
+#[test]
 fn test_collapse_sub_table_empty_parent_with_subtable() {
     let toml = indoc! {r#"
         [parent]

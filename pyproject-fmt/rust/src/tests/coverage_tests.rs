@@ -160,6 +160,41 @@ fn test_coverage_report_arrays_sorted() {
 }
 
 #[test]
+fn test_coverage_trailing_comment_on_single_line_array() {
+    let start = indoc::indoc! {r#"
+    [tool.coverage.run]
+    omit = [
+      "**/__main__.py",
+      "**/cli.py",
+    ]
+    core = "sysmon" # default for 3.14+, available for 3.12+
+    disable_warnings = [ "no-sysmon" ] # 3.11 and earlier
+
+    [tool.coverage.report]
+    # Regexes for lines to exclude from consideration
+    exclude_also = [
+      # Don't complain if non-runnable code isn't run:
+      "if __name__ == .__main__.:",
+    ]
+    "#};
+    let result = evaluate(start);
+    insta::assert_snapshot!(result, @r#"
+    [tool.coverage]
+    run.core = "sysmon"  # default for 3.14+, available for 3.12+
+    run.disable_warnings = [ "no-sysmon" ]  # 3.11 and earlier
+    run.omit = [
+      "**/__main__.py",
+      "**/cli.py",
+    ]
+    # Regexes for lines to exclude from consideration
+    report.exclude_also = [
+      # Don't complain if non-runnable code isn't run:
+      "if __name__ == .__main__.:",
+    ]
+    "#);
+}
+
+#[test]
 fn test_coverage_paths_not_sorted() {
     let start = indoc::indoc! {r#"
     [tool.coverage]

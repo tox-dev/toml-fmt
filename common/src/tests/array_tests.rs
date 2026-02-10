@@ -1086,3 +1086,31 @@ fn test_comment_in_nested_array_triggers_multiline() {
         "Comment in nested array should be preserved"
     );
 }
+
+#[test]
+fn test_sort_preserves_trailing_comment_after_bracket_end() {
+    let start = r#"a = [ "no-sysmon" ] # 3.11 and earlier"#;
+    let res = apply_to_arrays(start, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
+    insta::assert_snapshot!(res, @r#"a = [ "no-sysmon" ]  # 3.11 and earlier"#);
+}
+
+#[test]
+fn test_sort_preserves_trailing_comment_after_bracket_end_multiline() {
+    let start = indoc! {r#"
+        a = [
+          "b",
+          "a",
+        ] # trailing comment
+    "#};
+    let res = apply_to_arrays(start, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      "a",
+      "b",
+    ]  # trailing comment
+    "#);
+}
