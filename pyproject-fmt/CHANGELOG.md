@@ -1,4 +1,9 @@
-<a id="2.15.1"></a>
+<a id="2.15.2"></a>
+
+## 2.15.2 - 2026-02-10
+
+- 🐛 fix(array): preserve trailing comments during sort by [@gaborbernat](https://github.com/gaborbernat) in
+  [#208](https://github.com/tox-dev/toml-fmt/pull/208) <a id="2.15.1"></a>
 
 ## 2.15.1 - 2026-02-10
 
