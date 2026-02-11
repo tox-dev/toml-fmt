@@ -1970,13 +1970,50 @@ fn test_collapse_sub_table_empty_parent_with_subtable() {
 
 #[test]
 fn test_reorder_table_keys_mixed_quote_styles() {
-    let toml = indoc! {r#"
-        [tool.ruff.lint.per-file-ignores]
-        'tests/*' = [ "T20" ]
-        "flexget/*" = [ "PTH" ]
+    let start = indoc! {r#"
+        [tool.ruff]
+        lint.per-file-ignores.'tests/*' = [ "T20" ]
+        lint.per-file-ignores."flexget/*" = [ "PTH" ]
     "#};
-    let root_ast = parse(toml);
+    let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    let keys = reorder_and_get_keys(&tables, "tool.ruff.lint.per-file-ignores", &[""]);
-    insta::assert_snapshot!(keys.join(", "), @r#""flexget/*", 'tests/*'"#);
+    reorder_table_keys(&mut tables.get("tool.ruff").unwrap()[0].borrow_mut(), &["lint.per-file-ignores"]);
+    let res1 = format_toml(&root_ast, 120);
+
+    let root_ast2 = parse(&res1);
+    let tables2 = Tables::from_ast(&root_ast2);
+    reorder_table_keys(&mut tables2.get("tool.ruff").unwrap()[0].borrow_mut(), &["lint.per-file-ignores"]);
+    let res2 = format_toml(&root_ast2, 120);
+
+    assert_eq!(res1, res2, "formatting should be idempotent");
+    insta::assert_snapshot!(res1, @r#"
+    [tool.ruff]
+    lint.per-file-ignores.'tests/*' = [ "T20" ]
+    lint.per-file-ignores."flexget/*" = [ "PTH" ]
+    "#);
+}
+
+#[test]
+fn test_reorder_table_keys_mixed_quote_styles_reverse() {
+    let start = indoc! {r#"
+        [tool.ruff]
+        lint.per-file-ignores."flexget/*" = [ "PTH" ]
+        lint.per-file-ignores.'tests/*' = [ "T20" ]
+    "#};
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    reorder_table_keys(&mut tables.get("tool.ruff").unwrap()[0].borrow_mut(), &["lint.per-file-ignores"]);
+    let res1 = format_toml(&root_ast, 120);
+
+    let root_ast2 = parse(&res1);
+    let tables2 = Tables::from_ast(&root_ast2);
+    reorder_table_keys(&mut tables2.get("tool.ruff").unwrap()[0].borrow_mut(), &["lint.per-file-ignores"]);
+    let res2 = format_toml(&root_ast2, 120);
+
+    assert_eq!(res1, res2, "formatting should be idempotent");
+    insta::assert_snapshot!(res1, @r#"
+    [tool.ruff]
+    lint.per-file-ignores."flexget/*" = [ "PTH" ]
+    lint.per-file-ignores.'tests/*' = [ "T20" ]
+    "#);
 }
