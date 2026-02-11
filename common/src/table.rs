@@ -311,7 +311,7 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
             .map(|(key, _)| key)
             .clone()
             .collect::<Vec<&String>>();
-        matching_keys.sort_by_key(|key| key.to_lowercase().replace('"', ""));
+        matching_keys.sort_by_key(|key| key.to_lowercase().replace('"', "").replace('\'', ""));
         for key in matching_keys {
             let position = key_to_position[key];
             if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
@@ -326,7 +326,11 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
         .filter(|(_, position)| !handled_positions.contains(position))
         .map(|(key, position)| (key.clone(), *position))
         .collect();
-    unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+    unhandled.sort_by(|a, b| {
+        let a_key = a.0.to_lowercase().replace('"', "").replace('\'', "");
+        let b_key = b.0.to_lowercase().replace('"', "").replace('\'', "");
+        a_key.cmp(&b_key)
+    });
     for (_, position) in unhandled {
         if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
             to_insert.push(make_newline());

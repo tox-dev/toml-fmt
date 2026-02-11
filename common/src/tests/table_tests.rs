@@ -1967,3 +1967,16 @@ fn test_collapse_sub_table_empty_parent_with_subtable() {
     child.nested.value = 1
     "#);
 }
+
+#[test]
+fn test_reorder_table_keys_mixed_quote_styles() {
+    let toml = indoc! {r#"
+        [tool.ruff.lint.per-file-ignores]
+        'tests/*' = [ "T20" ]
+        "flexget/*" = [ "PTH" ]
+    "#};
+    let root_ast = parse(toml);
+    let tables = Tables::from_ast(&root_ast);
+    let keys = reorder_and_get_keys(&tables, "tool.ruff.lint.per-file-ignores", &[""]);
+    insta::assert_snapshot!(keys.join(", "), @r#""flexget/*", 'tests/*'"#);
+}
