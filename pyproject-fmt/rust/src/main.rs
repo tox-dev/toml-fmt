@@ -31,13 +31,14 @@ pub struct Settings {
     table_format: String,
     expand_tables: Vec<String>,
     collapse_tables: Vec<String>,
+    skip_wrap_for_keys: Vec<String>,
 }
 
 #[pymethods]
 impl Settings {
     #[new]
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, expand_tables, collapse_tables))]
+    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, expand_tables, collapse_tables, skip_wrap_for_keys))]
     fn new(
         column_width: usize,
         indent: usize,
@@ -48,6 +49,7 @@ impl Settings {
         table_format: String,
         expand_tables: Vec<String>,
         collapse_tables: Vec<String>,
+        skip_wrap_for_keys: Vec<String>,
     ) -> Self {
         Self {
             column_width,
@@ -59,6 +61,7 @@ impl Settings {
             table_format,
             expand_tables,
             collapse_tables,
+            skip_wrap_for_keys,
         }
     }
 }
@@ -151,7 +154,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
-    common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string);
+    common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
 
     let modified_content = root_ast.to_string();
 

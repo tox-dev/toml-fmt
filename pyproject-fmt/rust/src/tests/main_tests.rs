@@ -15,6 +15,7 @@ fn default_settings() -> Settings {
         table_format: String::from("short"),
         expand_tables: vec![],
         collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     }
 }
 
@@ -127,6 +128,7 @@ fn test_expand_tables_with_project() {
         table_format: String::from("short"),
         expand_tables: vec![String::from("project")],
         collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -161,6 +163,7 @@ fn test_collapse_project_authors() {
         table_format: String::from("long"),
         expand_tables: vec![],
         collapse_tables: vec![String::from("project.authors")],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -190,6 +193,7 @@ fn test_collapse_project_maintainers() {
         table_format: String::from("long"),
         expand_tables: vec![],
         collapse_tables: vec![String::from("project.maintainers")],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -404,6 +408,7 @@ fn test_issue_146_expand_specific_subtable() {
         table_format: String::from("short"),
         expand_tables: vec![String::from("project.optional-dependencies")],
         collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert!(
@@ -434,6 +439,7 @@ fn test_css_specificity_more_specific_wins() {
         table_format: String::from("long"),
         expand_tables: vec![String::from("project.urls")],
         collapse_tables: vec![String::from("project")],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert!(
@@ -538,6 +544,7 @@ fn test_issue_146_deeply_nested_ruff_table() {
         table_format: String::from("short"),
         expand_tables: vec![String::from("tool.ruff.lint.flake8-tidy-imports.banned-api")],
         collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert!(
@@ -643,6 +650,7 @@ fn test_extract_table_names_from_array_tables() {
         table_format: String::from("long"),
         expand_tables: vec![String::from("project.authors")],
         collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -728,6 +736,7 @@ fn test_settings_new() {
         String::from("short"),
         vec![String::from("project.urls")],
         vec![String::from("project.authors")],
+        vec![],
     );
     assert_eq!(settings.column_width, 120);
     assert_eq!(settings.indent, 4);
@@ -754,6 +763,7 @@ fn test_table_format_config_from_settings() {
         String::from("short"),
         vec![String::from("tool.ruff")],
         vec![String::from("project")],
+        vec![],
     );
     let config = TableFormatConfig::from_settings(&settings);
     assert!(config.default_collapse);
@@ -792,6 +802,7 @@ fn test_idempotent_formatting() {
         table_format: String::from("short"),
         expand_tables: vec![],
         collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let first = format_toml(start, &settings);
     let second = format_toml(&first, &settings);

@@ -1,6 +1,7 @@
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{
     BARE_KEY, BASIC_STRING, INLINE_TABLE, KEYS, LITERAL_STRING, MULTI_LINE_BASIC_STRING, MULTI_LINE_LITERAL_STRING,
+    TABLE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -45,8 +46,87 @@ fn get_key_prefix_len(value_node: &SyntaxNode) -> usize {
     0
 }
 
+fn get_full_key_path(value_node: &SyntaxNode) -> String {
+    let mut key_parts = Vec::new();
+
+    if let Some(entry_node) = value_node.parent() {
+        for child in entry_node.children_with_tokens() {
+            if child.kind() == KEYS
+                && let Some(keys_node) = child.as_node()
+            {
+                let key_text = keys_node.text().to_string();
+                key_parts.push(key_text);
+            }
+        }
+    }
+
+    let mut current = value_node.parent();
+    while let Some(node) = current {
+        if node.kind() == TABLE {
+            for child in node.children_with_tokens() {
+                if child.kind() == KEYS
+                    && let Some(keys_node) = child.as_node()
+                {
+                    let table_key = keys_node.text().to_string();
+                    key_parts.insert(0, table_key);
+                }
+            }
+            break;
+        }
+        current = node.parent();
+    }
+
+    key_parts.join(".")
+}
+
+fn matches_pattern(key_path: &str, pattern: &str) -> bool {
+    if pattern == "*" {
+        return true;
+    }
+
+    let pattern_parts: Vec<&str> = pattern.split('.').collect();
+    let key_parts: Vec<&str> = key_path.split('.').collect();
+
+    if pattern_parts.len() > key_parts.len() {
+        return false;
+    }
+
+    for (i, pattern_part) in pattern_parts.iter().enumerate() {
+        if *pattern_part == "*" {
+            if i == 0 && pattern_parts.len() > 1 {
+                let remaining_pattern = &pattern_parts[1..];
+                let key_len = key_parts.len();
+                let remaining_len = remaining_pattern.len();
+                if remaining_len > key_len {
+                    return false;
+                }
+                for (j, p) in remaining_pattern.iter().enumerate() {
+                    let key_idx = key_len - remaining_len + j;
+                    if *p != "*" && *p != key_parts[key_idx] {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            continue;
+        }
+        if i >= key_parts.len() || *pattern_part != key_parts[i] {
+            return false;
+        }
+    }
+
+    true
+}
+
 fn can_use_literal_string(s: &str) -> bool {
     !s.contains('\'') && !s.chars().any(|c| c.is_control() && c != '\t')
+}
+
+fn make_multiline_string_preserving_newlines(text: &str) -> String {
+    let mut result = String::from("\"\"\"");
+    result.push_str(text);
+    result.push_str("\"\"\"");
+    result
 }
 
 fn wrap_string_with_continuations(text: &str, max_line_len: usize, indent: &str) -> String {
@@ -191,12 +271,18 @@ where
             let key_prefix_len = get_key_prefix_len(entry);
             let total_line_len = key_prefix_len + escaped_len;
             let in_inline_table = is_inside_inline_table(entry);
-            let needs_wrap = column_width.is_some_and(|cw| total_line_len > cw) && !in_inline_table;
+            let has_newlines = output.contains('\n');
+            let preserve_newlines = is_multiline && has_newlines && !content_changed;
+            let needs_wrap =
+                column_width.is_some_and(|cw| total_line_len > cw) && !in_inline_table && !preserve_newlines;
 
-            changed = content_changed || multiline_to_single || quote_style_change || needs_wrap;
+            let single_to_multiline = !is_multiline && has_newlines;
+            changed = content_changed || multiline_to_single || quote_style_change || needs_wrap || single_to_multiline;
             if changed {
                 child = if use_literal {
                     make_literal_string_node(&output)
+                } else if preserve_newlines {
+                    make_multiline_string_node(&make_multiline_string_preserving_newlines(&output))
                 } else if needs_wrap {
                     make_wrapped_string_node(&output, column_width.unwrap(), indent)
                 } else {
@@ -211,15 +297,20 @@ where
     }
 }
 
-pub fn wrap_all_long_strings(root: &SyntaxNode, column_width: usize, indent: &str) {
+pub fn wrap_all_long_strings(root: &SyntaxNode, column_width: usize, indent: &str, skip_wrap_for_keys: &[String]) {
     for descendant in root.descendants() {
         if is_string_kind(descendant.kind()) {
-            wrap_string_node_if_needed(&descendant, column_width, indent);
+            wrap_string_node_if_needed(&descendant, column_width, indent, skip_wrap_for_keys);
         }
     }
 }
 
-fn wrap_string_node_if_needed(string_node: &SyntaxNode, column_width: usize, indent: &str) {
+fn wrap_string_node_if_needed(
+    string_node: &SyntaxNode,
+    column_width: usize,
+    indent: &str,
+    skip_wrap_for_keys: &[String],
+) {
     let kind = string_node.kind();
     let Some(token) = string_node
         .descendants_with_tokens()
@@ -234,6 +325,11 @@ fn wrap_string_node_if_needed(string_node: &SyntaxNode, column_width: usize, ind
     let is_multiline = kind == MULTI_LINE_BASIC_STRING || kind == MULTI_LINE_LITERAL_STRING;
     let is_literal = kind == LITERAL_STRING || kind == MULTI_LINE_LITERAL_STRING;
 
+    let key_path = get_full_key_path(string_node);
+    let skip_wrap = skip_wrap_for_keys
+        .iter()
+        .any(|pattern| matches_pattern(&key_path, pattern));
+
     let use_literal = text.contains('"') && can_use_literal_string(&text);
     let quote_style_change = is_literal != use_literal;
     let multiline_to_single = is_multiline && !text.contains('\n');
@@ -242,11 +338,16 @@ fn wrap_string_node_if_needed(string_node: &SyntaxNode, column_width: usize, ind
     let key_prefix_len = get_key_prefix_len(string_node);
     let total_line_len = key_prefix_len + escaped_len;
     let in_inline_table = is_inside_inline_table(string_node);
-    let needs_wrap = total_line_len > column_width && !in_inline_table;
+    let has_newlines = text.contains('\n');
+    let preserve_newlines = (is_multiline && has_newlines) || skip_wrap;
+    let needs_wrap = total_line_len > column_width && !in_inline_table && !preserve_newlines;
 
-    let changed = quote_style_change || multiline_to_single || needs_wrap;
+    let single_to_multiline = !is_multiline && has_newlines;
+    let changed = quote_style_change || multiline_to_single || needs_wrap || single_to_multiline;
     if changed {
-        let new_element = if needs_wrap {
+        let new_element = if preserve_newlines {
+            make_multiline_string_node(&make_multiline_string_preserving_newlines(&text))
+        } else if needs_wrap {
             make_wrapped_string_node(&text, column_width, indent)
         } else if use_literal {
             make_literal_string_node(&text)

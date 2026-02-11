@@ -79,6 +79,7 @@ def test_format_toml(start: str, expected: str) -> None:
         table_format="short",
         expand_tables=[],
         collapse_tables=[],
+        skip_wrap_for_keys=[],
     )
     res = format_toml(dedent(start), settings)
     assert res == dedent(expected)
