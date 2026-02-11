@@ -72,7 +72,7 @@ fix = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.10",
+  "uv>=0.10.2",
 ]
 
 [tool.maturin]
