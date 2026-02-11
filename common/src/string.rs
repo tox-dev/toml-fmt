@@ -51,7 +51,9 @@ fn get_full_key_path(value_node: &SyntaxNode) -> String {
 
     if let Some(entry_node) = value_node.parent() {
         for child in entry_node.children_with_tokens() {
-            if child.kind() == KEYS && let Some(keys_node) = child.as_node() {
+            if child.kind() == KEYS
+                && let Some(keys_node) = child.as_node()
+            {
                 let key_text = keys_node.text().to_string();
                 key_parts.push(key_text);
             }
@@ -62,7 +64,9 @@ fn get_full_key_path(value_node: &SyntaxNode) -> String {
     while let Some(node) = current {
         if node.kind() == TABLE {
             for child in node.children_with_tokens() {
-                if child.kind() == KEYS && let Some(keys_node) = child.as_node() {
+                if child.kind() == KEYS
+                    && let Some(keys_node) = child.as_node()
+                {
                     let table_key = keys_node.text().to_string();
                     key_parts.insert(0, table_key);
                 }

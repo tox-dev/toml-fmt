@@ -208,26 +208,5 @@ The ``skip_wrap_for_keys`` option supports glob-like patterns:
 - **Wildcard prefix**: ``tool.bumpversion.*`` matches any key under ``tool.bumpversion`` (e.g., ``tool.bumpversion.parse``, ``tool.bumpversion.serialize``)
 - **Global wildcard**: ``*`` skips wrapping for all strings
 
-Common use cases
-~~~~~~~~~~~~~~~~
-
-**Preserve regex patterns**:
-
-.. code-block:: toml
-
-    [tool.pyproject-fmt]
-    skip_wrap_for_keys = ["*.parse", "*.regex", "*.pattern"]
-
-**Preserve specific tool configuration**:
-
-.. code-block:: toml
-
-    [tool.pyproject-fmt]
-    skip_wrap_for_keys = ["tool.bumpversion.*"]
-
-**Skip all string wrapping**:
-
-.. code-block:: toml
-
-    [tool.pyproject-fmt]
-    skip_wrap_for_keys = ["*"]
+Examples: ``["*.parse", "*.regex"]`` to preserve regex fields, ``["tool.bumpversion.*"]`` for a specific tool section,
+or ``["*"]`` to skip all string wrapping.
