@@ -1,4 +1,13 @@
-<a id="1.5.3"></a>
+<a id="1.5.4"></a>
+
+## 1.5.4 - 2026-02-11
+
+- 🐛 fix(array): preserve trailing comments during sort by [@gaborbernat](https://github.com/gaborbernat) in
+  [#208](https://github.com/tox-dev/toml-fmt/pull/208)
+- 🐛 fix(array): preserve single-line arrays with trailing comments by [@gaborbernat](https://github.com/gaborbernat) in
+  [#204](https://github.com/tox-dev/toml-fmt/pull/204)
+- 🐛 fix(table): preserve empty tables as inline empty tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#203](https://github.com/tox-dev/toml-fmt/pull/203) <a id="1.5.3"></a>
 
 ## 1.5.3 - 2026-02-09
 
