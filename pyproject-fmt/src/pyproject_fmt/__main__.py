@@ -21,6 +21,7 @@ class PyProjectFmtNamespace(FmtNamespace):
     table_format: str
     expand_tables: list[str]
     collapse_tables: list[str]
+    skip_wrap_for_keys: list[str]
 
 
 class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
@@ -98,6 +99,12 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             default=[],
             help="comma-separated list of tables to force collapse (e.g. 'tool.ruff.format')",
         )
+        parser.add_argument(
+            "--skip-wrap-for-keys",
+            type=_list_argument,
+            default=[],
+            help="comma-separated list of key patterns to skip string wrapping (e.g. '*.parse,tool.bumpversion.*')",
+        )
 
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
@@ -122,6 +129,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             table_format=opt.table_format,
             expand_tables=opt.expand_tables,
             collapse_tables=opt.collapse_tables,
+            skip_wrap_for_keys=opt.skip_wrap_for_keys,
         )
         return format_toml(text, settings)
 

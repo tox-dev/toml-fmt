@@ -35,6 +35,9 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
     # List of tables to force collapse regardless of table_format or expand_tables settings
     collapse_tables = []
 
+    # List of key patterns to skip string wrapping (supports wildcards like *.parse or tool.bumpversion.*)
+    skip_wrap_for_keys = []
+
 If not set they will default to values from the CLI.
 
 Command line interface
@@ -182,3 +185,49 @@ configured ``column_width``. For example:
 
 If any inline table exceeds ``column_width``, the array of tables remains in ``[[...]]`` format to maintain
 readability and TOML 1.0.0 compatibility (inline tables cannot span multiple lines).
+
+String wrapping
+---------------
+
+By default, the formatter wraps long strings that exceed the column width using line continuations. However, some strings such as regex patterns should not be wrapped because wrapping can break their functionality.
+
+You can configure which keys should skip string wrapping using the ``skip_wrap_for_keys`` option:
+
+.. code-block:: toml
+
+    [tool.pyproject-fmt]
+    skip_wrap_for_keys = ["*.parse", "*.regex", "tool.bumpversion.*"]
+
+Pattern matching
+~~~~~~~~~~~~~~~~
+
+The ``skip_wrap_for_keys`` option supports glob-like patterns:
+
+- **Exact match**: ``tool.bumpversion.parse`` matches only that specific key
+- **Wildcard suffix**: ``*.parse`` matches any key ending with ``.parse`` (e.g., ``tool.bumpversion.parse``, ``project.parse``)
+- **Wildcard prefix**: ``tool.bumpversion.*`` matches any key under ``tool.bumpversion`` (e.g., ``tool.bumpversion.parse``, ``tool.bumpversion.serialize``)
+- **Global wildcard**: ``*`` skips wrapping for all strings
+
+Common use cases
+~~~~~~~~~~~~~~~~
+
+**Preserve regex patterns**:
+
+.. code-block:: toml
+
+    [tool.pyproject-fmt]
+    skip_wrap_for_keys = ["*.parse", "*.regex", "*.pattern"]
+
+**Preserve specific tool configuration**:
+
+.. code-block:: toml
+
+    [tool.pyproject-fmt]
+    skip_wrap_for_keys = ["tool.bumpversion.*"]
+
+**Skip all string wrapping**:
+
+.. code-block:: toml
+
+    [tool.pyproject-fmt]
+    skip_wrap_for_keys = ["*"]

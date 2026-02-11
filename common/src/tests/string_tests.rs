@@ -246,15 +246,15 @@ fn test_wrap_long_string_is_idempotent() {
     let toml = format!("[project]\ndescription = \"{}\"", original_text);
 
     let root_ast = parse(&toml);
-    wrap_all_long_strings(&root_ast, 120, "  ");
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
     let after_first = root_ast.to_string();
 
     let root_ast2 = parse(&after_first);
-    wrap_all_long_strings(&root_ast2, 120, "  ");
+    wrap_all_long_strings(&root_ast2, 120, "  ", &[]);
     let after_second = root_ast2.to_string();
 
     let root_ast3 = parse(&after_second);
-    wrap_all_long_strings(&root_ast3, 120, "  ");
+    wrap_all_long_strings(&root_ast3, 120, "  ", &[]);
     let after_third = root_ast3.to_string();
 
     assert_eq!(
@@ -341,7 +341,7 @@ fn test_string_with_double_quote_uses_literal() {
 fn test_wrap_all_long_strings_wraps_long_string() {
     let toml = r#"description = "This is a very long description that exceeds the column width limit""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     assert!(result.contains(r#"""""#), "Expected multiline string, got: {}", result);
     assert!(result.contains(r#"\"#), "Expected line continuation, got: {}", result);
@@ -351,7 +351,7 @@ fn test_wrap_all_long_strings_wraps_long_string() {
 fn test_wrap_all_long_strings_short_string_unchanged() {
     let toml = r#"name = "short""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 120, "  ");
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
     let result = root_ast.to_string();
     assert_eq!(result, r#"name = "short""#);
 }
@@ -360,7 +360,7 @@ fn test_wrap_all_long_strings_short_string_unchanged() {
 fn test_wrap_all_long_strings_inline_table_not_wrapped() {
     let toml = r#"authors = [{ name = "A very long author name that would normally exceed column width" }]"#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     assert!(
         !result.contains(r#"""""#),
@@ -373,7 +373,7 @@ fn test_wrap_all_long_strings_inline_table_not_wrapped() {
 fn test_wrap_all_long_strings_converts_quote_style() {
     let toml = r#"msg = "say \"hello\"""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 120, "  ");
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
     let result = root_ast.to_string();
     assert!(
         result.contains(r#"'say "hello"'"#),
@@ -386,7 +386,7 @@ fn test_wrap_all_long_strings_converts_quote_style() {
 fn test_wrap_all_long_strings_multiline_to_single() {
     let toml = "msg = \"\"\"\nno newlines here\"\"\"";
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 120, "  ");
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
     let result = root_ast.to_string();
     assert!(
         result.contains(r#""no newlines here""#),
@@ -399,7 +399,7 @@ fn test_wrap_all_long_strings_multiline_to_single() {
 fn test_wrap_string_very_long_multiple_wraps() {
     let toml = r#"description = "This is an extremely long description that will definitely need multiple line wraps to fit within the specified column width limit and should be properly wrapped with line continuations""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 60, "  ");
+    wrap_all_long_strings(&root_ast, 60, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     description = """\
@@ -415,7 +415,7 @@ fn test_wrap_string_very_long_multiple_wraps() {
 fn test_wrap_string_with_spaces_at_break_points() {
     let toml = r#"description = "First part of the description and second part of the description""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 40, "  ");
+    wrap_all_long_strings(&root_ast, 40, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     description = """\
@@ -429,7 +429,7 @@ fn test_wrap_string_with_spaces_at_break_points() {
 fn test_wrap_string_with_indent_calculation() {
     let toml = r#"very_long_key_name = "This is a long string that needs wrapping""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "    ");
+    wrap_all_long_strings(&root_ast, 50, "    ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"very_long_key_name = "This is a long string that needs wrapping""#);
 }
@@ -438,7 +438,7 @@ fn test_wrap_string_with_indent_calculation() {
 fn test_wrap_string_preserves_special_chars() {
     let toml = r#"msg = "String with \n newline \t tab and \\ backslash that is very long and needs wrapping""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     msg = """\
@@ -452,7 +452,7 @@ fn test_wrap_string_preserves_special_chars() {
 fn test_wrap_string_with_unicode() {
     let toml = r#"description = "Unicode string with émojis 🎉 and special characters: αβγ that is quite long""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     description = """\
@@ -466,7 +466,7 @@ fn test_wrap_string_with_unicode() {
 fn test_wrap_string_exact_boundary() {
     let toml = r#"description = "Exactly eighty characters long to test boundary conditions for wrapping!!!!""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 80, "  ");
+    wrap_all_long_strings(&root_ast, 80, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"description = "Exactly eighty characters long to test boundary conditions for wrapping!!!!""#);
 }
@@ -475,7 +475,7 @@ fn test_wrap_string_exact_boundary() {
 fn test_wrap_string_single_word_longer_than_width() {
     let toml = r#"url = "https://example.com/very/long/path/that/exceeds/column/width/limit/significantly""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 40, "  ");
+    wrap_all_long_strings(&root_ast, 40, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     url = """\
@@ -494,7 +494,7 @@ fn test_wrap_multiple_strings_in_document() {
         details = "And yet another long text field that requires wrapping"
     "#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
 
@@ -517,7 +517,7 @@ fn test_wrap_multiple_strings_in_document() {
 fn test_wrap_string_with_double_quotes_inside() {
     let toml = r#"msg = "Text with \"quotes\" inside that is very long and needs wrapping for sure""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     msg = """\
@@ -531,7 +531,7 @@ fn test_wrap_string_with_double_quotes_inside() {
 fn test_wrap_nested_in_array() {
     let toml = r#"items = ["This is a very long string in an array that might need wrapping"]"#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     items = ["""\
@@ -591,7 +591,7 @@ fn test_strip_quotes_triple_quotes() {
 fn test_wrap_string_with_double_colon() {
     let toml = r#"classifier = "Programming Language :: Python :: 3 :: Only and more text here""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 50, "  ");
+    wrap_all_long_strings(&root_ast, 50, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     classifier = """\
@@ -605,7 +605,7 @@ fn test_wrap_string_with_double_colon() {
 fn test_wrap_string_no_spaces() {
     let toml = r#"url = "verylongurlwithoutanyspacesthatneedstobewrappedanyway""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 30, "  ");
+    wrap_all_long_strings(&root_ast, 30, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     url = """\
@@ -619,7 +619,7 @@ fn test_wrap_string_no_spaces() {
 fn test_wrap_with_control_characters() {
     let toml = "desc = \"has\\ttab\\nand newline that is quite long for wrapping\"";
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 40, "  ");
+    wrap_all_long_strings(&root_ast, 40, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     desc = """\
@@ -633,7 +633,7 @@ fn test_wrap_with_control_characters() {
 fn test_wrap_short_string_no_wrap_needed() {
     let toml = r#"short = "hi""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 120, "  ");
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"short = "hi""#);
 }
@@ -642,7 +642,7 @@ fn test_wrap_short_string_no_wrap_needed() {
 fn test_wrap_string_at_exact_column_boundary() {
     let toml = r#"x = "exactly""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 15, "  ");
+    wrap_all_long_strings(&root_ast, 15, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"x = "exactly""#);
 }
@@ -680,7 +680,7 @@ fn test_string_with_control_char_uses_basic() {
 fn test_wrap_string_short_text_no_wrap_needed() {
     let toml = r#"k = "hi""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 200, "  ");
+    wrap_all_long_strings(&root_ast, 200, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"k = "hi""#);
 }
@@ -689,7 +689,7 @@ fn test_wrap_string_short_text_no_wrap_needed() {
 fn test_wrap_string_text_shorter_than_max_len() {
     let toml = r#"x = "short""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 100, "  ");
+    wrap_all_long_strings(&root_ast, 100, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"x = "short""#);
 }
@@ -698,7 +698,7 @@ fn test_wrap_string_text_shorter_than_max_len() {
 fn test_wrap_string_in_inline_table_no_wrap() {
     let toml = r#"config = { description = "A very long description that would normally be wrapped but inline tables should not wrap" }"#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 40, "  ");
+    wrap_all_long_strings(&root_ast, 40, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"config = { description = "A very long description that would normally be wrapped but inline tables should not wrap" }"#);
 }
@@ -734,12 +734,161 @@ fn test_update_content_wrapped_in_inline_table() {
 fn test_wrap_considers_key_length() {
     let toml = r#"k = "This is a very long description that will definitely need wrapping""#;
     let root_ast = parse(toml);
-    wrap_all_long_strings(&root_ast, 40, "  ");
+    wrap_all_long_strings(&root_ast, 40, "  ", &[]);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     k = """\
       This is a very long description that \
       will definitely need wrapping\
       """
+    "#);
+}
+
+#[test]
+fn test_issue_213_multiline_string_with_actual_newlines_preserved() {
+    let toml = r#"parse = """(?x)
+    (?P<major>0|[1-9]\d*)\.
+    (?P<minor>0|[1-9]\d*)\.
+    (?P<patch>0|[1-9]\d*)
+    (?:
+        -
+        (?P<pre_release_label>[a-zA-Z-]+)
+        \.
+        (?P<pre_release_number>0|[1-9]\d*)
+    )?
+"""
+"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "    ", &[]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    parse = """(?x)
+        (?P<major>0|[1-9]\d*)\.
+        (?P<minor>0|[1-9]\d*)\.
+        (?P<patch>0|[1-9]\d*)
+        (?:
+            -
+            (?P<pre_release_label>[a-zA-Z-]+)
+            \.
+            (?P<pre_release_number>0|[1-9]\d*)
+        )?
+    """
+    "#);
+}
+
+#[test]
+fn test_issue_213_full_example() {
+    let toml = r#"[tool.bumpversion]
+current_version = "5.48.4-rc.0"
+parse = """(?x)
+    (?P<major>0|[1-9]\d*)\.
+    (?P<minor>0|[1-9]\d*)\.
+    (?P<patch>0|[1-9]\d*)
+    (?:
+        -                                    # dash separator for pre-release section
+        (?P<pre_release_label>[a-zA-Z-]+)    # pre-release label
+        \.
+        (?P<pre_release_number>0|[1-9]\d*)  # pre-release version number
+    )?                                       # pre-release section is optional
+"""
+serialize = [
+    "{major}.{minor}.{patch}-{pre_release_label}.{pre_release_number}",
+    "{major}.{minor}.{patch}",
+]
+"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "    ", &[]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    [tool.bumpversion]
+    current_version = "5.48.4-rc.0"
+    parse = """(?x)
+        (?P<major>0|[1-9]\d*)\.
+        (?P<minor>0|[1-9]\d*)\.
+        (?P<patch>0|[1-9]\d*)
+        (?:
+            -                                    # dash separator for pre-release section
+            (?P<pre_release_label>[a-zA-Z-]+)    # pre-release label
+            \.
+            (?P<pre_release_number>0|[1-9]\d*)  # pre-release version number
+        )?                                       # pre-release section is optional
+    """
+    serialize = [
+        "{major}.{minor}.{patch}-{pre_release_label}.{pre_release_number}",
+        "{major}.{minor}.{patch}",
+    ]
+    "#);
+}
+
+#[test]
+fn test_skip_wrap_for_keys_exact_match() {
+    let toml = r#"[tool.bumpversion]
+parse = "This is a very long string that would normally be wrapped but we want to skip it for this key"
+"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 50, "    ", &[String::from("tool.bumpversion.parse")]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    [tool.bumpversion]
+    parse = "This is a very long string that would normally be wrapped but we want to skip it for this key"
+    "#);
+}
+
+#[test]
+fn test_skip_wrap_for_keys_wildcard_match() {
+    let toml = r#"[tool.bumpversion]
+parse = "This is a very long string that would normally be wrapped but we want to skip it"
+serialize = "Another very long string that should also be skipped for this pattern match"
+"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 50, "    ", &[String::from("tool.bumpversion.*")]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    [tool.bumpversion]
+    parse = "This is a very long string that would normally be wrapped but we want to skip it"
+    serialize = "Another very long string that should also be skipped for this pattern match"
+    "#);
+}
+
+#[test]
+fn test_skip_wrap_for_keys_star_pattern() {
+    let toml = r#"[project]
+description = "This is a very long description string that would normally be wrapped but asterisk pattern skips all"
+[tool.other]
+value = "Another very long string in a different section that should also be skipped"
+"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 50, "    ", &[String::from("*")]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    description = "This is a very long description string that would normally be wrapped but asterisk pattern skips all"
+    [tool.other]
+    value = "Another very long string in a different section that should also be skipped"
+    "#);
+}
+
+#[test]
+fn test_skip_wrap_for_keys_partial_wildcard() {
+    let toml = r#"[project]
+description = "Short"
+[tool.bumpversion]
+parse = "This is a very long string that should be skipped because of the pattern"
+[tool.other]
+value = "This is a very long string that should be wrapped because it does not match pattern"
+"#;
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 50, "    ", &[String::from("*.parse")]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    description = "Short"
+    [tool.bumpversion]
+    parse = "This is a very long string that should be skipped because of the pattern"
+    [tool.other]
+    value = """\
+        This is a very long string that should be \
+        wrapped because it does not match pattern\
+        """
     "#);
 }
