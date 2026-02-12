@@ -1,4 +1,11 @@
-<a id="2.15.3"></a>
+<a id="2.16.0"></a>
+
+## 2.16.0 - 2026-02-12
+
+- 🐛 fix(key): normalize literal key quotes to basic (#217) by [@gaborbernat](https://github.com/gaborbernat) in
+  [#219](https://github.com/tox-dev/toml-fmt/pull/219)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#218](https://github.com/tox-dev/toml-fmt/pull/218) <a id="2.15.3"></a>
 
 ## 2.15.3 - 2026-02-11
 
