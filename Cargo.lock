@@ -2531,7 +2531,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tox-toml-fmt"
-version = "1.5.4"
+version = "1.6.0"
 dependencies = [
  "common",
  "indoc",

@@ -1,4 +1,19 @@
-<a id="1.5.4"></a>
+<a id="1.6.0"></a>
+
+## 1.6.0 - 2026-02-12
+
+- 🐛 fix(key): normalize literal key quotes to basic (#217) by [@gaborbernat](https://github.com/gaborbernat) in
+  [#219](https://github.com/tox-dev/toml-fmt/pull/219)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#218](https://github.com/tox-dev/toml-fmt/pull/218)
+- ✨ feat(string): add skip_wrap_for_keys config to preserve specific strings by
+  [@gaborbernat](https://github.com/gaborbernat) in [#216](https://github.com/tox-dev/toml-fmt/pull/216)
+- 🐛 fix(table): normalize quote styles in key sorting by [@gaborbernat](https://github.com/gaborbernat) in
+  [#215](https://github.com/tox-dev/toml-fmt/pull/215)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#210](https://github.com/tox-dev/toml-fmt/pull/210)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#209](https://github.com/tox-dev/toml-fmt/pull/209) <a id="1.5.4"></a>
 
 ## 1.5.4 - 2026-02-11
 
