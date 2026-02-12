@@ -42,6 +42,13 @@ from tox_toml_fmt._lib import Settings, format_toml
     ],
 )
 def test_format_toml(start: str, expected: str) -> None:
-    settings = Settings(column_width=120, indent=4)
+    settings = Settings(
+        column_width=120,
+        indent=4,
+        table_format="short",
+        expand_tables=[],
+        collapse_tables=[],
+        skip_wrap_for_keys=[],
+    )
     res = format_toml(dedent(start), settings)
     assert res == dedent(expected)
