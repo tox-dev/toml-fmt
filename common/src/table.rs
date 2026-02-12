@@ -225,6 +225,14 @@ impl Tables {
         }
 
         root_ast.splice_children(0..root_ast.children_with_tokens().count(), to_insert);
+
+        // Re-parse to rebuild proper TABLE wrapper nodes and parent chain. from_ast decomposes
+        // TABLE nodes into flat children for manipulation, but splice_children puts them back
+        // without TABLE wrappers. Re-parsing reconstructs the correct tree structure so parent
+        // traversal works.
+        let reparsed = parse(&root_ast.to_string());
+        let new_children: Vec<SyntaxElement> = reparsed.children_with_tokens().collect();
+        root_ast.splice_children(0..root_ast.children_with_tokens().count(), new_children);
     }
 }
 

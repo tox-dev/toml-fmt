@@ -122,12 +122,10 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     reorder_tables(&root_ast, &tables);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
 
-    let reordered = root_ast.to_string();
-    let reordered_ast = parse(&reordered);
     let indent_string = " ".repeat(opt.indent);
-    common::string::wrap_all_long_strings(&reordered_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
+    common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
 
-    let modified_content = reordered_ast.to_string();
+    let modified_content = root_ast.to_string();
 
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()
