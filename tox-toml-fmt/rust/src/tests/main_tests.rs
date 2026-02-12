@@ -356,28 +356,14 @@ fn test_format_with_narrow_column_width() {
 
 #[test]
 fn test_settings_new() {
-    let settings = Settings::new(
-        120,
-        4,
-        String::from("short"),
-        vec![],
-        vec![],
-        vec![],
-    );
+    let settings = Settings::new(120, 4, String::from("short"), vec![], vec![], vec![]);
     assert_eq!(settings.column_width, 120);
     assert_eq!(settings.indent, 4);
 }
 
 #[test]
 fn test_settings_default_values() {
-    let settings = Settings::new(
-        80,
-        2,
-        String::from("short"),
-        vec![],
-        vec![],
-        vec![],
-    );
+    let settings = Settings::new(80, 2, String::from("short"), vec![], vec![], vec![]);
     assert_eq!(settings.column_width, 80);
     assert_eq!(settings.indent, 2);
 }
@@ -403,14 +389,7 @@ fn test_settings_field_access() {
 #[test]
 fn test_format_toml_with_direct_settings() {
     let content = "env_list = ['a', 'b']";
-    let settings = Settings::new(
-        80,
-        2,
-        String::from("short"),
-        vec![],
-        vec![],
-        vec![],
-    );
+    let settings = Settings::new(80, 2, String::from("short"), vec![], vec![], vec![]);
     let result = format_toml(content, &settings);
     assert!(result.contains("env_list"));
     assert!(result.contains("\"a\""));
