@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::string::String;
 
 use pyo3::prelude::{PyModule, PyModuleMethods};
@@ -5,7 +6,8 @@ use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyR
 use tombi_config::TomlVersion;
 
 use crate::global::{normalize_strings, reorder_tables};
-use common::table::Tables;
+use common::array::ensure_all_arrays_multiline;
+use common::table::{apply_table_formatting, Tables};
 
 mod global;
 #[cfg(test)]
@@ -15,14 +17,66 @@ mod tests;
 pub struct Settings {
     column_width: usize,
     indent: usize,
+    table_format: String,
+    expand_tables: Vec<String>,
+    collapse_tables: Vec<String>,
+    skip_wrap_for_keys: Vec<String>,
 }
 
 #[pymethods]
 impl Settings {
     #[new]
-    #[pyo3(signature = (*, column_width, indent ))]
-    const fn new(column_width: usize, indent: usize) -> Self {
-        Self { column_width, indent }
+    #[allow(clippy::too_many_arguments)]
+    #[pyo3(signature = (*, column_width, indent, table_format, expand_tables, collapse_tables, skip_wrap_for_keys))]
+    fn new(
+        column_width: usize,
+        indent: usize,
+        table_format: String,
+        expand_tables: Vec<String>,
+        collapse_tables: Vec<String>,
+        skip_wrap_for_keys: Vec<String>,
+    ) -> Self {
+        Self {
+            column_width,
+            indent,
+            table_format,
+            expand_tables,
+            collapse_tables,
+            skip_wrap_for_keys,
+        }
+    }
+}
+
+pub struct TableFormatConfig {
+    pub default_collapse: bool,
+    pub expand_tables: HashSet<String>,
+    pub collapse_tables: HashSet<String>,
+}
+
+impl TableFormatConfig {
+    pub fn from_settings(settings: &Settings) -> Self {
+        Self {
+            default_collapse: settings.table_format == "short",
+            expand_tables: settings.expand_tables.iter().cloned().collect(),
+            collapse_tables: settings.collapse_tables.iter().cloned().collect(),
+        }
+    }
+
+    pub fn should_collapse(&self, table_name: &str) -> bool {
+        let mut current = table_name;
+        loop {
+            if self.collapse_tables.contains(current) {
+                return true;
+            }
+            if self.expand_tables.contains(current) {
+                return false;
+            }
+            match current.rfind('.') {
+                Some(dot_pos) => current = &current[..dot_pos],
+                None => break,
+            }
+        }
+        self.default_collapse
     }
 }
 
@@ -44,12 +98,36 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content);
     common::string::normalize_key_quotes(&root_ast);
-    let tables = Tables::from_ast(&root_ast);
+    let mut tables = Tables::from_ast(&root_ast);
+    let table_config = TableFormatConfig::from_settings(opt);
+
+    let mut prefixes: Vec<String> = vec![String::from("env_run_base")];
+    for key in tables.header_to_pos.keys() {
+        if let Some(env_name) = key.strip_prefix("env.") {
+            let env_prefix = format!("env.{}", env_name.split('.').next().unwrap_or(env_name));
+            if !prefixes.contains(&env_prefix) {
+                prefixes.push(env_prefix);
+            }
+        }
+    }
+    let prefix_refs: Vec<&str> = prefixes.iter().map(|s| s.as_str()).collect();
+    apply_table_formatting(
+        &mut tables,
+        |name| table_config.should_collapse(name),
+        &prefix_refs,
+        opt.column_width,
+    );
 
     normalize_strings(&tables);
     reorder_tables(&root_ast, &tables);
+    ensure_all_arrays_multiline(&root_ast, opt.column_width);
 
-    let modified_content = root_ast.to_string();
+    let reordered = root_ast.to_string();
+    let reordered_ast = parse(&reordered);
+    let indent_string = " ".repeat(opt.indent);
+    common::string::wrap_all_long_strings(&reordered_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
+
+    let modified_content = reordered_ast.to_string();
 
     let rt = tokio::runtime::Builder::new_current_thread()
         .enable_all()

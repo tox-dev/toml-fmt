@@ -8,6 +8,10 @@ fn format_toml_helper(start: &str, indent: usize) -> String {
     let settings = Settings {
         column_width: 80,
         indent,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -64,6 +68,10 @@ fn test_column_width() {
     let settings = Settings {
         column_width: 50,
         indent: 4,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -78,7 +86,7 @@ fn test_column_width() {
         "3.9",
         "type",
         "docs",
-        "pkg_meta"
+        "pkg_meta",
     ]
     "#);
 }
@@ -95,6 +103,10 @@ fn test_string_quote_normalization() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -115,11 +127,15 @@ fn test_string_with_double_quote_preserved() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
     [env_run_base]
-    description = "run \"tests\""
+    description = 'run "tests"'
     "#);
 }
 
@@ -196,6 +212,10 @@ fn test_format_with_multiline_arrays() {
     let settings = Settings {
         column_width: 40,
         indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -282,6 +302,10 @@ fn test_idempotent_formatting() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let first = format_toml(start, &settings);
     let second = format_toml(&first, &settings);
@@ -298,6 +322,10 @@ fn test_format_with_large_indent() {
     let settings = Settings {
         column_width: 80,
         indent: 4,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"env_list = [ "test" ]"#);
@@ -311,21 +339,45 @@ fn test_format_with_narrow_column_width() {
     let settings = Settings {
         column_width: 30,
         indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
     };
     let got = format_toml(start, &settings);
-    assert_snapshot!(got, @r#"description = "A very long description that exceeds the narrow column width""#);
+    assert_snapshot!(got, @r#"
+    description = """\
+      A very long description \
+      that exceeds the narrow \
+      column width\
+      """
+    "#);
 }
 
 #[test]
 fn test_settings_new() {
-    let settings = Settings::new(120, 4);
+    let settings = Settings::new(
+        120,
+        4,
+        String::from("short"),
+        vec![],
+        vec![],
+        vec![],
+    );
     assert_eq!(settings.column_width, 120);
     assert_eq!(settings.indent, 4);
 }
 
 #[test]
 fn test_settings_default_values() {
-    let settings = Settings::new(80, 2);
+    let settings = Settings::new(
+        80,
+        2,
+        String::from("short"),
+        vec![],
+        vec![],
+        vec![],
+    );
     assert_eq!(settings.column_width, 80);
     assert_eq!(settings.indent, 2);
 }
@@ -335,15 +387,30 @@ fn test_settings_field_access() {
     let settings = Settings {
         column_width: 100,
         indent: 3,
+        table_format: String::from("long"),
+        expand_tables: vec![String::from("env.test")],
+        collapse_tables: vec![String::from("env.lint")],
+        skip_wrap_for_keys: vec![String::from("*.commands")],
     };
     assert_eq!(settings.column_width, 100);
     assert_eq!(settings.indent, 3);
+    assert_eq!(settings.table_format, "long");
+    assert_eq!(settings.expand_tables, vec!["env.test"]);
+    assert_eq!(settings.collapse_tables, vec!["env.lint"]);
+    assert_eq!(settings.skip_wrap_for_keys, vec!["*.commands"]);
 }
 
 #[test]
 fn test_format_toml_with_direct_settings() {
     let content = "env_list = ['a', 'b']";
-    let settings = Settings::new(80, 2);
+    let settings = Settings::new(
+        80,
+        2,
+        String::from("short"),
+        vec![],
+        vec![],
+        vec![],
+    );
     let result = format_toml(content, &settings);
     assert!(result.contains("env_list"));
     assert!(result.contains("\"a\""));
@@ -387,5 +454,149 @@ fn test_format_with_array_of_inline_tables() {
     assert_snapshot!(got, @r#"
     [env_run_base]
     configs = [ { name = "a" }, { name = "b" } ]
+    "#);
+}
+
+#[test]
+fn test_array_multiline_expansion() {
+    let start = indoc! {r#"
+        [env_run_base]
+        deps = ["pytest", "pytest-cov", "pytest-mock", "coverage", "hypothesis"]
+        "#};
+    let settings = Settings {
+        column_width: 40,
+        indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got, "formatting should be idempotent");
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    deps = [
+      "pytest",
+      "pytest-cov",
+      "pytest-mock",
+      "coverage",
+      "hypothesis",
+    ]
+    "#);
+}
+
+#[test]
+fn test_long_string_wrapping() {
+    let start = indoc! {r#"
+        [env_run_base]
+        description = "This is a very long description string that should be wrapped because it exceeds the column width limit"
+        "#};
+    let settings = Settings {
+        column_width: 40,
+        indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got, "formatting should be idempotent");
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    description = """\
+      This is a very long description \
+      string that should be wrapped \
+      because it exceeds the column width \
+      limit\
+      """
+    "#);
+}
+
+#[test]
+fn test_table_collapse_short_format() {
+    let start = indoc! {r#"
+        [env.test]
+        description = "run tests"
+        [env.test.sub]
+        value = 1
+        "#};
+    let settings = Settings {
+        column_width: 80,
+        indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got, "formatting should be idempotent");
+    assert_snapshot!(got, @r#"
+    [env.test]
+    description = "run tests"
+    sub.value = 1
+    "#);
+}
+
+#[test]
+fn test_table_expand_long_format() {
+    let start = indoc! {r#"
+        [env.test]
+        description = "run tests"
+        sub.value = 1
+        "#};
+    let settings = Settings {
+        column_width: 80,
+        indent: 2,
+        table_format: String::from("long"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got, "formatting should be idempotent");
+    assert_snapshot!(got, @r#"
+    [env.test]
+    description = "run tests"
+
+    [env.test.sub]
+    value = 1
+    "#);
+}
+
+#[test]
+fn test_skip_wrap_for_keys() {
+    let start = indoc! {r#"
+        [env_run_base]
+        description = "This is a very long description string that should be wrapped because it exceeds the column width"
+        skip_me = "This is a very long string value that should NOT be wrapped because of skip config for this key"
+        "#};
+    let settings = Settings {
+        column_width: 40,
+        indent: 2,
+        table_format: String::from("short"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![String::from("*.skip_me")],
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got, "formatting should be idempotent");
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    description = """\
+      This is a very long description \
+      string that should be wrapped \
+      because it exceeds the column width\
+      """
+    skip_me = "This is a very long string value that should NOT be wrapped because of skip config for this key"
     "#);
 }
