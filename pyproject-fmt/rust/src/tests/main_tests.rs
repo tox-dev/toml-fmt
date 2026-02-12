@@ -874,6 +874,67 @@ fn test_table_key_without_prefix_match_long_format() {
 }
 
 #[test]
+fn test_issue_217_mixed_quotes_idempotent() {
+    let start = indoc! {r#"
+    [project]
+    name = "flexget"
+    requires-python = ">=3.14"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.14",
+    ]
+
+    [tool.ruff]
+    lint.per-file-ignores.'docs/scripts/*' = [ "T20" ]
+    lint.per-file-ignores.'tests/*' = [ "T20" ]
+    lint.per-file-ignores."flexget/*" = [ "PTH" ] # TODO
+    "#};
+    let settings = Settings {
+        keep_full_version: true,
+        max_supported_python: (3, 14),
+        min_supported_python: (3, 14),
+        ..default_settings()
+    };
+    let first = format_toml(start, &settings);
+    assert_valid_toml(&first);
+    let second = format_toml(&first, &settings);
+    assert_eq!(first, second, "formatting should be idempotent");
+    assert_snapshot!(first, @r#"
+    [project]
+    name = "flexget"
+    requires-python = ">=3.14"
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.14",
+    ]
+
+    [tool.ruff]
+    lint.per-file-ignores."docs/scripts/*" = [ "T20" ]
+    lint.per-file-ignores."flexget/*" = [ "PTH" ]  # TODO
+    lint.per-file-ignores."tests/*" = [ "T20" ]
+    "#);
+}
+
+#[test]
+fn test_issue_217_full_pyproject_idempotent() {
+    let start = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("rust/src/tests/data/issue-217.toml"),
+    )
+    .unwrap();
+    let settings = Settings {
+        keep_full_version: true,
+        max_supported_python: (3, 14),
+        min_supported_python: (3, 10),
+        ..default_settings()
+    };
+    let first = format_toml(&start, &settings);
+    assert_valid_toml(&first);
+    let second = format_toml(&first, &settings);
+    assert_eq!(first, second, "formatting should be idempotent");
+    assert_snapshot!(first);
+}
+
+#[test]
 fn test_issue_202_preserve_inline_comment_after_array() {
     let start = indoc! {r#"
     [tool.uv]

@@ -11,8 +11,8 @@ that all ``tox.toml`` files follow.
 - Smaller diffs when committing changes
 - Easier code reviews since formatting is never a question
 
-While a few key options exist (``column_width``, ``indent``), the tool does not expose dozens of toggles. You get what
-the maintainers have chosen to be the right balance of readability, consistency, and usability.
+While a few key options exist (``column_width``, ``indent``, ``table_format``), the tool does not expose dozens of
+toggles. You get what the maintainers have chosen to be the right balance of readability, consistency, and usability.
 
 General Formatting
 ------------------
@@ -33,6 +33,24 @@ All strings use double quotes by default. Single quotes are only used when the v
     # After
     description = "Run tests"
     commands = ['echo "hello"']
+
+Key Quotes
+~~~~~~~~~~
+
+TOML keys using single-quoted (literal) strings are normalized to double-quoted (basic) strings with proper escaping.
+This ensures consistent formatting and deterministic key sorting regardless of the original quote style:
+
+.. code-block:: toml
+
+    # Before
+    [env.'my-env']
+    deps = ["pytest"]
+
+    # After
+    [env."my-env"]
+    deps = ["pytest"]
+
+Backslashes and double quotes within literal keys are escaped during conversion.
 
 Array Formatting
 ~~~~~~~~~~~~~~~~
@@ -69,6 +87,53 @@ An array becomes multiline when any of these conditions are met:
 1. **Trailing comma present** - A trailing comma signals intent to keep multiline format
 2. **Exceeds column width** - Arrays longer than ``column_width`` are expanded (and get a trailing comma added)
 3. **Contains comments** - Arrays with inline or leading comments are always multiline
+
+String Wrapping
+~~~~~~~~~~~~~~~
+
+Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes:
+
+.. code-block:: toml
+
+    # Before
+    description = "A very long description string that exceeds the column width limit set for this project"
+
+    # After (with column_width = 40)
+    description = """\
+      A very long description \
+      string that exceeds the \
+      column width limit set \
+      for this project\
+      """
+
+Specific keys can be excluded from wrapping using ``skip_wrap_for_keys``. Patterns support wildcards
+(e.g. ``*.commands`` skips wrapping for ``commands`` under any table).
+
+Table Formatting
+~~~~~~~~~~~~~~~~
+
+Sub-tables can be formatted in two styles controlled by ``table_format``:
+
+**Short format** (default, collapsed to dotted keys):
+
+.. code-block:: toml
+
+    [env.test]
+    description = "run tests"
+    sub.value = 1
+
+**Long format** (expanded to table headers):
+
+.. code-block:: toml
+
+    [env.test]
+    description = "run tests"
+
+    [env.test.sub]
+    value = 1
+
+Individual tables can override the default using ``expand_tables`` and ``collapse_tables``.
+See :doc:`configuration` for how to control this behavior.
 
 Comment Preservation
 ~~~~~~~~~~~~~~~~~~~~

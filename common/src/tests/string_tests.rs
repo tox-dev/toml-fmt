@@ -3,7 +3,9 @@ use tombi_syntax::SyntaxKind::{
     BARE_KEY, BASIC_STRING, KEY_VALUE, LITERAL_STRING, MULTI_LINE_BASIC_STRING, MULTI_LINE_LITERAL_STRING,
 };
 
-use crate::string::{load_text, strip_quotes, update_content, update_content_wrapped, wrap_all_long_strings};
+use crate::string::{
+    load_text, normalize_key_quotes, strip_quotes, update_content, update_content_wrapped, wrap_all_long_strings,
+};
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
     tombi_parser::parse(source, TomlVersion::default())
@@ -585,6 +587,102 @@ fn test_strip_quotes_empty_string() {
 fn test_strip_quotes_triple_quotes() {
     let result = strip_quotes("\"\"\"hello\"\"\"");
     insta::assert_snapshot!(result, @"hello");
+}
+
+#[test]
+fn test_normalize_key_quotes_simple_literal() {
+    let root = parse("'key' = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""key" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_bare_key_unchanged() {
+    let root = parse("key = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @"key = 1
+");
+}
+
+#[test]
+fn test_normalize_key_quotes_basic_string_unchanged() {
+    let root = parse("\"key\" = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""key" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_dotted_with_literal() {
+    let root = parse("lint.per-file-ignores.'tests/*' = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#"lint.per-file-ignores."tests/*" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_dotted_mixed_styles() {
+    let root = parse("lint.per-file-ignores.'tests/*' = 1\nlint.per-file-ignores.\"flexget/*\" = 2\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#"
+    lint.per-file-ignores."tests/*" = 1
+    lint.per-file-ignores."flexget/*" = 2
+    "#);
+}
+
+#[test]
+fn test_normalize_key_quotes_literal_with_backslash() {
+    let root = parse("'path\\to\\file' = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""path\\to\\file" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_literal_with_double_quote() {
+    let root = parse(
+        r#"'say "hello"' = 1
+"#,
+    );
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""say \"hello\"" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_literal_with_backslash_and_quote() {
+    let root = parse(
+        r#"'c:\Users\"me"' = 1
+"#,
+    );
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""c:\\Users\\\"me\"" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_multiple_literal_segments() {
+    let root = parse("'first'.'second' = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""first"."second" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_preserves_basic_in_dotted() {
+    let root = parse("bare.\"basic\".'literal' = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#"bare."basic"."literal" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_no_keys() {
+    let root = parse("# just a comment\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @"# just a comment
+");
 }
 
 #[test]

@@ -172,11 +172,12 @@ fn make_wrapped_string_node(text: &str, column_width: usize, indent: &str) -> Sy
 }
 
 pub fn strip_quotes(s: &str) -> String {
-    s.trim_start_matches('"')
-        .trim_end_matches('"')
-        .trim_start_matches('\'')
-        .trim_end_matches('\'')
-        .to_string()
+    for quotes in ["\"\"\"", "'''", "\"", "'"] {
+        if let Some(inner) = s.strip_prefix(quotes).and_then(|s| s.strip_suffix(quotes)) {
+            return inner.to_string();
+        }
+    }
+    s.to_string()
 }
 
 pub fn get_string_token(node: &SyntaxNode) -> Option<tombi_syntax::SyntaxToken> {
@@ -294,6 +295,38 @@ where
     }
     if changed {
         entry.splice_children(0..count, to_insert);
+    }
+}
+
+pub fn normalize_key_quotes(root: &SyntaxNode) {
+    use crate::create::make_key;
+
+    for descendant in root.descendants() {
+        if descendant.kind() != KEYS {
+            continue;
+        }
+        let has_literal = descendant.children_with_tokens().any(|c| c.kind() == LITERAL_STRING);
+        if !has_literal {
+            continue;
+        }
+        let mut key_parts = Vec::new();
+        for child in descendant.children_with_tokens() {
+            match child.kind() {
+                BARE_KEY => key_parts.push(child.to_string()),
+                LITERAL_STRING => {
+                    let text = child.to_string();
+                    let inner = &text[1..text.len() - 1];
+                    let escaped = inner.replace('\\', "\\\\").replace('"', "\\\"");
+                    key_parts.push(format!("\"{escaped}\""));
+                }
+                BASIC_STRING => key_parts.push(child.to_string()),
+                _ => {}
+            }
+        }
+        let new_key = make_key(&key_parts.join("."));
+        let count = descendant.children_with_tokens().count();
+        let new_children: Vec<SyntaxElement> = new_key.as_node().unwrap().children_with_tokens().collect();
+        descendant.splice_children(0..count, new_children);
     }
 }
 

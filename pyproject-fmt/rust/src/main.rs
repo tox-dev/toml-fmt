@@ -118,6 +118,7 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
 #[pyfunction]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content);
+    common::string::normalize_key_quotes(&root_ast);
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig::from_settings(opt);
 
