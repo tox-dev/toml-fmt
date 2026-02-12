@@ -33,4 +33,4 @@ indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 insta = { version = "1.46.3", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.28.0", features = ["auto-initialize"] }
-toml = "0.9.12"
+toml = "1.0.0"
