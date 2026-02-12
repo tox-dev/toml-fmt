@@ -43,6 +43,7 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
 #[pyfunction]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content);
+    common::string::normalize_key_quotes(&root_ast);
     let tables = Tables::from_ast(&root_ast);
 
     normalize_strings(&tables);

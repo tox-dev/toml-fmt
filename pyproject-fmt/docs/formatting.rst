@@ -59,6 +59,32 @@ All strings use double quotes by default. Single quotes are only used when the v
     name = "my-package"
     description = 'He said "hello"'
 
+Key Quotes
+~~~~~~~~~~
+
+TOML keys using single-quoted (literal) strings are normalized to double-quoted (basic) strings with proper escaping.
+This ensures consistent formatting and deterministic key sorting regardless of the original quote style:
+
+.. code-block:: toml
+
+    # Before
+    lint.per-file-ignores.'tests/*' = ["S101"]
+    lint.per-file-ignores."src/*" = ["D100"]
+
+    # After
+    lint.per-file-ignores."tests/*" = ["S101"]
+    lint.per-file-ignores."src/*" = ["D100"]
+
+Backslashes and double quotes within literal keys are escaped during conversion:
+
+.. code-block:: toml
+
+    # Before
+    lint.per-file-ignores.'path\to\file' = ["E501"]
+
+    # After
+    lint.per-file-ignores."path\\to\\file" = ["E501"]
+
 Array Formatting
 ~~~~~~~~~~~~~~~~
 

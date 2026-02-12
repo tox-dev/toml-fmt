@@ -58,4 +58,5 @@ lint.preview = true
 builtin = "clear,usage,en-GB_to_en-US"
 count = true
 ignore-words = "ignore-words.txt"
+skip = "*.snap,*/tests/data/*"
 write-changes = true

@@ -1,0 +1,290 @@
+---
+source: pyproject-fmt/rust/src/tests/main_tests.rs
+expression: first
+---
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatchling" ]
+
+[project]
+name = "flexget"
+description = """\
+  FlexGet is a program aimed to automate downloading or processing content (torrents, podcasts, etc.) from different \
+  sources like RSS-feeds, html-pages, various sites and more.\
+  """
+readme = "README.rst"
+license = "MIT"
+license-files = [ "LICENSE" ]
+authors = [
+  { name = "Chase Sterling", email = "chase.sterling@gmail.com" },
+  { name = "Marko Koivusalo", email = "marko.koivusalo@gmail.com" },
+]
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: End Users/Desktop",
+  "Natural Language :: English",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: Unix",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Utilities",
+  "Typing :: Typed",
+]
+dynamic = [ "optional-dependencies", "version" ]
+dependencies = [
+  "apscheduler~=3.11",
+  "beautifulsoup4~=4.12",
+  "cherrypy~=18.10",
+  "feedparser~=6.0",
+  "flask~=3.1",
+  "flask-compress~=1.17",
+  "flask-cors~=6.0",
+  "flask-login~=0.6.3",
+  "flask-restx~=1.3",
+  "guessit~=3.8",
+  "html5lib~=1.1",
+  "jinja2~=3.1",
+  "jsonschema~=4.23",
+  "loguru~=0.7.3",
+  "packaging~=25.0",
+  "pendulum~=3.0",
+  "psutil~=7.0",
+  "pynzb~=0.1.0",
+  "pyparsing~=3.2",
+  "pyrss2gen~=1.1",
+  "python-dateutil~=2.9",
+  "pyyaml~=6.0",
+  "rebulk~=3.2",
+  "requests~=2.32",
+  "rich~=14.0",
+  "rpyc~=6.0",
+  "sqlalchemy~=2.0",
+  "werkzeug~=3.1",
+  "zxcvbn~=4.4",
+]
+urls."Forum" = "https://github.com/Flexget/Flexget/discussions"
+urls."Homepage" = "https://flexget.com"
+urls."Issue Tracker" = "https://github.com/Flexget/Flexget/issues"
+urls."Repository" = "https://github.com/Flexget/Flexget"
+scripts.flexget = "flexget:main"
+gui-scripts.flexget-headless = "flexget:main"  # This is useful on Windows to avoid a cmd popup
+
+[dependency-groups]
+dev = [
+  "pre-commit~=4.0",
+  "pytest~=9.0",
+  "pytest-cov~=7.0",
+  "pytest-socket~=0.7.0",
+  "pytest-xdist~=3.6",
+  "ruff==0.15.0",
+  "vcrpy~=8.1",
+]
+test = [
+  "pillow~=12.1",
+  "pytest-localftpserver~=1.3",
+  { include-group = "all" },
+]
+docs = [
+  "pydata-sphinx-theme~=0.16.1",
+  "sphinx~=8.1",
+  "sphinx-copybutton~=0.5.2",
+  "sphinx-design~=0.6.1",
+  "sphinxcontrib-svg2pdfconverter~=2.0",
+]
+# This is all our optional deps installable via extras, not actually 'all'.
+# Tests that need these must add the `require_optional_deps` pytest mark.
+all = [
+  { include-group = "boto3" },
+  { include-group = "deluge" },
+  { include-group = "ftp" },
+  { include-group = "matrix" },
+  { include-group = "plexapi" },
+  { include-group = "qbittorrent" },
+  { include-group = "rarfile" },
+  { include-group = "sftp" },
+  { include-group = "subliminal" },
+  { include-group = "telegram" },
+  { include-group = "transmission" },
+]
+boto3 = [ "boto3~=1.35" ]
+deluge = [ "deluge-client~=1.10" ]
+ftp = [ "ftputil~=5.1" ]
+matrix = [ "matrix-nio~=0.25.2" ]
+plexapi = [ "plexapi~=4.17" ]
+qbittorrent = [ "qbittorrent-api~=2025.2" ]
+rarfile = [ "rarfile~=4.0" ]
+sftp = [
+  "paramiko~=3.5",
+  "pysftp~=0.2.9", # TODO: `pysftp` was last updated in 2016 and is merely a wrapper around `paramiko`. It is now incompatible with `paramiko` 4.0, so consider migrating to `paramiko` directly. See https://github.com/Flexget/Flexget/issues/4532
+]
+subliminal = [
+  "subliminal==2.2.1", # TODO: Update subliminal after https://github.com/Diaoul/subliminal/issues/1302 is resolved.
+]
+telegram = [ "python-telegram-bot[http2,socks]~=22.0" ]
+transmission = [ "transmission-rpc~=7.0" ]
+
+[tool.hatch]
+build.skip-excluded-dirs = true
+build.targets.sdist.include = [
+  "/flexget",
+  "/scripts/build_locked_extras.py",
+  "/scripts/bundle_webui.py",
+]
+build.targets.wheel.include = [
+  "/flexget",
+]
+# The webui will be bundled when the BUNDLE_WEBUI env variable is defined
+build.targets.wheel.hooks.custom.path = "scripts/bundle_webui.py"
+# Extras with locked dependencies will be generated if BUILD_LOCKED env variable is specified
+metadata.hooks.custom.path = "scripts/build_locked_extras.py"
+metadata.hooks.custom.locked-groups = [
+  "boto3",
+  "deluge",
+  "ftp",
+  "matrix",
+  "plexapi",
+  "qbittorrent",
+  "rarfile",
+  "sftp",
+  "subliminal",
+  "telegram",
+  "transmission",
+  "all",
+]
+version.path = "flexget/_version.py"
+
+[tool.ruff]
+line-length = 99
+extend-exclude = [ "flexget/ui" ]
+preview = true
+format.quote-style = "single"
+format.docstring-code-format = true  # Ruff's documentation claims that this will become the default behavior in the future, so we won't need to specify it explicitly.
+lint.select = [ "ALL" ]
+lint.ignore = [
+  "A",       # flake8-builtins
+  "ANN",     # flake8-annotations
+  "ARG",     # flake8-unused-arguments
+  "B904",    # TODO
+  "BLE001",  # blind-except
+  "C901",    # complex-structure
+  "COM",     # Ruff recommends against using this rule alongside the formatter.
+  "D100",    # undocumented-public-module
+  "D101",    # undocumented-public-class
+  "D102",    # undocumented-public-method
+  "D103",    # undocumented-public-function
+  "D104",    # undocumented-public-package
+  "D105",    # undocumented-magic-method
+  "D107",    # undocumented-public-init
+  "D203",    # Conflicting with other rules
+  "D213",    # Conflicting with other rules
+  "D415",    # Duplicate of D400
+  "DTZ",     # flake8-datetimez
+  "E501",    # TODO
+  "EM",      # flake8-errmsg
+  "ERA001",  # commented-out-code
+  "FBT",     # flake8-boolean-trap
+  "FIX002",  # We use "TODO" comments as a form of documentation
+  "FIX004",  # We use "HACK" comments as a form of documentation
+  "INP001",  # implicit-namespace-package
+  "N817",    # Rejected by @gazpachoking in https://github.com/Flexget/Flexget/pull/4234#discussion_r1951605123
+  "N818",    # Rejected by @gazpachoking in https://github.com/Flexget/Flexget/pull/4234#pullrequestreview-2610029402
+  "PERF203", # TODO: Remove this rule once Python 3.10 support is dropped.
+  "PLC0415", # TODO
+  "PLE1205", # Maybe can re-enable after https://github.com/astral-sh/ruff/issues/13390
+  "PLR0911", # too-many-return-statements
+  "PLR0912", # too-many-branches
+  "PLR0913", # too-many-arguments
+  "PLR0915", # too-many-statements
+  "PLR1704", # redefined-argument-from-local
+  "PLR2004", # magic-value-comparison
+  "PLW0603", # global-statement
+  "PLW0642", # self-or-cls-assignment
+  "PLW2901", # redefined-loop-name
+  "PTH119",  # TODO
+  "Q",       # Ruff recommends against using this rule alongside the formatter.
+  "RUF012",  # Maybe can re-enable after https://github.com/astral-sh/ruff/issues/5243
+  "S",       # flake8-bandit
+  "SLF001",  # private-member-access
+  "TD002",   # Not applicable
+  "TD003",   # Not applicable
+  "TRY003",  # raise-vanilla-args
+  "TRY400",  # Rejected by @gazpachoking in https://github.com/Flexget/Flexget/pull/4249#issuecomment-2656387500
+]
+lint.explicit-preview-rules = true
+lint.per-file-ignores."docs/scripts/*" = [ "T20" ]
+lint.per-file-ignores."flexget/*" = [ "PTH" ]  # TODO
+lint.per-file-ignores."scripts/*" = [ "T20" ]
+lint.per-file-ignores."tests/*" = [ "T20" ]
+lint.flake8-type-checking.quote-annotations = true
+lint.isort.known-first-party = [ "flexget" ]
+lint.future-annotations = true
+per-file-target-version."scripts/cleanup_cassettes.py" = "py312"
+
+[tool.codespell]
+skip = [
+  "**/cassettes/*",
+  "flexget/api/templates/api_response.html",
+  "flexget/api/templates/swagger-ui.html",
+  "flexget/utils/bittorrent.py",
+  "flexget/utils/parsers/series.py",
+  "tests/couchpotato_movie_list_test_response.json",
+  "tests/LICENSE.torrent",
+  "tests/test_thetvdb.py",
+  "pyproject.toml",
+]
+
+[tool.pyproject-fmt]
+max_supported_python = "3.14"
+keep_full_version = true
+
+[tool.typos]
+default.extend-ignore-re = [
+  "idle",
+  "parametros",
+  "Programe",
+  "searching",
+  "SerieS",
+  "23BA98",
+  "IST",
+]
+default.extend-identifiers.McClory = "McClory"
+default.extend-words.nd = "nd"
+default.extend-words.sur = "sur"
+default.extend-words.hime = "hime"
+files.extend-exclude = [
+  "**/cassettes/*",
+  "tests/couchpotato_movie_list_test_response.json",
+  "tests/couchpotato_quality_profile_test_response.json",
+  "tests/test_thetvdb.py",
+]
+
+[tool.pytest]
+addopts = [ "-p no:legacypath" ]
+filterwarnings = [
+  "error",
+  "ignore:Failed to load HostKeys from:UserWarning:pysftp", # It's a bug in pysftp (unmaintained) 0.2.9, not in 0.2.8: https://stackoverflow.com/q/56521549
+]
+markers = [
+  "filecopy(src, dst): mark test to copy a file from `src` to `dst` before running",
+  "online: mark test that goes online. VCR will automatically be used.",
+  "require_optional_deps: mark test as requiring additional dependencies",
+]
+strict = true
+testpaths = [ "tests" ]
+
+[tool.coverage]
+run.branch = true
+report.exclude_also = [
+  "if TYPE_CHECKING",
+]
+
+[tool.doc8]
+ignore = [ "D001", "D004" ]
+max_line_length = 99

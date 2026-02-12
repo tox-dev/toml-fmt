@@ -68,7 +68,7 @@ fn filter_entries(table: &mut RefMut<Vec<SyntaxElement>>, entries_to_remove: &Ha
     let table_len = table.len();
     table.splice(0..table_len, new_elements);
 }
-use crate::string::{load_text, strip_quotes};
+use crate::string::load_text;
 
 fn parse(source: &str) -> SyntaxNode {
     tombi_parser::parse(source, TomlVersion::default())
@@ -311,7 +311,7 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
             .map(|(key, _)| key)
             .clone()
             .collect::<Vec<&String>>();
-        matching_keys.sort_by_key(|key| strip_quotes(&key.to_lowercase()));
+        matching_keys.sort_by_key(|key| key.to_lowercase());
         for key in matching_keys {
             let position = key_to_position[key];
             if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
@@ -326,11 +326,7 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
         .filter(|(_, position)| !handled_positions.contains(position))
         .map(|(key, position)| (key.clone(), *position))
         .collect();
-    unhandled.sort_by(|a, b| {
-        let a_key = strip_quotes(&a.0.to_lowercase());
-        let b_key = strip_quotes(&b.0.to_lowercase());
-        a_key.cmp(&b_key)
-    });
+    unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
     for (_, position) in unhandled {
         if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
             to_insert.push(make_newline());

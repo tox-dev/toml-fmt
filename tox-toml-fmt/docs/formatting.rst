@@ -34,6 +34,24 @@ All strings use double quotes by default. Single quotes are only used when the v
     description = "Run tests"
     commands = ['echo "hello"']
 
+Key Quotes
+~~~~~~~~~~
+
+TOML keys using single-quoted (literal) strings are normalized to double-quoted (basic) strings with proper escaping.
+This ensures consistent formatting and deterministic key sorting regardless of the original quote style:
+
+.. code-block:: toml
+
+    # Before
+    [env.'my-env']
+    deps = ["pytest"]
+
+    # After
+    [env."my-env"]
+    deps = ["pytest"]
+
+Backslashes and double quotes within literal keys are escaped during conversion.
+
 Array Formatting
 ~~~~~~~~~~~~~~~~
 
