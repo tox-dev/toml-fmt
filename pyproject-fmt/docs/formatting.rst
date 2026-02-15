@@ -13,6 +13,8 @@ that all ``pyproject.toml`` files follow.
 
 While a few key options exist (``column_width``, ``indent``, ``table_format``), the tool does not expose dozens of
 toggles. You get what the maintainers have chosen to be the right balance of readability, consistency, and usability.
+The ``column_width`` setting controls when arrays are split into multiple lines and when string values are wrapped using
+line continuations.
 
 General Formatting
 ------------------
@@ -119,6 +121,27 @@ An array becomes multiline when any of these conditions are met:
 1. **Trailing comma present** - A trailing comma signals intent to keep multiline format
 2. **Exceeds column width** - Arrays longer than ``column_width`` are expanded (and get a trailing comma added)
 3. **Contains comments** - Arrays with inline or leading comments are always multiline
+
+String Wrapping
+~~~~~~~~~~~~~~~
+
+Strings that exceed ``column_width`` (including the key name and ``" = "`` prefix) are wrapped into multi-line
+triple-quoted strings using line continuations:
+
+.. code-block:: toml
+
+    # Before (exceeds column_width)
+    description = "A very long description that goes beyond the configured column width limit"
+
+    # After
+    description = """\
+      A very long description that goes beyond the \
+      configured column width limit\
+      """
+
+Wrapping prefers breaking at spaces and at ``" :: "`` separators (common in Python classifiers). Strings inside inline
+tables are never wrapped. Strings that contain actual newlines are preserved as multi-line strings without adding line
+continuations. Use ``skip_wrap_for_keys`` to prevent wrapping for specific keys.
 
 Table Formatting
 ~~~~~~~~~~~~~~~~
