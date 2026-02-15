@@ -82,10 +82,10 @@ module-name = "tox_toml_fmt._lib"
 python-source = "src"
 strip = true
 include = [
-  "rust-toolchain.toml",
-  "docs/",
-  "CHANGELOG.md",
-  "README.rst",
+  { path = "rust-toolchain.toml", format = "sdist" },
+  { path = "docs/", format = "sdist" },
+  { path = "CHANGELOG.md", format = "sdist" },
+  { path = "README.rst", format = "sdist" },
 ]
 exclude = [
   "**/__pycache__/**",

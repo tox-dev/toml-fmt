@@ -10,7 +10,8 @@ The ``[tox-toml-fmt]`` table is used when present in the ``tox.toml`` file:
 
     [tox-toml-fmt]
 
-    # After how many columns split arrays/dicts into multiple lines (1 forces always)
+    # After how many columns split arrays/dicts into multiple lines and wrap long strings;
+    # use a trailing comma in arrays to force multiline format instead of lowering this value
     column_width = 120
 
     # Number of spaces for indentation
