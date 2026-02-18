@@ -128,48 +128,7 @@ pub fn fix(
             dedupe_strings(entry, |s| s.to_lowercase());
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
-        "authors" | "maintainers" => {
-            sort::<(String, String), _, _>(
-                entry,
-                |node| {
-                    let mut name = String::new();
-                    let mut email = String::new();
-                    if node.kind() == INLINE_TABLE {
-                        for child in node.children_with_tokens() {
-                            if child.kind() == KEY_VALUE {
-                                let mut current_key = String::new();
-                                for e in child.as_node().unwrap().children_with_tokens() {
-                                    match e.kind() {
-                                        KEYS => {
-                                            current_key = e.as_node().unwrap().text().to_string().trim().to_string();
-                                        }
-                                        BASIC_STRING => {
-                                            if let Some(string_node) = e.as_node() {
-                                                let val = load_text(&string_node.text().to_string(), BASIC_STRING);
-                                                match current_key.as_str() {
-                                                    "name" => name = val.to_lowercase(),
-                                                    "email" => email = val.to_lowercase(),
-                                                    _ => {}
-                                                }
-                                            }
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    Some((name, email))
-                },
-                &|lhs, rhs| {
-                    let mut res = natural_lexical_cmp(lhs.0.as_str(), rhs.0.as_str());
-                    if res == Ordering::Equal {
-                        res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
-                    }
-                    res
-                },
-            );
-        }
+        "authors" | "maintainers" => {}
         _ => {}
     });
 
