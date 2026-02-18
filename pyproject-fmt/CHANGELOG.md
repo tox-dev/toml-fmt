@@ -1,4 +1,21 @@
-<a id="2.16.0"></a>
+<a id="2.16.1"></a>
+
+## 2.16.1 - 2026-02-18
+
+- 🐛 fix(project): stop sorting authors and maintainers (#228) by [@gaborbernat](https://github.com/gaborbernat) in
+  [#229](https://github.com/tox-dev/toml-fmt/pull/229)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#227](https://github.com/tox-dev/toml-fmt/pull/227)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#226](https://github.com/tox-dev/toml-fmt/pull/226)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#225](https://github.com/tox-dev/toml-fmt/pull/225)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#224](https://github.com/tox-dev/toml-fmt/pull/224)
+- 📝🐛 docs(config): document column_width string wrapping by [@gaborbernat](https://github.com/gaborbernat) in
+  [#223](https://github.com/tox-dev/toml-fmt/pull/223)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#221](https://github.com/tox-dev/toml-fmt/pull/221) <a id="2.16.0"></a>
 
 ## 2.16.0 - 2026-02-12
 
