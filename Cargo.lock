@@ -1276,9 +1276,9 @@ dependencies = [
 
 [[package]]
 name = "psl"
-version = "2.1.191"
+version = "2.1.192"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cd37f9ee74352f77f64b63295b43486c3c1790ccffed30088d45aec307704f0"
+checksum = "8a44aab7d263c3aa2716d68589ff0b1e3a54ad1642a7a28592f5e64626fe1d2d"
 dependencies = [
  "psl-types",
 ]
@@ -1980,7 +1980,7 @@ dependencies = [
 [[package]]
 name = "tombi-accessor"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "indexmap",
  "itertools",
@@ -1991,7 +1991,7 @@ dependencies = [
 [[package]]
 name = "tombi-ast"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "itertools",
  "thiserror",
@@ -2006,7 +2006,7 @@ dependencies = [
 [[package]]
 name = "tombi-ast-editor"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "ahash",
  "indexmap",
@@ -2031,7 +2031,7 @@ dependencies = [
 [[package]]
 name = "tombi-cache"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "dirs",
  "log",
@@ -2043,7 +2043,7 @@ dependencies = [
 [[package]]
 name = "tombi-comment-directive"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "serde",
  "thiserror",
@@ -2057,7 +2057,7 @@ dependencies = [
 [[package]]
 name = "tombi-comment-directive-serde"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "serde",
  "tombi-ast",
@@ -2070,7 +2070,7 @@ dependencies = [
 [[package]]
 name = "tombi-comment-directive-store"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "tokio",
  "tombi-json",
@@ -2081,7 +2081,7 @@ dependencies = [
 [[package]]
 name = "tombi-config"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "serde",
  "thiserror",
@@ -2094,7 +2094,7 @@ dependencies = [
 [[package]]
 name = "tombi-date-time"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "chrono",
  "serde",
@@ -2104,7 +2104,7 @@ dependencies = [
 [[package]]
 name = "tombi-diagnostic"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "nu-ansi-term",
  "serde",
@@ -2115,7 +2115,7 @@ dependencies = [
 [[package]]
 name = "tombi-document"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "indexmap",
  "itertools",
@@ -2132,7 +2132,7 @@ dependencies = [
 [[package]]
 name = "tombi-document-tree"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "chrono",
  "indexmap",
@@ -2151,7 +2151,7 @@ dependencies = [
 [[package]]
 name = "tombi-formatter"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "itertools",
  "log",
@@ -2164,6 +2164,7 @@ dependencies = [
  "tombi-parser",
  "tombi-schema-store",
  "tombi-syntax",
+ "tombi-text",
  "tombi-uri",
  "tombi-validator",
  "unicode-segmentation",
@@ -2172,7 +2173,7 @@ dependencies = [
 [[package]]
 name = "tombi-future"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "futures",
 ]
@@ -2180,7 +2181,7 @@ dependencies = [
 [[package]]
 name = "tombi-json"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "indexmap",
  "itertools",
@@ -2195,7 +2196,7 @@ dependencies = [
 [[package]]
 name = "tombi-json-lexer"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "tombi-json-syntax",
  "tombi-regex",
@@ -2205,7 +2206,7 @@ dependencies = [
 [[package]]
 name = "tombi-json-syntax"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "tombi-rg-tree",
 ]
@@ -2213,7 +2214,7 @@ dependencies = [
 [[package]]
 name = "tombi-json-value"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "indexmap",
  "serde",
@@ -2222,7 +2223,7 @@ dependencies = [
 [[package]]
 name = "tombi-lexer"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "tombi-regex",
  "tombi-syntax",
@@ -2232,7 +2233,7 @@ dependencies = [
 [[package]]
 name = "tombi-parser"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "drop_bomb",
  "itertools",
@@ -2250,7 +2251,7 @@ dependencies = [
 [[package]]
 name = "tombi-regex"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "fancy-regex",
 ]
@@ -2258,7 +2259,7 @@ dependencies = [
 [[package]]
 name = "tombi-rg-tree"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "countme",
  "hashbrown 0.15.5",
@@ -2270,7 +2271,7 @@ dependencies = [
 [[package]]
 name = "tombi-schema-store"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "ahash",
  "bytes",
@@ -2298,7 +2299,7 @@ dependencies = [
 [[package]]
 name = "tombi-severity-level"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "serde",
 ]
@@ -2306,7 +2307,7 @@ dependencies = [
 [[package]]
 name = "tombi-syntax"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "thiserror",
  "tombi-rg-tree",
@@ -2315,7 +2316,7 @@ dependencies = [
 [[package]]
 name = "tombi-text"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "log",
  "serde",
@@ -2326,7 +2327,7 @@ dependencies = [
 [[package]]
 name = "tombi-toml-text"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "thiserror",
  "tombi-toml-version",
@@ -2335,7 +2336,7 @@ dependencies = [
 [[package]]
 name = "tombi-toml-version"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "clap",
  "serde",
@@ -2344,7 +2345,7 @@ dependencies = [
 [[package]]
 name = "tombi-uri"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "serde",
  "url",
@@ -2353,7 +2354,7 @@ dependencies = [
 [[package]]
 name = "tombi-validator"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "addr",
  "ahash",
@@ -2383,7 +2384,7 @@ dependencies = [
 [[package]]
 name = "tombi-version-sort"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "itertools",
 ]
@@ -2391,7 +2392,7 @@ dependencies = [
 [[package]]
 name = "tombi-x-keyword"
 version = "0.0.0-dev"
-source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.30#3fcad11ce971ccaba35976420175c676d961f0a2"
+source = "git+https://github.com/tombi-toml/tombi?tag=v0.7.31#74df128b7d4a00081c46a5d17e9095ed005ece61"
 dependencies = [
  "serde",
 ]
