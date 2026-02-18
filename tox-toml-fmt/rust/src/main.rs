@@ -5,6 +5,8 @@ use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
 use tombi_config::TomlVersion;
 
+use tombi_syntax::SyntaxKind::KEY_VALUE;
+
 use crate::global::{fix_envs, fix_root, normalize_aliases, normalize_strings, reorder_tables, sort_env_list};
 use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, Tables};
@@ -104,7 +106,11 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig::from_settings(opt);
 
-    let mut prefixes: Vec<String> = vec![String::from("env_run_base"), String::from("env_pkg_base")];
+    let mut prefixes: Vec<String> = vec![
+        String::from("env"),
+        String::from("env_run_base"),
+        String::from("env_pkg_base"),
+    ];
     for key in tables.header_to_pos.keys() {
         if let Some(env_name) = key.strip_prefix("env.") {
             let env_prefix = format!("env.{}", env_name.split('.').next().unwrap_or(env_name));
@@ -116,10 +122,26 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     let prefix_refs: Vec<&str> = prefixes.iter().map(|s| s.as_str()).collect();
     apply_table_formatting(
         &mut tables,
-        |name| table_config.should_collapse(name),
+        |name| {
+            if let Some(rest) = name.strip_prefix("env.") {
+                if !rest.contains('.') {
+                    return false;
+                }
+            }
+            table_config.should_collapse(name)
+        },
         &prefix_refs,
         opt.column_width,
     );
+
+    tables.header_to_pos.retain(|name, positions| {
+        if !prefixes.contains(name) {
+            return true;
+        }
+        positions
+            .iter()
+            .all(|&pos| tables.table_set[pos].borrow().iter().any(|e| e.kind() == KEY_VALUE))
+    });
 
     normalize_aliases(&tables);
     fix_root(&tables);
