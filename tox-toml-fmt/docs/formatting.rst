@@ -167,15 +167,18 @@ Inline comments within arrays are aligned independently per array, based on that
 Table-Specific Handling
 -----------------------
 
+Beyond general formatting, tables have specific key ordering, value normalization, and sorting rules.
+
 Table Ordering
 ~~~~~~~~~~~~~~
 
 Tables are reordered into a consistent structure:
 
-1. Root-level keys (``env_list``, ``min_version``, ``skip_missing_interpreters``)
+1. Root-level keys (``min_version``, ``requires``, ``env_list``, etc.)
 2. ``[env_run_base]``
-3. ``[env.NAME]`` sections ordered by ``env_list`` if specified
-4. Any remaining ``[env.*]`` sections not in ``env_list``
+3. ``[env_pkg_base]``
+4. ``[env.NAME]`` sections ordered by ``env_list`` if specified
+5. Any remaining ``[env.*]`` sections not in ``env_list``
 
 .. code-block:: toml
 
@@ -184,6 +187,9 @@ Tables are reordered into a consistent structure:
 
     [env_run_base]
     deps = ["pytest>=7"]
+
+    [env_pkg_base]
+    # ...
 
     # Environments appear in env_list order:
     [env.lint]
@@ -200,8 +206,204 @@ Tables are reordered into a consistent structure:
 
 Environments not listed in ``env_list`` are placed at the end.
 
+Alias Normalization
+~~~~~~~~~~~~~~~~~~~
+
+Legacy INI-style key names are renamed to their modern tox 4 TOML equivalents. This applies automatically
+to the root table, ``[env_run_base]``, ``[env_pkg_base]``, and all ``[env.*]`` tables.
+
+**Root table aliases:**
+
+.. code-block:: toml
+
+    # Before
+    envlist = ["py312", "py313"]
+    minversion = "4.2"
+    skipsdist = true
+
+    # After
+    env_list = ["py312", "py313"]
+    min_version = "4.2"
+    no_package = true
+
+Full list: ``envlist`` → ``env_list``, ``toxinidir`` → ``tox_root``, ``toxworkdir`` → ``work_dir``,
+``skipsdist`` → ``no_package``, ``isolated_build_env`` → ``package_env``, ``setupdir`` → ``package_root``,
+``minversion`` → ``min_version``, ``ignore_basepython_conflict`` → ``ignore_base_python_conflict``
+
+**Environment table aliases:**
+
+.. code-block:: toml
+
+    # Before
+    [env_run_base]
+    basepython = "python3.12"
+    setenv.PYTHONPATH = "src"
+    passenv = ["HOME"]
+
+    # After
+    [env_run_base]
+    base_python = "python3.12"
+    set_env.PYTHONPATH = "src"
+    pass_env = ["HOME"]
+
+Full list: ``setenv`` → ``set_env``, ``passenv`` → ``pass_env``, ``envdir`` → ``env_dir``,
+``envtmpdir`` → ``env_tmp_dir``, ``envlogdir`` → ``env_log_dir``, ``changedir`` → ``change_dir``,
+``basepython`` → ``base_python``, ``usedevelop`` → ``use_develop``, ``sitepackages`` →
+``system_site_packages``, ``alwayscopy`` → ``always_copy``
+
+Root Key Ordering
+~~~~~~~~~~~~~~~~~
+
+Keys in the root table are reordered into a consistent sequence:
+
+``min_version`` → ``requires`` → ``provision_tox_env`` → ``env_list`` → ``labels`` → ``base`` →
+``package_env`` → ``package_root`` → ``no_package`` → ``skip_missing_interpreters`` →
+``ignore_base_python_conflict`` → ``work_dir`` → ``temp_dir`` → ``tox_root``
+
+.. code-block:: toml
+
+    # Before
+    env_list = ["py312", "lint"]
+    requires = ["tox>=4.2"]
+    min_version = "4.2"
+
+    # After
+    min_version = "4.2"
+    requires = ["tox>=4.2"]
+    env_list = ["py312", "lint"]
+
+Environment Key Ordering
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Keys within ``[env_run_base]``, ``[env_pkg_base]``, and ``[env.*]`` tables are reordered to group related
+settings:
+
+``runner`` → ``description`` → ``base_python`` → ``system_site_packages`` → ``always_copy`` →
+``download`` → ``package`` → ``package_env`` → ``wheel_build_env`` → ``package_tox_env_type`` →
+``package_root`` → ``skip_install`` → ``use_develop`` → ``meta_dir`` → ``pkg_dir`` → ``pip_pre`` →
+``install_command`` → ``list_dependencies_command`` → ``deps`` → ``dependency_groups`` →
+``constraints`` → ``constrain_package_deps`` → ``use_frozen_constraints`` → ``extras`` → ``recreate`` →
+``parallel_show_output`` → ``skip_missing_interpreters`` → ``pass_env`` → ``disallow_pass_env`` →
+``set_env`` → ``change_dir`` → ``platform`` → ``args_are_paths`` → ``ignore_errors`` →
+``ignore_outcome`` → ``commands_pre`` → ``commands`` → ``commands_post`` → ``allowlist_externals`` →
+``labels`` → ``suicide_timeout`` → ``interrupt_timeout`` → ``terminate_timeout`` → ``depends`` →
+``env_dir`` → ``env_tmp_dir`` → ``env_log_dir``
+
+.. code-block:: toml
+
+    # Before
+    [env_run_base]
+    commands = ["pytest"]
+    deps = ["pytest>=7"]
+    description = "run tests"
+
+    # After
+    [env_run_base]
+    description = "run tests"
+    deps = ["pytest>=7"]
+    commands = ["pytest"]
+
+``requires`` Normalization
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Dependencies in the root ``requires`` array are normalized per PEP 508 (canonical package names,
+consistent spacing around specifiers) and sorted alphabetically by package name:
+
+.. code-block:: toml
+
+    # Before
+    requires = ["tox >= 4.2", "tox-uv"]
+
+    # After
+    requires = ["tox>=4.2", "tox-uv"]
+
+``env_list`` Sorting
+~~~~~~~~~~~~~~~~~~~~
+
+The ``env_list`` array is sorted with a specific ordering:
+
+1. **Pinned environments** come first, in the order specified by ``--pin-env``
+2. **CPython versions** (matching ``py3.12``, ``py312``, ``3.12``, etc.) sorted descending (newest first)
+3. **PyPy versions** (matching ``pypy3.10``, ``pypy310``, etc.) sorted descending
+4. **Named environments** (``lint``, ``type``, ``docs``, etc.) sorted alphabetically
+
+Compound environment names separated by ``-`` are classified by their first recognized part:
+
+.. code-block:: toml
+
+    # Before
+    env_list = ["lint", "py38", "py312", "docs", "py310-django"]
+
+    # After
+    env_list = ["py312", "py310-django", "py38", "docs", "lint"]
+
+Use ``--pin-env`` to pin specific environments to the start:
+
+.. code-block:: toml
+
+    # With --pin-env fix,type
+    env_list = ["fix", "type", "py313", "py312", "docs", "lint"]
+
+See :doc:`configuration` for how to set ``pin-env`` via the config file or CLI.
+
+``use_develop`` Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The legacy ``use_develop = true`` setting is automatically converted to the modern ``package = "editable"``
+equivalent. If ``use_develop = false``, the key is left as-is. If a ``package`` key already exists,
+only the ``use_develop`` key is removed:
+
+.. code-block:: toml
+
+    # Before
+    [env_run_base]
+    use_develop = true
+
+    # After
+    [env_run_base]
+    package = "editable"
+
+Array Sorting
+~~~~~~~~~~~~~
+
+Certain arrays within environment tables are sorted automatically:
+
+**Sorted by canonical PEP 508 package name:**
+
+- ``deps`` — dependencies normalized and sorted by package name
+
+.. code-block:: toml
+
+    # Before
+    deps = ["Pytest >= 7", "coverage", "pytest-mock"]
+
+    # After
+    deps = ["coverage", "pytest>=7", "pytest-mock"]
+
+**Sorted alphabetically:**
+
+- ``dependency_groups``, ``allowlist_externals``, ``extras``, ``labels``, ``depends``, ``constraints``
+
+**Special handling for ``pass_env``:**
+
+Replacement objects (inline tables like ``{ replace = "default", ... }``) are pinned to the start,
+then string entries are sorted alphabetically:
+
+.. code-block:: toml
+
+    # Before
+    pass_env = ["TERM", "CI", { replace = "default", ... }, "HOME"]
+
+    # After
+    pass_env = [{ replace = "default", ... }, "CI", "HOME", "TERM"]
+
+**Arrays NOT sorted:**
+
+- ``commands``, ``commands_pre``, ``commands_post`` — execution order matters
+- ``base_python`` — first entry takes priority
+
 Other Tables
 ~~~~~~~~~~~~
 
-Any unrecognized tables are preserved and reordered according to standard table ordering rules. Keys within tables
-are not reordered.
+Any unrecognized tables are preserved and reordered according to standard table ordering rules. Keys within
+unknown tables are not reordered or normalized.

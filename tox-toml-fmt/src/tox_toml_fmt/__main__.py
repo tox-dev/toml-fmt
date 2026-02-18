@@ -20,6 +20,7 @@ class PyProjectFmtNamespace(FmtNamespace):
     expand_tables: list[str]
     collapse_tables: list[str]
     skip_wrap_for_keys: list[str]
+    pin_envs: list[str]
 
 
 class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
@@ -75,6 +76,13 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             default=[],
             help="comma-separated list of key patterns to skip string wrapping (e.g. '*.commands')",
         )
+        parser.add_argument(
+            "--pin-env",
+            type=_list_argument,
+            default=[],
+            dest="pin_envs",
+            help="environments pinned to the start of env_list (comma separated)",
+        )
 
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
@@ -96,6 +104,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             expand_tables=opt.expand_tables,
             collapse_tables=opt.collapse_tables,
             skip_wrap_for_keys=opt.skip_wrap_for_keys,
+            pin_envs=opt.pin_envs,
         )
         return format_toml(text, settings)
 

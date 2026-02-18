@@ -421,6 +421,31 @@ where
     }
 }
 
+pub fn rename_keys(table: &mut RefMut<Vec<SyntaxElement>>, aliases: &[(&str, &str)]) {
+    use crate::create::make_key;
+    for entry in table.iter() {
+        if entry.kind() != KEY_VALUE {
+            continue;
+        }
+        let node = entry.as_node().unwrap();
+        let keys_node = node
+            .children_with_tokens()
+            .find(|c| c.kind() == KEYS)
+            .expect("KEY_VALUE must have KEYS child");
+        let keys_node = keys_node.as_node().unwrap();
+        let key_text = keys_node.text().to_string().trim().to_string();
+        for &(old, new) in aliases {
+            if key_text == old {
+                let new_key = make_key(new);
+                let count = keys_node.children_with_tokens().count();
+                let new_children: Vec<SyntaxElement> = new_key.as_node().unwrap().children_with_tokens().collect();
+                keys_node.splice_children(0..count, new_children);
+                break;
+            }
+        }
+    }
+}
+
 pub fn find_key(table: &SyntaxNode, key: &str) -> Option<SyntaxNode> {
     let mut current_key = String::new();
     for table_entry in table.children_with_tokens() {
