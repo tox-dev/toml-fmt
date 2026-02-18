@@ -55,7 +55,7 @@ type = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.10.3",
+  "uv>=0.10.4",
 ]
 
 [tool.pyproject-fmt]
