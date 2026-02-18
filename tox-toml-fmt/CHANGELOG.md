@@ -1,4 +1,9 @@
-<a id="1.7.0"></a>
+<a id="1.7.1"></a>
+
+## 1.7.1 - 2026-02-18
+
+- 🐛 fix(tox-toml-fmt): keep env tables as separate sections by [@gaborbernat](https://github.com/gaborbernat) in
+  [#231](https://github.com/tox-dev/toml-fmt/pull/231) <a id="1.7.0"></a>
 
 ## 1.7.0 - 2026-02-18
 
