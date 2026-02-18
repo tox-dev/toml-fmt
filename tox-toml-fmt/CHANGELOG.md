@@ -1,4 +1,11 @@
-<a id="1.7.1"></a>
+<a id="1.7.2"></a>
+
+## 1.7.2 - 2026-02-18
+
+- 🐛 fix(tox-toml-fmt): handle quoted keys with dots in env tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#234](https://github.com/tox-dev/toml-fmt/pull/234)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#232](https://github.com/tox-dev/toml-fmt/pull/232) <a id="1.7.1"></a>
 
 ## 1.7.1 - 2026-02-18
 
