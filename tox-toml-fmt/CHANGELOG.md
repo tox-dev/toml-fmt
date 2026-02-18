@@ -1,4 +1,21 @@
-<a id="1.6.0"></a>
+<a id="1.7.0"></a>
+
+## 1.7.0 - 2026-02-18
+
+- ✨ feat(tox-toml-fmt): add semantic formatting matching tox-ini-fmt by [@gaborbernat](https://github.com/gaborbernat)
+  in [#230](https://github.com/tox-dev/toml-fmt/pull/230)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#227](https://github.com/tox-dev/toml-fmt/pull/227)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#226](https://github.com/tox-dev/toml-fmt/pull/226)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#225](https://github.com/tox-dev/toml-fmt/pull/225)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#224](https://github.com/tox-dev/toml-fmt/pull/224)
+- 📝🐛 docs(config): document column_width string wrapping by [@gaborbernat](https://github.com/gaborbernat) in
+  [#223](https://github.com/tox-dev/toml-fmt/pull/223)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#221](https://github.com/tox-dev/toml-fmt/pull/221) <a id="1.6.0"></a>
 
 ## 1.6.0 - 2026-02-12
 
