@@ -17,7 +17,11 @@ The ``[tox-toml-fmt]`` table is used when present in the ``tox.toml`` file:
     # Number of spaces for indentation
     indent = 2
 
-If not set they will default to values from the CLI. The example above shows the defaults.
+    # Environments pinned to the start of env_list
+    pin_envs = ["fix", "type"]
+
+If not set they will default to values from the CLI. The example above shows the defaults (except ``pin_envs``
+which defaults to an empty list).
 
 Command line interface
 ----------------------

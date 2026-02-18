@@ -5,7 +5,7 @@ use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
 use tombi_config::TomlVersion;
 
-use crate::global::{normalize_strings, reorder_tables};
+use crate::global::{fix_envs, fix_root, normalize_aliases, normalize_strings, reorder_tables, sort_env_list};
 use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, Tables};
 
@@ -21,13 +21,14 @@ pub struct Settings {
     expand_tables: Vec<String>,
     collapse_tables: Vec<String>,
     skip_wrap_for_keys: Vec<String>,
+    pin_envs: Vec<String>,
 }
 
 #[pymethods]
 impl Settings {
     #[new]
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, table_format, expand_tables, collapse_tables, skip_wrap_for_keys))]
+    #[pyo3(signature = (*, column_width, indent, table_format, expand_tables, collapse_tables, skip_wrap_for_keys, pin_envs))]
     fn new(
         column_width: usize,
         indent: usize,
@@ -35,6 +36,7 @@ impl Settings {
         expand_tables: Vec<String>,
         collapse_tables: Vec<String>,
         skip_wrap_for_keys: Vec<String>,
+        pin_envs: Vec<String>,
     ) -> Self {
         Self {
             column_width,
@@ -43,6 +45,7 @@ impl Settings {
             expand_tables,
             collapse_tables,
             skip_wrap_for_keys,
+            pin_envs,
         }
     }
 }
@@ -101,7 +104,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig::from_settings(opt);
 
-    let mut prefixes: Vec<String> = vec![String::from("env_run_base")];
+    let mut prefixes: Vec<String> = vec![String::from("env_run_base"), String::from("env_pkg_base")];
     for key in tables.header_to_pos.keys() {
         if let Some(env_name) = key.strip_prefix("env.") {
             let env_prefix = format!("env.{}", env_name.split('.').next().unwrap_or(env_name));
@@ -118,6 +121,10 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         opt.column_width,
     );
 
+    normalize_aliases(&tables);
+    fix_root(&tables);
+    fix_envs(&tables);
+    sort_env_list(&tables, &opt.pin_envs);
     normalize_strings(&tables);
     reorder_tables(&root_ast, &tables);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);

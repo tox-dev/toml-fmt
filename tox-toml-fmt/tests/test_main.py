@@ -112,8 +112,8 @@ def test_indent(tmp_path: Path, indent: int) -> None:
 
     expected = f"""\
     requires = [
-    {" " * indent}"tox>=4.22",
-    {" " * indent}"packaging>=24"
+    {" " * indent}"packaging>=24",
+    {" " * indent}"tox>=4.22"
     ]
     """
     pyproject_toml = tmp_path / "tox.toml"
@@ -122,6 +122,35 @@ def test_indent(tmp_path: Path, indent: int) -> None:
     run(args)
     output = pyproject_toml.read_text()
     assert output == dedent(expected)
+
+
+def test_pin_env_cli(tmp_path: Path) -> None:
+    txt = 'env_list = ["lint", "py312", "fix", "py313"]\n'
+    filename = tmp_path / "tox.toml"
+    filename.write_text(txt)
+    run([str(filename), "--pin-env", "fix,lint"])
+    got = filename.read_text()
+    assert got == 'env_list = [ "fix", "lint", "py313", "py312" ]\n'
+
+
+def test_pin_env_config(tmp_path: Path) -> None:
+    txt = """\
+env_list = ["lint", "py312", "fix", "py313"]
+
+[tox-toml-fmt]
+pin_envs = ["fix"]
+"""
+    filename = tmp_path / "tox.toml"
+    filename.write_text(txt)
+    run([str(filename)])
+    got = filename.read_text()
+    expected = """\
+env_list = [ "fix", "py313", "py312", "lint" ]
+
+[tox-toml-fmt]
+pin_envs = [ "fix" ]
+"""
+    assert got == expected
 
 
 def test_tox_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
