@@ -221,7 +221,7 @@ fn test_project_authors_maintainers() {
     insta::assert_snapshot!(result, @r#"
     [project]
     maintainers = [ { email = "maintain@example.com" } ]
-    authors = [ { name = "Jane Smith" }, { name = "John Doe", email = "john@example.com" } ]
+    authors = [ { name = "John Doe", email = "john@example.com" }, { name = "Jane Smith" } ]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
@@ -879,7 +879,7 @@ fn test_project_maintainers_multiple() {
     let result = evaluate_project(start, false, (3, 11), true);
     insta::assert_snapshot!(result, @r#"
     [project]
-    maintainers = [ { email = "charlie@example.com" }, { name = "Alice", email = "alice@example.com" }, { name = "Bob" } ]
+    maintainers = [ { name = "Alice", email = "alice@example.com" }, { name = "Bob" }, { email = "charlie@example.com" } ]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
       "Programming Language :: Python :: 3.9",
@@ -1445,7 +1445,7 @@ fn test_project_keywords_dedupe() {
 }
 
 #[test]
-fn test_project_authors_sorting_by_name() {
+fn test_project_authors_preserve_order() {
     let start = indoc! {r#"
         [project]
         name = "test"
@@ -1460,15 +1460,15 @@ fn test_project_authors_sorting_by_name() {
     [project]
     name = "test"
     authors = [
+      { name = "Zoe", email = "zoe@example.com" },
       { name = "Alice", email = "alice@example.com" },
       { name = "Bob", email = "bob@example.com" },
-      { name = "Zoe", email = "zoe@example.com" },
     ]
     "#);
 }
 
 #[test]
-fn test_project_authors_sorting_by_email_when_no_name() {
+fn test_project_authors_preserve_order_email_only() {
     let start = indoc! {r#"
         [project]
         name = "test"
@@ -1482,14 +1482,14 @@ fn test_project_authors_sorting_by_email_when_no_name() {
     [project]
     name = "test"
     authors = [
-      { email = "alice@example.com" },
       { email = "zoe@example.com" },
+      { email = "alice@example.com" },
     ]
     "#);
 }
 
 #[test]
-fn test_project_maintainers_sorting() {
+fn test_project_maintainers_preserve_order() {
     let start = indoc! {r#"
         [project]
         name = "test"
@@ -1503,8 +1503,8 @@ fn test_project_maintainers_sorting() {
     [project]
     name = "test"
     maintainers = [
-      { name = "Alice" },
       { name = "Charlie" },
+      { name = "Alice" },
     ]
     "#);
 }
@@ -1664,7 +1664,7 @@ fn test_project_classifiers_filter_existing_python_versions() {
 }
 
 #[test]
-fn test_project_authors_same_name_sort_by_email() {
+fn test_project_authors_same_name_preserve_order() {
     let start = indoc! {r#"
         [project]
         name = "test"
@@ -1678,8 +1678,8 @@ fn test_project_authors_same_name_sort_by_email() {
     [project]
     name = "test"
     authors = [
-      { name = "Alice", email = "a@example.com" },
       { name = "Alice", email = "z@example.com" },
+      { name = "Alice", email = "a@example.com" },
     ]
     "#);
 }

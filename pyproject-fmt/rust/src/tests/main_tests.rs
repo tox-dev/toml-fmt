@@ -325,8 +325,8 @@ fn test_collapse_authors_with_url_field() {
     [project]
     name = "test"
     authors = [
-      { name = "Alice", email = "alice@example.com" },
-      { name = "Bob", email = "bob@example.com", url = "https://bob.com" }
+      { name = "Bob", email = "bob@example.com", url = "https://bob.com" },
+      { name = "Alice", email = "alice@example.com" }
     ]
     "#);
 }
