@@ -1042,3 +1042,56 @@ fn test_sort_labels() {
     labels = [ "all", "ci", "test" ]
     "#);
 }
+
+#[test]
+fn test_env_dotted_keys_expand_to_tables() {
+    let start = indoc! {r#"
+        [env]
+        fix.description = "fix"
+        fix.skip_install = true
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.fix]
+    description = "fix"
+    skip_install = true
+    "#);
+}
+
+#[test]
+fn test_env_tables_not_collapsed_in_short_format() {
+    let start = indoc! {r#"
+        [env.fix]
+        description = "fix"
+        skip_install = true
+
+        [env.test]
+        description = "test"
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.fix]
+    description = "fix"
+    skip_install = true
+
+    [env.test]
+    description = "test"
+    "#);
+}
+
+#[test]
+fn test_env_sub_tables_still_collapse_in_short_format() {
+    let start = indoc! {r#"
+        [env.test]
+        description = "run tests"
+
+        [env.test.sub]
+        value = 1
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    description = "run tests"
+    sub.value = 1
+    "#);
+}

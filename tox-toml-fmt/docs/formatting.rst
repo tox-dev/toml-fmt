@@ -135,6 +135,27 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
 Individual tables can override the default using ``expand_tables`` and ``collapse_tables``.
 See :doc:`configuration` for how to control this behavior.
 
+**Environment tables are always expanded:**
+
+Regardless of the ``table_format`` setting, ``[env.*]`` tables are never collapsed into dotted keys under ``[env]``.
+Each environment always gets its own ``[env.NAME]`` table section:
+
+.. code-block:: toml
+
+    # This is always the output format, even in short mode:
+    [env.fix]
+    description = "fix"
+
+    [env.test]
+    description = "test"
+
+    # Dotted keys under [env] are automatically expanded:
+    # [env]
+    # fix.description = "fix"    →    [env.fix]
+    #                                  description = "fix"
+
+Sub-tables within an environment (e.g. ``[env.test.sub]``) still follow the ``table_format`` setting.
+
 Comment Preservation
 ~~~~~~~~~~~~~~~~~~~~
 
