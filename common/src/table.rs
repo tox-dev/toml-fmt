@@ -887,20 +887,27 @@ pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) 
     tables.header_to_pos.entry(full_name).or_default().push(pos);
 }
 
-fn count_unquoted_dots(s: &str) -> usize {
-    let mut count = 0;
+fn unquoted_dot_positions(s: &str) -> impl Iterator<Item = usize> + '_ {
     let mut in_quotes = false;
-    for c in s.chars() {
-        match c {
-            '"' => in_quotes = !in_quotes,
-            '.' if !in_quotes => count += 1,
-            _ => {}
+    s.char_indices().filter_map(move |(i, c)| match c {
+        '"' => {
+            in_quotes = !in_quotes;
+            None
         }
-    }
-    count
+        '.' if !in_quotes => Some(i),
+        _ => None,
+    })
 }
 
-fn split_table_name(full_name: &str) -> (&str, &str) {
+pub fn count_unquoted_dots(s: &str) -> usize {
+    unquoted_dot_positions(s).count()
+}
+
+pub fn first_unquoted_dot(s: &str) -> usize {
+    unquoted_dot_positions(s).next().expect("no unquoted dot found")
+}
+
+pub fn split_table_name(full_name: &str) -> (&str, &str) {
     let mut depth = 0;
     for (i, c) in full_name.char_indices().rev() {
         match c {
@@ -955,7 +962,7 @@ pub fn collect_all_sub_tables(tables: &Tables, parent_name: &str, result: &mut V
     let main = tables.table_set[*pos].borrow();
     for element in main.iter().filter(|e| e.kind() == KEY_VALUE) {
         let key_text = get_key_text(element);
-        if let Some(dot_pos) = key_text.find('.') {
+        if let Some(dot_pos) = unquoted_dot_positions(&key_text).next() {
             let sub_name = &key_text[..dot_pos];
             let full_name = format!("{parent_name}.{sub_name}");
             if !result.contains(&full_name) {

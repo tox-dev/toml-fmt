@@ -1095,3 +1095,54 @@ fn test_env_sub_tables_still_collapse_in_short_format() {
     sub.value = 1
     "#);
 }
+
+#[test]
+fn test_env_quoted_key_with_dot_not_collapsed() {
+    let start = indoc! {r#"
+        [env."3.13t"]
+        base_python = "3.13t"
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env."3.13t"]
+    base_python = "3.13t"
+    "#);
+}
+
+#[test]
+fn test_env_quoted_key_dotted_expand() {
+    let start = indoc! {r#"
+        [env]
+        "3.13t".base_python = "3.13t"
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env."3.13t"]
+    base_python = "3.13t"
+    "#);
+}
+
+#[test]
+fn test_env_multiple_quoted_keys_not_collapsed() {
+    let start = indoc! {r#"
+        [env."3.13t"]
+        base_python = "3.13t"
+
+        [env."3.14t"]
+        base_python = "3.14t"
+
+        [env.fix]
+        description = "fix"
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env."3.13t"]
+    base_python = "3.13t"
+
+    [env."3.14t"]
+    base_python = "3.14t"
+
+    [env.fix]
+    description = "fix"
+    "#);
+}

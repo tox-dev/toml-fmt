@@ -9,7 +9,7 @@ use tombi_syntax::SyntaxKind::KEY_VALUE;
 
 use crate::global::{fix_envs, fix_root, normalize_aliases, normalize_strings, reorder_tables, sort_env_list};
 use common::array::ensure_all_arrays_multiline;
-use common::table::{apply_table_formatting, Tables};
+use common::table::{apply_table_formatting, count_unquoted_dots, first_unquoted_dot, split_table_name, Tables};
 
 mod global;
 #[cfg(test)]
@@ -76,10 +76,11 @@ impl TableFormatConfig {
             if self.expand_tables.contains(current) {
                 return false;
             }
-            match current.rfind('.') {
-                Some(dot_pos) => current = &current[..dot_pos],
-                None => break,
+            if count_unquoted_dots(current) == 0 {
+                break;
             }
+            let (parent, _) = split_table_name(current);
+            current = parent;
         }
         self.default_collapse
     }
@@ -113,7 +114,11 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     ];
     for key in tables.header_to_pos.keys() {
         if let Some(env_name) = key.strip_prefix("env.") {
-            let env_prefix = format!("env.{}", env_name.split('.').next().unwrap_or(env_name));
+            let first_seg = match count_unquoted_dots(env_name) {
+                0 => env_name,
+                _ => &env_name[..first_unquoted_dot(env_name)],
+            };
+            let env_prefix = format!("env.{first_seg}");
             if !prefixes.contains(&env_prefix) {
                 prefixes.push(env_prefix);
             }
@@ -124,7 +129,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
         &mut tables,
         |name| {
             if let Some(rest) = name.strip_prefix("env.") {
-                if !rest.contains('.') {
+                if count_unquoted_dots(rest) == 0 {
                     return false;
                 }
             }
