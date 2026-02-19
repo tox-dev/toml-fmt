@@ -24,11 +24,11 @@ tombi-formatter = { workspace = true }
 tombi-toml-text = { workspace = true }
 tombi-config = { workspace = true }
 tombi-schema-store = { workspace = true }
-toml = { version = "1.0.2", optional = true }
+toml = { version = "1.0.3", optional = true }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 
 [dev-dependencies]
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 insta = { version = "1.46.3", features = ["redactions"] } # snapshot testing
-toml = "1.0.2"
+toml = "1.0.3"
