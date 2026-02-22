@@ -2322,3 +2322,26 @@ fn test_project_classifiers_no_trailing_comma_multiline() {
     ]
     "#);
 }
+
+#[test]
+fn test_project_classifiers_with_malformed_classifier_panic() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+        version = "0.0.1"
+        classifiers = ["Programming Language :: Python :: 3", "a :: string"]
+    "#};
+    let result = evaluate_project(start, false, (3, 7), true);
+    // Should not panic and should preserve the malformed classifier while adding Python version classifiers
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "test"
+    version = "0.0.1"
+    classifiers = [
+      "Programming Language :: Python :: 3",
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.7",
+      "a :: string",
+    ]
+    "#);
+}

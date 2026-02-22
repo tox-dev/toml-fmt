@@ -66,6 +66,25 @@ from pyproject_fmt._lib import Settings, format_toml
             """,
             id="collapsed",
         ),
+        pytest.param(
+            """
+            [project]
+            name = "test"
+            version = "0.0.1"
+            classifiers = ["Programming Language :: Python :: 3", "a :: string"]
+            """,
+            """\
+            [project]
+            name = "test"
+            version = "0.0.1"
+            classifiers = [
+                "Programming Language :: Python :: 3 :: Only",
+                "Programming Language :: Python :: 3.7",
+                "Programming Language :: Python :: 3.8",
+            ]
+            """,
+            id="invalid_classifier",
+        ),
     ],
 )
 def test_format_toml(start: str, expected: str) -> None:
