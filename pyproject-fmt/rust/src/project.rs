@@ -332,7 +332,7 @@ fn generate_classifiers_to_entry(
                 }
             }
             eprintln!("DEBUG iteration complete, to_insert.len()={}", to_insert.len());
-            
+
             let mut to_add: Vec<_> = must_have.difference(existing).map(|s| s.as_str()).collect();
             to_add.sort();
             if !to_add.is_empty() {
