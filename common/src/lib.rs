@@ -34,9 +34,7 @@ pub mod test_util {
     }
 
     pub fn parse(source: &str) -> SyntaxNode {
-        tombi_parser::parse(source, TomlVersion::default())
-            .syntax_node()
-            .clone_for_update()
+        tombi_parser::parse(source).syntax_node().clone_for_update()
     }
 
     pub fn format_toml_str(source: &str, column_width: usize) -> String {

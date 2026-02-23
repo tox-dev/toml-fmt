@@ -1,5 +1,4 @@
 use indoc::indoc;
-use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE};
 use tombi_syntax::SyntaxNode;
 
@@ -29,14 +28,10 @@ fn apply_to_arrays<F>(source: &str, mut f: F) -> String
 where
     F: FnMut(&SyntaxNode),
 {
-    let root_ast = tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(source).syntax_node().clone_for_update();
     for_each_array(&root_ast, &mut f);
     let formatted = format_toml(&root_ast, 120);
-    let formatted_ast = tombi_parser::parse(&formatted, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let formatted_ast = tombi_parser::parse(&formatted).syntax_node().clone_for_update();
     align_array_comments(&formatted_ast);
     formatted_ast.to_string()
 }
@@ -45,9 +40,7 @@ fn apply_to_arrays_raw<F>(source: &str, mut f: F) -> String
 where
     F: FnMut(&SyntaxNode),
 {
-    let root_ast = tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(source).syntax_node().clone_for_update();
     for_each_array(&root_ast, &mut f);
     let mut res = root_ast.to_string();
     res.retain(|x| !x.is_whitespace());
@@ -385,9 +378,7 @@ fn test_sort_with_duplicate_keys() {
           "pkg; marker2",
         ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -411,9 +402,7 @@ fn test_ensure_trailing_comma() {
     let expected_raw = indoc! {r#"a = [
         "x", "y",
         ]"#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -435,9 +424,7 @@ fn test_trailing_comma_prevents_collapse() {
           "y",
         ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -457,9 +444,7 @@ fn test_ensure_all_arrays_multiline_no_duplicate() {
 build-backend = "backend"
 requires = ["c", "d"]
 "#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
 
@@ -470,9 +455,7 @@ requires = ["c", "d"]
 #[test]
 fn test_ensure_all_arrays_multiline_empty_array() {
     let input = r#"a = []"#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert_eq!(result, r#"a = []"#);
@@ -481,9 +464,7 @@ fn test_ensure_all_arrays_multiline_empty_array() {
 #[test]
 fn test_ensure_all_arrays_multiline_already_multiline() {
     let input = "a = [\n  \"x\",\n]";
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(result.contains("\n"), "Should remain multiline");
@@ -493,9 +474,7 @@ fn test_ensure_all_arrays_multiline_already_multiline() {
 #[test]
 fn test_ensure_all_arrays_multiline_has_trailing_but_no_newline() {
     let input = r#"a = ["x",]"#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(result.contains("\n"), "Should add newlines, got: {}", result);
@@ -504,9 +483,7 @@ fn test_ensure_all_arrays_multiline_has_trailing_but_no_newline() {
 #[test]
 fn test_ensure_all_arrays_multiline_nested_arrays_no_trailing() {
     let input = r#"a = [["x", "y"], ["z"]]"#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     insta::assert_snapshot!(root_ast.to_string(), @r#"a = [["x", "y"], ["z"]]"#);
 }
@@ -514,9 +491,7 @@ fn test_ensure_all_arrays_multiline_nested_arrays_no_trailing() {
 #[test]
 fn test_ensure_all_arrays_multiline_nested_arrays_with_trailing() {
     let input = r#"a = [["x", "y",], ["z",],]"#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     insta::assert_snapshot!(root_ast.to_string(), @r#"
     a = [
@@ -537,9 +512,7 @@ fn test_ensure_all_arrays_multiline_no_magic_comma() {
           "y"
         ]
     "#};
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     insta::assert_snapshot!(root_ast.to_string(), @r#"
     a = [
@@ -557,9 +530,7 @@ fn test_align_simple() {
       "CPY",  # Comment 2
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
 
@@ -579,9 +550,7 @@ fn test_align_multiple_arrays() {
       "S", # Short
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
@@ -605,9 +574,7 @@ fn test_align_mixed_comments() {
       "C", # Another comment
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
@@ -624,9 +591,7 @@ fn test_align_no_comments() {
     let start = indoc! {r#"
     a = ["A", "B", "C"]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"a = ["A", "B", "C"]"#);
@@ -640,9 +605,7 @@ fn test_align_very_long_value() {
       "SHORT", # Another
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
@@ -660,9 +623,7 @@ fn test_align_single_item_with_comment() {
       "ITEM", # Comment
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
@@ -685,9 +646,7 @@ fn test_align_nested_structure() {
       "Y", # Short
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
@@ -706,9 +665,7 @@ fn test_align_nested_structure() {
 #[test]
 fn test_ensure_trailing_comma_empty_array() {
     let start = r#"a = []"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -724,9 +681,7 @@ fn test_ensure_trailing_comma_empty_array() {
 #[test]
 fn test_ensure_trailing_comma_already_multiline_with_comma() {
     let start = "a = [\n  \"x\",\n]";
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -765,9 +720,7 @@ fn test_dedupe_with_inline_table() {
 #[test]
 fn test_sort_with_none_key() {
     let start = r#"a = [42, "B", "A"]"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -816,9 +769,7 @@ fn test_transform_literal_string_with_comment() {
 #[test]
 fn test_align_empty_array() {
     let start = r#"a = []"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     insta::assert_snapshot!(root_ast.to_string(), @"a = []");
 }
@@ -826,9 +777,7 @@ fn test_align_empty_array() {
 #[test]
 fn test_align_array_no_string_values() {
     let start = r#"a = [1, 2, 3]"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     insta::assert_snapshot!(root_ast.to_string(), @"a = [1, 2, 3]");
 }
@@ -843,9 +792,7 @@ fn test_dedupe_with_value_wrapper() {
       "bar",
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for descendant in root_ast.descendants() {
         if descendant.kind() == ARRAY {
             dedupe_strings(&descendant, |s| s.to_lowercase());
@@ -864,9 +811,7 @@ fn test_dedupe_with_value_wrapper() {
 #[test]
 fn test_sort_multiline_no_trailing_comma() {
     let start = "a = [\n  \"B\",\n  \"A\"\n]";
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -895,9 +840,7 @@ fn test_align_comment_after_whitespace() {
       "verylongstring",   # another
     ]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     align_array_comments(&root_ast);
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
@@ -911,9 +854,7 @@ fn test_align_comment_after_whitespace() {
 #[test]
 fn test_ensure_trailing_comma_single_item_no_comma() {
     let start = r#"a = ["only"]"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -952,9 +893,7 @@ fn test_dedupe_consecutive_duplicates() {
 #[test]
 fn test_dedupe_array_with_non_string_values() {
     let start = r#"a = [1, "foo", 2, "FOO", 3]"#;
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     for children in root_ast.children_with_tokens() {
         if children.kind() == KEY_VALUE {
             for entry in children.as_node().unwrap().children_with_tokens() {
@@ -1009,9 +948,7 @@ fn test_issue_184_comment_with_double_quotes_sort() {
 #[test]
 fn test_ensure_multiline_no_trailing_comma_exceeds_width() {
     let input = r#"a = ["very long string that exceeds column width"]"#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 30);
     insta::assert_snapshot!(root_ast.to_string(), @r#"
     a = [
@@ -1040,9 +977,7 @@ fn test_format_trailing_comment_no_comma() {
 fn test_issue_202_trailing_comment_preserves_single_line_array() {
     let input = r#"a = [ "x" ] # trailing comment
 "#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(
@@ -1060,9 +995,7 @@ fn test_comment_inside_array_triggers_multiline() {
     let input = r#"a = [ "x", # inline comment
 "y" ]
 "#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(
@@ -1076,9 +1009,7 @@ fn test_comment_in_nested_array_triggers_multiline() {
     let input = r#"a = [ [ "x" # nested comment
 ] ]
 "#;
-    let root_ast = tombi_parser::parse(input, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = root_ast.to_string();
     assert!(

@@ -3,11 +3,11 @@ use std::string::String;
 
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
-use tombi_config::TomlVersion;
 
 use crate::global::reorder_tables;
 use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, Tables};
+use tombi_config::TomlVersion;
 
 mod build_system;
 mod dependency_groups;
@@ -101,9 +101,7 @@ impl TableFormatConfig {
 }
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update()
+    tombi_parser::parse(source).syntax_node().clone_for_update()
 }
 
 async fn format_with_tombi(content: &str, column_width: usize, indent: usize) -> String {

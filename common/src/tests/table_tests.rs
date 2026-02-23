@@ -1,5 +1,4 @@
 use indoc::indoc;
-use tombi_config::TomlVersion;
 
 use super::format_toml;
 use crate::table::{
@@ -8,9 +7,7 @@ use crate::table::{
 };
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update()
+    tombi_parser::parse(source).syntax_node().clone_for_update()
 }
 
 fn tables_reorder_helper(start: &str, order: &[&str]) -> String {

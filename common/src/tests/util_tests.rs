@@ -1,14 +1,11 @@
 use std::cell::RefCell;
 
-use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{BASIC_STRING, KEY_VALUE, KEYS};
 
 use crate::util::{find_first, iter, limit_blank_lines};
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update()
+    tombi_parser::parse(source).syntax_node().clone_for_update()
 }
 
 #[test]
