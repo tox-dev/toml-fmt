@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "maturin"
 requires = [
-  "maturin>=1.12.3",
+  "maturin>=1.12.4",
 ]
 
 [project]
