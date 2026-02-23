@@ -308,20 +308,20 @@ fn generate_classifiers_to_entry(
                             let txt = load_text(token.text(), BASIC_STRING);
                             delete_mode = delete.contains(&txt);
                             if delete_mode {
-                                let mut remove_count = to_insert.len();
-                                for (at, v) in to_insert.iter().rev().enumerate() {
-                                    if [COMMA, BRACKET_START].contains(&v.kind()) {
-                                        remove_count = at;
-                                        for (i, e) in to_insert.iter().enumerate().skip(to_insert.len() - at) {
-                                            if e.kind() == LINE_BREAK {
-                                                remove_count = i + 1;
-                                                break;
-                                            }
-                                        }
+                                let mut truncate_at = to_insert.len();
+                                for (rev_idx, v) in to_insert.iter().rev().enumerate() {
+                                    let fwd_idx = to_insert.len() - 1 - rev_idx;
+                                    if v.kind() == BRACKET_START {
+                                        truncate_at = fwd_idx + 1;
+                                        break;
+                                    }
+                                    if v.kind() == COMMA {
+                                        // Keep the comma, remove whitespace/newline after it
+                                        truncate_at = fwd_idx + 1;
                                         break;
                                     }
                                 }
-                                to_insert.truncate(remove_count);
+                                to_insert.truncate(truncate_at);
                             }
                         }
                     }
