@@ -1,4 +1,25 @@
-<a id="2.16.1"></a>
+<a id="2.16.2"></a>
+
+## 2.16.2 - 2026-02-23
+
+- ⬆️ build(deps): update Rust and Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#243](https://github.com/tox-dev/toml-fmt/pull/243)
+- Fix panic on non-valid classifiers by [@Nicolaus93](https://github.com/Nicolaus93) in
+  [#241](https://github.com/tox-dev/toml-fmt/pull/241)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#240](https://github.com/tox-dev/toml-fmt/pull/240)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#238](https://github.com/tox-dev/toml-fmt/pull/238)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#236](https://github.com/tox-dev/toml-fmt/pull/236)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#235](https://github.com/tox-dev/toml-fmt/pull/235)
+- 🐛 fix(tox-toml-fmt): handle quoted keys with dots in env tables by [@gaborbernat](https://github.com/gaborbernat) in
+  [#234](https://github.com/tox-dev/toml-fmt/pull/234)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#232](https://github.com/tox-dev/toml-fmt/pull/232)
+- ✨ feat(tox-toml-fmt): add semantic formatting matching tox-ini-fmt by [@gaborbernat](https://github.com/gaborbernat)
+  in [#230](https://github.com/tox-dev/toml-fmt/pull/230) <a id="2.16.1"></a>
 
 ## 2.16.1 - 2026-02-18
 
