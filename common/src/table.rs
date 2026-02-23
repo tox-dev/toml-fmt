@@ -3,7 +3,6 @@ use std::collections::{HashMap, HashSet};
 use std::iter::zip;
 use std::ops::Index;
 
-use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{
     ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMENT, DOUBLE_BRACKET_START, EQUAL,
     KEY_VALUE, KEYS, LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
@@ -71,9 +70,7 @@ fn filter_entries(table: &mut RefMut<Vec<SyntaxElement>>, entries_to_remove: &Ha
 use crate::string::load_text;
 
 fn parse(source: &str) -> SyntaxNode {
-    tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update()
+    tombi_parser::parse(source).syntax_node().clone_for_update()
 }
 
 #[derive(Debug)]

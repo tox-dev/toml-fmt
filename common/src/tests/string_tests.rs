@@ -1,4 +1,3 @@
-use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::{
     BARE_KEY, BASIC_STRING, KEY_VALUE, LITERAL_STRING, MULTI_LINE_BASIC_STRING, MULTI_LINE_LITERAL_STRING,
 };
@@ -8,9 +7,7 @@ use crate::string::{
 };
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update()
+    tombi_parser::parse(source).syntax_node().clone_for_update()
 }
 
 fn is_string_kind(kind: tombi_syntax::SyntaxKind) -> bool {

@@ -8,7 +8,6 @@
 //! 2. **Proper escaping**: The parser handles all TOML escape sequences correctly
 //! 3. **Simplicity**: Straightforward code that's easy to understand and maintain
 
-use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxElement;
 use tombi_syntax::SyntaxKind::{
     ARRAY, BASIC_STRING, COMMA, KEYS, LINE_BREAK, LITERAL_STRING, MULTI_LINE_BASIC_STRING, WHITESPACE,
@@ -20,9 +19,7 @@ fn escape(text: &str) -> String {
 }
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update()
+    tombi_parser::parse(source).syntax_node().clone_for_update()
 }
 
 pub fn make_multiline_string_node(wrapped: &str) -> SyntaxElement {

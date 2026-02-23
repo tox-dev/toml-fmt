@@ -193,7 +193,7 @@ nodes, or manipulate the tree structure directly. The tree maintains parent-chil
 modifications.
 
 ```rust
-let syntax = tombi_parser::parse(toml_str, TomlVersion::default())
+let syntax = tombi_parser::parse(toml_str)
     .syntax_node()
     .clone_for_update();
 

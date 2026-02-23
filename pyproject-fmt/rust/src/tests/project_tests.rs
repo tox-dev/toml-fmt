@@ -4,8 +4,6 @@ use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, Tables};
 use indoc::indoc;
 
-use tombi_config::TomlVersion;
-
 use crate::project::fix;
 use crate::tests::{assert_valid_toml, collect_entries, format_syntax, format_toml_str, parse};
 use crate::TableFormatConfig;
@@ -1002,9 +1000,7 @@ fn test_project_with_table_format_expand() {
         [project.urls]
         Homepage = "https://example.com"
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig {
         default_collapse: false,
@@ -1041,9 +1037,7 @@ fn test_project_with_collapse_specific_table() {
         Homepage = "https://example.com"
         Repository = "https://github.com/user/repo"
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
     let mut collapse_tables = HashSet::new();
     collapse_tables.insert("project.urls".to_string());
@@ -1079,9 +1073,7 @@ fn test_project_with_expand_specific_table() {
         urls.Homepage = "https://example.com"
         urls.Repository = "https://github.com/user/repo"
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
     let mut expand_tables = HashSet::new();
     expand_tables.insert("project.urls".to_string());
@@ -2052,9 +2044,7 @@ fn test_project_expand_authors_to_array_of_tables() {
         name = "test"
         authors = [{ name = "Alice", email = "alice@example.com" }, { name = "Bob" }]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
     let mut expand_tables = HashSet::new();
     expand_tables.insert("project.authors".to_string());
@@ -2086,9 +2076,7 @@ fn test_project_expand_maintainers_to_array_of_tables() {
         name = "test"
         maintainers = [{ name = "Charlie", email = "charlie@example.com" }]
     "#};
-    let root_ast = tombi_parser::parse(start, TomlVersion::default())
-        .syntax_node()
-        .clone_for_update();
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
     let mut tables = Tables::from_ast(&root_ast);
     let mut expand_tables = HashSet::new();
     expand_tables.insert("project.maintainers".to_string());
