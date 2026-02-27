@@ -86,7 +86,7 @@ jobs:
       - name: 👀 Show changes
         run: git diff HEAD -u
       - name: 📤 Upload source
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: source
           path: |
@@ -110,7 +110,7 @@ jobs:
           - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: source
       - name: 🔨 Build wheels
@@ -121,7 +121,7 @@ jobs:
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
@@ -137,7 +137,7 @@ jobs:
           - { runner: windows-2025, target: x64 }
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: source
       - name: 🐍 Setup Python 3.10
@@ -152,7 +152,7 @@ jobs:
           args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: dist
@@ -169,7 +169,7 @@ jobs:
           - { runner: macos-15, target: aarch64 }
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: source
       - name: 🔨 Build wheels
@@ -179,7 +179,7 @@ jobs:
           args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
@@ -190,7 +190,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: source
       - name: 📦 Build sdist
@@ -199,7 +199,7 @@ jobs:
           command: sdist
           args: -m pyproject-fmt/Cargo.toml --out dist
       - name: 📤 Upload sdist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-sdist
           path: dist
@@ -221,7 +221,7 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
       - name: 📥 Download source
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: source
           path: .
@@ -233,7 +233,7 @@ jobs:
           git config --global user.email 'gaborbernat@users.noreply.github.com'
           git commit -am "Release pyproject-fmt ${{needs.bump.outputs.version}} [skip ci]"
       - name: 📥 Download wheels
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: wheels-*
           path: dist

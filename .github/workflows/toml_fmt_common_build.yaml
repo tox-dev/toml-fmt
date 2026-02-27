@@ -62,7 +62,7 @@ jobs:
       - name: 🔨 Build package
         run: uv build --python 3.14 --python-preference only-managed --sdist --wheel . --out-dir dist
       - name: 📤 Store the distribution packages
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.dists-artifact-name }}
           path: toml-fmt-common/dist/*
@@ -78,7 +78,7 @@ jobs:
     if: github.event.inputs.release == 'yes' && github.ref == 'refs/heads/main'
     steps:
       - name: 📥 Download all the dists
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ env.dists-artifact-name }}
           path: dist/
