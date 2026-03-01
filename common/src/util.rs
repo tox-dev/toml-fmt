@@ -1,17 +1,32 @@
+use tombi_syntax::SyntaxKind::{KEY_VALUE, KEY_VALUE_GROUP};
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
+
+fn children_matching_kind(node: &SyntaxNode, target: SyntaxKind) -> Vec<SyntaxElement> {
+    let mut result = Vec::new();
+    for entry in node.children_with_tokens() {
+        if entry.kind() == target {
+            result.push(entry);
+        } else if target == KEY_VALUE && entry.kind() == KEY_VALUE_GROUP {
+            for kv in entry.as_node().unwrap().children_with_tokens() {
+                if kv.kind() == KEY_VALUE {
+                    result.push(kv);
+                }
+            }
+        }
+    }
+    result
+}
 
 pub fn iter<F>(node: &SyntaxNode, paths: &[SyntaxKind], handle: &F)
 where
     F: Fn(&SyntaxNode),
 {
-    for entry in node.children_with_tokens() {
-        if entry.kind() == paths[0] {
-            let found = entry.as_node().unwrap();
-            if paths.len() == 1 {
-                handle(found);
-            } else {
-                iter(found, &paths[1..], handle);
-            }
+    for entry in children_matching_kind(node, paths[0]) {
+        let found = entry.as_node().unwrap();
+        if paths.len() == 1 {
+            handle(found);
+        } else {
+            iter(found, &paths[1..], handle);
         }
     }
 }
@@ -20,13 +35,11 @@ pub fn find_first<F, T>(node: &SyntaxNode, paths: &[SyntaxKind], extract: &F) ->
 where
     F: Fn(SyntaxElement) -> T,
 {
-    for entry in node.children_with_tokens() {
-        if entry.kind() == paths[0] {
-            if paths.len() == 1 {
-                return Some(extract(entry));
-            } else if let Some(result) = find_first(entry.as_node().unwrap(), &paths[1..], extract) {
-                return Some(result);
-            }
+    for entry in children_matching_kind(node, paths[0]) {
+        if paths.len() == 1 {
+            return Some(extract(entry));
+        } else if let Some(result) = find_first(entry.as_node().unwrap(), &paths[1..], extract) {
+            return Some(result);
         }
     }
     None
