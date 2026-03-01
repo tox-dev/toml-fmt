@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "maturin"
 requires = [
-  "maturin>=1.12.4",
+  "maturin>=1.12.5",
 ]
 
 [project]
@@ -72,7 +72,7 @@ fix = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.10.6",
+  "uv>=0.10.7",
 ]
 
 [tool.maturin]
