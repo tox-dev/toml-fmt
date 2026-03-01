@@ -1617,7 +1617,7 @@ wheels = [
 
 [[package]]
 name = "toml-fmt-common"
-version = "1.2.0"
+version = "1.3.0"
 source = { editable = "toml-fmt-common" }
 dependencies = [
     { name = "tomli", marker = "python_full_version < '3.11'" },
