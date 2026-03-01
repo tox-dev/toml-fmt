@@ -290,3 +290,80 @@ def test_writes_lf_line_endings(tmp_path: Path) -> None:
     raw = dumb.read_bytes()
     assert b"\r\n" not in raw
     assert b"\n" in raw
+
+
+def test_config_flag_explicit(tmp_path: Path) -> None:
+    config_file = tmp_path / "toml-fmt-common.toml"
+    config_file.write_text("extra = 'FROM_CONFIG'")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+
+    exit_code = run(Dumb(), ["E", str(dumb), "--config", str(config_file)])
+    assert exit_code == 1
+    assert dumb.read_text() == "\nextras = 'FROM_CONFIG'"
+
+
+def test_config_flag_nonexistent(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["E", str(dumb), "--config", str(tmp_path / "missing.toml")])
+
+    out, err = capsys.readouterr()
+    assert "config file does not exist" in err
+    assert not out
+
+
+def test_config_auto_discovery(tmp_path: Path) -> None:
+    config_file = tmp_path / "toml-fmt-common.toml"
+    config_file.write_text("extra = 'DISCOVERED'")
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    dumb = sub / "dumb.toml"
+    dumb.write_text("")
+
+    exit_code = run(Dumb(), ["E", str(dumb)])
+    assert exit_code == 1
+    assert dumb.read_text() == "\nextras = 'DISCOVERED'"
+
+
+def test_config_auto_discovery_not_found(tmp_path: Path) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+
+    exit_code = run(Dumb(), ["E", str(dumb)])
+    assert exit_code == 1
+    assert dumb.read_text() == "\nextras = 'E'"
+
+
+def test_config_per_file_overrides_shared(tmp_path: Path) -> None:
+    config_file = tmp_path / "toml-fmt-common.toml"
+    config_file.write_text("extra = 'SHARED'")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("[start.sub]\nextra = 'IN_FILE'")
+
+    exit_code = run(Dumb(), ["E", str(dumb)])
+    assert exit_code == 1
+    assert dumb.read_text() == "[start.sub]\nextra = 'IN_FILE'\nextras = 'IN_FILE'"
+
+
+def test_config_stdin_uses_cwd(mocker: MockerFixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    config_file = tmp_path / "toml-fmt-common.toml"
+    config_file.write_text("extra = 'CWD_CONFIG'")
+    mocker.patch("sys.stdin", StringIO("ok = 1"))
+
+    exit_code = run(Dumb(), ["E", "-"])
+    assert exit_code == 1
+
+
+def test_config_shared_custom_type(tmp_path: Path) -> None:
+    config_file = tmp_path / "toml-fmt-common.toml"
+    config_file.write_text("tuple_magic = '1.2.3'")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+
+    exit_code = run(Dumb(), ["E", str(dumb), "--config", str(config_file)])
+    assert exit_code == 1
+    assert dumb.read_text() == "\nextras = 'E'\nmagic = '1,2,3'"

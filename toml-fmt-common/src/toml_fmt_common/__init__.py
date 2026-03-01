@@ -39,6 +39,7 @@ class FmtNamespace(Namespace):
     stdout: bool
     check: bool
     no_print_diff: bool
+    config: Path | None
 
     column_width: int
     indent: int
@@ -136,25 +137,36 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
     """
     parser, type_conversion = _build_cli(info)
     parser.parse_args(namespace=info.opt, args=args)
+
+    explicit_config = info.opt.config
+    if explicit_config is not None and not explicit_config.is_file():
+        parser.error(f"config file does not exist: {explicit_config}")
+
     res = []
     for pyproject_toml in info.opt.inputs:
         raw_pyproject_toml = sys.stdin.read() if pyproject_toml is None else pyproject_toml.read_text(encoding="utf-8")
-        config: dict[str, Any] | None = tomllib.loads(raw_pyproject_toml)
 
+        override_opt = deepcopy(info.opt)
+
+        if explicit_config is not None:
+            shared = _load_shared_config(explicit_config)
+        elif found := _find_config_file(info.prog, pyproject_toml.parent if pyproject_toml is not None else Path.cwd()):
+            shared = _load_shared_config(found)
+        else:
+            shared = {}
+        _apply_config(override_opt, shared, type_conversion)
+
+        file_config: dict[str, Any] | None = tomllib.loads(raw_pyproject_toml)
         parts = deque(info.override_cli_from_section)
         while parts:  # pragma: no branch
             part = parts.popleft()
-            if not isinstance(config, dict) or part not in config:
-                config = None
+            if not isinstance(file_config, dict) or part not in file_config:
+                file_config = None
                 break
-            config = config[part]
-        override_opt = deepcopy(info.opt)
-        if isinstance(config, dict):
-            for key in set(vars(override_opt).keys()) - {"inputs", "stdout", "check", "no_print_diff"}:
-                if key in config:
-                    raw = config[key]
-                    converted = type_conversion[key](raw) if key in type_conversion else raw
-                    setattr(override_opt, key, converted)
+            file_config = file_config[part]
+        if isinstance(file_config, dict):
+            _apply_config(override_opt, file_config, type_conversion)
+
         res.append(
             _Config(
                 toml_filename=pyproject_toml,
@@ -167,6 +179,32 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
         )
 
     return res
+
+
+_NON_FORMAT_KEYS = frozenset({"inputs", "stdout", "check", "no_print_diff", "config"})
+
+
+def _apply_config(opt: T, config: dict[str, Any], type_conversion: Mapping[str, Callable[[Any], Any]]) -> None:
+    for key in set(vars(opt).keys()) - _NON_FORMAT_KEYS:
+        if key in config:
+            raw = config[key]
+            setattr(opt, key, type_conversion[key](raw) if key in type_conversion else raw)
+
+
+def _find_config_file(prog: str, start: Path) -> Path | None:
+    current = start.resolve()
+    while True:
+        candidate = current / f"{prog}.toml"
+        if candidate.is_file():
+            return candidate
+        parent = current.parent
+        if parent == current:
+            return None
+        current = parent
+
+
+def _load_shared_config(path: Path) -> dict[str, Any]:
+    return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
 def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[Any], Any]]]:
@@ -193,6 +231,13 @@ def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Calla
         "--no-print-diff",
         action="store_true",
         help="Flag indicating to print diff for the check mode",
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        help=f"path to a shared {of.prog}.toml config file",
+        metavar="path",
     )
 
     format_group = parser.add_argument_group("formatting behavior")
