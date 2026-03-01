@@ -1,4 +1,29 @@
-<a id="1.7.2"></a>
+<a id="1.8.0"></a>
+
+## 1.8.0 - 2026-03-01
+
+- ✨ feat(common): add shared config file support by [@gaborbernat](https://github.com/gaborbernat) in
+  [#258](https://github.com/tox-dev/toml-fmt/pull/258)
+- 🐛 fix(parser): adapt to tombi v0.8.0 AST changes by [@gaborbernat](https://github.com/gaborbernat) in
+  [#259](https://github.com/tox-dev/toml-fmt/pull/259)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#257](https://github.com/tox-dev/toml-fmt/pull/257)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#248](https://github.com/tox-dev/toml-fmt/pull/248)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#247](https://github.com/tox-dev/toml-fmt/pull/247)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#245](https://github.com/tox-dev/toml-fmt/pull/245)
+- ⬆️ build(deps): update Rust and Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#243](https://github.com/tox-dev/toml-fmt/pull/243)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#240](https://github.com/tox-dev/toml-fmt/pull/240)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#238](https://github.com/tox-dev/toml-fmt/pull/238)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#236](https://github.com/tox-dev/toml-fmt/pull/236)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#235](https://github.com/tox-dev/toml-fmt/pull/235) <a id="1.7.2"></a>
 
 ## 1.7.2 - 2026-02-18
 
