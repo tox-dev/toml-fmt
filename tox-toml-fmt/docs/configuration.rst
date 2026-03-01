@@ -23,6 +23,31 @@ The ``[tox-toml-fmt]`` table is used when present in the ``tox.toml`` file:
 If not set they will default to values from the CLI. The example above shows the defaults (except ``pin_envs``
 which defaults to an empty list).
 
+Shared configuration file
+-------------------------
+
+You can place formatting settings in a standalone ``tox-toml-fmt.toml`` file instead of (or in addition to) the
+``[tox-toml-fmt]`` table. This is useful for monorepos or when you want to share the same configuration across multiple
+projects without duplicating it in each ``tox.toml``.
+
+The formatter searches for ``tox-toml-fmt.toml`` starting from the directory of the file being formatted and walking up
+to the filesystem root. The first match wins. You can also pass an explicit path via ``--config``:
+
+.. code-block:: bash
+
+    tox-toml-fmt --config /path/to/tox-toml-fmt.toml tox.toml
+
+The shared config file uses the same keys as the ``[tox-toml-fmt]`` table, but without the table header:
+
+.. code-block:: toml
+
+    column_width = 120
+    indent = 2
+    pin_envs = ["fix", "type"]
+
+When both a shared config file and a ``[tox-toml-fmt]`` table exist, per-file settings from the ``[tox-toml-fmt]``
+table take precedence over the shared config file.
+
 Command line interface
 ----------------------
 

@@ -41,6 +41,32 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
 
 If not set they will default to values from the CLI.
 
+Shared configuration file
+-------------------------
+
+You can place formatting settings in a standalone ``pyproject-fmt.toml`` file instead of (or in addition to) the
+``[tool.pyproject-fmt]`` table. This is useful for monorepos or when you want to share the same configuration across
+multiple projects without duplicating it in each ``pyproject.toml``.
+
+The formatter searches for ``pyproject-fmt.toml`` starting from the directory of the file being formatted and walking up
+to the filesystem root. The first match wins. You can also pass an explicit path via ``--config``:
+
+.. code-block:: bash
+
+    pyproject-fmt --config /path/to/pyproject-fmt.toml pyproject.toml
+
+The shared config file uses the same keys as the ``[tool.pyproject-fmt]`` table, but without the table header:
+
+.. code-block:: toml
+
+    column_width = 120
+    indent = 2
+    table_format = "short"
+    max_supported_python = "3.14"
+
+When both a shared config file and a ``[tool.pyproject-fmt]`` table exist, per-file settings from the
+``[tool.pyproject-fmt]`` table take precedence over the shared config file.
+
 Command line interface
 ----------------------
 
