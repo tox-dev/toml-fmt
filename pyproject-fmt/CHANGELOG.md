@@ -1,4 +1,19 @@
-<a id="2.16.2"></a>
+<a id="2.17.0"></a>
+
+## 2.17.0 - 2026-03-01
+
+- ✨ feat(common): add shared config file support by [@gaborbernat](https://github.com/gaborbernat) in
+  [#258](https://github.com/tox-dev/toml-fmt/pull/258)
+- 🐛 fix(parser): adapt to tombi v0.8.0 AST changes by [@gaborbernat](https://github.com/gaborbernat) in
+  [#259](https://github.com/tox-dev/toml-fmt/pull/259)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#257](https://github.com/tox-dev/toml-fmt/pull/257)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#248](https://github.com/tox-dev/toml-fmt/pull/248)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#247](https://github.com/tox-dev/toml-fmt/pull/247)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#245](https://github.com/tox-dev/toml-fmt/pull/245) <a id="2.16.2"></a>
 
 ## 2.16.2 - 2026-02-23
 
