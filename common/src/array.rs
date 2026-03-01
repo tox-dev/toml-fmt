@@ -4,9 +4,68 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use tombi_syntax::SyntaxKind::{
     ARRAY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMA, COMMENT, DOUBLE_BRACKET_END, DOUBLE_BRACKET_START,
-    LINE_BREAK, LITERAL_STRING, WHITESPACE,
+    LINE_BREAK, LITERAL_STRING, VALUE_WITH_COMMA_GROUP, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
+
+fn flat_array_children(array: &SyntaxNode) -> Vec<SyntaxElement> {
+    let mut result = Vec::new();
+    for child in array.children_with_tokens() {
+        if child.kind() == VALUE_WITH_COMMA_GROUP {
+            for inner in child.as_node().unwrap().children_with_tokens() {
+                unwrap_leading_trivia(&mut result, inner);
+            }
+        } else {
+            result.push(child);
+        }
+    }
+    result
+}
+
+fn unwrap_leading_trivia(result: &mut Vec<SyntaxElement>, elem: SyntaxElement) {
+    if !is_array_value(elem.kind()) || elem.as_node().is_none() {
+        result.push(elem);
+        return;
+    }
+    let node = elem.as_node().unwrap();
+    let children: Vec<_> = node.children_with_tokens().collect();
+    let leading_count = children
+        .iter()
+        .take_while(|c| matches!(c.kind(), LINE_BREAK | WHITESPACE))
+        .count();
+    if leading_count == 0 {
+        result.push(elem);
+        return;
+    }
+    for child in &children[..leading_count] {
+        result.push(child.clone());
+    }
+    let remaining: Vec<_> = children[leading_count..].to_vec();
+    let trailing_comment_start = remaining
+        .iter()
+        .position(|c| matches!(c.kind(), WHITESPACE | COMMENT) && !is_array_value(c.kind()))
+        .filter(|&pos| {
+            remaining[pos..]
+                .iter()
+                .all(|c| matches!(c.kind(), WHITESPACE | COMMENT))
+        });
+    if let Some(tcs) = trailing_comment_start {
+        node.splice_children(0..children.len(), remaining[..tcs].to_vec());
+        result.push(elem);
+        for child in &remaining[tcs..] {
+            result.push(child.clone());
+        }
+    } else {
+        node.splice_children(0..children.len(), remaining);
+        result.push(elem);
+    }
+}
+
+fn flatten_array_in_place(array: &SyntaxNode) {
+    let count = array.children_with_tokens().count();
+    let flat = flat_array_children(array);
+    array.splice_children(0..count, flat);
+}
 
 use crate::create::{make_comma, make_newline, make_whitespace_n};
 use crate::string::{load_text, update_content};
@@ -26,18 +85,18 @@ fn is_array_value(kind: SyntaxKind) -> bool {
 }
 
 fn has_trailing_comma(array: &SyntaxNode) -> bool {
-    array
-        .children_with_tokens()
-        .filter(|x| x.kind() == COMMA || is_array_value(x.kind()))
-        .last()
+    flat_array_children(array)
+        .iter()
+        .rfind(|x| x.kind() == COMMA || is_array_value(x.kind()))
         .is_some_and(|x| x.kind() == COMMA)
 }
 
 fn is_multiline(array: &SyntaxNode) -> bool {
-    array.children_with_tokens().any(|x| x.kind() == LINE_BREAK)
+    flat_array_children(array).iter().any(|x| x.kind() == LINE_BREAK)
 }
 
 fn add_trailing_comma_if_missing(array: &SyntaxNode) {
+    flatten_array_in_place(array);
     if let Some((i, _)) = array
         .children_with_tokens()
         .enumerate()
@@ -49,6 +108,7 @@ fn add_trailing_comma_if_missing(array: &SyntaxNode) {
 }
 
 fn insert_newlines_around_content(array: &SyntaxNode) {
+    flatten_array_in_place(array);
     if let Some((start_idx, _)) = array
         .children_with_tokens()
         .enumerate()
@@ -66,6 +126,7 @@ fn insert_newlines_around_content(array: &SyntaxNode) {
 }
 
 pub fn ensure_trailing_comma(array: &SyntaxNode) {
+    flatten_array_in_place(array);
     if !array.children_with_tokens().any(|x| is_array_value(x.kind())) {
         return;
     }
@@ -87,14 +148,14 @@ pub fn ensure_trailing_comma(array: &SyntaxNode) {
 }
 
 pub fn ensure_all_arrays_multiline(root: &SyntaxNode, column_width: usize) {
-    for descendant in root.descendants() {
-        if descendant.kind() == ARRAY {
-            ensure_array_multiline(&descendant, column_width);
-        }
+    let arrays: Vec<_> = root.descendants().filter(|d| d.kind() == ARRAY).collect();
+    for array in arrays.iter().rev() {
+        ensure_array_multiline(array, column_width);
     }
 }
 
 fn ensure_array_multiline(array: &SyntaxNode, column_width: usize) {
+    flatten_array_in_place(array);
     if !array.children_with_tokens().any(|x| is_array_value(x.kind())) {
         return;
     }
@@ -118,7 +179,7 @@ fn ensure_array_multiline(array: &SyntaxNode, column_width: usize) {
 }
 
 fn has_comment_before_bracket_end(array: &SyntaxNode) -> bool {
-    let children: Vec<_> = array.children_with_tokens().collect();
+    let children: Vec<_> = flat_array_children(array);
     let mut seen_bracket_end = false;
     for child in children.iter().rev() {
         if child.kind() == BRACKET_END {
@@ -140,6 +201,7 @@ pub fn transform<F>(array: &SyntaxNode, transform: &F)
 where
     F: Fn(&str) -> String,
 {
+    flatten_array_in_place(array);
     for entry in array.children_with_tokens() {
         if (entry.kind() == BASIC_STRING || entry.kind() == LITERAL_STRING)
             && let Some(string_node) = entry.as_node()
@@ -156,6 +218,7 @@ where
     C: Fn(&T, &T) -> Ordering,
     T: Clone + Eq + Hash,
 {
+    flatten_array_in_place(array);
     let has_trailing_comma = array
         .children_with_tokens()
         .map(|x| x.kind())
@@ -311,6 +374,7 @@ pub fn dedupe_strings<K>(array: &SyntaxNode, to_key: K)
 where
     K: Fn(&str) -> String,
 {
+    flatten_array_in_place(array);
     let mut seen: HashSet<String> = HashSet::new();
     let mut to_insert: Vec<SyntaxElement> = Vec::new();
     let mut skip_until_next_value = false;
@@ -365,14 +429,14 @@ where
 }
 
 pub fn align_array_comments(root: &SyntaxNode) {
-    for descendant in root.descendants() {
-        if descendant.kind() == ARRAY {
-            align_comments_in_array(&descendant);
-        }
+    let arrays: Vec<_> = root.descendants().filter(|d| d.kind() == ARRAY).collect();
+    for array in arrays.iter().rev() {
+        align_comments_in_array(array);
     }
 }
 
 fn align_comments_in_array(array: &SyntaxNode) {
+    flatten_array_in_place(array);
     let mut max_value_len = 0;
     let elements: Vec<_> = array.children_with_tokens().collect();
     let mut value_indices = Vec::new();

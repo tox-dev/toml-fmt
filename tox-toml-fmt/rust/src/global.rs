@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use lexical_sort::natural_lexical_cmp;
 use regex::Regex;
-use tombi_syntax::SyntaxKind::{ARRAY, BASIC_STRING, INLINE_TABLE};
+use tombi_syntax::SyntaxKind::{ARRAY, BASIC_STRING, INLINE_TABLE, VALUE_WITH_COMMA_GROUP};
 use tombi_syntax::{SyntaxElement, SyntaxNode};
 
 use common::array::{sort, sort_strings, transform};
@@ -343,6 +343,13 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
                         if array_child.kind() == BASIC_STRING {
                             let env_name = load_text(&array_child.to_string(), BASIC_STRING);
                             env_order.push(format!("env.{env_name}"));
+                        } else if array_child.kind() == VALUE_WITH_COMMA_GROUP {
+                            for inner in array_child.as_node().unwrap().children_with_tokens() {
+                                if inner.kind() == BASIC_STRING {
+                                    let env_name = load_text(&inner.to_string(), BASIC_STRING);
+                                    env_order.push(format!("env.{env_name}"));
+                                }
+                            }
                         }
                     }
                 }

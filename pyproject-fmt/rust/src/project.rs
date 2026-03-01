@@ -6,8 +6,8 @@ use std::sync::LazyLock;
 use lexical_sort::natural_lexical_cmp;
 use regex::Regex;
 use tombi_syntax::SyntaxKind::{
-    ARRAY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMA, COMMENT, EQUAL, INLINE_TABLE, KEYS, KEY_VALUE, LINE_BREAK,
-    WHITESPACE,
+    ARRAY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMA, COMMENT, EQUAL, INLINE_TABLE, KEYS, KEY_VALUE,
+    KEY_VALUE_WITH_COMMA_GROUP, LINE_BREAK, VALUE_WITH_COMMA_GROUP, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxNode};
 
@@ -197,7 +197,16 @@ fn expand_entry_points_inline_tables(table: &mut RefMut<Vec<SyntaxElement>>) {
                     key = s_in_table.as_node().unwrap().text().to_string().trim().to_string();
                 } else if key.starts_with("entry-points.") && s_in_table.kind() == INLINE_TABLE {
                     has_inline_table = true;
-                    for s_in_inline_table in s_in_table.as_node().unwrap().children_with_tokens() {
+                    let it_node = s_in_table.as_node().unwrap();
+                    let kv_iter: Box<dyn Iterator<Item = SyntaxElement>> = if let Some(group) = it_node
+                        .children_with_tokens()
+                        .find(|c| c.kind() == KEY_VALUE_WITH_COMMA_GROUP)
+                    {
+                        Box::new(group.as_node().unwrap().children_with_tokens())
+                    } else {
+                        Box::new(it_node.children_with_tokens())
+                    };
+                    for s_in_inline_table in kv_iter {
                         if s_in_inline_table.kind() == KEY_VALUE {
                             let mut with_key = String::new();
                             for s_in_entry in s_in_inline_table.as_node().unwrap().children_with_tokens() {
@@ -494,38 +503,54 @@ fn expand_array_of_tables(tables: &mut Tables, full_name: &str, key_order: &[&st
                 if child.kind() == KEYS {
                     current_key = child.as_node().unwrap().text().to_string().trim().to_string();
                 } else if current_key == field_name && child.kind() == ARRAY {
-                    for array_element in child.as_node().unwrap().children_with_tokens() {
-                        if array_element.kind() == INLINE_TABLE {
-                            let mut fields: Vec<(String, String)> = Vec::new();
-                            for inline_entry in array_element.as_node().unwrap().children_with_tokens() {
-                                if inline_entry.kind() == KEY_VALUE {
-                                    let mut key_name = String::new();
-                                    let mut value_str = String::new();
-                                    for e in inline_entry.as_node().unwrap().children_with_tokens() {
-                                        match e.kind() {
-                                            KEYS => {
-                                                key_name = e.as_node().unwrap().text().to_string().trim().to_string();
-                                            }
-                                            BASIC_STRING => {
-                                                if let Some(string_node) = e.as_node() {
-                                                    value_str = string_node.text().to_string();
-                                                }
-                                            }
-                                            _ => {}
+                    let mut process_inline_table = |it_node: &SyntaxNode| {
+                        let mut fields: Vec<(String, String)> = Vec::new();
+                        let kv_iter: Box<dyn Iterator<Item = SyntaxElement>> = if let Some(group) = it_node
+                            .children_with_tokens()
+                            .find(|c| c.kind() == KEY_VALUE_WITH_COMMA_GROUP)
+                        {
+                            Box::new(group.as_node().unwrap().children_with_tokens())
+                        } else {
+                            Box::new(it_node.children_with_tokens())
+                        };
+                        for inline_entry in kv_iter {
+                            if inline_entry.kind() == KEY_VALUE {
+                                let mut key_name = String::new();
+                                let mut value_str = String::new();
+                                for e in inline_entry.as_node().unwrap().children_with_tokens() {
+                                    match e.kind() {
+                                        KEYS => {
+                                            key_name = e.as_node().unwrap().text().to_string().trim().to_string();
                                         }
-                                    }
-                                    if !key_name.is_empty() && !value_str.is_empty() {
-                                        fields.push((key_name, value_str));
+                                        BASIC_STRING => {
+                                            if let Some(string_node) = e.as_node() {
+                                                value_str = string_node.text().to_string();
+                                            }
+                                        }
+                                        _ => {}
                                     }
                                 }
+                                if !key_name.is_empty() && !value_str.is_empty() {
+                                    fields.push((key_name, value_str));
+                                }
                             }
-                            if !fields.is_empty() {
-                                fields.sort_by(|a, b| {
-                                    let order =
-                                        |s: &str| key_order.iter().position(|&k| k == s).unwrap_or(key_order.len());
-                                    order(&a.0).cmp(&order(&b.0)).then_with(|| a.0.cmp(&b.0))
-                                });
-                                inline_table_entries.push(fields);
+                        }
+                        if !fields.is_empty() {
+                            fields.sort_by(|a, b| {
+                                let order = |s: &str| key_order.iter().position(|&k| k == s).unwrap_or(key_order.len());
+                                order(&a.0).cmp(&order(&b.0)).then_with(|| a.0.cmp(&b.0))
+                            });
+                            inline_table_entries.push(fields);
+                        }
+                    };
+                    for array_element in child.as_node().unwrap().children_with_tokens() {
+                        if array_element.kind() == INLINE_TABLE {
+                            process_inline_table(array_element.as_node().unwrap());
+                        } else if array_element.kind() == VALUE_WITH_COMMA_GROUP {
+                            for inner in array_element.as_node().unwrap().children_with_tokens() {
+                                if inner.kind() == INLINE_TABLE {
+                                    process_inline_table(inner.as_node().unwrap());
+                                }
                             }
                         }
                     }

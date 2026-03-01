@@ -1875,7 +1875,6 @@ fn test_apply_table_formatting_with_nested_subtables_and_direct_entries() {
     [tool.ruff]
     line-length = 120
     lint.select = ["ALL"]
-
     lint.extra.ok = 1
     "#);
 }
