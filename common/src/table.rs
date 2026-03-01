@@ -4,8 +4,9 @@ use std::iter::zip;
 use std::ops::Index;
 
 use tombi_syntax::SyntaxKind::{
-    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMENT, DOUBLE_BRACKET_START, EQUAL,
-    KEY_VALUE, KEYS, LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
+    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMENT, DANGLING_COMMENT_GROUP,
+    DOUBLE_BRACKET_START, EQUAL, KEY_VALUE, KEY_VALUE_GROUP, KEY_VALUE_WITH_COMMA_GROUP, KEYS, LINE_BREAK,
+    LITERAL_STRING, TABLE, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -71,6 +72,51 @@ use crate::string::load_text;
 
 fn parse(source: &str) -> SyntaxNode {
     tombi_parser::parse(source).syntax_node().clone_for_update()
+}
+
+fn flatten_key_value_group(group: &SyntaxNode, entry_set: &RefCell<Vec<SyntaxElement>>) {
+    for child in group.children_with_tokens() {
+        entry_set.borrow_mut().push(child);
+    }
+}
+
+fn collapse_consecutive_line_breaks(entries: &mut Vec<SyntaxElement>) {
+    let mut collapsed = Vec::new();
+    let mut prev_was_newline = false;
+    for element in entries.iter() {
+        if element.kind() == LINE_BREAK {
+            if !prev_was_newline {
+                collapsed.push(element.clone());
+            }
+            prev_was_newline = true;
+        } else {
+            prev_was_newline = false;
+            collapsed.push(element.clone());
+        }
+    }
+    entries.splice(0..entries.len(), collapsed);
+}
+
+fn has_leading_newline(element: &SyntaxElement) -> bool {
+    element
+        .as_node()
+        .is_some_and(|n| n.children_with_tokens().next().is_some_and(|c| c.kind() == LINE_BREAK))
+}
+
+fn find_key_value_in_parsed(root: &SyntaxNode) -> Option<SyntaxElement> {
+    for c in root.children_with_tokens() {
+        if c.kind() == KEY_VALUE {
+            return Some(c);
+        }
+        if c.kind() == KEY_VALUE_GROUP {
+            for kv in c.as_node().unwrap().children_with_tokens() {
+                if kv.kind() == KEY_VALUE {
+                    return Some(kv);
+                }
+            }
+        }
+    }
+    None
 }
 
 #[derive(Debug)]
@@ -146,6 +192,8 @@ impl Tables {
                     }
                 }
 
+                collapse_consecutive_line_breaks(&mut borrow);
+
                 drop(borrow);
 
                 add_to_table_set(table_kind, &current_table_name);
@@ -154,17 +202,22 @@ impl Tables {
 
                 entry_set.borrow_mut().extend(comments_for_new_table);
 
-                // For both TABLE and ARRAY_OF_TABLE, push all children
-                // We don't push the parent node to avoid duplication
                 if let Some(table_node) = c.as_node() {
                     for child in table_node.children_with_tokens() {
-                        entry_set.borrow_mut().push(child);
+                        if child.kind() == KEY_VALUE_GROUP || child.kind() == DANGLING_COMMENT_GROUP {
+                            flatten_key_value_group(child.as_node().unwrap(), &entry_set);
+                        } else {
+                            entry_set.borrow_mut().push(child);
+                        }
                     }
                 }
+            } else if c.kind() == KEY_VALUE_GROUP || c.kind() == DANGLING_COMMENT_GROUP {
+                flatten_key_value_group(c.as_node().unwrap(), &entry_set);
             } else {
                 entry_set.borrow_mut().push(c);
             }
         }
+        collapse_consecutive_line_breaks(&mut entry_set.borrow_mut());
         add_to_table_set(table_kind, &current_table_name);
         Self {
             header_to_pos,
@@ -319,7 +372,12 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
         matching_keys.sort_by_key(|key| key.to_lowercase());
         for key in matching_keys {
             let position = key_to_position[key];
-            if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
+            let first_has_leading = key_set[position].first().is_some_and(has_leading_newline);
+            if first_has_leading {
+                while to_insert.last().is_some_and(|e| e.kind() == LINE_BREAK) {
+                    to_insert.pop();
+                }
+            } else if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
                 to_insert.push(make_newline());
             }
             to_insert.extend(key_set[position].clone());
@@ -333,7 +391,12 @@ pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]
         .collect();
     unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
     for (_, position) in unhandled {
-        if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
+        let first_has_leading = key_set[position].first().is_some_and(has_leading_newline);
+        if first_has_leading {
+            while to_insert.last().is_some_and(|e| e.kind() == LINE_BREAK) {
+                to_insert.pop();
+            }
+        } else if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
             to_insert.push(make_newline());
         }
         to_insert.extend(key_set[position].clone());
@@ -446,12 +509,25 @@ pub fn rename_keys(table: &mut RefMut<Vec<SyntaxElement>>, aliases: &[(&str, &st
 pub fn find_key(table: &SyntaxNode, key: &str) -> Option<SyntaxNode> {
     let mut current_key = String::new();
     for table_entry in table.children_with_tokens() {
-        if table_entry.kind() == KEY_VALUE {
+        let kind = table_entry.kind();
+        if kind == KEY_VALUE {
             for entry in table_entry.as_node().unwrap().children_with_tokens() {
                 if entry.kind() == KEYS {
                     current_key = entry.as_node().unwrap().text().to_string().trim().to_string();
                 } else if is_value_kind(entry.kind()) && current_key == key {
                     return Some(entry.as_node().unwrap().clone());
+                }
+            }
+        } else if kind == KEY_VALUE_GROUP || kind == KEY_VALUE_WITH_COMMA_GROUP {
+            for kv in table_entry.as_node().unwrap().children_with_tokens() {
+                if kv.kind() == KEY_VALUE {
+                    for entry in kv.as_node().unwrap().children_with_tokens() {
+                        if entry.kind() == KEYS {
+                            current_key = entry.as_node().unwrap().text().to_string().trim().to_string();
+                        } else if is_value_kind(entry.kind()) && current_key == key {
+                            return Some(entry.as_node().unwrap().clone());
+                        }
+                    }
                 }
             }
         }
@@ -536,7 +612,8 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
                 }
                 child_node.splice_children(0..to_insert.len(), to_insert);
             }
-            if main.last().unwrap().kind() != LINE_BREAK {
+            let kind = child.kind();
+            if main.last().unwrap().kind() != LINE_BREAK && kind != LINE_BREAK && !has_leading_newline(child) {
                 main.push(make_newline());
             }
             main.push(child.clone());
@@ -595,7 +672,7 @@ pub fn expand_sub_tables(tables: &mut Tables, name: &str) {
 
             let new_entry_text = format!("{simple_key} ={value_text}\n");
             let parsed_root = parse(&new_entry_text);
-            if let Some(entry) = parsed_root.children_with_tokens().find(|c| c.kind() == KEY_VALUE) {
+            if let Some(entry) = find_key_value_in_parsed(&parsed_root) {
                 new_table.push(entry);
             }
         }
@@ -684,7 +761,7 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
             }
             child_node.splice_children(0..to_insert.len(), to_insert);
         }
-        if main.last().unwrap().kind() != LINE_BREAK {
+        if main.last().unwrap().kind() != LINE_BREAK && kind != LINE_BREAK && !has_leading_newline(child) {
             main.push(make_newline());
         }
         main.push(child.clone());
@@ -819,7 +896,7 @@ fn collapse_array_of_tables(
     }
 
     let parsed_root = parse(&entry_text);
-    if let Some(entry) = parsed_root.children_with_tokens().find(|c| c.kind() == KEY_VALUE) {
+    if let Some(entry) = find_key_value_in_parsed(&parsed_root) {
         main.push(entry);
     }
 
@@ -873,7 +950,11 @@ pub fn expand_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str) 
         let new_entry_text = format!("{simple_key} ={value_text}\n");
         let parsed_root = parse(&new_entry_text);
         for child in parsed_root.children_with_tokens() {
-            if child.kind() == KEY_VALUE || child.kind() == LINE_BREAK {
+            if child.kind() == KEY_VALUE_GROUP {
+                for kv in child.as_node().unwrap().children_with_tokens() {
+                    new_table.push(kv);
+                }
+            } else if child.kind() == KEY_VALUE || child.kind() == LINE_BREAK {
                 new_table.push(child);
             }
         }

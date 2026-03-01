@@ -1,5 +1,5 @@
 use indoc::indoc;
-use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE};
+use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE, KEY_VALUE_GROUP};
 use tombi_syntax::SyntaxNode;
 
 use crate::array::{
@@ -9,19 +9,34 @@ use crate::array::{
 use crate::pep508::Requirement;
 use crate::tests::{format_toml, format_toml_str};
 
-fn for_each_array<F>(root: &SyntaxNode, mut f: F)
+fn for_each_key_value<F>(root: &SyntaxNode, mut f: F)
 where
     F: FnMut(&SyntaxNode),
 {
-    for children in root.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    f(entry.as_node().unwrap());
+    for child in root.children_with_tokens() {
+        if child.kind() == KEY_VALUE {
+            f(child.as_node().unwrap());
+        } else if child.kind() == KEY_VALUE_GROUP {
+            for kv in child.as_node().unwrap().children_with_tokens() {
+                if kv.kind() == KEY_VALUE {
+                    f(kv.as_node().unwrap());
                 }
             }
         }
     }
+}
+
+fn for_each_array<F>(root: &SyntaxNode, mut f: F)
+where
+    F: FnMut(&SyntaxNode),
+{
+    for_each_key_value(root, |kv_node| {
+        for entry in kv_node.children_with_tokens() {
+            if entry.kind() == ARRAY {
+                f(entry.as_node().unwrap());
+            }
+        }
+    });
 }
 
 fn apply_to_arrays<F>(source: &str, mut f: F) -> String
@@ -379,19 +394,13 @@ fn test_sort_with_duplicate_keys() {
         ]
     "#};
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort_strings::<String, _, _>(
-                        entry.as_node().unwrap(),
-                        |s| s.split(';').next().unwrap_or(&s).trim().to_lowercase(),
-                        &|lhs, rhs| lhs.cmp(rhs),
-                    );
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        sort_strings::<String, _, _>(
+            array,
+            |s| s.split(';').next().unwrap_or(&s).trim().to_lowercase(),
+            &|lhs, rhs| lhs.cmp(rhs),
+        );
+    });
     let res = format_toml(&root_ast, 120);
     assert_eq!(res, expected);
 }
@@ -403,15 +412,9 @@ fn test_ensure_trailing_comma() {
         "x", "y",
         ]"#};
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    ensure_trailing_comma(entry.as_node().unwrap());
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        ensure_trailing_comma(array);
+    });
     assert_eq!(root_ast.to_string(), expected_raw);
 }
 
@@ -425,15 +428,9 @@ fn test_trailing_comma_prevents_collapse() {
         ]
     "#};
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    ensure_trailing_comma(entry.as_node().unwrap());
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        ensure_trailing_comma(array);
+    });
     let res = format_toml(&root_ast, 120);
     assert_eq!(res, expected);
 }
@@ -666,15 +663,9 @@ fn test_align_nested_structure() {
 fn test_ensure_trailing_comma_empty_array() {
     let start = r#"a = []"#;
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    ensure_trailing_comma(entry.as_node().unwrap());
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        ensure_trailing_comma(array);
+    });
     insta::assert_snapshot!(root_ast.to_string(), @"a = []");
 }
 
@@ -682,15 +673,9 @@ fn test_ensure_trailing_comma_empty_array() {
 fn test_ensure_trailing_comma_already_multiline_with_comma() {
     let start = "a = [\n  \"x\",\n]";
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    ensure_trailing_comma(entry.as_node().unwrap());
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        ensure_trailing_comma(array);
+    });
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     a = [
@@ -721,15 +706,9 @@ fn test_dedupe_with_inline_table() {
 fn test_sort_with_none_key() {
     let start = r#"a = [42, "B", "A"]"#;
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort::<String, _, _>(entry.as_node().unwrap(), |_| None, &|lhs, rhs| lhs.cmp(rhs));
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        sort::<String, _, _>(array, |_| None, &|lhs, rhs| lhs.cmp(rhs));
+    });
     let res = root_ast.to_string();
     insta::assert_snapshot!(res, @r#"a = [42, "B", "A"]"#);
 }
@@ -812,17 +791,9 @@ fn test_dedupe_with_value_wrapper() {
 fn test_sort_multiline_no_trailing_comma() {
     let start = "a = [\n  \"B\",\n  \"A\"\n]";
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    sort_strings::<String, _, _>(entry.as_node().unwrap(), |s| s.to_lowercase(), &|lhs, rhs| {
-                        lhs.cmp(rhs)
-                    });
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
     let res = root_ast.to_string();
     insta::assert_snapshot!(res, @r#"
     a = [
@@ -855,15 +826,9 @@ fn test_align_comment_after_whitespace() {
 fn test_ensure_trailing_comma_single_item_no_comma() {
     let start = r#"a = ["only"]"#;
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    ensure_trailing_comma(entry.as_node().unwrap());
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        ensure_trailing_comma(array);
+    });
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"
     a = [
@@ -894,15 +859,9 @@ fn test_dedupe_consecutive_duplicates() {
 fn test_dedupe_array_with_non_string_values() {
     let start = r#"a = [1, "foo", 2, "FOO", 3]"#;
     let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
-    for children in root_ast.children_with_tokens() {
-        if children.kind() == KEY_VALUE {
-            for entry in children.as_node().unwrap().children_with_tokens() {
-                if entry.kind() == ARRAY {
-                    dedupe_strings(entry.as_node().unwrap(), |s| s.to_lowercase());
-                }
-            }
-        }
-    }
+    for_each_array(&root_ast, |array| {
+        dedupe_strings(array, |s| s.to_lowercase());
+    });
     let res = root_ast.to_string();
     insta::assert_snapshot!(res, @r#"a = [1, "foo", 2, 3]"#);
 }
@@ -968,7 +927,7 @@ fn test_format_trailing_comment_no_comma() {
     insta::assert_snapshot!(res, @r#"
     a = [
       "a",
-      "b",  # comment
+      "b"  # comment
     ]
     "#);
 }

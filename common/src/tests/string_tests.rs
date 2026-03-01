@@ -1,5 +1,6 @@
 use tombi_syntax::SyntaxKind::{
-    BARE_KEY, BASIC_STRING, KEY_VALUE, LITERAL_STRING, MULTI_LINE_BASIC_STRING, MULTI_LINE_LITERAL_STRING,
+    BARE_KEY, BASIC_STRING, KEY_VALUE, KEY_VALUE_GROUP, LITERAL_STRING, MULTI_LINE_BASIC_STRING,
+    MULTI_LINE_LITERAL_STRING,
 };
 
 use crate::string::{
@@ -26,10 +27,21 @@ where
     F: FnMut(&tombi_syntax::SyntaxNode),
 {
     for entry in root.children_with_tokens() {
-        if entry.kind() == KEY_VALUE {
+        let kind = entry.kind();
+        if kind == KEY_VALUE {
             for child in entry.as_node().unwrap().children_with_tokens() {
                 if is_string_kind(child.kind()) {
                     f(child.as_node().unwrap());
+                }
+            }
+        } else if kind == KEY_VALUE_GROUP {
+            for kv in entry.as_node().unwrap().children_with_tokens() {
+                if kv.kind() == KEY_VALUE {
+                    for child in kv.as_node().unwrap().children_with_tokens() {
+                        if is_string_kind(child.kind()) {
+                            f(child.as_node().unwrap());
+                        }
+                    }
                 }
             }
         }
@@ -808,19 +820,9 @@ fn test_update_content_wrapped_short_no_wrap() {
 fn test_update_content_wrapped_in_inline_table() {
     let toml = r#"x = { y = "very long string that would be wrapped in normal context but not in inline table" }"#;
     let root_ast = parse(toml);
-    for entry in root_ast.children_with_tokens() {
-        if entry.kind() == KEY_VALUE
-            && let Some(node) = entry.as_node()
-        {
-            for child in node.children_with_tokens() {
-                if is_string_kind(child.kind())
-                    && let Some(string_node) = child.as_node()
-                {
-                    update_content_wrapped(string_node, |s| s.to_string(), 40, "  ");
-                }
-            }
-        }
-    }
+    for_each_string(&root_ast, |string_node| {
+        update_content_wrapped(string_node, |s| s.to_string(), 40, "  ");
+    });
     let result = root_ast.to_string();
     insta::assert_snapshot!(result, @r#"x = { y = "very long string that would be wrapped in normal context but not in inline table" }"#);
 }
