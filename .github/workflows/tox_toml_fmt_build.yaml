@@ -114,7 +114,7 @@ jobs:
         with:
           name: source
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@v1.50.0
+        uses: PyO3/maturin-action@v1.50.1
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
@@ -146,7 +146,7 @@ jobs:
           python-version: "3.10"
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@v1.50.0
+        uses: PyO3/maturin-action@v1.50.1
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
@@ -173,7 +173,7 @@ jobs:
         with:
           name: source
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@v1.50.0
+        uses: PyO3/maturin-action@v1.50.1
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
@@ -194,7 +194,7 @@ jobs:
         with:
           name: source
       - name: 📦 Build sdist
-        uses: PyO3/maturin-action@v1.50.0
+        uses: PyO3/maturin-action@v1.50.1
         with:
           command: sdist
           args: -m tox-toml-fmt/Cargo.toml --out dist
