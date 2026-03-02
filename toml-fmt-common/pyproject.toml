@@ -4,7 +4,7 @@ requires = [ "uv-build<0.8,>=0.7.22" ]
 
 [project]
 name = "toml-fmt-common"
-version = "1.3.0"
+version = "1.3.1"
 description = "Common logic to the TOML formatter."
 readme = "README.md"
 license = "MIT"
@@ -57,6 +57,9 @@ pkg-meta = [
   "twine>=6.2",
   "uv>=0.10.7",
 ]
+
+[tool.uv.build-backend]
+source-include = [ "tests/**", "tox.toml" ]
 
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
