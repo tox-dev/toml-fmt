@@ -4,12 +4,12 @@ ci:
 repos:
   # Priority 0: Formatters + read-only validators (all in parallel)
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: "v2.12.1"
+    rev: "v2.16.2"
     hooks:
       - id: pyproject-fmt
         priority: 0
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.0"
+    rev: "v0.15.4"
     hooks:
       - id: ruff-format
         args: ["--config", "pyproject.toml"]
@@ -31,7 +31,7 @@ repos:
         exclude: "^(?!.github/workflows/)"
         priority: 0
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.36.1
+    rev: 0.37.0
     hooks:
       - id: check-github-workflows
         args: ["--verbose"]
