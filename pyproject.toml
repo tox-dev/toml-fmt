@@ -1,8 +1,6 @@
-[tool.uv.sources]
-toml-fmt-common = { workspace = true }
-
-[tool.uv.workspace]
-members = [ "toml-fmt-common", "pyproject-fmt", "tox-toml-fmt" ]
+[tool.uv]
+sources.toml-fmt-common = { workspace = true }
+workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
 
 [tool.ruff]
 line-length = 120

@@ -58,15 +58,22 @@ pkg-meta = [
   "uv>=0.10.7",
 ]
 
-[tool.uv.build-backend]
-source-include = [ "tests/**", "tox.toml" ]
+[tool.uv]
+build-backend.source-include = [ "tests/**", "tox.toml" ]
 
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
 
 [tool.coverage]
-html.show_contexts = true
-html.skip_covered = false
+run.parallel = true
+run.plugins = [
+  "covdefaults",
+]
+paths.other = [
+  ".",
+  "*/toml_fmt_common",
+  "*\\toml_fmt_common",
+]
 paths.source = [
   "src",
   ".tox/*/lib/*/site-packages",
@@ -74,16 +81,9 @@ paths.source = [
   "**/src",
   "**\\src",
 ]
-paths.other = [
-  ".",
-  "*/toml_fmt_common",
-  "*\\toml_fmt_common",
-]
 report.fail_under = 100
-run.parallel = true
-run.plugins = [
-  "covdefaults",
-]
+html.show_contexts = true
+html.skip_covered = false
 
 [tool.mypy]
 show_error_codes = true
