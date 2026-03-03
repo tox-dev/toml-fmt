@@ -1,4 +1,9 @@
-<a id="2.18.0"></a>
+<a id="2.18.1"></a>
+
+## 2.18.1 - 2026-03-03
+
+- 🐛 fix(common): panic on non-array nodes in array ops by [@gaborbernat](https://github.com/gaborbernat) in
+  [#266](https://github.com/tox-dev/toml-fmt/pull/266) <a id="2.18.0"></a>
 
 ## 2.18.0 - 2026-03-03
 
