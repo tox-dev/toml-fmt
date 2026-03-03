@@ -298,29 +298,57 @@ where
     }
 }
 
+fn is_valid_bare_key(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+}
+
+fn normalize_key_segment(kind: SyntaxKind, text: &str) -> String {
+    match kind {
+        BARE_KEY => text.to_string(),
+        LITERAL_STRING => {
+            let inner = &text[1..text.len() - 1];
+            if is_valid_bare_key(inner) {
+                return inner.to_string();
+            }
+            let escaped = inner.replace('\\', "\\\\").replace('"', "\\\"");
+            format!("\"{escaped}\"")
+        }
+        BASIC_STRING => {
+            let inner = &text[1..text.len() - 1];
+            if is_valid_bare_key(inner) {
+                return inner.to_string();
+            }
+            text.to_string()
+        }
+        _ => text.to_string(),
+    }
+}
+
 pub fn normalize_key_quotes(root: &SyntaxNode) {
     use crate::create::make_key;
 
-    for descendant in root.descendants() {
-        if descendant.kind() != KEYS {
-            continue;
-        }
-        let has_literal = descendant.children_with_tokens().any(|c| c.kind() == LITERAL_STRING);
-        if !has_literal {
+    let keys_nodes: Vec<SyntaxNode> = root.descendants().filter(|n| n.kind() == KEYS).collect();
+    for descendant in keys_nodes {
+        let needs_normalization = descendant.children_with_tokens().any(|c| {
+            let kind = c.kind();
+            if kind == LITERAL_STRING {
+                return true;
+            }
+            if kind == BASIC_STRING {
+                let text = c.to_string();
+                let inner = &text[1..text.len() - 1];
+                return is_valid_bare_key(inner);
+            }
+            false
+        });
+        if !needs_normalization {
             continue;
         }
         let mut key_parts = Vec::new();
         for child in descendant.children_with_tokens() {
-            match child.kind() {
-                BARE_KEY => key_parts.push(child.to_string()),
-                LITERAL_STRING => {
-                    let text = child.to_string();
-                    let inner = &text[1..text.len() - 1];
-                    let escaped = inner.replace('\\', "\\\\").replace('"', "\\\"");
-                    key_parts.push(format!("\"{escaped}\""));
-                }
-                BASIC_STRING => key_parts.push(child.to_string()),
-                _ => {}
+            let kind = child.kind();
+            if matches!(kind, BARE_KEY | LITERAL_STRING | BASIC_STRING) {
+                key_parts.push(normalize_key_segment(kind, &child.to_string()));
             }
         }
         let new_key = make_key(&key_parts.join("."));

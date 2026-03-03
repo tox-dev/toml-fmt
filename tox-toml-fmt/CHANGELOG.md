@@ -2,6 +2,8 @@
 
 ## 1.8.0 - 2026-03-01
 
+- ✨ feat(tox-toml-fmt): reorder inline table keys and add missing env keys by
+  [@gaborbernat](https://github.com/gaborbernat) in [#264](https://github.com/tox-dev/toml-fmt/pull/264)
 - ✨ feat(common): add shared config file support by [@gaborbernat](https://github.com/gaborbernat) in
   [#258](https://github.com/tox-dev/toml-fmt/pull/258)
 - 🐛 fix(parser): adapt to tombi v0.8.0 AST changes by [@gaborbernat](https://github.com/gaborbernat) in
@@ -155,7 +157,7 @@
   [#140](https://github.com/tox-dev/toml-fmt/pull/140)
 - Sort subtables alphabetically within the same tool by [@gaborbernat](https://github.com/gaborbernat) in
   [#139](https://github.com/tox-dev/toml-fmt/pull/139)
-- Collapse [[project.authors]] array of tables to inline format by [@gaborbernat](https://github.com/gaborbernat) in
+- Collapse \[[project.authors]\] array of tables to inline format by [@gaborbernat](https://github.com/gaborbernat) in
   [#137](https://github.com/tox-dev/toml-fmt/pull/137)
 - Bump toml-fmt-common to 1.2 by [@gaborbernat](https://github.com/gaborbernat) in
   [#138](https://github.com/tox-dev/toml-fmt/pull/138)

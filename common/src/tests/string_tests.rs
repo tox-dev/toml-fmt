@@ -602,8 +602,8 @@ fn test_strip_quotes_triple_quotes() {
 fn test_normalize_key_quotes_simple_literal() {
     let root = parse("'key' = 1\n");
     normalize_key_quotes(&root);
-    insta::assert_snapshot!(root.to_string(), @r#""key" = 1
-"#);
+    insta::assert_snapshot!(root.to_string(), @"key = 1
+");
 }
 
 #[test]
@@ -615,11 +615,11 @@ fn test_normalize_key_quotes_bare_key_unchanged() {
 }
 
 #[test]
-fn test_normalize_key_quotes_basic_string_unchanged() {
+fn test_normalize_key_quotes_basic_string_stripped() {
     let root = parse("\"key\" = 1\n");
     normalize_key_quotes(&root);
-    insta::assert_snapshot!(root.to_string(), @r#""key" = 1
-"#);
+    insta::assert_snapshot!(root.to_string(), @"key = 1
+");
 }
 
 #[test]
@@ -674,15 +674,31 @@ fn test_normalize_key_quotes_literal_with_backslash_and_quote() {
 fn test_normalize_key_quotes_multiple_literal_segments() {
     let root = parse("'first'.'second' = 1\n");
     normalize_key_quotes(&root);
-    insta::assert_snapshot!(root.to_string(), @r#""first"."second" = 1
-"#);
+    insta::assert_snapshot!(root.to_string(), @"first.second = 1
+");
 }
 
 #[test]
 fn test_normalize_key_quotes_preserves_basic_in_dotted() {
     let root = parse("bare.\"basic\".'literal' = 1\n");
     normalize_key_quotes(&root);
-    insta::assert_snapshot!(root.to_string(), @r#"bare."basic"."literal" = 1
+    insta::assert_snapshot!(root.to_string(), @"bare.basic.literal = 1
+");
+}
+
+#[test]
+fn test_normalize_key_quotes_preserves_required_quotes() {
+    let root = parse("\"key with spaces\" = 1\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#""key with spaces" = 1
+"#);
+}
+
+#[test]
+fn test_normalize_key_quotes_inline_table_keys() {
+    let root = parse("val = { \"else\" = \"no\", \"then\" = \"yes\" }\n");
+    normalize_key_quotes(&root);
+    insta::assert_snapshot!(root.to_string(), @r#"val = { else = "no", then = "yes" }
 "#);
 }
 

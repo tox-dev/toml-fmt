@@ -104,11 +104,11 @@ fn test_reorder_table_reorder_env_list_partial() {
     [env.type]
     description = "type"
 
-    [env.lint]
-    description = "lint"
-
     [env.docs]
     description = "docs"
+
+    [env.lint]
+    description = "lint"
     "#);
 }
 

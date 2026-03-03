@@ -2,8 +2,9 @@ use indoc::indoc;
 
 use super::format_toml;
 use crate::table::{
-    Tables, apply_table_formatting, collapse_sub_table, collapse_sub_tables, collect_all_sub_tables, expand_sub_table,
-    expand_sub_tables, find_key, for_entries, get_table_name, reorder_table_keys,
+    InlineTableSchema, Tables, apply_table_formatting, collapse_sub_table, collapse_sub_tables, collect_all_sub_tables,
+    expand_sub_table, expand_sub_tables, find_key, for_entries, get_table_name, reorder_inline_table_keys,
+    reorder_table_keys,
 };
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
@@ -2118,5 +2119,244 @@ fn test_rename_keys_empty_aliases() {
     insta::assert_snapshot!(result, @r#"
     [project]
     name = "value"
+    "#);
+}
+
+fn reorder_inline_helper(start: &str, schemas: &[InlineTableSchema]) -> String {
+    let root_ast = parse(start);
+    reorder_inline_table_keys(&root_ast, schemas);
+    root_ast.to_string()
+}
+
+const TEST_SCHEMAS: &[InlineTableSchema] = &[
+    InlineTableSchema {
+        discriminator: "replace",
+        key_order: &["replace", "name", "default"],
+    },
+    InlineTableSchema {
+        discriminator: "prefix",
+        key_order: &["prefix", "start", "stop"],
+    },
+];
+
+#[test]
+fn test_reorder_inline_table_keys_basic() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { default = "x", name = "Y", replace = "env" }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { replace = "env", name = "Y", default = "x" }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_already_ordered() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { replace = "env", name = "Y", default = "x" }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { replace = "env", name = "Y", default = "x" }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_no_matching_schema() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { z = 1, a = 2 }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { z = 1, a = 2 }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_single_key() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { replace = "env" }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { replace = "env" }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_second_schema() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { stop = 14, prefix = "py3", start = 10 }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { prefix = "py3", start = 10, stop = 14 }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_quoted_key() {
+    let schemas = &[InlineTableSchema {
+        discriminator: "else",
+        key_order: &["condition", "then", "else"],
+    }];
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { "else" = "no", "then" = "yes", condition = "true" }
+        "#},
+        schemas,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { condition = "true", "then" = "yes", "else" = "no" }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_multiple_inline_tables() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            a = { default = "x", replace = "env", name = "A" }
+            b = { name = "B", replace = "ref", default = "y" }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    a = { replace = "env", name = "A", default = "x" }
+    b = { replace = "ref", name = "B", default = "y" }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_in_array() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            items = [
+                { default = "x", replace = "env", name = "A" },
+                { stop = 14, prefix = "py3", start = 10 },
+            ]
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    items = [
+        { replace = "env", name = "A", default = "x" },{ prefix = "py3", start = 10, stop = 14 },
+    ]
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_no_inline_tables() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            name = "value"
+            count = 42
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    name = "value"
+    count = 42
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_empty_schemas() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { b = 2, a = 1 }
+        "#},
+        &[],
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { b = 2, a = 1 }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_nested_inline_table() {
+    let schemas = &[InlineTableSchema {
+        discriminator: "replace",
+        key_order: &["replace", "default"],
+    }];
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            items = [
+                { default = "x", replace = "env" },
+                ["cmd", { default = "y", replace = "posargs" }],
+            ]
+        "#},
+        schemas,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    items = [
+        { replace = "env", default = "x" },
+        ["cmd", { replace = "posargs", default = "y" }],
+    ]
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_value_is_inline_table() {
+    let schemas = &[InlineTableSchema {
+        discriminator: "replace",
+        key_order: &["replace", "default"],
+    }];
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { inner = { default = "x", replace = "env" } }
+        "#},
+        schemas,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { inner = { replace = "env", default = "x" } }
+    "#);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_unknown_keys_appended() {
+    let result = reorder_inline_helper(
+        indoc! {r#"
+            [section]
+            val = { extra = true, replace = "env", name = "X" }
+        "#},
+        TEST_SCHEMAS,
+    );
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = { replace = "env", name = "X", extra = true }
     "#);
 }

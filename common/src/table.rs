@@ -5,8 +5,8 @@ use std::ops::Index;
 
 use tombi_syntax::SyntaxKind::{
     ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMENT, DANGLING_COMMENT_GROUP,
-    DOUBLE_BRACKET_START, EQUAL, KEY_VALUE, KEY_VALUE_GROUP, KEY_VALUE_WITH_COMMA_GROUP, KEYS, LINE_BREAK,
-    LITERAL_STRING, TABLE, WHITESPACE,
+    DOUBLE_BRACKET_START, EQUAL, INLINE_TABLE, KEY_VALUE, KEY_VALUE_GROUP, KEY_VALUE_WITH_COMMA_GROUP, KEYS,
+    LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -1061,5 +1061,80 @@ fn add_intermediate_parents(table_name: &str, prefix_dots: usize, result: &mut V
             result.push(String::from(parent));
         }
         current = parent;
+    }
+}
+
+pub struct InlineTableSchema {
+    pub discriminator: &'static str,
+    pub key_order: &'static [&'static str],
+}
+
+fn inline_table_key_name(kv_node: &SyntaxNode) -> String {
+    let raw = kv_node
+        .children_with_tokens()
+        .find(|c| c.kind() == KEYS)
+        .and_then(|c| c.as_node().map(|n| n.text().to_string().trim().to_string()))
+        .unwrap_or_default();
+    raw.strip_prefix('"')
+        .and_then(|s| s.strip_suffix('"'))
+        .or_else(|| raw.strip_prefix('\'').and_then(|s| s.strip_suffix('\'')))
+        .unwrap_or(&raw)
+        .to_string()
+}
+
+fn detect_schema<'a>(keys: &[String], schemas: &'a [InlineTableSchema]) -> Option<&'a [&'static str]> {
+    schemas
+        .iter()
+        .find(|s| keys.iter().any(|k| k == s.discriminator))
+        .map(|s| s.key_order)
+}
+
+fn reorder_single_inline_table(node: &SyntaxNode, schemas: &[InlineTableSchema]) {
+    let kv_pairs: Vec<(String, String)> = node
+        .children()
+        .filter(|n| n.kind() == KEY_VALUE_WITH_COMMA_GROUP)
+        .flat_map(|group| {
+            group
+                .children()
+                .filter(|n| n.kind() == KEY_VALUE)
+                .map(|kv| (inline_table_key_name(&kv), kv.text().to_string().trim().to_string()))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+
+    if kv_pairs.len() < 2 {
+        return;
+    }
+
+    let keys: Vec<String> = kv_pairs.iter().map(|(k, _)| k.clone()).collect();
+    let Some(schema) = detect_schema(&keys, schemas) else {
+        return;
+    };
+
+    let key_position = |k: &str| -> usize { schema.iter().position(|s| *s == k).unwrap_or(usize::MAX) };
+    let mut sorted = kv_pairs.clone();
+    sorted.sort_by_key(|(k, _)| key_position(k));
+
+    if sorted.iter().map(|(k, _)| k).eq(kv_pairs.iter().map(|(k, _)| k)) {
+        return;
+    }
+
+    let entries: Vec<&str> = sorted.iter().map(|(_, v)| v.as_str()).collect();
+    let rebuilt = format!("_x = {{ {} }}\n", entries.join(", "));
+    let parsed = parse(&rebuilt);
+    let new_children: Option<Vec<SyntaxElement>> = parsed
+        .descendants()
+        .find(|n| n.kind() == INLINE_TABLE)
+        .map(|n| n.children_with_tokens().collect());
+
+    if let Some(children) = new_children {
+        node.splice_children(0..node.children_with_tokens().count(), children);
+    }
+}
+
+pub fn reorder_inline_table_keys(root_ast: &SyntaxNode, schemas: &[InlineTableSchema]) {
+    let inline_tables: Vec<SyntaxNode> = root_ast.descendants().filter(|n| n.kind() == INLINE_TABLE).collect();
+    for node in inline_tables {
+        reorder_single_inline_table(&node, schemas);
     }
 }
