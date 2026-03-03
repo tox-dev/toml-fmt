@@ -195,6 +195,21 @@ fn test_coverage_trailing_comment_on_single_line_array() {
 }
 
 #[test]
+fn test_coverage_string_include_not_array() {
+    let start = indoc::indoc! {r#"
+    [tool.coverage.run]
+    branch = true
+    include = "src"
+    "#};
+    let result = evaluate(start);
+    insta::assert_snapshot!(result, @r#"
+    [tool.coverage]
+    run.branch = true
+    run.include = "src"
+    "#);
+}
+
+#[test]
 fn test_coverage_paths_not_sorted() {
     let start = indoc::indoc! {r#"
     [tool.coverage]

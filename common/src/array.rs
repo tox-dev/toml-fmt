@@ -201,6 +201,9 @@ pub fn transform<F>(array: &SyntaxNode, transform: &F)
 where
     F: Fn(&str) -> String,
 {
+    if array.kind() != ARRAY {
+        return;
+    }
     flatten_array_in_place(array);
     for entry in array.children_with_tokens() {
         if (entry.kind() == BASIC_STRING || entry.kind() == LITERAL_STRING)
@@ -218,6 +221,9 @@ where
     C: Fn(&T, &T) -> Ordering,
     T: Clone + Eq + Hash,
 {
+    if array.kind() != ARRAY {
+        return;
+    }
     flatten_array_in_place(array);
     let has_trailing_comma = array
         .children_with_tokens()
@@ -374,6 +380,9 @@ pub fn dedupe_strings<K>(array: &SyntaxNode, to_key: K)
 where
     K: Fn(&str) -> String,
 {
+    if array.kind() != ARRAY {
+        return;
+    }
     flatten_array_in_place(array);
     let mut seen: HashSet<String> = HashSet::new();
     let mut to_insert: Vec<SyntaxElement> = Vec::new();
