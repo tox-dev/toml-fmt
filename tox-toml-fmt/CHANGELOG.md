@@ -1,4 +1,9 @@
-<a id="1.8.0"></a>
+<a id="1.9.0"></a>
+
+## 1.9.0 - 2026-03-03
+
+- ✨ feat(tox-toml-fmt): add inline table key reordering by [@gaborbernat](https://github.com/gaborbernat) in
+  [#264](https://github.com/tox-dev/toml-fmt/pull/264) <a id="1.8.0"></a>
 
 ## 1.8.0 - 2026-03-01
 
