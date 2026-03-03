@@ -7,7 +7,9 @@ use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyR
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::KEY_VALUE;
 
-use crate::global::{fix_envs, fix_root, normalize_aliases, normalize_strings, reorder_tables, sort_env_list};
+use crate::global::{
+    fix_envs, fix_root, normalize_aliases, normalize_strings, reorder_inline_tables, reorder_tables, sort_env_list,
+};
 use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, count_unquoted_dots, first_unquoted_dot, split_table_name, Tables};
 
@@ -151,6 +153,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     fix_envs(&tables);
     sort_env_list(&tables, &opt.pin_envs);
     normalize_strings(&tables);
+    reorder_inline_tables(&root_ast);
     reorder_tables(&root_ast, &tables);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
 

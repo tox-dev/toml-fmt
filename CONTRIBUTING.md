@@ -330,9 +330,14 @@ fn test_load_text(#[case] input: &str, #[case] kind: SyntaxKind, #[case] expecte
 
 ### Coverage Goals and Measurement
 
-We require **98% line coverage for Rust code** and **100% coverage for Python code**. To generate an HTML coverage
-report for Rust code, run `tox r -e coverage` from the repository root. This generates lcov output and opens an HTML
-report in your browser. For a quick summary, use `cargo llvm-cov --workspace --no-default-features --summary-only`.
+We require **98% line coverage for Rust code** and **100% coverage for Python code**. Additionally, **diff coverage must
+be 100% per test suite** — changes to `common/src/` must be fully covered by the common test suite alone, and changes to
+`tox-toml-fmt/rust/src/` must be fully covered by the tox-toml-fmt test suite alone. Use per-package coverage checks to
+verify: `cargo llvm-cov -p common --summary-only` or `cargo llvm-cov -p tox-toml-fmt --summary-only`.
+
+To generate an HTML coverage report for Rust code, run `tox r -e coverage` from the repository root. This generates lcov
+output and opens an HTML report in your browser. For a quick summary, use
+`cargo llvm-cov --workspace --no-default-features --summary-only`.
 
 #### Testing PyO3 Code from Rust
 
@@ -414,27 +419,30 @@ fn test_format(#[case] input: &str, #[case] expected: &str) {
 }
 ```
 
-Snapshot testing approach (preferred):
+Snapshot testing approach (preferred, using inline snapshots):
 
 ```rust
 #[rstest]
 #[case::simple("input")]
 fn test_format(#[case] input: &str) {
     let result = format_toml(input);
-    insta::assert_snapshot!(result);
+    insta::assert_snapshot!(result, @"");
 }
 ```
 
+The `@""` syntax creates an **inline snapshot** where the expected value is stored directly in the test file. This is
+preferred over file-based snapshots because it keeps the expected output next to the test input, making tests easier to
+read and review.
+
 Snapshot testing workflow:
 
-- Run tests with `cargo insta test` to generate snapshots
-- Review changes with `cargo insta review` (interactive) or view diffs manually
+- Run tests with `cargo insta test --accept` to populate inline snapshots
+- Review changes with `cargo insta review` (interactive) or view diffs in the test file directly
 - Accept all changes with `cargo insta test --accept`
 - Reject changes with `cargo insta reject`
 
 When formatter behavior changes (like switching parsers), you can update all test expectations with a single
-`cargo insta test --accept` instead of manually updating hundreds of inline strings. Snapshots are stored in
-`src/tests/snapshots/` and committed to git.
+`cargo insta test --accept` instead of manually updating hundreds of inline strings.
 
 ## Common Patterns
 
@@ -466,6 +474,25 @@ use common::string::update_content;
 update_content(value_node, |text| {
     text.to_lowercase()  // Your transformation function
 });
+```
+
+### Reordering Inline Table Keys
+
+When a formatter needs to enforce a consistent key order within inline tables, use the `InlineTableSchema` and
+`reorder_inline_table_keys` from `common::table`. Each schema specifies a discriminator key (used to identify which
+schema applies) and the desired key order. Keys not listed in the schema are appended at the end.
+
+```rust
+use common::table::{reorder_inline_table_keys, InlineTableSchema};
+
+const SCHEMAS: &[InlineTableSchema] = &[
+    InlineTableSchema {
+        discriminator: "replace",
+        key_order: &["replace", "default", "extend"],
+    },
+];
+
+reorder_inline_table_keys(&root_ast, SCHEMAS);
 ```
 
 ### Creating New Nodes

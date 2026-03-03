@@ -1123,6 +1123,179 @@ fn test_env_quoted_key_dotted_expand() {
 }
 
 #[test]
+fn test_deps_r_c_flags_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["-r requirements-test.txt", "-c constraints.txt", "pytest"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [ "-c constraints.txt", "-r requirements-test.txt", "pytest" ]
+    "#);
+}
+
+#[test]
+fn test_constraints_normalize_and_sort() {
+    let start = indoc! {r#"
+        [env.test]
+        constraints = ["urllib3<2", "Certifi>=2023"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    constraints = [ "certifi>=2023", "urllib3<2" ]
+    "#);
+}
+
+#[test]
+fn test_constraints_r_c_flags_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        constraints = ["-c base-constraints.txt", "-r requirements.txt", "urllib3<2"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    constraints = [ "-c base-constraints.txt", "-r requirements.txt", "urllib3<2" ]
+    "#);
+}
+
+#[test]
+fn test_env_base_key_ordering() {
+    let start = indoc! {r#"
+        [env_base.test]
+        commands = [["pytest"]]
+        deps = ["pytest"]
+        description = "run tests"
+        factors = [["py312", "py313"]]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_base.test]
+    factors = [ [ "py312", "py313" ] ]
+    description = "run tests"
+    deps = [ "pytest" ]
+    commands = [ [ "pytest" ] ]
+    "#);
+}
+
+#[test]
+fn test_env_base_table_ordering() {
+    let start = indoc! {r#"
+        requires = ["tox>=4"]
+
+        [env.lint]
+        description = "lint"
+
+        [env_base.test]
+        factors = [["py312", "py313"]]
+        description = "test"
+
+        [env_run_base]
+        description = "base"
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    requires = [ "tox>=4" ]
+
+    [env_run_base]
+    description = "base"
+
+    [env.lint]
+    description = "lint"
+
+    [env_base.test]
+    factors = [ [ "py312", "py313" ] ]
+    description = "test"
+    "#);
+}
+
+#[test]
+fn test_env_base_alias_normalization() {
+    let start = indoc! {r#"
+        [env_base.test]
+        factors = [["py312"]]
+        basepython = "python3"
+        passenv = ["HOME"]
+        setenv = { FOO = "bar" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_base.test]
+    factors = [ [ "py312" ] ]
+    base_python = "python3"
+    pass_env = [ "HOME" ]
+    set_env = { FOO = "bar" }
+    "#);
+}
+
+#[test]
+fn test_env_base_deps_normalization() {
+    let start = indoc! {r#"
+        [env_base.test]
+        factors = [["py312"]]
+        deps = ["Pytest-Cov>=3", "-r requirements.txt", "pytest>=7"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_base.test]
+    factors = [ [ "py312" ] ]
+    deps = [ "-r requirements.txt", "pytest>=7", "pytest-cov>=3" ]
+    "#);
+}
+
+#[test]
+fn test_env_list_with_product_expansion() {
+    let start = indoc! {r#"
+        env_list = [
+            "lint",
+            { product = [["py312", "py313"], ["django42"]] },
+            "docs",
+        ]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    env_list = [
+      { product = [ [ "py312", "py313" ], [ "django42" ] ] },
+      "docs",
+      "lint",
+    ]
+    "#);
+}
+
+#[test]
+fn test_new_env_key_ordering() {
+    let start = indoc! {r#"
+        [env.test]
+        commands = [["pytest"]]
+        commands_retry = 2
+        fail_fast = true
+        recreate_commands = [["rm", "-rf", ".cache"]]
+        recreate = true
+        pylock = "pylock.toml"
+        deps = ["pytest"]
+        virtualenv_spec = "virtualenv<20.22.0"
+        default_base_python = ["python3.12"]
+        extra_setup_commands = [["echo", "setup"]]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    default_base_python = [ "python3.12" ]
+    virtualenv_spec = "virtualenv<20.22.0"
+    deps = [ "pytest" ]
+    pylock = "pylock.toml"
+    recreate = true
+    recreate_commands = [ [ "rm", "-rf", ".cache" ] ]
+    fail_fast = true
+    commands_retry = 2
+    extra_setup_commands = [ [ "echo", "setup" ] ]
+    commands = [ [ "pytest" ] ]
+    "#);
+}
+
+#[test]
 fn test_env_multiple_quoted_keys_not_collapsed() {
     let start = indoc! {r#"
         [env."3.13t"]
@@ -1136,13 +1309,179 @@ fn test_env_multiple_quoted_keys_not_collapsed() {
         "#};
     let got = format_toml_helper(start, 2);
     assert_snapshot!(got, @r#"
+    [env.fix]
+    description = "fix"
+
     [env."3.13t"]
     base_python = "3.13t"
 
     [env."3.14t"]
     base_python = "3.14t"
+    "#);
+}
 
-    [env.fix]
-    description = "fix"
+#[test]
+fn test_inline_table_reorder_substitution() {
+    let start = indoc! {r#"
+        [env_run_base]
+        set_env.UV_INDEX_URL = { default = "https://pypi.org/simple", name = "UV_INDEX_URL", replace = "env" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    set_env.UV_INDEX_URL = { replace = "env", name = "UV_INDEX_URL", default = "https://pypi.org/simple" }
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_substitution_ref() {
+    let start = indoc! {r#"
+        [env_pkg_base]
+        set_env = { of = ["env_run_base", "set_env"], replace = "ref" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_pkg_base]
+    set_env = { replace = "ref", of = [ "env_run_base", "set_env" ] }
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_posargs() {
+    let start = indoc! {r#"
+        [env.test]
+        commands = [["pytest", { default = [], extend = true, replace = "posargs" }]]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    commands = [
+      [ "pytest", { replace = "posargs", default = [], extend = true } ]
+    ]
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_range() {
+    let start = indoc! {r#"
+        env_list = [{ product = [{ stop = 14, prefix = "py3", start = 12 }] }]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    env_list = [ { product = [ { prefix = "py3", start = 12, stop = 14 } ] } ]
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_product() {
+    let start = indoc! {r#"
+        env_list = [{ exclude = ["py312-django50"], product = [["py312", "py313"], ["django42", "django50"]] }]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    env_list = [
+      { product = [ [ "py312", "py313" ], [ "django42", "django50" ] ], exclude = [
+        "py312-django50"
+      ] },
+    ]
+    "#);
+}
+
+#[test]
+fn test_inline_table_already_ordered() {
+    let start = indoc! {r#"
+        [env_run_base]
+        set_env.FOO = { replace = "env", name = "FOO", default = "bar" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    set_env.FOO = { replace = "env", name = "FOO", default = "bar" }
+    "#);
+}
+
+#[test]
+fn test_inline_table_unknown_schema_not_reordered() {
+    let start = indoc! {r#"
+        [env.test]
+        set_env = { ZZZ = "last", AAA = "first" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    set_env = { ZZZ = "last", AAA = "first" }
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_if_conditional() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = [{ "else" = "no", extend = true, then = ["Django>=5.0"], condition = "factor.django50", replace = "if" }]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [
+      { replace = "if", condition = "factor.django50", then = [ "Django>=5.0" ], else = "no", extend = true },
+    ]
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_ref() {
+    let start = indoc! {r#"
+        [env.test]
+        extras = [{ extend = true, key = "extras", env = "src", replace = "ref" }]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    extras = [ { replace = "ref", env = "src", key = "extras", extend = true } ]
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_glob() {
+    let start = indoc! {r#"
+        [env.test]
+        commands = [["twine", "upload", { extend = true, pattern = "dist/*.whl", replace = "glob" }]]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    commands = [
+      [
+        "twine",
+        "upload",
+        { replace = "glob", pattern = "dist/*.whl", extend = true }
+      ],
+    ]
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_value_marker() {
+    let start = indoc! {r#"
+        [env_run_base]
+        set_env.LINUX_VAR = { marker = "sys_platform == 'linux'", value = "1" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    set_env.LINUX_VAR = { value = "1", marker = "sys_platform == 'linux'" }
+    "#);
+}
+
+#[test]
+fn test_inline_table_reorder_env_with_marker() {
+    let start = indoc! {r#"
+        [env_run_base]
+        set_env.X = { marker = "sys_platform == 'linux'", default = "fallback", name = "MY_VAR", replace = "env" }
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env_run_base]
+    set_env.X = { replace = "env", name = "MY_VAR", default = "fallback", marker = "sys_platform == 'linux'" }
     "#);
 }

@@ -64,18 +64,22 @@ All strings use double quotes by default. Single quotes are only used when the v
 Key Quotes
 ~~~~~~~~~~
 
-TOML keys using single-quoted (literal) strings are normalized to double-quoted (basic) strings with proper escaping.
-This ensures consistent formatting and deterministic key sorting regardless of the original quote style:
+TOML keys are normalized to the simplest valid form. Keys that are valid bare keys (containing only
+``A-Za-z0-9_-``) have redundant quotes stripped. Single-quoted (literal) keys that require quoting are
+converted to double-quoted (basic) strings with proper escaping. This applies to all keys: table headers,
+key-value pairs, and inline table keys:
 
 .. code-block:: toml
 
     # Before
+    [tool."ruff"]
+    "line-length" = 120
     lint.per-file-ignores.'tests/*' = ["S101"]
-    lint.per-file-ignores."src/*" = ["D100"]
 
     # After
+    [tool.ruff]
+    line-length = 120
     lint.per-file-ignores."tests/*" = ["S101"]
-    lint.per-file-ignores."src/*" = ["D100"]
 
 Backslashes and double quotes within literal keys are escaped during conversion:
 

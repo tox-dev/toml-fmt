@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::collections::HashSet;
 
 use lexical_sort::natural_lexical_cmp;
 use regex::Regex;
@@ -9,10 +10,16 @@ use common::array::{sort, sort_strings, transform};
 use common::create::make_entry_of_string;
 use common::pep508::Requirement;
 use common::string::load_text;
-use common::table::{for_entries, rename_keys, reorder_table_keys, Tables};
+use common::table::{
+    count_unquoted_dots, for_entries, rename_keys, reorder_inline_table_keys, reorder_table_keys, InlineTableSchema,
+    Tables,
+};
 
 fn is_env_table(key: &str) -> bool {
-    key == "env_run_base" || key == "env_pkg_base" || (key.starts_with("env.") && !key["env.".len()..].contains('.'))
+    key == "env_run_base"
+        || key == "env_pkg_base"
+        || (key.starts_with("env.") && count_unquoted_dots(key) == 1)
+        || (key.starts_with("env_base.") && count_unquoted_dots(key) == 1)
 }
 
 fn env_tables(tables: &Tables) -> Vec<(&String, Vec<&RefCell<Vec<SyntaxElement>>>)> {
@@ -68,12 +75,15 @@ const ROOT_KEY_ORDER: &[&str] = &[
 
 const ENV_KEY_ORDER: &[&str] = &[
     "",
+    "factors",
     "runner",
     "description",
     "base_python",
+    "default_base_python",
     "system_site_packages",
     "always_copy",
     "download",
+    "virtualenv_spec",
     "package",
     "package_env",
     "wheel_build_env",
@@ -88,13 +98,16 @@ const ENV_KEY_ORDER: &[&str] = &[
     "list_dependencies_command",
     "deps",
     "dependency_groups",
+    "pylock",
     "constraints",
     "constrain_package_deps",
     "use_frozen_constraints",
     "extras",
     "recreate",
+    "recreate_commands",
     "parallel_show_output",
     "skip_missing_interpreters",
+    "fail_fast",
     "pass_env",
     "disallow_pass_env",
     "set_env",
@@ -102,7 +115,9 @@ const ENV_KEY_ORDER: &[&str] = &[
     "platform",
     "args_are_paths",
     "ignore_errors",
+    "commands_retry",
     "ignore_outcome",
+    "extra_setup_commands",
     "commands_pre",
     "commands",
     "commands_post",
@@ -214,17 +229,33 @@ fn upgrade_use_develop(table: &mut Vec<SyntaxElement>) {
     }
 }
 
+fn is_pip_file_ref(s: &str) -> bool {
+    s.starts_with("-r ") || s.starts_with("-c ")
+}
+
+fn normalize_and_sort_requirements(entry: &SyntaxNode) {
+    transform(entry, &|s| {
+        if is_pip_file_ref(s) {
+            return s.to_string();
+        }
+        Requirement::new(s).unwrap().normalize(false).to_string()
+    });
+    sort_strings::<String, _, _>(
+        entry,
+        |s| {
+            if is_pip_file_ref(&s) {
+                return s.to_lowercase();
+            }
+            Requirement::new(s.as_str()).unwrap().canonical_name()
+        },
+        &|lhs, rhs| natural_lexical_cmp(lhs, rhs),
+    );
+}
+
 fn fix_env_entry(key: &str, entry: &SyntaxNode) {
     match key {
-        "deps" => {
-            transform(entry, &|s| Requirement::new(s).unwrap().normalize(false).to_string());
-            sort_strings::<String, _, _>(
-                entry,
-                |s| Requirement::new(s.as_str()).unwrap().canonical_name(),
-                &|lhs, rhs| natural_lexical_cmp(lhs, rhs),
-            );
-        }
-        "dependency_groups" | "allowlist_externals" | "extras" | "labels" | "depends" | "constraints" => {
+        "deps" | "constraints" => normalize_and_sort_requirements(entry),
+        "dependency_groups" | "allowlist_externals" | "extras" | "labels" | "depends" => {
             sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
         }
         "pass_env" => sort_pass_env(entry),
@@ -279,6 +310,9 @@ pub fn sort_env_list(tables: &Tables, pin_envs: &[String]) {
                 entry,
                 |node| {
                     let kind = node.kind();
+                    if kind == INLINE_TABLE {
+                        return None;
+                    }
                     let text = node.text().to_string();
                     let val = load_text(&text, kind);
                     let lower = val.to_lowercase();
@@ -362,15 +396,58 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
 
 pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
     let env_list_order = get_env_list_order(tables);
-    let has_env_list = !env_list_order.is_empty();
-
-    let mut order: Vec<&str> = vec!["", "env_run_base", "env_pkg_base"];
+    let mut order: Vec<&str> = vec!["", "env_run_base", "env_pkg_base", "env_base"];
 
     let env_refs: Vec<&str> = env_list_order.iter().map(|s| s.as_str()).collect();
+    let env_list_set: HashSet<&str> = env_refs.iter().copied().collect();
     order.extend(env_refs);
+
+    let mut remaining_envs: Vec<&String> = tables
+        .header_to_pos
+        .keys()
+        .filter(|k| k.starts_with("env.") && count_unquoted_dots(k) == 1 && !env_list_set.contains(k.as_str()))
+        .collect();
+    remaining_envs.sort_by_key(|a| a.to_lowercase());
+    let remaining_env_refs: Vec<&str> = remaining_envs.iter().map(|s| s.as_str()).collect();
+    order.extend(remaining_env_refs);
 
     order.push("env");
 
-    let multi_level_prefixes: &[&str] = if has_env_list { &["env"] } else { &[] };
-    tables.reorder(root_ast, &order, multi_level_prefixes);
+    tables.reorder(root_ast, &order, &["env_base", "env"]);
+}
+
+const TOX_INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[
+    InlineTableSchema {
+        discriminator: "replace",
+        key_order: &[
+            "replace",
+            "condition",
+            "of",
+            "env",
+            "key",
+            "name",
+            "pattern",
+            "then",
+            "else",
+            "default",
+            "extend",
+            "marker",
+        ],
+    },
+    InlineTableSchema {
+        discriminator: "prefix",
+        key_order: &["prefix", "start", "stop"],
+    },
+    InlineTableSchema {
+        discriminator: "product",
+        key_order: &["product", "exclude"],
+    },
+    InlineTableSchema {
+        discriminator: "value",
+        key_order: &["value", "marker"],
+    },
+];
+
+pub fn reorder_inline_tables(root_ast: &SyntaxNode) {
+    reorder_inline_table_keys(root_ast, TOX_INLINE_TABLE_SCHEMAS);
 }

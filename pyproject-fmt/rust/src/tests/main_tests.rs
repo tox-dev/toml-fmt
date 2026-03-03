@@ -217,8 +217,8 @@ fn test_table_format_long_with_entry_points() {
     [project]
     name = "example"
     [project.entry-points]
-    "console_scripts".mycli = "pkg:main"
-    "console_scripts".othercli = "pkg:other"
+    console_scripts.mycli = "pkg:main"
+    console_scripts.othercli = "pkg:other"
     "#);
 }
 

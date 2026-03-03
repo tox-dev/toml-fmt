@@ -37,18 +37,22 @@ All strings use double quotes by default. Single quotes are only used when the v
 Key Quotes
 ~~~~~~~~~~
 
-TOML keys using single-quoted (literal) strings are normalized to double-quoted (basic) strings with proper escaping.
-This ensures consistent formatting and deterministic key sorting regardless of the original quote style:
+TOML keys are normalized to the simplest valid form. Keys that are valid bare keys (containing only
+``A-Za-z0-9_-``) have redundant quotes stripped. Single-quoted (literal) keys that require quoting are
+converted to double-quoted (basic) strings with proper escaping. This applies to all keys: table headers,
+key-value pairs, and inline table keys:
 
 .. code-block:: toml
 
     # Before
     [env.'my-env']
-    deps = ["pytest"]
+    "description" = "run tests"
+    pass_env = [{ "else" = "no" }]
 
     # After
     [env."my-env"]
-    deps = ["pytest"]
+    description = "run tests"
+    pass_env = [{ else = "no" }]
 
 Backslashes and double quotes within literal keys are escaped during conversion.
 
@@ -198,8 +202,10 @@ Tables are reordered into a consistent structure:
 1. Root-level keys (``min_version``, ``requires``, ``env_list``, etc.)
 2. ``[env_run_base]``
 3. ``[env_pkg_base]``
-4. ``[env.NAME]`` sections ordered by ``env_list`` if specified
-5. Any remaining ``[env.*]`` sections not in ``env_list``
+4. ``[env_base.*]`` sections (shared base configurations)
+5. ``[env.NAME]`` sections ordered by ``env_list`` if specified
+6. Any remaining ``[env.*]`` sections not in ``env_list``, sorted alphabetically
+7. ``[env]`` (catch-all environment table, if present)
 
 .. code-block:: toml
 
@@ -211,6 +217,9 @@ Tables are reordered into a consistent structure:
 
     [env_pkg_base]
     # ...
+
+    [env_base.ci]
+    # shared base config
 
     # Environments appear in env_list order:
     [env.lint]
@@ -225,7 +234,7 @@ Tables are reordered into a consistent structure:
     [env.py313]
     # ...
 
-Environments not listed in ``env_list`` are placed at the end.
+Environments not listed in ``env_list`` are placed at the end, sorted alphabetically.
 
 Alias Normalization
 ~~~~~~~~~~~~~~~~~~~
@@ -299,16 +308,18 @@ Environment Key Ordering
 Keys within ``[env_run_base]``, ``[env_pkg_base]``, and ``[env.*]`` tables are reordered to group related
 settings:
 
-``runner`` → ``description`` → ``base_python`` → ``system_site_packages`` → ``always_copy`` →
-``download`` → ``package`` → ``package_env`` → ``wheel_build_env`` → ``package_tox_env_type`` →
-``package_root`` → ``skip_install`` → ``use_develop`` → ``meta_dir`` → ``pkg_dir`` → ``pip_pre`` →
+``factors`` → ``runner`` → ``description`` → ``base_python`` → ``default_base_python`` →
+``system_site_packages`` → ``always_copy`` → ``download`` → ``virtualenv_spec`` → ``package`` →
+``package_env`` → ``wheel_build_env`` → ``package_tox_env_type`` → ``package_root`` →
+``skip_install`` → ``use_develop`` → ``meta_dir`` → ``pkg_dir`` → ``pip_pre`` →
 ``install_command`` → ``list_dependencies_command`` → ``deps`` → ``dependency_groups`` →
-``constraints`` → ``constrain_package_deps`` → ``use_frozen_constraints`` → ``extras`` → ``recreate`` →
-``parallel_show_output`` → ``skip_missing_interpreters`` → ``pass_env`` → ``disallow_pass_env`` →
-``set_env`` → ``change_dir`` → ``platform`` → ``args_are_paths`` → ``ignore_errors`` →
-``ignore_outcome`` → ``commands_pre`` → ``commands`` → ``commands_post`` → ``allowlist_externals`` →
-``labels`` → ``suicide_timeout`` → ``interrupt_timeout`` → ``terminate_timeout`` → ``depends`` →
-``env_dir`` → ``env_tmp_dir`` → ``env_log_dir``
+``pylock`` → ``constraints`` → ``constrain_package_deps`` → ``use_frozen_constraints`` → ``extras`` →
+``recreate`` → ``recreate_commands`` → ``parallel_show_output`` → ``skip_missing_interpreters`` →
+``fail_fast`` → ``pass_env`` → ``disallow_pass_env`` → ``set_env`` → ``change_dir`` →
+``platform`` → ``args_are_paths`` → ``ignore_errors`` → ``commands_retry`` → ``ignore_outcome`` →
+``extra_setup_commands`` → ``commands_pre`` → ``commands`` → ``commands_post`` →
+``allowlist_externals`` → ``labels`` → ``suicide_timeout`` → ``interrupt_timeout`` →
+``terminate_timeout`` → ``depends`` → ``env_dir`` → ``env_tmp_dir`` → ``env_log_dir``
 
 .. code-block:: toml
 
@@ -347,6 +358,9 @@ The ``env_list`` array is sorted with a specific ordering:
 2. **CPython versions** (matching ``py3.12``, ``py312``, ``3.12``, etc.) sorted descending (newest first)
 3. **PyPy versions** (matching ``pypy3.10``, ``pypy310``, etc.) sorted descending
 4. **Named environments** (``lint``, ``type``, ``docs``, etc.) sorted alphabetically
+
+Inline table entries (such as ``{ product = ... }``) in ``env_list`` are excluded from sorting and remain
+in their original positions.
 
 Compound environment names separated by ``-`` are classified by their first recognized part:
 
@@ -391,19 +405,22 @@ Certain arrays within environment tables are sorted automatically:
 
 **Sorted by canonical PEP 508 package name:**
 
-- ``deps`` — dependencies normalized and sorted by package name
+- ``deps``, ``constraints`` — dependencies normalized and sorted by package name
+
+Pip file references (``-r requirements.txt``, ``-c constraints.txt``) are preserved as-is without
+PEP 508 normalization, but still participate in sorting by their lowercased value:
 
 .. code-block:: toml
 
     # Before
-    deps = ["Pytest >= 7", "coverage", "pytest-mock"]
+    deps = ["Pytest >= 7", "-r requirements.txt", "coverage", "pytest-mock"]
 
     # After
-    deps = ["coverage", "pytest>=7", "pytest-mock"]
+    deps = ["-r requirements.txt", "coverage", "pytest>=7", "pytest-mock"]
 
 **Sorted alphabetically:**
 
-- ``dependency_groups``, ``allowlist_externals``, ``extras``, ``labels``, ``depends``, ``constraints``
+- ``dependency_groups``, ``allowlist_externals``, ``extras``, ``labels``, ``depends``
 
 **Special handling for ``pass_env``:**
 
@@ -422,6 +439,32 @@ then string entries are sorted alphabetically:
 
 - ``commands``, ``commands_pre``, ``commands_post`` — execution order matters
 - ``base_python`` — first entry takes priority
+
+Inline Table Key Reordering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Keys within inline tables are reordered into a consistent order based on the inline table's type. The type
+is detected by the presence of a discriminator key:
+
+- **``replace``** — ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
+  ``then`` → ``else`` → ``default`` → ``extend`` → ``marker``
+- **``prefix``** — ``prefix`` → ``start`` → ``stop``
+- **``product``** — ``product`` → ``exclude``
+- **``value``** — ``value`` → ``marker``
+
+Keys not listed in the schema are appended at the end in their original order.
+
+.. code-block:: toml
+
+    # Before
+    pass_env = [{ default = ".", replace = "default", extend = true }]
+    env_list = [{ exclude = ["py38-django50"], product = ["py38", "py310", "django42", "django50"] }]
+
+    # After
+    pass_env = [{ replace = "default", default = ".", extend = true }]
+    env_list = [{ product = ["py38", "py310", "django42", "django50"], exclude = ["py38-django50"] }]
+
+This reordering applies to all inline tables in the file, including those nested inside arrays.
 
 Other Tables
 ~~~~~~~~~~~~
