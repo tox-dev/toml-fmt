@@ -1,5 +1,5 @@
 use indoc::indoc;
-use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE, KEY_VALUE_GROUP};
+use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE, KEY_VALUE_GROUP, KEYS};
 use tombi_syntax::SyntaxNode;
 
 use crate::array::{
@@ -1003,4 +1003,43 @@ fn test_sort_preserves_trailing_comment_after_bracket_end_multiline() {
       "b",
     ]  # trailing comment
     "#);
+}
+
+fn find_first_value(root: &SyntaxNode) -> SyntaxNode {
+    root.descendants()
+        .find(|n| {
+            n.kind() != root.kind()
+                && n.kind() != KEY_VALUE
+                && n.kind() != KEY_VALUE_GROUP
+                && n.kind() != KEYS
+                && n.kind() != ARRAY
+        })
+        .unwrap()
+}
+
+#[test]
+fn test_sort_on_non_array_is_noop() {
+    let input = r#"a = "src""#;
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
+    let value_node = find_first_value(&root_ast);
+    sort_strings::<String, _, _>(&value_node, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    insta::assert_snapshot!(root_ast.to_string(), @r#"a = "src""#);
+}
+
+#[test]
+fn test_transform_on_non_array_is_noop() {
+    let input = r#"a = "src""#;
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
+    let value_node = find_first_value(&root_ast);
+    transform(&value_node, &|s| s.to_uppercase());
+    insta::assert_snapshot!(root_ast.to_string(), @r#"a = "src""#);
+}
+
+#[test]
+fn test_dedupe_on_non_array_is_noop() {
+    let input = r#"a = "src""#;
+    let root_ast = tombi_parser::parse(input).syntax_node().clone_for_update();
+    let value_node = find_first_value(&root_ast);
+    dedupe_strings(&value_node, |s| s.to_lowercase());
+    insta::assert_snapshot!(root_ast.to_string(), @r#"a = "src""#);
 }
