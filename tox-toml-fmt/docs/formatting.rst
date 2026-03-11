@@ -407,16 +407,17 @@ Certain arrays within environment tables are sorted automatically:
 
 - ``deps``, ``constraints`` — dependencies normalized and sorted by package name
 
-Pip file references (``-r requirements.txt``, ``-c constraints.txt``) are preserved as-is without
-PEP 508 normalization, but still participate in sorting by their lowercased value:
+Pip file references (``-r``, ``-c``), editable installs (``-e``), local paths (``./``, ``../``,
+``/``), and entries containing tox substitution variables (``{tox_root}``, etc.) are preserved as-is
+without PEP 508 normalization, but still participate in sorting by their lowercased value:
 
 .. code-block:: toml
 
     # Before
-    deps = ["Pytest >= 7", "-r requirements.txt", "coverage", "pytest-mock"]
+    deps = ["Pytest >= 7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]"]
 
     # After
-    deps = ["-r requirements.txt", "coverage", "pytest>=7", "pytest-mock"]
+    deps = ["-e ./my-pkg[test]", "-r requirements.txt", "coverage", "pytest>=7"]
 
 **Sorted alphabetically:**
 

@@ -1485,3 +1485,97 @@ fn test_inline_table_reorder_env_with_marker() {
     set_env.X = { replace = "env", name = "MY_VAR", default = "fallback", marker = "sys_platform == 'linux'" }
     "#);
 }
+
+#[test]
+fn test_deps_editable_local_path_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["-e ./opentelemetry-python-lineage-api[dtp]", "-e ./opentelemetry-python-lineage-sdk[dtp,fastapi]"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [
+      "-e ./opentelemetry-python-lineage-api[dtp]",
+      "-e ./opentelemetry-python-lineage-sdk[dtp,fastapi]",
+    ]
+    "#);
+}
+
+#[test]
+fn test_deps_tox_substitution_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["{tox_root}/subproject[extras]", "pytest"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [ "{tox_root}/subproject[extras]", "pytest" ]
+    "#);
+}
+
+#[test]
+fn test_deps_editable_with_tox_substitution_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["-e {tox_root}/subproject[extras]", "pytest"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [ "-e {tox_root}/subproject[extras]", "pytest" ]
+    "#);
+}
+
+#[test]
+fn test_deps_relative_path_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["./my.package[test]", "pytest"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [ "./my.package[test]", "pytest" ]
+    "#);
+}
+
+#[test]
+fn test_deps_parent_path_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["../my.package[test]", "pytest"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [ "../my.package[test]", "pytest" ]
+    "#);
+}
+
+#[test]
+fn test_deps_absolute_path_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        deps = ["/opt/my.package[test]", "pytest"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    deps = [ "/opt/my.package[test]", "pytest" ]
+    "#);
+}
+
+#[test]
+fn test_constraints_editable_and_paths_not_normalized() {
+    let start = indoc! {r#"
+        [env.test]
+        constraints = ["-e ./local_pkg[dev]", "{tox_root}/constraints.txt"]
+        "#};
+    let got = format_toml_helper(start, 2);
+    assert_snapshot!(got, @r#"
+    [env.test]
+    constraints = [ "-e ./local_pkg[dev]", "{tox_root}/constraints.txt" ]
+    "#);
+}
