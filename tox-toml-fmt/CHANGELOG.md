@@ -1,4 +1,11 @@
-<a id="1.9.0"></a>
+<a id="1.9.1"></a>
+
+## 1.9.1 - 2026-03-11
+
+- 🐛 fix(tox-toml-fmt): skip normalization for paths and substitutions in deps by
+  [@gaborbernat](https://github.com/gaborbernat) in [#268](https://github.com/tox-dev/toml-fmt/pull/268)
+- 🐛 fix(common): panic on non-array nodes in array ops by [@gaborbernat](https://github.com/gaborbernat) in
+  [#266](https://github.com/tox-dev/toml-fmt/pull/266) <a id="1.9.0"></a>
 
 ## 1.9.0 - 2026-03-03
 
