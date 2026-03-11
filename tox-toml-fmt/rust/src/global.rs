@@ -229,13 +229,19 @@ fn upgrade_use_develop(table: &mut Vec<SyntaxElement>) {
     }
 }
 
-fn is_pip_file_ref(s: &str) -> bool {
-    s.starts_with("-r ") || s.starts_with("-c ")
+fn should_skip_normalization(s: &str) -> bool {
+    s.starts_with("-r ")
+        || s.starts_with("-c ")
+        || s.starts_with("-e ")
+        || s.starts_with("./")
+        || s.starts_with("../")
+        || s.starts_with('/')
+        || s.contains('{')
 }
 
 fn normalize_and_sort_requirements(entry: &SyntaxNode) {
     transform(entry, &|s| {
-        if is_pip_file_ref(s) {
+        if should_skip_normalization(s) {
             return s.to_string();
         }
         Requirement::new(s).unwrap().normalize(false).to_string()
@@ -243,7 +249,7 @@ fn normalize_and_sort_requirements(entry: &SyntaxNode) {
     sort_strings::<String, _, _>(
         entry,
         |s| {
-            if is_pip_file_ref(&s) {
+            if should_skip_normalization(&s) {
                 return s.to_lowercase();
             }
             Requirement::new(s.as_str()).unwrap().canonical_name()
