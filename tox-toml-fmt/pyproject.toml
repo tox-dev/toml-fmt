@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "maturin"
 requires = [
-  "maturin>=1.12.5",
+  "maturin>=1.12.6",
 ]
 
 [project]
@@ -61,8 +61,8 @@ type = [
 docs = [
   "furo>=2025.12.19; python_version>='3.14'",
   "sphinx>=9.1; python_version>='3.14'",
-  "sphinx-argparse-cli>=1.20.1; python_version>='3.14'",
-  "sphinx-autodoc-typehints>=3.8; python_version>='3.14'",
+  "sphinx-argparse-cli>=1.21.1; python_version>='3.14'",
+  "sphinx-autodoc-typehints>=3.9.8; python_version>='3.14'",
   "sphinx-copybutton>=0.5.2; python_version>='3.14'",
   "sphinx-inline-tabs>=2025.12.21.14; python_version>='3.14'",
 ]
@@ -72,7 +72,7 @@ fix = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.10.7",
+  "uv>=0.10.10",
 ]
 
 [tool.maturin]
