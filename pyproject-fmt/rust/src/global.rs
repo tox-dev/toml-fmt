@@ -48,6 +48,12 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
             "tool.deptry",
             "tool.pyproject-fmt",
             "tool.typos",
+            // Type checking
+            "tool.mypy",
+            "tool.pyrefly",
+            "tool.pyright",
+            "tool.ty",
+            "tool.django-stubs",
             // Testing
             "tool.pytest",
             "tool.pytest_env",
@@ -63,12 +69,6 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
             "tool.tbump",
             "tool.towncrier",
             "tool.vendoring",
-            // Type checking
-            "tool.mypy",
-            "tool.pyrefly",
-            "tool.pyright",
-            "tool.ty",
-            "tool.django-stubs",
         ],
         &["tool"], // Treat tool.* as distinct base keys (e.g., tool.black != tool.ruff)
     );
