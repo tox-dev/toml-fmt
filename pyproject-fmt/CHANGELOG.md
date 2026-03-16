@@ -1,4 +1,11 @@
-<a id="2.18.1"></a>
+<a id="2.19.0"></a>
+
+## 2.19.0 - 2026-03-16
+
+- ♻️ refactor(pyproject-fmt): sort type checkers after linters by [@gaborbernat](https://github.com/gaborbernat) in
+  [#274](https://github.com/tox-dev/toml-fmt/pull/274)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#270](https://github.com/tox-dev/toml-fmt/pull/270) <a id="2.18.1"></a>
 
 ## 2.18.1 - 2026-03-03
 
