@@ -1213,7 +1213,7 @@ dev = [
 docs = [
     { name = "furo", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.19" },
     { name = "sphinx", marker = "python_full_version >= '3.14'", specifier = ">=9.1" },
-    { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.21.1" },
+    { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.21.2" },
     { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.9.8" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.14'", specifier = ">=0.5.2" },
     { name = "sphinx-inline-tabs", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.21.14" },
@@ -1503,14 +1503,14 @@ wheels = [
 
 [[package]]
 name = "sphinx-argparse-cli"
-version = "1.21.1"
+version = "1.21.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sphinx", marker = "python_full_version >= '3.14'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/a8/e0cc1af610daf66322993f6d59f1d5a06be2bd72a01afa11822728d22243/sphinx_argparse_cli-1.21.1.tar.gz", hash = "sha256:a34a5dc698034ac89dcb99c91a1f0ed4c1dcab883ea37b3bb43cd844e1de6935", size = 13954, upload-time = "2026-03-02T04:26:51.062Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/e4/7da4b6df073898ccd0d1c1c7a7ad45bc53d37650b0650027db6f76b5e69d/sphinx_argparse_cli-1.21.2.tar.gz", hash = "sha256:8bd51f4c605d0b6271e2803a1bc4a25cf88884b9c6204e7f8e0b5341b7f49960", size = 14002, upload-time = "2026-03-16T20:21:01.253Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/21/07/7a00f8291ae4f1f9170fe8ce3b7930835d1da29a815116bd5dcdeab52044/sphinx_argparse_cli-1.21.1-py3-none-any.whl", hash = "sha256:da0caf0f6fa064f0ae0e598c81db5e77a2e151ea25a3dd1d846fd64f9d82b976", size = 10715, upload-time = "2026-03-02T04:26:50.019Z" },
+    { url = "https://files.pythonhosted.org/packages/59/8d/dca99a327ecde245ed08ed48a52fb5da57304fa5597fe136b16e9a900356/sphinx_argparse_cli-1.21.2-py3-none-any.whl", hash = "sha256:11beba2f8f9a2f3ce395538edc65d33de611e7cda7202117a5781f820e62092d", size = 10718, upload-time = "2026-03-16T20:20:59.58Z" },
 ]
 
 [[package]]
@@ -1801,7 +1801,7 @@ dev = [
 docs = [
     { name = "furo", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.19" },
     { name = "sphinx", marker = "python_full_version >= '3.14'", specifier = ">=9.1" },
-    { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.21.1" },
+    { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.21.2" },
     { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.9.8" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.14'", specifier = ">=0.5.2" },
     { name = "sphinx-inline-tabs", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.21.14" },
