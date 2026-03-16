@@ -78,6 +78,9 @@ fn test_reorder_table_reorder() {
     [tool.ruff.test]
     mrt = "vrt"
 
+    [tool.mypy]
+    mk = "mv"
+
     [tool.pytest]
     mk = "mv"
 
@@ -92,9 +95,6 @@ fn test_reorder_table_reorder() {
 
     [tool.coverage.run]
     ef = "fg"
-
-    [tool.mypy]
-    mk = "mv"
 
     [tool.undefined]
     mu = "mu"
