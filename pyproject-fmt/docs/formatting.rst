@@ -37,7 +37,8 @@ Tables are reordered into a consistent structure:
    2. Builders: ``cibuildwheel``, ``nuitka``
    3. Linters/formatters: ``autopep8``, ``black``, ``ruff``, ``isort``, ``flake8``, ``pycln``, ``nbqa``,
       ``pylint``, ``repo-review``, ``codespell``, ``docformatter``, ``pydoclint``, ``tomlsort``,
-      ``check-manifest``, ``check-sdist``, ``check-wheel-contents``, ``deptry``, ``pyproject-fmt``, ``typos``
+      ``check-manifest``, ``check-sdist``, ``check-wheel-contents``, ``deptry``, ``pyproject-fmt``, ``typos``,
+      ``bandit``
    4. Type checkers: ``mypy``, ``pyrefly``, ``pyright``, ``ty``, ``django-stubs``
    5. Testing: ``pytest``, ``pytest_env``, ``pytest-enabler``, ``coverage``
    6. Task runners: ``doit``, ``spin``, ``tox``

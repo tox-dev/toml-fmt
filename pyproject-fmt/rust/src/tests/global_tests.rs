@@ -106,3 +106,31 @@ fn test_reorder_table_reorder() {
     ed = "ed"
     "#);
 }
+
+#[test]
+fn test_reorder_bandit_as_linter() {
+    let start = indoc! {r#"
+    [tool.mypy]
+    mk="mv"
+    [tool.bandit]
+    skips=["B101"]
+    [tool.pytest]
+    mk="mv"
+    [tool.ruff]
+    mr="vr"
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    [tool.ruff]
+    mr = "vr"
+
+    [tool.bandit]
+    skips = [ "B101" ]
+
+    [tool.mypy]
+    mk = "mv"
+
+    [tool.pytest]
+    mk = "mv"
+    "#);
+}
