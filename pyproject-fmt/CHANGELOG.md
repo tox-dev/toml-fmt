@@ -1,4 +1,11 @@
-<a id="2.19.0"></a>
+<a id="2.20.0"></a>
+
+## 2.20.0 - 2026-03-18
+
+- ✨ feat(pyproject-fmt): add bandit to recognized linters by [@gaborbernat](https://github.com/gaborbernat) in
+  [#276](https://github.com/tox-dev/toml-fmt/pull/276)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#269](https://github.com/tox-dev/toml-fmt/pull/269) <a id="2.19.0"></a>
 
 ## 2.19.0 - 2026-03-16
 
