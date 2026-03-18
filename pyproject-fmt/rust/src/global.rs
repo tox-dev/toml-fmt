@@ -48,6 +48,7 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
             "tool.deptry",
             "tool.pyproject-fmt",
             "tool.typos",
+            "tool.bandit",
             // Type checking
             "tool.mypy",
             "tool.pyrefly",
