@@ -127,6 +127,14 @@ class _Config(Generic[T]):
     opt: T
 
 
+def _check_write_permission(parser: ArgumentParser, opt: FmtNamespace) -> None:
+    if opt.stdout or opt.check:
+        return
+    for toml_path in opt.inputs:
+        if toml_path is not None and not os.access(toml_path, os.W_OK):
+            parser.error(f"argument inputs: cannot write path {toml_path}")
+
+
 def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
     """
     Load the tools options.
@@ -139,6 +147,7 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
     parser.parse_args(namespace=info.opt, args=args)
     if (explicit_config := info.opt.config) is not None and not explicit_config.is_file():
         parser.error(f"config file does not exist: {explicit_config}")
+    _check_write_permission(parser, info.opt)
     res = []
     for pyproject_toml in info.opt.inputs:
         raw_pyproject_toml = sys.stdin.read() if pyproject_toml is None else pyproject_toml.read_text(encoding="utf-8")
@@ -283,9 +292,6 @@ def _toml_path_creator(filename: str, argument: str) -> Path | None:
         raise ArgumentTypeError(msg)
     if not os.access(path, os.R_OK):
         msg = "cannot read path"
-        raise ArgumentTypeError(msg)
-    if not os.access(path, os.W_OK):
-        msg = "cannot write path"
         raise ArgumentTypeError(msg)
     return path
 

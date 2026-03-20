@@ -277,8 +277,46 @@ def test_dumb_path_no_write(capsys: pytest.CaptureFixture[str], tmp_path: Path) 
         toml.chmod(start)
 
     out, err = capsys.readouterr()
-    assert "\ntoml-fmt-common: error: argument inputs: cannot write path\n" in err
+    assert "cannot write path" in err
     assert not out
+
+
+def test_dumb_path_no_write_check_mode(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NO_FMT", "1")
+    toml = tmp_path / "dumb.toml"
+    toml.write_text("")
+    start = toml.stat().st_mode
+    toml.chmod(0o400)
+
+    try:
+        exit_code = run(Dumb(), ["E", "--check", str(toml)])
+    finally:
+        toml.chmod(start)
+
+    assert exit_code == 0
+    _out, err = capsys.readouterr()
+    assert not err
+
+
+def test_dumb_path_no_write_stdout_mode(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NO_FMT", "1")
+    toml = tmp_path / "dumb.toml"
+    toml.write_text("")
+    start = toml.stat().st_mode
+    toml.chmod(0o400)
+
+    try:
+        exit_code = run(Dumb(), ["E", "--stdout", str(toml)])
+    finally:
+        toml.chmod(start)
+
+    assert exit_code == 0
+    _out, err = capsys.readouterr()
+    assert not err
 
 
 def test_writes_lf_line_endings(tmp_path: Path) -> None:
