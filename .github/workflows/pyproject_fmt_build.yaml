@@ -84,7 +84,7 @@ jobs:
         with:
           python-version: "3.14"
       - name: 🎨 Run pre-commit
-        uses: tox-dev/action-pre-commit-uv@270ddcea3d0ff0ef1527f49d12590954f31b4b3f # v1
+        uses: tox-dev/action-pre-commit-uv@246b66536e366bb885f52d61983bf32f7c95e8b1 # v1.0.3
         continue-on-error: true
       - name: 📝 Generate README.rst
         run: python tasks/generate_readme.py pyproject-fmt
