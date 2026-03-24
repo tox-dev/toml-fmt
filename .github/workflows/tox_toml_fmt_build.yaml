@@ -29,9 +29,11 @@ jobs:
       run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: 🔍 Check for changes
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
         id: filter
         with:
           filters: |
@@ -53,19 +55,22 @@ jobs:
       changelog: ${{ steps.v.outputs.changelog }}
     steps:
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
       - name: 📦 Install cargo-edit
-        uses: baptiste0928/cargo-install@v3
+        uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3
         with:
           crate: cargo-edit
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: 🔖 Bump version
-        run: cargo set-version -p tox-toml-fmt --bump '${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}'
+        run: cargo set-version -p tox-toml-fmt --bump "$RELEASE_TYPE"
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
           enable-cache: true
           cache-dependency-glob: "tasks/changelog.py"
@@ -75,18 +80,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - name: 🐍 Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: "3.14"
       - name: 🎨 Run pre-commit
-        uses: tox-dev/action-pre-commit-uv@v1
+        uses: tox-dev/action-pre-commit-uv@270ddcea3d0ff0ef1527f49d12590954f31b4b3f # v1
         continue-on-error: true
       - name: 📝 Generate README.rst
         run: python tasks/generate_readme.py tox-toml-fmt
       - name: 👀 Show changes
         run: git diff HEAD -u
       - name: 📤 Upload source
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: source
           path: |
@@ -110,18 +115,18 @@ jobs:
           - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@v1.50.1
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
@@ -137,22 +142,22 @@ jobs:
           - { runner: windows-2025, target: x64 }
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
       - name: 🐍 Setup Python 3.10
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: "3.10"
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@v1.50.1
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: dist
@@ -169,17 +174,17 @@ jobs:
           - { runner: macos-15, target: aarch64 }
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@v1.50.1
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
         with:
           target: ${{ matrix.platform.target }}
           args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
@@ -190,16 +195,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
       - name: 📦 Build sdist
-        uses: PyO3/maturin-action@v1.50.1
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
         with:
           command: sdist
           args: -m tox-toml-fmt/Cargo.toml --out dist
       - name: 📤 Upload sdist
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: wheels-sdist
           path: dist
@@ -217,11 +222,12 @@ jobs:
     needs: [bump, sdist, linux, macos, windows]
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: false
       - name: 📥 Download source
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
           path: .
@@ -231,9 +237,11 @@ jobs:
         run: |
           git config --global user.name 'Bernat Gabor'
           git config --global user.email 'gaborbernat@users.noreply.github.com'
-          git commit -am "Release tox-toml-fmt ${{needs.bump.outputs.version}} [skip ci]"
+          git commit -am "Release tox-toml-fmt ${NEEDS_BUMP_OUTPUTS_VERSION} [skip ci]"
+        env:
+          NEEDS_BUMP_OUTPUTS_VERSION: ${{needs.bump.outputs.version}}
       - name: 📥 Download wheels
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: wheels-*
           path: dist
@@ -241,21 +249,23 @@ jobs:
       - name: 👀 Show wheels
         run: ls -lth dist
       - name: 🚀 Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.13.0
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
           skip-existing: true
       - name: 📢 Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          NEEDS_BUMP_OUTPUTS_VERSION: ${{needs.bump.outputs.version}}
+          NEEDS_BUMP_OUTPUTS_CHANGELOG: ${{ needs.bump.outputs.changelog }}
         run: |
           git pull --rebase origin main
-          git tag tox-toml-fmt/${{needs.bump.outputs.version}}
+          git tag tox-toml-fmt/${NEEDS_BUMP_OUTPUTS_VERSION}
           git push
           git push --tags
-          gh release create "tox-toml-fmt/${{needs.bump.outputs.version}}" \
-              --title="tox-toml-fmt/${{needs.bump.outputs.version}}" --verify-tag \
+          gh release create "tox-toml-fmt/${NEEDS_BUMP_OUTPUTS_VERSION}" \
+              --title="tox-toml-fmt/${NEEDS_BUMP_OUTPUTS_VERSION}" --verify-tag \
             --notes "$(cat << 'EOM'
-          ${{ needs.bump.outputs.changelog }}
+          ${NEEDS_BUMP_OUTPUTS_CHANGELOG}
           EOM
           )"
       - name: 🔄 Trigger pre-commit mirror sync
