@@ -4,23 +4,27 @@ on:
   schedule:
     - cron: "0 8 1,15 * *"
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   python:
     name: 🐍 python
     runs-on: ubuntu-24.04
+    environment: update-deps
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
 
       - name: 🐍 Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
 
       - name: 🧪 Install tox
         run: uv tool install tox --with tox-uv
@@ -47,7 +51,7 @@ jobs:
         run: uvx prek run --all-files || true
 
       - name: 🔀 Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           commit-message: "Update Python dependencies"
@@ -63,12 +67,18 @@ jobs:
   rust:
     name: 🦀 rust
     runs-on: ubuntu-24.04
+    environment: update-deps
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
 
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
 
       - name: ⬆️ Update git dependencies
         run: |
@@ -86,7 +96,7 @@ jobs:
         run: cargo update
 
       - name: 🔀 Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
           commit-message: "Update Rust dependencies"

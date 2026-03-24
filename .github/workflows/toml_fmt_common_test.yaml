@@ -23,9 +23,11 @@ jobs:
       run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
       - name: 🔍 Check for changes
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
         id: filter
         with:
           filters: |
@@ -38,6 +40,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
+    environment: test
     strategy:
       fail-fast: false
       matrix:
@@ -47,13 +50,14 @@ jobs:
         working-directory: toml-fmt-common
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
         with:
-          enable-cache: true
+          enable-cache: false
           cache-dependency-glob: "pyproject.toml"
       - name: 🔧 Install tox
         run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
@@ -68,7 +72,7 @@ jobs:
           PYTEST_ADDOPTS: "-vv --durations=20"
       - name: 📤 Upload coverage
         if: startsWith(matrix.env, '3.')
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: toml-fmt-common/.tox/${{ matrix.env }}
