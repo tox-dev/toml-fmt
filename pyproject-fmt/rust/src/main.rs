@@ -15,6 +15,7 @@ mod project;
 
 mod coverage;
 mod global;
+mod pixi;
 mod ruff;
 #[cfg(test)]
 mod tests;
@@ -150,6 +151,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables);
     uv::fix(&mut tables);
+    pixi::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);

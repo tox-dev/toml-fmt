@@ -32,8 +32,8 @@ Tables are reordered into a consistent structure:
 4. ``[tool.*]`` sections in the order:
 
    1. Build backends: ``poetry``, ``poetry-dynamic-versioning``, ``pdm``, ``setuptools``, ``distutils``,
-      ``setuptools_scm``, ``hatch``, ``flit``, ``scikit-build``, ``meson-python``, ``maturin``, ``whey``,
-      ``py-build-cmake``, ``sphinx-theme-builder``, ``uv``
+      ``setuptools_scm``, ``hatch``, ``flit``, ``scikit-build``, ``meson-python``, ``maturin``, ``pixi``,
+      ``whey``, ``py-build-cmake``, ``sphinx-theme-builder``, ``uv``
    2. Builders: ``cibuildwheel``, ``nuitka``
    3. Linters/formatters: ``autopep8``, ``black``, ``ruff``, ``isort``, ``flake8``, ``pycln``, ``nbqa``,
       ``pylint``, ``repo-review``, ``codespell``, ``docformatter``, ``pydoclint``, ``tomlsort``,
@@ -422,6 +422,31 @@ Plugin arrays:
   ``lint.pep8-naming.ignore-names``, ``lint.pep8-naming.staticmethod-decorators``,
   ``lint.pydocstyle.ignore-decorators``, ``lint.pydocstyle.property-decorators``, ``lint.pyflakes.extend-generics``,
   ``lint.pylint.allow-dunder-method-names``, ``lint.pylint.allow-magic-value-types``
+
+``[tool.pixi]``
+~~~~~~~~~~~~~~~
+
+**Key ordering:**
+
+Keys are grouped by functionality:
+
+1. Workspace metadata: ``workspace.name`` → ``workspace.version`` → ``workspace.description`` →
+   ``workspace.authors`` → ``workspace.license`` → ``workspace.license-file`` → ``workspace.readme`` →
+   ``workspace.homepage`` → ``workspace.repository`` → ``workspace.documentation``
+2. Workspace configuration: ``workspace.channels`` → ``workspace.platforms`` → ``workspace.channel-priority`` →
+   ``workspace.solve-strategy`` → ``workspace.conda-pypi-map`` → ``workspace.requires-pixi`` →
+   ``workspace.exclude-newer`` → ``workspace.preview`` → ``workspace.build-variants`` →
+   ``workspace.build-variants-files``
+3. Dependencies: ``dependencies`` → ``host-dependencies`` → ``build-dependencies`` → ``run-dependencies`` →
+   ``constraints`` → ``pypi-dependencies`` → ``pypi-options``
+4. Development: ``dev``
+5. Environment setup: ``system-requirements`` → ``activation`` → ``tasks``
+6. Targeting: ``target`` → ``feature`` → ``environments``
+7. Package build: ``package``
+
+**Sorted arrays:**
+
+``workspace.channels``, ``workspace.platforms``, ``workspace.preview``, ``workspace.build-variants-files``
 
 ``[tool.uv]``
 ~~~~~~~~~~~~~

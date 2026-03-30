@@ -108,6 +108,34 @@ fn test_reorder_table_reorder() {
 }
 
 #[test]
+fn test_reorder_pixi_as_build_backend() {
+    let start = indoc! {r#"
+    [tool.ruff]
+    mr="vr"
+    [tool.pixi.project]
+    pk="pv"
+    [tool.pixi]
+    pk="pv"
+    [tool.mypy]
+    mk="mv"
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    [tool.pixi]
+    pk = "pv"
+
+    [tool.pixi.project]
+    pk = "pv"
+
+    [tool.ruff]
+    mr = "vr"
+
+    [tool.mypy]
+    mk = "mv"
+    "#);
+}
+
+#[test]
 fn test_reorder_bandit_as_linter() {
     let start = indoc! {r#"
     [tool.mypy]
