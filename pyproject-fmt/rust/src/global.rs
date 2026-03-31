@@ -21,6 +21,7 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
             "tool.scikit-build",
             "tool.meson-python",
             "tool.maturin",
+            "tool.pixi",
             "tool.whey",
             "tool.py-build-cmake",
             "tool.sphinx-theme-builder",
