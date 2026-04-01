@@ -31,5 +31,5 @@ default = ["extension-module"]
 common = { path = "../common", features = ["test-util"] }
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-insta = { version = "1.46.3", features = ["redactions"] } # snapshot testing
+insta = { version = "1.47.2", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.28.2", features = ["auto-initialize"] }
