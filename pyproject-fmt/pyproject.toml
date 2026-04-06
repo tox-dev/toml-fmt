@@ -35,8 +35,8 @@ dependencies = [
   "toml-fmt-common",
 ]
 urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
-urls."Changelog" = "https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt/tree/main/pyproject-fmt"
+urls.Changelog = "https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md"
 urls.Documentation = "https://pyproject-fmt.readthedocs.io/en/latest/"
 scripts.pyproject-fmt = "pyproject_fmt.__main__:runner"
 
@@ -102,6 +102,10 @@ skip = [
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
 
+[tool.mypy]
+show_error_codes = true
+strict = true
+
 [tool.coverage]
 run.parallel = true
 run.plugins = [
@@ -119,7 +123,3 @@ paths.source = [
 report.fail_under = 100
 html.show_contexts = true
 html.skip_covered = false
-
-[tool.mypy]
-show_error_codes = true
-strict = true

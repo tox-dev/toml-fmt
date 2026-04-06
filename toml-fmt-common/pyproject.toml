@@ -64,6 +64,10 @@ build-backend.source-include = [ "tests/**", "tox.toml" ]
 [tool.pyproject-fmt]
 max_supported_python = "3.14"
 
+[tool.mypy]
+show_error_codes = true
+strict = true
+
 [tool.coverage]
 run.parallel = true
 run.plugins = [
@@ -84,7 +88,3 @@ paths.source = [
 report.fail_under = 100
 html.show_contexts = true
 html.skip_covered = false
-
-[tool.mypy]
-show_error_codes = true
-strict = true
