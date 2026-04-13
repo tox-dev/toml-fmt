@@ -231,7 +231,6 @@ where
         .filter(|x| *x == COMMA || is_array_value(*x))
         .last()
         == Some(COMMA);
-    let multiline = array.children_with_tokens().any(|e| e.kind() == LINE_BREAK);
 
     let mut entries = Vec::<SyntaxElement>::new();
     let mut order_sets = Vec::<Vec<SyntaxElement>>::new();
@@ -317,7 +316,11 @@ where
 
     let remaining: Vec<SyntaxElement> = current_set.borrow_mut().drain(..).collect();
 
-    let trailing_content = entries.split_off(if multiline { 2 } else { 1 });
+    let leading_count = entries
+        .iter()
+        .take_while(|e| matches!(e.kind(), BRACKET_START | LINE_BREAK))
+        .count();
+    let trailing_content = entries.split_off(leading_count);
     let mut order: Vec<T> = key_to_order_set.keys().cloned().collect();
     order.sort_by(&cmp);
 

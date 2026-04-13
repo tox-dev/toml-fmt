@@ -433,6 +433,23 @@ fn test_dependency_groups_include_groups_sorted_alphabetically() {
 }
 
 #[test]
+fn test_dependency_groups_issue_291_value_on_bracket_line() {
+    let start = indoc! {r#"
+    [dependency-groups]
+    dev = ["foo",
+    "bar",]
+    "#};
+    let res = format_dependency_groups_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [dependency-groups]
+    dev = [
+      "bar",
+      "foo",
+    ]
+    "#);
+}
+
+#[test]
 fn test_dependency_groups_packages_before_include_groups() {
     let start = indoc! {r#"
         [dependency-groups]
