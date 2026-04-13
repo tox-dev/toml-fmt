@@ -171,8 +171,9 @@ fn test_order_array_newline_single_comment() {
     "#};
     let res = sort_array_helper(start);
     insta::assert_snapshot!(res, @r#"
-    a = [] # comment
+    a = [  # comment
       "A"
+    ]
     "#);
 }
 
@@ -783,6 +784,20 @@ fn test_dedupe_with_value_wrapper() {
     items = [
       "foo",
       "bar",
+    ]
+    "#);
+}
+
+#[test]
+fn test_sort_multiline_value_on_same_line_as_opening_bracket() {
+    let start = "a = [\"foo\",\n\"bar\",]";
+    let root_ast = tombi_parser::parse(start).syntax_node().clone_for_update();
+    for_each_array(&root_ast, |array| {
+        sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| lhs.cmp(rhs));
+    });
+    let res = root_ast.to_string();
+    insta::assert_snapshot!(res, @r#"
+    a = ["bar","foo",
     ]
     "#);
 }
