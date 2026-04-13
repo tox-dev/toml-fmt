@@ -1,4 +1,17 @@
-<a id="1.9.1"></a>
+<a id="1.9.2"></a>
+
+## 1.9.2 - 2026-04-13
+
+- 🐛 fix(pyproject-fmt): produce valid TOML when sorting arrays with value on bracket line by
+  [@gaborbernat](https://github.com/gaborbernat) in [#293](https://github.com/tox-dev/toml-fmt/pull/293)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#287](https://github.com/tox-dev/toml-fmt/pull/287)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#286](https://github.com/tox-dev/toml-fmt/pull/286)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#269](https://github.com/tox-dev/toml-fmt/pull/269)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#270](https://github.com/tox-dev/toml-fmt/pull/270) <a id="1.9.1"></a>
 
 ## 1.9.1 - 2026-03-11
 
