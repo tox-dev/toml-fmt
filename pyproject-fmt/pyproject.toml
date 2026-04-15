@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "maturin"
 requires = [
-  "maturin>=1.12.6",
+  "maturin>=1.13.1",
 ]
 
 [project]
@@ -48,13 +48,13 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
-  "pytest>=9.0.2",
+  "pytest>=9.0.3",
   "pytest-cov>=7.1",
   "pytest-mock>=3.15.1",
 ]
 type = [
-  "mypy==1.20",
-  "types-cachetools>=6.2.0.20260317",
+  "mypy==1.20.1",
+  "types-cachetools>=6.2.0.20260408",
   "types-chardet>=5.0.4.6",
   { include-group = "test" },
 ]
@@ -62,7 +62,7 @@ docs = [
   "furo>=2025.12.19; python_version>='3.14'",
   "sphinx>=9.1; python_version>='3.14'",
   "sphinx-argparse-cli>=1.21.3; python_version>='3.14'",
-  "sphinx-autodoc-typehints>=3.9.11; python_version>='3.14'",
+  "sphinx-autodoc-typehints>=3.10.1; python_version>='3.14'",
   "sphinx-copybutton>=0.5.2; python_version>='3.14'",
   "sphinx-inline-tabs>=2025.12.21.14; python_version>='3.14'",
 ]
@@ -72,7 +72,7 @@ fix = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.11.2",
+  "uv>=0.11.6",
 ]
 
 [tool.maturin]
