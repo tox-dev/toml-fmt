@@ -46,7 +46,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
         with:
           components: clippy
       - name: 📎 Run Clippy
@@ -64,7 +64,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
         with:
           components: rustfmt
       - name: 🎨 Check formatting
@@ -82,7 +82,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
       - name: 🔨 Build
         run: cargo build -p pyproject-fmt --locked
 
@@ -99,11 +99,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
         with:
           components: llvm-tools-preview
       - name: 📦 Install cargo-llvm-cov
-        uses: taiki-e/install-action@d0f23220b09a75c6db730f13bb37c4f8144b4382 # v2
+        uses: taiki-e/install-action@85b24a67ef0c632dfefad70b9d5ce8fddb040754 # v2
         with:
           tool: cargo-llvm-cov
       - name: ✅ Run tests with coverage
@@ -187,7 +187,7 @@ jobs:
       - name: 🔧 Install tox
         run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
       - name: 📝 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt

@@ -55,7 +55,7 @@ jobs:
       changelog: ${{ steps.v.outputs.changelog }}
     steps:
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
       - name: 📦 Install cargo-edit
         uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3
         with:
@@ -91,7 +91,7 @@ jobs:
       - name: 👀 Show changes
         run: git diff HEAD -u
       - name: 📤 Upload source
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: source
           path: |
@@ -119,14 +119,14 @@ jobs:
         with:
           name: source
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
@@ -151,13 +151,13 @@ jobs:
           python-version: "3.10"
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-windows-${{ matrix.platform.target }}
           path: dist
@@ -178,13 +178,13 @@ jobs:
         with:
           name: source
       - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
           args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
           sccache: true
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-macos-${{ matrix.platform.target }}
           path: dist
@@ -199,12 +199,12 @@ jobs:
         with:
           name: source
       - name: 📦 Build sdist
-        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad # v1.50.1
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           command: sdist
           args: -m pyproject-fmt/Cargo.toml --out dist
       - name: 📤 Upload sdist
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wheels-sdist
           path: dist
@@ -249,7 +249,7 @@ jobs:
       - name: 👀 Show wheels
         run: ls -lth dist
       - name: 🚀 Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           skip-existing: true
       - name: 📢 Create GitHub release
