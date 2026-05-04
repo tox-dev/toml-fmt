@@ -144,7 +144,9 @@ jobs:
       matrix:
         platform:
           - { runner: windows-2025, target: x64, interpreter: "3.10 3.13t 3.14t" }
-          - { runner: windows-2025, target: x64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
+          # 3.15t Windows wheel skipped: python3-dll-a (pulled in by generate-import-lib) only
+          # has .def files up to 3.14t (https://github.com/PyO3/python3-dll-a/blob/main/src/lib.rs).
+          # Re-enable when https://github.com/PyO3/pyo3/issues/6012 finishes 3.15 ABI support.
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8

@@ -95,12 +95,6 @@ exclude = [
   "**/*.pyo",
 ]
 
-[tool.cibuildwheel]
-skip = [
-  "pp*",
-  "*musl*",
-]
-
 [tool.pyproject-fmt]
 max_supported_python = "3.15"
 

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::string::String;
 
 use pyo3::prelude::{PyModule, PyModuleMethods};
-use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
+use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
 
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::KEY_VALUE;
@@ -99,8 +99,13 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
     formatter.format(content).await.unwrap_or_else(|_| content.to_string())
 }
 
-#[must_use]
 #[pyfunction]
+#[pyo3(name = "format_toml")]
+fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
+    py.detach(|| format_toml(content, opt))
+}
+
+#[must_use]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content);
     common::string::normalize_key_quotes(&root_ast);
@@ -181,7 +186,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(format_toml, m)?)?;
+    m.add_function(wrap_pyfunction!(format_toml_py, m)?)?;
     m.add_class::<Settings>()?;
     Ok(())
 }
