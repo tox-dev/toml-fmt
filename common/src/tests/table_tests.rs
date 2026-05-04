@@ -918,11 +918,9 @@ fn test_collapse_sub_table_converts_array_tables_to_inline() {
 
     collapse_sub_table(&mut tables, "project", "authors", 120);
 
-    let authors = tables.get("project.authors").unwrap();
-    let authors_table = authors[0].borrow();
     assert!(
-        authors_table.is_empty(),
-        "array tables should be collapsed to inline array"
+        tables.get("project.authors").is_none(),
+        "array tables should be collapsed and no longer accessible via get"
     );
 
     let project = tables.get("project").unwrap();

@@ -127,15 +127,13 @@ pub struct Tables {
 
 impl Tables {
     pub fn get(&self, key: &str) -> Option<Vec<&RefCell<Vec<SyntaxElement>>>> {
-        if self.header_to_pos.contains_key(key) {
-            let mut res = Vec::<&RefCell<Vec<SyntaxElement>>>::new();
-            for pos in &self.header_to_pos[key] {
-                res.push(&self.table_set[*pos]);
-            }
-            Some(res)
-        } else {
-            None
-        }
+        let positions = self.header_to_pos.get(key)?;
+        let res: Vec<&RefCell<Vec<SyntaxElement>>> = positions
+            .iter()
+            .map(|pos| &self.table_set[*pos])
+            .filter(|cell| !cell.borrow().is_empty())
+            .collect();
+        if res.is_empty() { None } else { Some(res) }
     }
 
     pub fn from_ast(root_ast: &SyntaxNode) -> Self {
