@@ -935,6 +935,49 @@ fn test_issue_217_full_pyproject_idempotent() {
 }
 
 #[test]
+fn test_issue_299_pixi_workspace_collapse_with_keys() {
+    let start = indoc! {r#"
+    [project]
+    name = "x"
+    version = "0.1.0"
+
+    [tool.pixi.workspace]
+    name = "my-project"
+    "#};
+    let got = format_toml(start, &default_settings());
+    assert_valid_toml(&got);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "x"
+    version = "0.1.0"
+
+    [tool.pixi]
+    workspace.name = "my-project"
+    "#);
+}
+
+#[test]
+fn test_issue_299_pixi_workspace_collapse_empty() {
+    let start = indoc! {r#"
+    [project]
+    name = "x"
+    version = "0.1.0"
+
+    [tool.pixi.workspace]
+    "#};
+    let got = format_toml(start, &default_settings());
+    assert_valid_toml(&got);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "x"
+    version = "0.1.0"
+
+    [tool.pixi]
+    workspace = {}
+    "#);
+}
+
+#[test]
 fn test_issue_202_preserve_inline_comment_after_array() {
     let start = indoc! {r#"
     [tool.uv]
