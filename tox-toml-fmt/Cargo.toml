@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 [dependencies]
 common = { path = "../common" }
 lexical-sort = { version = "0.3.1" }
-pyo3 = { version = "0.28.3" }
+pyo3 = { version = "0.28.3", features = ["generate-import-lib"] }
 regex = { version = "1.12.3" }
 tombi-parser = { workspace = true }
 tombi-syntax = { workspace = true }
