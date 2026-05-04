@@ -178,7 +178,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
 /// # Errors
 ///
 /// Will return `PyErr` if an error is raised during formatting.
-#[pymodule]
+#[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(format_toml, m)?)?;

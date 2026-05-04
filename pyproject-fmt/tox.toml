@@ -11,6 +11,10 @@ dependency_groups = ["test"]
 pass_env = ["PYTEST_*", "SSL_CERT_FILE"]
 set_env.COVERAGE_FILE = { replace = "env", name = "COVERAGE_FILE", default = "{work_dir}{/}.coverage.{env_name}" }
 set_env.COVERAGE_FILECOVERAGE_PROCESS_START = "{tox_root}{/}pyproject.toml"
+
+[env."3.15t"]
+description = "run tests under free-threaded 3.15 (no abi3 — PEP 803 abi3t not yet implemented in 3.15.0a8)"
+set_env.MATURIN_PEP517_ARGS = "--no-default-features --features extension-module"
 commands = [
     [
         "pytest",

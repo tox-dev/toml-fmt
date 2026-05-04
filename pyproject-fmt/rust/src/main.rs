@@ -252,7 +252,7 @@ fn get_table_key(name: &str, multi_level_prefixes: &[&str]) -> String {
 /// # Errors
 ///
 /// Will return `PyErr` if an error is raised during formatting.
-#[pymodule]
+#[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(format_toml, m)?)?;

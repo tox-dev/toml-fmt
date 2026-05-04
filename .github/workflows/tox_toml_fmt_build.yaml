@@ -109,9 +109,9 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 pypy3.11" }
-          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
-          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true }
+          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 3.13t 3.14t pypy3.11" }
+          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.10 3.13t 3.14t" }
+          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.10 3.13t 3.14t" }
           - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
     steps:
       - name: 📥 Download source
@@ -139,7 +139,7 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: windows-2025, target: x64 }
+          - { runner: windows-2025, target: x64, interpreter: "3.10 3.13t 3.14t" }
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -181,7 +181,7 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 3.13t 3.14t pypy3.11" --target-dir target
           sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

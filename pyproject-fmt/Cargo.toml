@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 [dependencies]
 common = {path = "../common" }
 regex = { version = "1.12.3" }
-pyo3 = { version = "0.28.3", features = ["abi3-py39"] } # integration with Python
+pyo3 = { version = "0.28.3" } # integration with Python
 lexical-sort = { version = "0.3.1" }
 tombi-parser = { workspace = true }
 tombi-syntax = { workspace = true }
@@ -25,7 +25,8 @@ tokio = { version = "1", features = ["rt"] }
 
 [features]
 extension-module = ["pyo3/extension-module"]
-default = ["extension-module"]
+abi3 = ["pyo3/abi3-py39"]
+default = ["extension-module", "abi3"]
 
 [dev-dependencies]
 common = { path = "../common", features = ["test-util"] }
