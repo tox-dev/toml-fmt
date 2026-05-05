@@ -109,10 +109,14 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 pypy3.11" }
-          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2 }
-          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true }
+          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 3.13t 3.14t pypy3.11" }
+          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.10 3.13t 3.14t" }
+          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.10 3.13t 3.14t" }
           - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
+          # 3.15t needs explicit no-abi3 build (PEP 803 incomplete in 3.15.0a8)
+          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
+          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
+          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -122,13 +126,13 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: wheels-linux-${{ matrix.platform.target }}
+          name: wheels-linux-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
 
   windows:
@@ -139,7 +143,10 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: windows-2025, target: x64 }
+          - { runner: windows-2025, target: x64, interpreter: "3.10 3.13t 3.14t" }
+          # 3.15t Windows wheel skipped: python3-dll-a (pulled in by generate-import-lib) only
+          # has .def files up to 3.14t (https://github.com/PyO3/python3-dll-a/blob/main/src/lib.rs).
+          # Re-enable when https://github.com/PyO3/pyo3/issues/6012 finishes 3.15 ABI support.
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -154,12 +161,12 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: wheels-windows-${{ matrix.platform.target }}
+          name: wheels-windows-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
 
   macos:
@@ -170,8 +177,10 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: macos-15, target: x86_64 }
-          - { runner: macos-15, target: aarch64 }
+          - { runner: macos-15, target: x86_64, interpreter: "3.10 3.13t 3.14t pypy3.11" }
+          - { runner: macos-15, target: aarch64, interpreter: "3.10 3.13t 3.14t pypy3.11" }
+          - { runner: macos-15, target: x86_64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
+          - { runner: macos-15, target: aarch64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -181,12 +190,12 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter "3.10 pypy3.11" --target-dir target
+          args: -m tox-toml-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: wheels-macos-${{ matrix.platform.target }}
+          name: wheels-macos-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
 
   sdist:

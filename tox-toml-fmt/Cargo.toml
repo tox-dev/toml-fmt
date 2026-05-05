@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 [dependencies]
 common = { path = "../common" }
 lexical-sort = { version = "0.3.1" }
-pyo3 = { version = "0.28.3", features = ["abi3-py39"] }
+pyo3 = { version = "0.28.3", features = ["generate-import-lib"] }
 regex = { version = "1.12.3" }
 tombi-parser = { workspace = true }
 tombi-syntax = { workspace = true }
@@ -25,7 +25,10 @@ tokio = { version = "1", features = ["rt"] }
 
 [features]
 extension-module = ["pyo3/extension-module"]
-default = ["extension-module"]
+# `abi3` can be disabled to produce per-version wheels (needed for free-threaded 3.15t until
+# CPython lands PEP 803 abi3t loader: https://github.com/python/cpython/issues/146636).
+abi3 = ["pyo3/abi3-py310"]
+default = ["extension-module", "abi3"]
 
 [dev-dependencies]
 common = { path = "../common", features = ["test-util"] }

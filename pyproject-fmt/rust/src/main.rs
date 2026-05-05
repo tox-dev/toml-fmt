@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::string::String;
 
 use pyo3::prelude::{PyModule, PyModuleMethods};
-use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult};
+use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
 
 use crate::global::reorder_tables;
 use common::array::ensure_all_arrays_multiline;
@@ -112,9 +112,14 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
     formatter.format(content).await.unwrap_or_else(|_| content.to_string())
 }
 
+#[pyfunction]
+#[pyo3(name = "format_toml")]
+fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
+    py.detach(|| format_toml(content, opt))
+}
+
 /// Format toml file
 #[must_use]
-#[pyfunction]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     let root_ast = parse(content);
     common::string::normalize_key_quotes(&root_ast);
@@ -252,10 +257,10 @@ fn get_table_key(name: &str, multi_level_prefixes: &[&str]) -> String {
 /// # Errors
 ///
 /// Will return `PyErr` if an error is raised during formatting.
-#[pymodule]
+#[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(format_toml, m)?)?;
+    m.add_function(wrap_pyfunction!(format_toml_py, m)?)?;
     m.add_class::<Settings>()?;
     Ok(())
 }
