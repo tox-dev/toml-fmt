@@ -1,4 +1,17 @@
-<a id="2.21.1"></a>
+<a id="2.21.2"></a>
+
+## 2.21.2 - 2026-05-05
+
+- ✨ feat(build): support free-threaded Python wheels by [@gaborbernat](https://github.com/gaborbernat) in
+  [#307](https://github.com/tox-dev/toml-fmt/pull/307)
+- 🐛 fix(common): skip empty tables in Tables::get by [@gaborbernat](https://github.com/gaborbernat) in
+  [#304](https://github.com/tox-dev/toml-fmt/pull/304)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#301](https://github.com/tox-dev/toml-fmt/pull/301)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#295](https://github.com/tox-dev/toml-fmt/pull/295)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#296](https://github.com/tox-dev/toml-fmt/pull/296) <a id="2.21.1"></a>
 
 ## 2.21.1 - 2026-04-13
 
