@@ -119,8 +119,8 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - { runner: windows-2025, target: x64, interpreter: "3.10 3.13t 3.14t" }
-          - { runner: windows-11-arm, target: aarch64, interpreter: "3.10 3.13t 3.14t" }
+          - { runner: windows-2025, target: x64, interpreter: "3.10 3.13t 3.14t", python: "3.10" }
+          - { runner: windows-11-arm, target: aarch64, interpreter: "3.11 3.13t 3.14t", python: "3.11" }
           # 3.15t Windows wheel skipped: python3-dll-a (pulled in by generate-import-lib) only
           # has .def files up to 3.14t (https://github.com/PyO3/python3-dll-a/blob/main/src/lib.rs).
           # Re-enable when https://github.com/PyO3/pyo3/issues/6012 finishes 3.15 ABI support.
@@ -129,10 +129,10 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
-      - name: 🐍 Setup Python 3.10
+      - name: 🐍 Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.platform.python }}
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || matrix.platform.target == 'aarch64' && 'arm64' || 'x64' }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
