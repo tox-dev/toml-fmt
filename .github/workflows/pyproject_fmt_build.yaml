@@ -10,7 +10,19 @@ on:
         options: ["no", patch, minor, major]
   push:
     branches: ["main"]
+    paths:
+      - "common/**"
+      - "toml-fmt-common/**"
+      - "pyproject-fmt/**"
+      - ".github/workflows/pyproject_fmt_build.yaml"
+      - ".github/workflows/_build.yaml"
   pull_request:
+    paths:
+      - "common/**"
+      - "toml-fmt-common/**"
+      - "pyproject-fmt/**"
+      - ".github/workflows/pyproject_fmt_build.yaml"
+      - ".github/workflows/_build.yaml"
   schedule:
     - cron: "0 8 * * *"
 
@@ -18,280 +30,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.inputs.release && github.event.inputs.release != 'no' && '-release' || '' }}
   cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
 
-permissions:
-  contents: read
-
 jobs:
-  changes:
-    name: 🔍 changes
-    runs-on: ubuntu-latest
-    outputs:
-      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          persist-credentials: false
-      - name: 🔍 Check for changes
-        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
-        id: filter
-        with:
-          filters: |
-            run:
-              - 'common/**'
-              - 'toml-fmt-common/**'
-              - 'pyproject-fmt/**'
-              - '.github/workflows/pyproject_fmt_build.yaml'
-
-  bump:
-    name: 🔖 bump
-    needs: changes
-    if: needs.changes.outputs.run == 'true'
-    runs-on: ubuntu-24.04
+  build:
+    uses: ./.github/workflows/_build.yaml
+    with:
+      package-name: pyproject-fmt
+      pre-commit-mirror: tox-dev/pyproject-fmt
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     permissions:
-      pull-requests: read
-    outputs:
-      version: ${{ steps.v.outputs.version }}
-      changelog: ${{ steps.v.outputs.changelog }}
-    steps:
-      - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
-      - name: 📦 Install cargo-edit
-        uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3
-        with:
-          crate: cargo-edit
-      - name: 📥 Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: 🔖 Bump version
-        run: cargo set-version -p pyproject-fmt --bump "$RELEASE_TYPE"
-        env:
-          RELEASE_TYPE: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}
-      - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
-        with:
-          enable-cache: true
-          cache-dependency-glob: "tasks/changelog.py"
-      - name: 📝 Generate changelog
-        id: v
-        run: uv run tasks/changelog.py pyproject-fmt "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
-        with:
-          python-version: "3.14"
-      - name: 🎨 Run pre-commit
-        uses: tox-dev/action-pre-commit-uv@246b66536e366bb885f52d61983bf32f7c95e8b1 # v1.0.3
-        continue-on-error: true
-      - name: 📝 Generate README.rst
-        run: python tasks/generate_readme.py pyproject-fmt
-      - name: 👀 Show changes
-        run: git diff HEAD -u
-      - name: 📤 Upload source
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: source
-          path: |
-            .
-            !.git
-          compression-level: 9
-          retention-days: 1
-          if-no-files-found: "error"
-
-  linux:
-    name: 🐧 ${{ matrix.platform.target }}
-    needs: [bump]
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.10 3.13t 3.14t pypy3.11" }
-          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.10 3.13t 3.14t" }
-          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.10 3.13t 3.14t" }
-          - { runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31" }
-          # 3.15t needs explicit no-abi3 build (PEP 803 incomplete in 3.15.0a8)
-          - { runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
-          - { runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
-          - { runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
-    steps:
-      - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: source
-      - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
-        with:
-          target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
-          manylinux: ${{ matrix.platform.manylinux || 'auto' }}
-          sccache: true
-      - name: 📤 Upload wheels
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: wheels-linux-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
-          path: dist
-
-  windows:
-    name: 🪟 ${{ matrix.platform.target }}
-    needs: [bump]
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - { runner: windows-2025, target: x64, interpreter: "3.10 3.13t 3.14t" }
-          # 3.15t Windows wheel skipped: python3-dll-a (pulled in by generate-import-lib) only
-          # has .def files up to 3.14t (https://github.com/PyO3/python3-dll-a/blob/main/src/lib.rs).
-          # Re-enable when https://github.com/PyO3/pyo3/issues/6012 finishes 3.15 ABI support.
-    steps:
-      - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: source
-      - name: 🐍 Setup Python 3.10
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
-        with:
-          python-version: "3.10"
-          architecture: ${{ matrix.platform.target == 'x86' && 'x86' || 'x64' }}
-      - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
-        with:
-          target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target
-          sccache: true
-      - name: 📤 Upload wheels
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: wheels-windows-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
-          path: dist
-
-  macos:
-    name: 🍎 ${{ matrix.platform.target }}
-    needs: [bump]
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - { runner: macos-15, target: x86_64, interpreter: "3.10 3.13t 3.14t pypy3.11" }
-          - { runner: macos-15, target: aarch64, interpreter: "3.10 3.13t 3.14t pypy3.11" }
-          - { runner: macos-15, target: x86_64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
-          - { runner: macos-15, target: aarch64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t" }
-    steps:
-      - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: source
-      - name: 🔨 Build wheels
-        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
-        with:
-          target: ${{ matrix.platform.target }}
-          args: -m pyproject-fmt/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
-          sccache: true
-      - name: 📤 Upload wheels
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: wheels-macos-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
-          path: dist
-
-  sdist:
-    name: 📦 sdist
-    needs: [bump]
-    runs-on: ubuntu-24.04
-    steps:
-      - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: source
-      - name: 📦 Build sdist
-        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
-        with:
-          command: sdist
-          args: -m pyproject-fmt/Cargo.toml --out dist
-      - name: 📤 Upload sdist
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: wheels-sdist
-          path: dist
-
-  release:
-    name: 🚀 release
-    runs-on: ubuntu-24.04
-    environment:
-      name: release
-      url: https://pypi.org/project/pyproject-fmt/${{ needs.bump.outputs.version }}
-    permissions:
-      id-token: write
       contents: write
-    if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
-    needs: [bump, sdist, linux, macos, windows]
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          persist-credentials: true
-      - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: source
-          path: .
-      - name: 👀 Show changes
-        run: git diff HEAD -u
-      - name: 💾 Commit release
-        run: |
-          git config --global user.name 'Bernat Gabor'
-          git config --global user.email 'gaborbernat@users.noreply.github.com'
-          git commit -am "Release pyproject-fmt ${NEEDS_BUMP_OUTPUTS_VERSION} [skip ci]"
-        env:
-          NEEDS_BUMP_OUTPUTS_VERSION: ${{needs.bump.outputs.version}}
-      - name: 📥 Download wheels
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          pattern: wheels-*
-          path: dist
-          merge-multiple: "true"
-      - name: 👀 Show wheels
-        run: ls -lth dist
-      - name: 🚀 Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
-        with:
-          skip-existing: true
-      - name: 📢 Create GitHub release
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          NEEDS_BUMP_OUTPUTS_VERSION: ${{needs.bump.outputs.version}}
-          NEEDS_BUMP_OUTPUTS_CHANGELOG: ${{ needs.bump.outputs.changelog }}
-        run: |
-          git pull --rebase origin main
-          git tag pyproject-fmt/${NEEDS_BUMP_OUTPUTS_VERSION}
-          git push
-          git push --tags
-          gh release create "pyproject-fmt/${NEEDS_BUMP_OUTPUTS_VERSION}" \
-              --title="pyproject-fmt/${NEEDS_BUMP_OUTPUTS_VERSION}" --verify-tag \
-            --notes "$(cat << 'EOM'
-          ${NEEDS_BUMP_OUTPUTS_CHANGELOG}
-          EOM
-          )"
-      - name: 🔄 Trigger pre-commit mirror sync
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: gh workflow run main.yaml --repo tox-dev/pyproject-fmt
-
-  all-pass:
-    name: ✅ pyproject-fmt-build
-    if: always()
-    needs: [changes, bump, linux, windows, macos, sdist]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Decide whether all jobs passed or were skipped
-        run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
-            echo "Some jobs failed or were canceled"
-            exit 1
-          fi
-          echo "All jobs passed or were skipped"
+      id-token: write
+      pull-requests: read
