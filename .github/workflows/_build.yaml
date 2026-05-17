@@ -10,6 +10,9 @@ on:
         type: string
         description: "Pre-commit mirror repo (e.g. tox-dev/pyproject-fmt)"
 
+permissions:
+  contents: read
+
 jobs:
   bump:
     name: 🔖 bump
@@ -21,7 +24,7 @@ jobs:
       changelog: ${{ steps.v.outputs.changelog }}
     steps:
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
       - name: 📦 Install cargo-edit
         uses: baptiste0928/cargo-install@f204293d9709061b7bc1756fec3ec4e2cd57dec0 # v3
         with:
@@ -52,7 +55,7 @@ jobs:
         with:
           python-version: "3.14"
       - name: 🎨 Run pre-commit
-        uses: tox-dev/action-pre-commit-uv@246b66536e366bb885f52d61983bf32f7c95e8b1 # v1.0.3
+        uses: tox-dev/action-pre-commit-uv@246b66536e366bb885f52d61983bf32f7c95e8b1 # 1.0.3
         continue-on-error: true
       - name: 📝 Generate README.rst
         run: python tasks/generate_readme.py "$PACKAGE"
@@ -98,7 +101,8 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
+          args:
+            -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📤 Upload wheels
