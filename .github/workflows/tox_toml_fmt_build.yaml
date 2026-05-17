@@ -36,7 +36,7 @@ jobs:
     with:
       package-name: tox-toml-fmt
       pre-commit-mirror: tox-dev/tox-toml-fmt
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     permissions:
       contents: write
       id-token: write

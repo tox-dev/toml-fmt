@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
         with:
           components: clippy
       - name: 📎 Run Clippy
@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
         with:
           components: rustfmt
       - name: 🎨 Check formatting
@@ -57,7 +57,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
       - name: 🔨 Build
         run: cargo build -p common --locked
 
@@ -72,17 +72,17 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1
+        uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
         with:
           components: llvm-tools-preview
       - name: 📦 Install cargo-llvm-cov
-        uses: taiki-e/install-action@711e1c3275189d76dcc4d34ddea63bf96ac49090 # v2
+        uses: taiki-e/install-action@711e1c3275189d76dcc4d34ddea63bf96ac49090 # v2.76.0
         with:
           tool: cargo-llvm-cov
       - name: ✅ Run tests with coverage
         run: cargo llvm-cov -p common --no-default-features --locked --codecov --output-path coverage.json --ignore-filename-regex 'create\.rs'
       - name: 📤 Upload coverage
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json

@@ -36,7 +36,7 @@ jobs:
     with:
       package-name: pyproject-fmt
       pre-commit-mirror: tox-dev/pyproject-fmt
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit]
     permissions:
       contents: write
       id-token: write
