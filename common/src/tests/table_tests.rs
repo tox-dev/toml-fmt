@@ -14,7 +14,7 @@ fn parse(source: &str) -> tombi_syntax::SyntaxNode {
 fn tables_reorder_helper(start: &str, order: &[&str]) -> String {
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, order, &["tool"]);
+    tables.reorder(&root_ast, order, &["tool"], "\n", "");
     format_toml(&root_ast, 120)
 }
 
@@ -61,7 +61,7 @@ fn collapse_sub_tables_helper(start: &str, table_name: &str, has_sub_tables: boo
 fn issue_124_helper(start: &str, order: &[&str]) -> String {
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, order, &[]);
+    tables.reorder(&root_ast, order, &[], "\n", "");
     format_toml(&root_ast, 120)
 }
 
@@ -262,6 +262,34 @@ fn test_tables_reorder_case_different_tools_preserve_file_order() {
 }
 
 #[test]
+fn test_sub_table_spacing_blank_line() {
+    let start = indoc! {r#"
+        [tool.ruff]
+        line-length = 120
+
+        [tool.ruff.lint]
+        select = ["E"]
+
+        [tool.mypy]
+        strict = true
+    "#};
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &["tool"], &["tool"], "\n", "\n");
+    let res = format_toml(&root_ast, 120);
+    insta::assert_snapshot!(res, @r#"
+    [tool.ruff]
+    line-length = 120
+
+    [tool.ruff.lint]
+    select = [ "E" ]
+
+    [tool.mypy]
+    strict = true
+    "#);
+}
+
+#[test]
 fn test_get_table_name_table_header() {
     let toml = "[project]";
     let root_ast = parse(toml);
@@ -452,7 +480,7 @@ fn test_reorder_with_root_entries() {
 
     assert!(tables.header_to_pos.contains_key(""));
 
-    tables.reorder(&root_ast, &["", "project"], &[]);
+    tables.reorder(&root_ast, &["", "project"], &[], "\n", "");
     let res = format_toml(&root_ast, 120);
     assert!(res.contains("root_key"));
     assert!(res.contains("[project]"));
@@ -472,7 +500,7 @@ fn test_reorder_preserves_empty_lines_between_groups() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["project", "tool"], &["tool"]);
+    tables.reorder(&root_ast, &["project", "tool"], &["tool"], "\n", "");
 
     let res = format_toml(&root_ast, 120);
     assert!(res.contains("\n\n"));
@@ -536,7 +564,7 @@ fn test_reorder_only_newline_table() {
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
 
-    tables.reorder(&root_ast, &["", "project"], &[]);
+    tables.reorder(&root_ast, &["", "project"], &[], "\n", "");
     let res = format_toml(&root_ast, 120);
     assert!(res.contains("[project]"));
 }
@@ -644,7 +672,7 @@ fn test_reorder_same_tool_group() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["tool"], &["tool"]);
+    tables.reorder(&root_ast, &["tool"], &["tool"], "\n", "");
 
     let res = format_toml(&root_ast, 120);
     assert!(res.contains("[tool.black]"));
@@ -656,7 +684,7 @@ fn test_reorder_different_groups_no_trailing_newline() {
     let toml = "[tool.black]\nline-length = 120\n[project]\nname = \"foo\"";
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["project", "tool"], &["tool"]);
+    tables.reorder(&root_ast, &["project", "tool"], &["tool"], "\n", "");
 
     let res = format_toml(&root_ast, 120);
     assert!(res.contains("[project]"));
@@ -684,7 +712,7 @@ fn test_comments_before_table_header_stay_with_that_table() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["build-system", "project"], &[]);
+    tables.reorder(&root_ast, &["build-system", "project"], &[], "\n", "");
 
     let res = format_toml(&root_ast, 120);
     // The comment should stay with [build-system], not [project]
@@ -704,7 +732,7 @@ fn test_multiple_comments_before_table_header() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["build-system", "project"], &[]);
+    tables.reorder(&root_ast, &["build-system", "project"], &[], "\n", "");
 
     let res = format_toml(&root_ast, 120);
     // Both comments should stay with [build-system]
@@ -723,7 +751,7 @@ fn test_comment_with_blank_line_before_table_header() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["build-system", "project"], &[]);
+    tables.reorder(&root_ast, &["build-system", "project"], &[], "\n", "");
 
     let res = format_toml(&root_ast, 120);
     // Comment should stay with [build-system] even with blank line before it
@@ -1615,7 +1643,7 @@ fn test_tables_reorder_with_empty_key() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["tool"], &[]);
+    tables.reorder(&root_ast, &["tool"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [tool]
@@ -1638,7 +1666,7 @@ fn test_expand_sub_table_multiple_main_positions_no_expand() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     expand_sub_table(&mut tables, "project", "scripts");
-    tables.reorder(&root_ast, &["project", "other"], &[]);
+    tables.reorder(&root_ast, &["project", "other"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1667,7 +1695,7 @@ fn test_collapse_sub_table_multiple_sub_positions_unchanged() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     collapse_sub_table(&mut tables, "project", "scripts", 120);
-    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1686,7 +1714,7 @@ fn test_apply_table_formatting_expand_mode() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     apply_table_formatting(&mut tables, |_name| false, &["project"], 120);
-    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1707,7 +1735,7 @@ fn test_expand_dotted_to_sub_tables_array_of_tables_unchanged() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     expand_sub_tables(&mut tables, "tool");
-    tables.reorder(&root_ast, &["tool"], &[]);
+    tables.reorder(&root_ast, &["tool"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [[tool]]
@@ -1727,7 +1755,7 @@ fn test_tables_from_ast_with_table_children() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["project"], &[]);
+    tables.reorder(&root_ast, &["project"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1745,7 +1773,7 @@ fn test_split_quoted_key_no_dot() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     apply_table_formatting(&mut tables, |_| true, &["project"], 120);
-    tables.reorder(&root_ast, &["project"], &[]);
+    tables.reorder(&root_ast, &["project"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1765,7 +1793,7 @@ fn test_collapse_sub_table_with_quoted_key() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     collapse_sub_table(&mut tables, "project", "scripts", 120);
-    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1786,7 +1814,7 @@ fn test_collapse_sub_table_with_literal_quoted_key() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     collapse_sub_table(&mut tables, "project", "scripts", 120);
-    tables.reorder(&root_ast, &["project", "project.scripts"], &[]);
+    tables.reorder(&root_ast, &["project", "project.scripts"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1807,7 +1835,7 @@ fn test_collapse_sub_tables_skips_array_of_tables() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     collapse_sub_tables(&mut tables, "project");
-    tables.reorder(&root_ast, &["project", "project.authors"], &[]);
+    tables.reorder(&root_ast, &["project", "project.authors"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1832,7 +1860,7 @@ fn test_reorder_array_of_tables_multiple_entries() {
     "#};
     let root_ast = parse(toml);
     let tables = Tables::from_ast(&root_ast);
-    tables.reorder(&root_ast, &["project", "project.authors"], &[]);
+    tables.reorder(&root_ast, &["project", "project.authors"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [project]
@@ -1914,7 +1942,7 @@ fn test_collapse_sub_table_trailing_comment_on_single_line_array() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
     collapse_sub_table(&mut tables, "tool.coverage", "run", 120);
-    tables.reorder(&root_ast, &["tool.coverage", "tool.coverage.run"], &[]);
+    tables.reorder(&root_ast, &["tool.coverage", "tool.coverage.run"], &[], "\n", "");
     let result = format_toml(&root_ast, 120);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]

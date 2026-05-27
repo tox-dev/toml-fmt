@@ -1,7 +1,7 @@
 use common::table::Tables;
 use tombi_syntax::SyntaxNode;
 
-pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
+pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing: &str, sub_table_spacing: &str) {
     tables.reorder(
         root_ast,
         &[
@@ -73,5 +73,7 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
             "tool.vendoring",
         ],
         &["tool"], // Treat tool.* as distinct base keys (e.g., tool.black != tool.ruff)
+        root_table_spacing,
+        sub_table_spacing,
     );
 }

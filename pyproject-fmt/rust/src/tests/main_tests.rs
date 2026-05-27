@@ -13,6 +13,8 @@ fn default_settings() -> Settings {
         min_supported_python: (3, 9),
         generate_python_version_classifiers: false,
         table_format: String::from("short"),
+        sub_table_spacing: String::new(),
+        separate_root_table: String::from("\n"),
         expand_tables: vec![],
         collapse_tables: vec![],
         skip_wrap_for_keys: vec![],
@@ -119,16 +121,8 @@ fn test_expand_tables_with_project() {
         urls.homepage = "https://example.com"
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
         expand_tables: vec![String::from("project")],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -154,16 +148,8 @@ fn test_collapse_project_authors() {
         email = "john@example.com"
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
         collapse_tables: vec![String::from("project.authors")],
-        skip_wrap_for_keys: vec![],
+        ..long_format_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -184,16 +170,8 @@ fn test_collapse_project_maintainers() {
         email = "jane@example.com"
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
-        expand_tables: vec![],
         collapse_tables: vec![String::from("project.maintainers")],
-        skip_wrap_for_keys: vec![],
+        ..long_format_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -404,11 +382,8 @@ fn test_issue_146_expand_specific_subtable() {
         keep_full_version: true,
         max_supported_python: (3, 14),
         min_supported_python: (3, 14),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
         expand_tables: vec![String::from("project.optional-dependencies")],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert!(
@@ -430,16 +405,11 @@ fn test_css_specificity_more_specific_wins() {
         dev = ["pytest"]
         "#};
     let settings = Settings {
-        column_width: 120,
         indent: 4,
         keep_full_version: true,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
         expand_tables: vec![String::from("project.urls")],
         collapse_tables: vec![String::from("project")],
-        skip_wrap_for_keys: vec![],
+        ..long_format_settings()
     };
     let got = format_toml(start, &settings);
     assert!(
@@ -540,11 +510,8 @@ fn test_issue_146_deeply_nested_ruff_table() {
         keep_full_version: true,
         max_supported_python: (3, 14),
         min_supported_python: (3, 14),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
         expand_tables: vec![String::from("tool.ruff.lint.flake8-tidy-imports.banned-api")],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert!(
@@ -641,16 +608,8 @@ fn test_extract_table_names_from_array_tables() {
         name = "John"
         "#};
     let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("long"),
         expand_tables: vec![String::from("project.authors")],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
+        ..long_format_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -734,6 +693,8 @@ fn test_settings_new() {
         (3, 9),
         true,
         String::from("short"),
+        String::from("\n"),
+        String::from("\n\n"),
         vec![String::from("project.urls")],
         vec![String::from("project.authors")],
         vec![],
@@ -745,6 +706,8 @@ fn test_settings_new() {
     assert_eq!(settings.min_supported_python, (3, 9));
     assert!(settings.generate_python_version_classifiers);
     assert_eq!(settings.table_format, "short");
+    assert_eq!(settings.sub_table_spacing, "\n");
+    assert_eq!(settings.separate_root_table, "\n\n");
     assert_eq!(settings.expand_tables, vec!["project.urls"]);
     assert_eq!(settings.collapse_tables, vec!["project.authors"]);
 }
@@ -761,6 +724,8 @@ fn test_table_format_config_from_settings() {
         (3, 9),
         false,
         String::from("short"),
+        String::new(),
+        String::from("\n"),
         vec![String::from("tool.ruff")],
         vec![String::from("project")],
         vec![],
@@ -792,18 +757,7 @@ fn test_idempotent_formatting() {
         name = "test"
         description = "This is a long description string that needs to exceed the default column width of one hundred and twenty characters to trigger wrapping."
     "#};
-    let settings = Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-    };
+    let settings = default_settings();
     let first = format_toml(start, &settings);
     let second = format_toml(&first, &settings);
     let third = format_toml(&second, &settings);
@@ -870,6 +824,64 @@ fn test_table_key_without_prefix_match_long_format() {
     key = "value"
     [custom.nested]
     other = "data"
+    "#);
+}
+
+#[test]
+fn test_sub_table_spacing_blank_line() {
+    let start = indoc! {r#"
+        [tool.ruff]
+        line-length = 120
+
+        [tool.ruff.lint]
+        select = ["E", "W"]
+
+        [tool.mypy]
+        strict = true
+        "#};
+    let settings = Settings {
+        sub_table_spacing: String::from("\n"),
+        ..long_format_settings()
+    };
+    let got = format_toml(start, &settings);
+    assert_snapshot!(got, @r#"
+    [tool.ruff]
+    line-length = 120
+
+    [tool.ruff.lint]
+    select = [ "E", "W" ]
+
+    [tool.mypy]
+    strict = true
+    "#);
+}
+
+#[test]
+fn test_sub_table_spacing_with_project_tables() {
+    let start = indoc! {r#"
+        [project]
+        name = "test"
+
+        [project.urls]
+        homepage = "https://example.com"
+
+        [project.optional-dependencies]
+        dev = ["pytest"]
+        "#};
+    let settings = Settings {
+        sub_table_spacing: String::from("\n"),
+        ..long_format_settings()
+    };
+    let got = format_toml(start, &settings);
+    assert_snapshot!(got, @r#"
+    [project]
+    name = "test"
+
+    [project.optional-dependencies]
+    dev = [ "pytest" ]
+
+    [project.urls]
+    homepage = "https://example.com"
     "#);
 }
 

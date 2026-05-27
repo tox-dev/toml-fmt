@@ -400,7 +400,7 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
     env_order
 }
 
-pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
+pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing: &str, sub_table_spacing: &str) {
     let env_list_order = get_env_list_order(tables);
     let mut order: Vec<&str> = vec!["", "env_run_base", "env_pkg_base", "env_base"];
 
@@ -419,7 +419,13 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables) {
 
     order.push("env");
 
-    tables.reorder(root_ast, &order, &["env_base", "env"]);
+    tables.reorder(
+        root_ast,
+        &order,
+        &["env_base", "env"],
+        root_table_spacing,
+        sub_table_spacing,
+    );
 }
 
 const TOX_INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[

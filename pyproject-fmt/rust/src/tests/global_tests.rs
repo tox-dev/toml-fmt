@@ -8,7 +8,7 @@ use crate::global::reorder_tables;
 fn reorder_table_helper(start: &str) -> String {
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     ensure_all_arrays_multiline(&root_ast, 120);
     format_syntax(root_ast, 120)
 }
