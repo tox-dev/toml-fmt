@@ -252,10 +252,7 @@ jobs:
           git push --tags
           gh release create "${PACKAGE}/${VERSION}" \
               --title="${PACKAGE}/${VERSION}" --verify-tag \
-            --notes "$(cat << 'EOM'
-          ${CHANGELOG}
-          EOM
-          )"
+            --notes "${CHANGELOG}"
       - name: 🔄 Trigger pre-commit mirror sync
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
