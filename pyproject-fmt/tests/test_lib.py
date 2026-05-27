@@ -97,9 +97,44 @@ def test_format_toml(start: str, expected: str) -> None:
         max_supported_python=(3, 8),
         generate_python_version_classifiers=True,
         table_format="short",
+        sub_table_spacing="",
+        separate_root_table="\n",
         expand_tables=[],
         collapse_tables=[],
         skip_wrap_for_keys=[],
     )
     res = format_toml(dedent(start), settings)
     assert res == dedent(expected)
+
+
+@pytest.mark.parametrize(
+    ("sub_table_spacing", "has_blank_line"),
+    [
+        pytest.param("\n", True, id="blank_line"),
+        pytest.param("", False, id="compact"),
+    ],
+)
+def test_sub_table_spacing(sub_table_spacing: str, *, has_blank_line: bool) -> None:
+    start = dedent("""\
+        [tool.ruff]
+        line-length = 120
+
+        [tool.ruff.lint]
+        select = ["E"]
+    """)
+    settings = Settings(
+        column_width=120,
+        indent=2,
+        keep_full_version=False,
+        min_supported_python=(3, 9),
+        max_supported_python=(3, 9),
+        generate_python_version_classifiers=False,
+        table_format="long",
+        sub_table_spacing=sub_table_spacing,
+        separate_root_table="\n",
+        expand_tables=[],
+        collapse_tables=[],
+        skip_wrap_for_keys=[],
+    )
+    res = format_toml(start, settings)
+    assert ("\n\n[tool.ruff.lint]" in res) == has_blank_line

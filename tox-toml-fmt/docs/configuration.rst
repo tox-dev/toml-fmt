@@ -17,6 +17,12 @@ The ``[tox-toml-fmt]`` table is used when present in the ``tox.toml`` file:
     # Number of spaces for indentation
     indent = 2
 
+    # Extra newlines between sub-tables in the same group (e.g. "\n" for one blank line between sub-tables)
+    sub_table_spacing = ""
+
+    # Extra newlines between root table groups (e.g. "\n" for one blank line, "\n\n" for two)
+    separate_root_table = "\n"
+
     # Environments pinned to the start of env_list
     pin_envs = ["fix", "type"]
 

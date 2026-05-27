@@ -30,6 +30,12 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
     # Table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
     table_format = "short"
 
+    # Extra newlines between sub-tables in the same group (e.g. "\n" for one blank line between sub-tables)
+    sub_table_spacing = ""
+
+    # Extra newlines between root table groups (e.g. "\n" for one blank line, "\n\n" for two)
+    separate_root_table = "\n"
+
     # List of tables to force expand regardless of table_format setting
     expand_tables = []
 
