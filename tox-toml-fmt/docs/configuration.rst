@@ -49,6 +49,8 @@ The shared config file uses the same keys as the ``[tox-toml-fmt]`` table, but w
 
     column_width = 120
     indent = 2
+    sub_table_spacing = ""
+    separate_root_table = "\n"
     pin_envs = ["fix", "type"]
 
 When both a shared config file and a ``[tox-toml-fmt]`` table exist, per-file settings from the ``[tox-toml-fmt]``

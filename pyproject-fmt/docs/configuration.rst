@@ -68,6 +68,8 @@ The shared config file uses the same keys as the ``[tool.pyproject-fmt]`` table,
     column_width = 120
     indent = 2
     table_format = "short"
+    sub_table_spacing = ""
+    separate_root_table = "\n"
     max_supported_python = "3.14"
 
 When both a shared config file and a ``[tool.pyproject-fmt]`` table exist, per-file settings from the
@@ -127,6 +129,23 @@ readability when tables have many keys or complex values:
 
     [project.scripts]
     mycli = "mypackage:main"
+
+Table spacing
+~~~~~~~~~~~~~
+
+The ``sub_table_spacing`` and ``separate_root_table`` options control the blank lines inserted between tables. Each
+option takes a string of ``\n`` characters where each ``\n`` adds one blank line:
+
+- ``sub_table_spacing`` (default ``""``) controls spacing between sub-tables within the same group. For example,
+  between ``[tool.ruff]`` and ``[tool.ruff.lint]``. Set to ``"\n"`` to add a blank line between sub-tables.
+- ``separate_root_table`` (default ``"\n"``) controls spacing between different root table groups. For example,
+  between ``[project]`` and ``[tool.ruff]``.
+
+.. code-block:: toml
+
+    [tool.pyproject-fmt]
+    sub_table_spacing = "\n"  # Add blank line between sub-tables
+    separate_root_table = "\n"  # One blank line between root table groups (default)
 
 Configuration priority
 ~~~~~~~~~~~~~~~~~~~~~~

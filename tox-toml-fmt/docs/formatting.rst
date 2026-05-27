@@ -11,8 +11,9 @@ that all ``tox.toml`` files follow.
 - Smaller diffs when committing changes
 - Easier code reviews since formatting is never a question
 
-While a few key options exist (``column_width``, ``indent``, ``table_format``), the tool does not expose dozens of
-toggles. You get what the maintainers have chosen to be the right balance of readability, consistency, and usability.
+While a few key options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``,
+``separate_root_table``), the tool does not expose dozens of toggles. You get what the maintainers have chosen to be the
+right balance of readability, consistency, and usability.
 
 General Formatting
 ------------------
@@ -137,6 +138,14 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
     value = 1
 
 Individual tables can override the default using ``expand_tables`` and ``collapse_tables``.
+
+**Table spacing:**
+
+By default, different table groups are separated by a blank line, while sub-tables within the same group are kept
+compact. You can control this with ``sub_table_spacing`` and ``separate_root_table``. Each option takes a string of
+``\n`` characters where each ``\n`` adds one blank line. For example, setting ``sub_table_spacing = "\n"`` adds a blank
+line between sub-tables within the same environment.
+
 See :doc:`configuration` for how to control this behavior.
 
 **Environment tables are always expanded:**
