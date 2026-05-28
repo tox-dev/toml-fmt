@@ -295,7 +295,7 @@ def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callab
         "--skip-wrap-for-keys",
         type=list_argument,
         default=[],
-        help="comma-separated list of key patterns to skip string wrapping (supports wildcards like *.parse)",
+        help="comma-separated list of key patterns to skip string wrapping (supports wildcards like '*.parse')",
     )
     of.add_format_flags(format_group)
     type_conversion: Mapping[str, Callable[[Any], Any]] = {
