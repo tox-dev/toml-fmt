@@ -223,7 +223,16 @@ impl Tables {
         }
     }
 
-    pub fn reorder(&self, root_ast: &SyntaxNode, order: &[&str], multi_level_prefixes: &[&str]) {
+    pub fn reorder(
+        &self,
+        root_ast: &SyntaxNode,
+        order: &[&str],
+        multi_level_prefixes: &[&str],
+        root_table_spacing: &str,
+        sub_table_spacing: &str,
+    ) {
+        let root_breaks = root_table_spacing.chars().filter(|&c| c == '\n').count() + 1;
+        let sub_breaks = sub_table_spacing.chars().filter(|&c| c == '\n').count() + 1;
         let mut to_insert = Vec::<SyntaxElement>::new();
         let order = calculate_order(&self.header_to_pos, &self.table_set, order, multi_level_prefixes);
         let mut next = order.clone();
@@ -238,29 +247,24 @@ impl Tables {
             for (entry_idx, entries) in entries_list.iter().enumerate() {
                 let got = entries.borrow_mut();
                 if !got.is_empty() {
-                    let last = got.last().unwrap();
                     let mut add = got.clone();
 
-                    // Determine if we need spacing after this entry
                     let is_last_entry_of_this_table = entry_idx == num_entries - 1;
 
                     if is_last_entry_of_this_table {
-                        // This is the last entry for this table name
-                        if get_key(name, multi_level_prefixes) != get_key(next_name, multi_level_prefixes) {
-                            // Different group - add blank line spacing
-                            if last.kind() == LINE_BREAK {
-                                add.pop();
-                            }
-                            // Only add spacing if there's a next table (not at the end)
-                            if !next_name.is_empty() {
-                                add.extend(make_empty_newline());
-                            }
-                        } else if !next_name.is_empty() {
-                            // Same group - add exactly one LINE_BREAK
+                        if !next_name.is_empty() {
+                            let breaks =
+                                if get_key(name, multi_level_prefixes) != get_key(next_name, multi_level_prefixes) {
+                                    root_breaks
+                                } else {
+                                    sub_breaks
+                                };
                             while !add.is_empty() && add.last().unwrap().kind() == LINE_BREAK {
                                 add.pop();
                             }
-                            add.push(make_newline());
+                            for _ in 0..breaks {
+                                add.push(make_newline());
+                            }
                         }
                     } else {
                         // Not the last entry - add blank line before next entry of same table

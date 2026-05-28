@@ -11,10 +11,10 @@ that all ``pyproject.toml`` files follow.
 - Smaller diffs when committing changes
 - Easier code reviews since formatting is never a question
 
-While a few key options exist (``column_width``, ``indent``, ``table_format``), the tool does not expose dozens of
-toggles. You get what the maintainers have chosen to be the right balance of readability, consistency, and usability.
-The ``column_width`` setting controls when arrays are split into multiple lines and when string values are wrapped using
-line continuations.
+While a few key options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``,
+``separate_root_table``), the tool does not expose dozens of toggles. You get what the maintainers have chosen to be the
+right balance of readability, consistency, and usability. The ``column_width`` setting controls when arrays are split
+into multiple lines and when string values are wrapped using line continuations.
 
 General Formatting
 ------------------
@@ -168,6 +168,22 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
     [project.urls]
     homepage = "https://example.com"
     repository = "https://github.com/example/project"
+
+**Table spacing:**
+
+By default, different table groups (e.g. ``[project]`` and ``[tool.ruff]``) are separated by a blank line, while
+sub-tables within the same group (e.g. ``[tool.ruff]`` and ``[tool.ruff.lint]``) are kept compact with no blank line
+between them. You can control this with ``sub_table_spacing`` and ``separate_root_table``. Each option takes a string of
+``\n`` characters where each ``\n`` adds one blank line. For example, setting ``sub_table_spacing = "\n"`` adds a blank
+line between sub-tables:
+
+.. code-block:: toml
+
+    [tool.ruff]
+    line-length = 120
+
+    [tool.ruff.lint]
+    select = ["E", "W"]
 
 See :doc:`configuration` for how to control this behavior.
 

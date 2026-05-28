@@ -22,6 +22,8 @@ pub struct Settings {
     column_width: usize,
     indent: usize,
     table_format: String,
+    sub_table_spacing: String,
+    separate_root_table: String,
     expand_tables: Vec<String>,
     collapse_tables: Vec<String>,
     skip_wrap_for_keys: Vec<String>,
@@ -32,11 +34,13 @@ pub struct Settings {
 impl Settings {
     #[new]
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, table_format, expand_tables, collapse_tables, skip_wrap_for_keys, pin_envs))]
+    #[pyo3(signature = (*, column_width, indent, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys, pin_envs))]
     fn new(
         column_width: usize,
         indent: usize,
         table_format: String,
+        sub_table_spacing: String,
+        separate_root_table: String,
         expand_tables: Vec<String>,
         collapse_tables: Vec<String>,
         skip_wrap_for_keys: Vec<String>,
@@ -46,6 +50,8 @@ impl Settings {
             column_width,
             indent,
             table_format,
+            sub_table_spacing,
+            separate_root_table,
             expand_tables,
             collapse_tables,
             skip_wrap_for_keys,
@@ -159,7 +165,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     sort_env_list(&tables, &opt.pin_envs);
     normalize_strings(&tables);
     reorder_inline_tables(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
 
     let indent_string = " ".repeat(opt.indent);

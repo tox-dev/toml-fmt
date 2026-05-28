@@ -19,6 +19,8 @@ class PyProjectFmtNamespace(FmtNamespace):
     max_supported_python: tuple[int, int]
     generate_python_version_classifiers: bool
     table_format: str
+    sub_table_spacing: str
+    separate_root_table: str
     expand_tables: list[str]
     collapse_tables: list[str]
     skip_wrap_for_keys: list[str]
@@ -57,6 +59,9 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             help=msg,
         )
 
+        def _spacing_argument(value: str) -> str:
+            return value.replace("\\n", "\n") if isinstance(value, str) else value
+
         def _version_argument(got: str) -> tuple[int, int]:
             parts = got.split(".")
             if len(parts) != 2:  # noqa: PLR2004
@@ -86,6 +91,18 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             choices=["short", "long"],
             default="short",
             help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
+        )
+        parser.add_argument(
+            "--sub-table-spacing",
+            type=_spacing_argument,
+            default="",
+            help=r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
+        )
+        parser.add_argument(
+            "--separate-root-table",
+            type=_spacing_argument,
+            default="\n",
+            help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
         )
         parser.add_argument(
             "--expand-tables",
@@ -127,6 +144,8 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             min_supported_python=(3, 10),  # default for when the user didn't specify via requires-python
             generate_python_version_classifiers=opt.generate_python_version_classifiers,
             table_format=opt.table_format,
+            sub_table_spacing=opt.sub_table_spacing,
+            separate_root_table=opt.separate_root_table,
             expand_tables=opt.expand_tables,
             collapse_tables=opt.collapse_tables,
             skip_wrap_for_keys=opt.skip_wrap_for_keys,

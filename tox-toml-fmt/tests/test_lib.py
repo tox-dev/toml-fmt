@@ -46,6 +46,8 @@ def test_format_toml(start: str, expected: str) -> None:
         column_width=120,
         indent=4,
         table_format="short",
+        sub_table_spacing="",
+        separate_root_table="\n",
         expand_tables=[],
         collapse_tables=[],
         skip_wrap_for_keys=[],
@@ -53,3 +55,29 @@ def test_format_toml(start: str, expected: str) -> None:
     )
     res = format_toml(dedent(start), settings)
     assert res == dedent(expected)
+
+
+def test_sub_table_spacing_separates_sub_tables() -> None:
+    start = dedent("""\
+        env_list = ["test"]
+
+        [env_run_base]
+        description = "base"
+
+        [env.test]
+        description = "test"
+    """)
+    settings = Settings(
+        column_width=120,
+        indent=4,
+        table_format="short",
+        sub_table_spacing="\n",
+        separate_root_table="\n",
+        expand_tables=[],
+        collapse_tables=[],
+        skip_wrap_for_keys=[],
+        pin_envs=[],
+    )
+    res = format_toml(start, settings)
+    assert "\n\n[env_run_base]" in res
+    assert "\n\n[env.test]" in res

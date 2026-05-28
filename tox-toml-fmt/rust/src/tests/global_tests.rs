@@ -8,7 +8,7 @@ use common::table::Tables;
 fn reorder_table_helper(start: &str) -> String {
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     let result = format_syntax(root_ast, 120);
     assert_valid_toml(&result);
     result
@@ -120,7 +120,7 @@ fn test_reorder_no_root_table() {
     "#};
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     let got = format_syntax(root_ast, 120);
     assert_snapshot!(got, @r#"
     [env.test]
@@ -138,7 +138,7 @@ fn test_reorder_root_table_no_env_list_key() {
     "#};
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     let got = format_syntax(root_ast, 120);
     assert_snapshot!(got, @r#"
     requires = [ "tox>=4" ]
@@ -161,7 +161,7 @@ fn test_reorder_env_list_not_array() {
     "#};
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     let got = format_syntax(root_ast, 120);
     assert_snapshot!(got, @r#"
     env_list = "test"
@@ -187,7 +187,7 @@ fn test_reorder_empty_env_list() {
     "#};
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     let got = format_syntax(root_ast, 120);
     assert_snapshot!(got, @r#"
     env_list = []
@@ -213,7 +213,7 @@ fn test_reorder_env_list_with_env_run_base() {
     "#};
     let root_ast = parse(start);
     let tables = Tables::from_ast(&root_ast);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, "\n", "");
     let got = format_syntax(root_ast, 120);
     assert_snapshot!(got, @r#"
     env_list = [ "test" ]

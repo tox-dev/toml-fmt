@@ -4,15 +4,24 @@ use insta::assert_snapshot;
 use super::assert_valid_toml;
 use crate::{format_toml, Settings};
 
-fn format_toml_helper(start: &str, indent: usize) -> String {
-    let settings = Settings {
+fn default_settings() -> Settings {
+    Settings {
         column_width: 80,
-        indent,
+        indent: 2,
         table_format: String::from("short"),
+        sub_table_spacing: String::new(),
+        separate_root_table: String::from("\n"),
         expand_tables: vec![],
         collapse_tables: vec![],
         skip_wrap_for_keys: vec![],
         pin_envs: vec![],
+    }
+}
+
+fn format_toml_helper(start: &str, indent: usize) -> String {
+    let settings = Settings {
+        indent,
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -69,11 +78,7 @@ fn test_column_width() {
     let settings = Settings {
         column_width: 50,
         indent: 4,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -105,11 +110,7 @@ fn test_string_quote_normalization() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -130,11 +131,7 @@ fn test_string_with_double_quote_preserved() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -216,11 +213,7 @@ fn test_format_with_multiline_arrays() {
     let settings = Settings {
         column_width: 40,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -307,11 +300,7 @@ fn test_idempotent_formatting() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let first = format_toml(start, &settings);
     let second = format_toml(&first, &settings);
@@ -328,11 +317,7 @@ fn test_format_with_large_indent() {
     let settings = Settings {
         column_width: 80,
         indent: 4,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"env_list = [ "test" ]"#);
@@ -346,11 +331,7 @@ fn test_format_with_narrow_column_width() {
     let settings = Settings {
         column_width: 30,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_snapshot!(got, @r#"
@@ -364,14 +345,34 @@ fn test_format_with_narrow_column_width() {
 
 #[test]
 fn test_settings_new() {
-    let settings = Settings::new(120, 4, String::from("short"), vec![], vec![], vec![], vec![]);
+    let settings = Settings::new(
+        120,
+        4,
+        String::from("short"),
+        String::new(),
+        String::from("\n"),
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
     assert_eq!(settings.column_width, 120);
     assert_eq!(settings.indent, 4);
 }
 
 #[test]
 fn test_settings_default_values() {
-    let settings = Settings::new(80, 2, String::from("short"), vec![], vec![], vec![], vec![]);
+    let settings = Settings::new(
+        80,
+        2,
+        String::from("short"),
+        String::new(),
+        String::from("\n"),
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
     assert_eq!(settings.column_width, 80);
     assert_eq!(settings.indent, 2);
 }
@@ -382,6 +383,8 @@ fn test_settings_field_access() {
         column_width: 100,
         indent: 3,
         table_format: String::from("long"),
+        sub_table_spacing: String::from("\n"),
+        separate_root_table: String::from("\n\n"),
         expand_tables: vec![String::from("env.test")],
         collapse_tables: vec![String::from("env.lint")],
         skip_wrap_for_keys: vec![String::from("*.commands")],
@@ -390,6 +393,8 @@ fn test_settings_field_access() {
     assert_eq!(settings.column_width, 100);
     assert_eq!(settings.indent, 3);
     assert_eq!(settings.table_format, "long");
+    assert_eq!(settings.sub_table_spacing, "\n");
+    assert_eq!(settings.separate_root_table, "\n\n");
     assert_eq!(settings.expand_tables, vec!["env.test"]);
     assert_eq!(settings.collapse_tables, vec!["env.lint"]);
     assert_eq!(settings.skip_wrap_for_keys, vec!["*.commands"]);
@@ -399,7 +404,17 @@ fn test_settings_field_access() {
 #[test]
 fn test_format_toml_with_direct_settings() {
     let content = "env_list = ['a', 'b']";
-    let settings = Settings::new(80, 2, String::from("short"), vec![], vec![], vec![], vec![]);
+    let settings = Settings::new(
+        80,
+        2,
+        String::from("short"),
+        String::new(),
+        String::from("\n"),
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+    );
     let result = format_toml(content, &settings);
     assert!(result.contains("env_list"));
     assert!(result.contains("\"a\""));
@@ -455,11 +470,7 @@ fn test_array_multiline_expansion() {
     let settings = Settings {
         column_width: 40,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -486,11 +497,7 @@ fn test_long_string_wrapping() {
     let settings = Settings {
         column_width: 40,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -518,11 +525,7 @@ fn test_table_collapse_short_format() {
     let settings = Settings {
         column_width: 80,
         indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -546,10 +549,7 @@ fn test_table_expand_long_format() {
         column_width: 80,
         indent: 2,
         table_format: String::from("long"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -573,12 +573,8 @@ fn test_skip_wrap_for_keys() {
         "#};
     let settings = Settings {
         column_width: 40,
-        indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
         skip_wrap_for_keys: vec![String::from("*.skip_me")],
-        pin_envs: vec![],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -797,13 +793,8 @@ fn test_sort_env_list_with_pin() {
         env_list = ["lint", "3.12", "type", "3.13", "fix"]
         "#};
     let settings = Settings {
-        column_width: 80,
-        indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
         pin_envs: vec![String::from("fix"), String::from("type")],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -918,13 +909,8 @@ fn test_sort_env_list_compound_pin() {
         env_list = ["py312-django", "lint", "py311-django", "fix"]
         "#};
     let settings = Settings {
-        column_width: 80,
-        indent: 2,
-        table_format: String::from("short"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
         pin_envs: vec![String::from("fix")],
+        ..default_settings()
     };
     let got = format_toml(start, &settings);
     assert_valid_toml(&got);
@@ -1577,5 +1563,39 @@ fn test_constraints_editable_and_paths_not_normalized() {
     assert_snapshot!(got, @r#"
     [env.test]
     constraints = [ "-e ./local_pkg[dev]", "{tox_root}/constraints.txt" ]
+    "#);
+}
+
+#[test]
+fn test_sub_table_spacing_blank_line() {
+    let start = indoc! {r#"
+        env_list = ["test", "lint"]
+
+        [env_run_base]
+        description = "base"
+
+        [env.test]
+        description = "test"
+
+        [env.lint]
+        description = "lint"
+        "#};
+    let settings = Settings {
+        sub_table_spacing: String::from("\n"),
+        ..default_settings()
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    assert_snapshot!(got, @r#"
+    env_list = [ "lint", "test" ]
+
+    [env_run_base]
+    description = "base"
+
+    [env.lint]
+    description = "lint"
+
+    [env.test]
+    description = "test"
     "#);
 }

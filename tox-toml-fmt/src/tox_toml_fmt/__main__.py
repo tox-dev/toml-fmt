@@ -17,6 +17,8 @@ class PyProjectFmtNamespace(FmtNamespace):
     """Formatting arguments."""
 
     table_format: str
+    sub_table_spacing: str
+    separate_root_table: str
     expand_tables: list[str]
     collapse_tables: list[str]
     skip_wrap_for_keys: list[str]
@@ -47,6 +49,9 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         :param parser: parser to operate on.
         """
 
+        def _spacing_argument(value: str) -> str:
+            return value.replace("\\n", "\n") if isinstance(value, str) else value
+
         def _list_argument(value: str | list[str]) -> list[str]:
             if isinstance(value, list):
                 return value
@@ -57,6 +62,18 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             choices=["short", "long"],
             default="short",
             help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
+        )
+        parser.add_argument(
+            "--sub-table-spacing",
+            type=_spacing_argument,
+            default="",
+            help=r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
+        )
+        parser.add_argument(
+            "--separate-root-table",
+            type=_spacing_argument,
+            default="\n",
+            help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
         )
         parser.add_argument(
             "--expand-tables",
@@ -101,6 +118,8 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             column_width=opt.column_width,
             indent=opt.indent,
             table_format=opt.table_format,
+            sub_table_spacing=opt.sub_table_spacing,
+            separate_root_table=opt.separate_root_table,
             expand_tables=opt.expand_tables,
             collapse_tables=opt.collapse_tables,
             skip_wrap_for_keys=opt.skip_wrap_for_keys,

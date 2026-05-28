@@ -9,6 +9,8 @@ class Settings:
         min_supported_python: tuple[int, int],
         generate_python_version_classifiers: bool,
         table_format: str,
+        sub_table_spacing: str,
+        separate_root_table: str,
         expand_tables: list[str],
         collapse_tables: list[str],
         skip_wrap_for_keys: list[str],
@@ -25,6 +27,10 @@ class Settings:
     def min_supported_python(self) -> tuple[int, int]: ...
     @property
     def table_format(self) -> str: ...
+    @property
+    def sub_table_spacing(self) -> str: ...
+    @property
+    def separate_root_table(self) -> str: ...
     @property
     def expand_tables(self) -> list[str]: ...
     @property

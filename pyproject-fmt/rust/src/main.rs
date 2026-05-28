@@ -30,6 +30,8 @@ pub struct Settings {
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
     table_format: String,
+    sub_table_spacing: String,
+    separate_root_table: String,
     expand_tables: Vec<String>,
     collapse_tables: Vec<String>,
     skip_wrap_for_keys: Vec<String>,
@@ -39,7 +41,7 @@ pub struct Settings {
 impl Settings {
     #[new]
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, expand_tables, collapse_tables, skip_wrap_for_keys))]
+    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys))]
     fn new(
         column_width: usize,
         indent: usize,
@@ -48,6 +50,8 @@ impl Settings {
         min_supported_python: (u8, u8),
         generate_python_version_classifiers: bool,
         table_format: String,
+        sub_table_spacing: String,
+        separate_root_table: String,
         expand_tables: Vec<String>,
         collapse_tables: Vec<String>,
         skip_wrap_for_keys: Vec<String>,
@@ -60,6 +64,8 @@ impl Settings {
             min_supported_python,
             generate_python_version_classifiers,
             table_format,
+            sub_table_spacing,
+            separate_root_table,
             expand_tables,
             collapse_tables,
             skip_wrap_for_keys,
@@ -158,7 +164,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     uv::fix(&mut tables);
     pixi::fix(&mut tables);
     coverage::fix(&mut tables);
-    reorder_tables(&root_ast, &tables);
+    reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
     common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
 
@@ -174,9 +180,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     common::array::align_array_comments(&formatted_ast);
     let formatted = formatted_ast.to_string();
 
-    // Remove blank lines that tombi adds between tables in the same group
-    // but only when table_format is "long" (compact formatting)
-    let result = if opt.table_format == "long" {
+    let result = if opt.table_format == "long" && opt.sub_table_spacing.is_empty() {
         remove_blank_lines_between_same_group_tables(&formatted, &prefix_refs)
     } else {
         formatted

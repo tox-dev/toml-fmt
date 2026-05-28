@@ -9,6 +9,8 @@ fn format_toml_helper(start: &str, indent: usize) -> String {
         column_width: 120,
         indent,
         table_format: String::from("short"),
+        sub_table_spacing: String::new(),
+        separate_root_table: String::from("\n"),
         expand_tables: vec![],
         collapse_tables: vec![],
         skip_wrap_for_keys: vec![],
