@@ -212,16 +212,6 @@ def _load_shared_config(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def _spacing_argument(value: str) -> str:
-    return value.replace("\\n", "\n") if isinstance(value, str) else value
-
-
-def _list_argument(value: str | list[str]) -> list[str]:
-    if isinstance(value, list):
-        return value
-    return [x.strip() for x in value.split(",") if x.strip()]
-
-
 def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[Any], Any]]]:
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter,
@@ -320,6 +310,16 @@ def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Calla
         help=msg,
     )
     return parser, type_conversion
+
+
+def _spacing_argument(value: str) -> str:
+    return value.replace("\\n", "\n") if isinstance(value, str) else value
+
+
+def _list_argument(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    return [x.strip() for x in value.split(",") if x.strip()]
 
 
 def _toml_path_creator(filename: str, argument: str) -> Path | None:
