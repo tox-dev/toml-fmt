@@ -6,7 +6,7 @@ from argparse import ArgumentParser, ArgumentTypeError
 from typing import TYPE_CHECKING
 
 from pyproject_fmt._lib import Settings, format_toml
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, run  # noqa: PLC2701
+from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, run
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -113,7 +113,7 @@ def runner(args: Sequence[str] | None = None) -> int:
 
 
 def _build_our_cli() -> ArgumentParser:
-    return _build_cli(PyProjectFormatter())[0]  # pragma: no cover
+    return build_cli(PyProjectFormatter())[0]  # pragma: no cover
 
 
 __all__ = [

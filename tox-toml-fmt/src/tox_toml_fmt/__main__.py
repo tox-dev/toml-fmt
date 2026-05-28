@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, _list_argument, run  # noqa: PLC2701
+from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, list_argument, run
 
 from ._lib import Settings, format_toml
 
@@ -44,7 +44,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """
         parser.add_argument(
             "--pin-env",
-            type=_list_argument,
+            type=list_argument,
             default=[],
             dest="pin_envs",
             help="environments pinned to the start of env_list (comma separated)",
@@ -88,7 +88,7 @@ def runner(args: Sequence[str] | None = None) -> int:
 
 
 def _build_our_cli() -> ArgumentParser:
-    return _build_cli(ToxTOMLFormatter())[0]  # pragma: no cover
+    return build_cli(ToxTOMLFormatter())[0]  # pragma: no cover
 
 
 __all__ = [
