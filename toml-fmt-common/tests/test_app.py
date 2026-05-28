@@ -405,3 +405,77 @@ def test_config_shared_custom_type(tmp_path: Path) -> None:
     exit_code = run(Dumb(), ["E", str(dumb), "--config", str(config_file)])
     assert exit_code == 1
     assert dumb.read_text() == "\nextras = 'E'\nmagic = '1,2,3'"
+
+
+def test_shared_args_in_help(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["--help"])
+    out = capsys.readouterr().out
+    for arg in (
+        "--table-format",
+        "--sub-table-spacing",
+        "--separate-root-table",
+        "--expand-tables",
+        "--collapse-tables",
+        "--skip-wrap-for-keys",
+    ):
+        assert arg in out
+
+
+def test_shared_args_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NO_FMT", "1")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+    fmt = Dumb()
+    run(fmt, ["E", str(dumb)])
+    assert fmt.opt.table_format == "short"
+    assert not fmt.opt.sub_table_spacing
+    assert fmt.opt.separate_root_table == "\n"
+    assert fmt.opt.expand_tables == []
+    assert fmt.opt.collapse_tables == []
+    assert fmt.opt.skip_wrap_for_keys == []
+
+
+def test_shared_args_cli_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NO_FMT", "1")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+    fmt = Dumb()
+    run(
+        fmt,
+        [
+            "E",
+            str(dumb),
+            "--table-format",
+            "long",
+            "--sub-table-spacing",
+            r"\n",
+            "--separate-root-table",
+            r"\n\n",
+            "--expand-tables",
+            "a,b",
+            "--collapse-tables",
+            "c",
+            "--skip-wrap-for-keys",
+            "*.parse",
+        ],
+    )
+    assert fmt.opt.table_format == "long"
+    assert fmt.opt.sub_table_spacing == "\n"
+    assert fmt.opt.separate_root_table == "\n\n"
+    assert fmt.opt.expand_tables == ["a", "b"]
+    assert fmt.opt.collapse_tables == ["c"]
+    assert fmt.opt.skip_wrap_for_keys == ["*.parse"]
+
+
+def test_shared_args_config_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NO_FMT", "1")
+    config = tmp_path / "toml-fmt-common.toml"
+    config.write_text('table_format = "long"\nsub_table_spacing = "\\n"\nexpand_tables = ["x", "y"]')
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+    fmt = Dumb()
+    run(fmt, ["E", str(dumb), "--config", str(config)])
+    assert fmt.opt.table_format == "long"
+    assert fmt.opt.sub_table_spacing == "\n"
+    assert fmt.opt.expand_tables == ["x", "y"]
