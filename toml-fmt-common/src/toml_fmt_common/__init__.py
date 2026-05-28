@@ -43,6 +43,12 @@ class FmtNamespace(Namespace):
 
     column_width: int
     indent: int
+    table_format: str
+    sub_table_spacing: str
+    separate_root_table: str
+    expand_tables: Sequence[str]
+    collapse_tables: Sequence[str]
+    skip_wrap_for_keys: Sequence[str]
 
 
 T = TypeVar("T", bound=FmtNamespace)
@@ -143,7 +149,7 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
     :param args: CLI arguments
     :return: the parsed options
     """
-    parser, type_conversion = _build_cli(info)
+    parser, type_conversion = build_cli(info)
     parser.parse_args(namespace=info.opt, args=args)
     if (explicit_config := info.opt.config) is not None and not explicit_config.is_file():
         parser.error(f"config file does not exist: {explicit_config}")
@@ -206,7 +212,8 @@ def _load_shared_config(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[Any], Any]]]:
+def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[Any], Any]]]:
+    """:param of: the formatter to build the CLI for :return: parser and type conversion mapping."""
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter,
         prog=of.prog,
@@ -254,6 +261,42 @@ def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Calla
         help="number of spaces to use for indentation",
         metavar="count",
     )
+    format_group.add_argument(
+        "--table-format",
+        choices=["short", "long"],
+        default="short",
+        help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
+    )
+    format_group.add_argument(
+        "--sub-table-spacing",
+        type=spacing_argument,
+        default="",
+        help=r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
+    )
+    format_group.add_argument(
+        "--separate-root-table",
+        type=spacing_argument,
+        default="\n",
+        help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
+    )
+    format_group.add_argument(
+        "--expand-tables",
+        type=list_argument,
+        default=[],
+        help="comma-separated list of tables to force expand",
+    )
+    format_group.add_argument(
+        "--collapse-tables",
+        type=list_argument,
+        default=[],
+        help="comma-separated list of tables to force collapse",
+    )
+    format_group.add_argument(
+        "--skip-wrap-for-keys",
+        type=list_argument,
+        default=[],
+        help="comma-separated list of key patterns to skip string wrapping (supports wildcards like *.parse)",
+    )
     of.add_format_flags(format_group)
     type_conversion: Mapping[str, Callable[[Any], Any]] = {
         a.dest: cast("Callable[[Any], Any]", a.type)
@@ -268,6 +311,18 @@ def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Calla
         help=msg,
     )
     return parser, type_conversion
+
+
+def spacing_argument(value: str) -> str:
+    r"""Convert literal ``\n`` sequences to actual newlines."""
+    return value.replace("\\n", "\n") if isinstance(value, str) else value
+
+
+def list_argument(value: str | list[str]) -> list[str]:
+    """Convert a comma-separated string or list to a list of stripped strings."""
+    if isinstance(value, list):
+        return value
+    return [x.strip() for x in value.split(",") if x.strip()]
 
 
 def _toml_path_creator(filename: str, argument: str) -> Path | None:
@@ -348,5 +403,7 @@ __all__ = [
     "ArgumentGroup",
     "FmtNamespace",
     "TOMLFormatter",
+    "build_cli",
+    "list_argument",
     "run",
 ]
