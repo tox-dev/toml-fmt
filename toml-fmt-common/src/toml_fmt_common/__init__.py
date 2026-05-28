@@ -46,9 +46,9 @@ class FmtNamespace(Namespace):
     table_format: str
     sub_table_spacing: str
     separate_root_table: str
-    expand_tables: list[str]
-    collapse_tables: list[str]
-    skip_wrap_for_keys: list[str]
+    expand_tables: Sequence[str]
+    collapse_tables: Sequence[str]
+    skip_wrap_for_keys: Sequence[str]
 
 
 T = TypeVar("T", bound=FmtNamespace)
