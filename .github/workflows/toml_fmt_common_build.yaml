@@ -3,11 +3,11 @@ on:
   workflow_dispatch:
     inputs:
       release:
-        description: "🚀 Release?"
+        description: "🚀 Release (semver bump)?"
         required: true
         default: "no"
         type: choice
-        options: ["no", "yes"]
+        options: ["no", patch, minor, major]
   push:
     branches: ["main"]
   pull_request:
@@ -15,7 +15,7 @@ on:
     - cron: "0 8 * * *"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.inputs.release && github.event.inputs.release != 'no' && '-release' || '' }}
   cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
 
 permissions:
@@ -45,9 +45,13 @@ jobs:
               - '.github/workflows/toml_fmt_common_build.yaml'
 
   build:
+    name: 🔨 build
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      changelog: ${{ steps.v.outputs.changelog }}
     defaults:
       run:
         working-directory: toml-fmt-common
@@ -62,6 +66,19 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
+      - name: 🔖 Bump version
+        if: github.event.inputs.release != 'no' && github.event.inputs.release != null
+        run: uv version --bump "$RELEASE_TYPE"
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release }}
+      - name: 📝 Generate changelog
+        id: v
+        run: |
+          VERSION=$(uv run --with tomli python -c "import tomli; print(tomli.loads(open('pyproject.toml','rb').read().decode())['project']['version'])")
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          uv run ../tasks/changelog.py toml-fmt-common "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 🔨 Build package
         run: uv build --python 3.14 --python-preference only-managed --sdist --wheel . --out-dir dist
       - name: 📤 Store the distribution packages
@@ -71,15 +88,36 @@ jobs:
           path: toml-fmt-common/dist/*
 
   release:
+    name: 🚀 release
     needs: [build]
     runs-on: ubuntu-latest
     environment:
       name: release
-      url: https://pypi.org/project/toml-fmt-common/${{ github.ref_name }}
+      url: https://pypi.org/project/toml-fmt-common/${{ needs.build.outputs.version }}
     permissions:
       id-token: write
-    if: github.event.inputs.release == 'yes' && github.ref == 'refs/heads/main'
+      contents: write
+    if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
     steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          persist-credentials: true
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: 🔖 Bump version
+        working-directory: toml-fmt-common
+        run: uv version --bump "$RELEASE_TYPE"
+        env:
+          RELEASE_TYPE: ${{ github.event.inputs.release }}
+      - name: 💾 Commit release
+        run: |
+          git config --global user.name 'Bernat Gabor'
+          git config --global user.email 'gaborbernat@users.noreply.github.com'
+          git commit -am "Release toml-fmt-common ${VERSION} [skip ci]"
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
       - name: 📥 Download all the dists
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -89,6 +127,19 @@ jobs:
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
         with:
           attestations: true
+      - name: 📢 Create GitHub release
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ needs.build.outputs.version }}
+          CHANGELOG: ${{ needs.build.outputs.changelog }}
+        run: |
+          git pull --rebase origin main
+          git tag "toml-fmt-common/${VERSION}"
+          git push
+          git push --tags
+          gh release create "toml-fmt-common/${VERSION}" \
+              --title="toml-fmt-common/${VERSION}" --verify-tag \
+            --notes "${CHANGELOG}"
 
   all-pass:
     name: ✅ toml-fmt-common-build
