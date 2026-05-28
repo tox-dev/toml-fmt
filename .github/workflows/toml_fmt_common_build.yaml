@@ -68,7 +68,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: 🔖 Bump version
         if: github.event.inputs.release != 'no' && github.event.inputs.release != null
-        run: uv version --frozen --no-sync --bump "$RELEASE_TYPE"
+        run: uv version --no-sync --bump "$RELEASE_TYPE"
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release }}
       - name: 📝 Generate changelog
@@ -107,7 +107,7 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0 # zizmor: ignore[cache-poisoning]
       - name: 🔖 Bump version
         working-directory: toml-fmt-common
-        run: uv version --frozen --no-sync --bump "$RELEASE_TYPE"
+        run: uv version --no-sync --bump "$RELEASE_TYPE"
         env:
           RELEASE_TYPE: ${{ github.event.inputs.release }}
       - name: 💾 Commit release
