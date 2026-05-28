@@ -30,8 +30,8 @@
 
 ## 1.1.0 - 2025-10-08
 
-- ✨ feat(workspace): internalize toml-fmt-common as workspace member by
-  [@gaborbernat](https://github.com/gaborbernat) in [#170](https://github.com/tox-dev/toml-fmt/pull/170)
+- ✨ feat(workspace): internalize toml-fmt-common as workspace member by [@gaborbernat](https://github.com/gaborbernat)
+  in [#170](https://github.com/tox-dev/toml-fmt/pull/170)
 
 <a id="1.0.1"></a>
 
