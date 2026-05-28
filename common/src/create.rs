@@ -10,7 +10,7 @@
 
 use tombi_syntax::SyntaxKind::{
     ARRAY, BASIC_STRING, COMMA, COMMENT, KEY_VALUE_GROUP, KEYS, LINE_BREAK, LITERAL_STRING, MULTI_LINE_BASIC_STRING,
-    VALUE_WITH_COMMA_GROUP, WHITESPACE,
+    MULTI_LINE_LITERAL_STRING, VALUE_WITH_COMMA_GROUP, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxNode};
 
@@ -55,6 +55,19 @@ pub fn make_multiline_string_node(wrapped: &str) -> SyntaxElement {
         .children_with_tokens()
         .find(|n| n.kind() == MULTI_LINE_BASIC_STRING)
         .expect("KEY_VALUE contains MULTI_LINE_BASIC_STRING")
+}
+
+/// Create a MULTI_LINE_LITERAL_STRING (`'''...'''`) syntax element by parsing valid TOML.
+///
+/// `text` is inserted verbatim between the delimiters; callers must ensure it does not
+/// contain the `'''` substring.
+pub fn make_multiline_literal_string_node(text: &str) -> SyntaxElement {
+    let expr = format!("a = '''{text}'''");
+    let root = parse(&expr);
+    first_key_value(&root)
+        .children_with_tokens()
+        .find(|n| n.kind() == MULTI_LINE_LITERAL_STRING)
+        .expect("KEY_VALUE contains MULTI_LINE_LITERAL_STRING")
 }
 
 /// Create a BASIC_STRING (basic/double-quoted) syntax element by parsing valid TOML.

@@ -982,6 +982,39 @@ value = "Another very long string in a different section that should also be ski
 }
 
 #[test]
+fn test_multiline_literal_with_backslashes_preserved() {
+    // Regression: triple-literal strings containing `\.` (etc.) used to be converted to
+    // triple-basic, producing invalid TOML because `\.` is not a valid basic-string escape.
+    let toml = "[tool.black]\nexclude = '''\n(\n  \\.eggs\n  | \\.git\n)\n'''\n";
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
+    let result = root_ast.to_string();
+    insta::assert_snapshot!(result, @r"
+    [tool.black]
+    exclude = '''
+    (
+      \.eggs
+      | \.git
+    )
+    '''
+    ");
+}
+
+#[test]
+fn test_multiline_literal_with_triple_single_quote_falls_back_to_basic() {
+    // If the literal cannot be represented (contains `'''`), fall back to basic.
+    let toml = "[t]\nv = '''line1\n\\.something\nlast'''\n";
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
+    let result = root_ast.to_string();
+    // Even after fallback the output must be valid TOML.
+    assert!(
+        toml::from_str::<toml::Value>(&result).is_ok(),
+        "output should be valid TOML, got: {result}"
+    );
+}
+
+#[test]
 fn test_skip_wrap_for_keys_partial_wildcard() {
     let toml = r#"[project]
 description = "Short"
