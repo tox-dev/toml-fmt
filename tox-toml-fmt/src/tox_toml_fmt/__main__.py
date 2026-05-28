@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, run  # noqa: PLC2701
+from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, _list_argument, run  # noqa: PLC2701
 
 from ._lib import Settings, format_toml
 
@@ -16,12 +16,6 @@ if TYPE_CHECKING:
 class PyProjectFmtNamespace(FmtNamespace):
     """Formatting arguments."""
 
-    table_format: str
-    sub_table_spacing: str
-    separate_root_table: str
-    expand_tables: list[str]
-    collapse_tables: list[str]
-    skip_wrap_for_keys: list[str]
     pin_envs: list[str]
 
 
@@ -48,51 +42,6 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
         :param parser: parser to operate on.
         """
-
-        def _spacing_argument(value: str) -> str:
-            return value.replace("\\n", "\n") if isinstance(value, str) else value
-
-        def _list_argument(value: str | list[str]) -> list[str]:
-            if isinstance(value, list):
-                return value
-            return [x.strip() for x in value.split(",") if x.strip()]
-
-        parser.add_argument(
-            "--table-format",
-            choices=["short", "long"],
-            default="short",
-            help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
-        )
-        parser.add_argument(
-            "--sub-table-spacing",
-            type=_spacing_argument,
-            default="",
-            help=r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
-        )
-        parser.add_argument(
-            "--separate-root-table",
-            type=_spacing_argument,
-            default="\n",
-            help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
-        )
-        parser.add_argument(
-            "--expand-tables",
-            type=_list_argument,
-            default=[],
-            help="comma-separated list of tables to force expand (e.g. 'env.test')",
-        )
-        parser.add_argument(
-            "--collapse-tables",
-            type=_list_argument,
-            default=[],
-            help="comma-separated list of tables to force collapse (e.g. 'env.lint')",
-        )
-        parser.add_argument(
-            "--skip-wrap-for-keys",
-            type=_list_argument,
-            default=[],
-            help="comma-separated list of key patterns to skip string wrapping (e.g. '*.commands')",
-        )
         parser.add_argument(
             "--pin-env",
             type=_list_argument,

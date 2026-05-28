@@ -43,6 +43,12 @@ class FmtNamespace(Namespace):
 
     column_width: int
     indent: int
+    table_format: str
+    sub_table_spacing: str
+    separate_root_table: str
+    expand_tables: list[str]
+    collapse_tables: list[str]
+    skip_wrap_for_keys: list[str]
 
 
 T = TypeVar("T", bound=FmtNamespace)
@@ -206,6 +212,16 @@ def _load_shared_config(path: Path) -> dict[str, Any]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
+def _spacing_argument(value: str) -> str:
+    return value.replace("\\n", "\n") if isinstance(value, str) else value
+
+
+def _list_argument(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    return [x.strip() for x in value.split(",") if x.strip()]
+
+
 def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[Any], Any]]]:
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter,
@@ -253,6 +269,42 @@ def _build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Calla
         default=2,
         help="number of spaces to use for indentation",
         metavar="count",
+    )
+    format_group.add_argument(
+        "--table-format",
+        choices=["short", "long"],
+        default="short",
+        help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
+    )
+    format_group.add_argument(
+        "--sub-table-spacing",
+        type=_spacing_argument,
+        default="",
+        help=r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
+    )
+    format_group.add_argument(
+        "--separate-root-table",
+        type=_spacing_argument,
+        default="\n",
+        help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
+    )
+    format_group.add_argument(
+        "--expand-tables",
+        type=_list_argument,
+        default=[],
+        help="comma-separated list of tables to force expand",
+    )
+    format_group.add_argument(
+        "--collapse-tables",
+        type=_list_argument,
+        default=[],
+        help="comma-separated list of tables to force collapse",
+    )
+    format_group.add_argument(
+        "--skip-wrap-for-keys",
+        type=_list_argument,
+        default=[],
+        help="comma-separated list of key patterns to skip string wrapping (supports wildcards like *.parse)",
     )
     of.add_format_flags(format_group)
     type_conversion: Mapping[str, Callable[[Any], Any]] = {
@@ -348,5 +400,6 @@ __all__ = [
     "ArgumentGroup",
     "FmtNamespace",
     "TOMLFormatter",
+    "_list_argument",
     "run",
 ]

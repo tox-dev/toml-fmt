@@ -18,12 +18,6 @@ class PyProjectFmtNamespace(FmtNamespace):
     keep_full_version: bool
     max_supported_python: tuple[int, int]
     generate_python_version_classifiers: bool
-    table_format: str
-    sub_table_spacing: str
-    separate_root_table: str
-    expand_tables: list[str]
-    collapse_tables: list[str]
-    skip_wrap_for_keys: list[str]
 
 
 class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
@@ -59,9 +53,6 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             help=msg,
         )
 
-        def _spacing_argument(value: str) -> str:
-            return value.replace("\\n", "\n") if isinstance(value, str) else value
-
         def _version_argument(got: str) -> tuple[int, int]:
             parts = got.split(".")
             if len(parts) != 2:  # noqa: PLR2004
@@ -73,54 +64,12 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
                 err = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
                 raise ArgumentTypeError(err) from exc
 
-        def _list_argument(value: str | list[str]) -> list[str]:
-            # Handle both CLI args (string) and TOML config (list)
-            if isinstance(value, list):
-                return value
-            return [x.strip() for x in value.split(",") if x.strip()]
-
         parser.add_argument(
             "--max-supported-python",
             metavar="minor.major",
             type=_version_argument,
             default=(3, 14),
             help="latest Python version the project supports (e.g. 3.14)",
-        )
-        parser.add_argument(
-            "--table-format",
-            choices=["short", "long"],
-            default="short",
-            help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
-        )
-        parser.add_argument(
-            "--sub-table-spacing",
-            type=_spacing_argument,
-            default="",
-            help=r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
-        )
-        parser.add_argument(
-            "--separate-root-table",
-            type=_spacing_argument,
-            default="\n",
-            help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
-        )
-        parser.add_argument(
-            "--expand-tables",
-            type=_list_argument,
-            default=[],
-            help="comma-separated list of tables to force expand (e.g. 'project.urls,project.scripts')",
-        )
-        parser.add_argument(
-            "--collapse-tables",
-            type=_list_argument,
-            default=[],
-            help="comma-separated list of tables to force collapse (e.g. 'tool.ruff.format')",
-        )
-        parser.add_argument(
-            "--skip-wrap-for-keys",
-            type=_list_argument,
-            default=[],
-            help="comma-separated list of key patterns to skip string wrapping (e.g. '*.parse,tool.bumpversion.*')",
         )
 
     @property
