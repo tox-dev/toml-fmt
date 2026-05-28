@@ -92,7 +92,7 @@ def run() -> None:
 
 def parse_cli() -> Options:
     parser = ArgumentParser()
-    parser.add_argument("project", choices=["pyproject-fmt", "tox-toml-fmt"])
+    parser.add_argument("project", choices=["pyproject-fmt", "tox-toml-fmt", "toml-fmt-common"])
     parser.add_argument("pr", type=lambda s: int(s) if s else None, nargs="?", default=None)
     parser.add_argument("base", type=str, nargs="?", default="")
     parser.add_argument("--regenerate", action="store_true", help="Regenerate entire changelog from all releases")
@@ -102,8 +102,11 @@ def parse_cli() -> Options:
 
 
 def get_version(base: Path) -> str:
-    with (base / "Cargo.toml").open("rb") as cargo_toml_file_handler:
-        return load(cargo_toml_file_handler)["package"]["version"]
+    if (cargo := base / "Cargo.toml").exists():
+        with cargo.open("rb") as fh:
+            return load(fh)["package"]["version"]
+    with (base / "pyproject.toml").open("rb") as fh:
+        return load(fh)["project"]["version"]
 
 
 def regenerate_changelog(
@@ -204,7 +207,8 @@ def entries(
 
 def commit_affects_project(commit: object, project: str) -> bool:
     changed_files = list(commit.stats.files.keys())
-    return any(file_path.startswith(("common/", f"{project}/")) for file_path in changed_files)
+    prefixes = ("common/", f"{project}/")
+    return any(file_path.startswith(prefixes) for file_path in changed_files)
 
 
 if __name__ == "__main__":

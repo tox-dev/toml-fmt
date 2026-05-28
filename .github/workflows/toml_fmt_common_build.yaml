@@ -74,8 +74,7 @@ jobs:
       - name: 📝 Generate changelog
         id: v
         run: |
-          VERSION=$(uv run --with tomli python -c "import tomli; print(tomli.loads(open('pyproject.toml','rb').read().decode())['project']['version'])")
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=$(uv version)" >> "$GITHUB_OUTPUT"
           uv run ../tasks/changelog.py toml-fmt-common "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -105,7 +104,7 @@ jobs:
           token: ${{ secrets.RELEASE_TOKEN }}
           persist-credentials: true
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0 # zizmor: ignore[cache-poisoning]
       - name: 🔖 Bump version
         working-directory: toml-fmt-common
         run: uv version --bump "$RELEASE_TYPE"
