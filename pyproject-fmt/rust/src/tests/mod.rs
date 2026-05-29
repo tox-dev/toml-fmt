@@ -12,6 +12,7 @@ mod mypy_tests;
 mod pixi_tests;
 mod poetry_tests;
 mod project_tests;
+mod pytest_tests;
 mod ruff_tests;
 mod setuptools_tests;
 mod uv_tests;

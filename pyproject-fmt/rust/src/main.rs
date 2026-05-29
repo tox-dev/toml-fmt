@@ -19,6 +19,7 @@ mod global;
 mod mypy;
 mod pixi;
 mod poetry;
+mod pytest;
 mod ruff;
 mod setuptools;
 #[cfg(test)]
@@ -171,6 +172,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     poetry::fix(&mut tables);
     mypy::fix(&mut tables);
     setuptools::fix(&mut tables);
+    pytest::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
