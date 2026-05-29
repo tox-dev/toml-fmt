@@ -17,6 +17,7 @@ mod commitizen;
 mod coverage;
 mod global;
 mod pixi;
+mod poetry;
 mod ruff;
 #[cfg(test)]
 mod tests;
@@ -165,8 +166,13 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     uv::fix(&mut tables);
     pixi::fix(&mut tables);
     commitizen::fix(&mut tables);
+    poetry::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
+    // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
+    // to inline arrays of inline tables (e.g. [[tool.poetry.source]] → source = [{...}])
+    // are visible in root_ast as INLINE_TABLE descendants.
+    poetry::reorder_inline_tables(&root_ast);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
     common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
 
