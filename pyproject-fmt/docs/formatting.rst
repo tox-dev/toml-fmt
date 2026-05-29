@@ -1004,6 +1004,13 @@ canonical key ordering for the root table and every env table, PEP 508 requireme
 
 See the ``tox-toml-fmt`` documentation for the full schema and per-key behavior; the only difference here is the
 namespace (``tool.tox`` instead of the root table).
+``[tool.bandit]``
+~~~~~~~~~~~~~~~~~
+
+Top-level ordering: ``exclude_dirs`` → ``targets`` → ``tests`` → ``skips`` → per-plugin sub-tables
+(``assert_used``, ``hardcoded_tmp_directory``, etc.).
+
+All array values alphabetize (rule IDs, directory paths, function-name lists — all set semantics).
 
 Other Tables
 ~~~~~~~~~~~~
