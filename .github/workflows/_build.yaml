@@ -103,6 +103,7 @@ jobs:
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
         run: uv run tasks/bundle_common.py "$PACKAGE"
+        shell: bash
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 🔨 Build wheels
@@ -148,6 +149,7 @@ jobs:
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
         run: uv run tasks/bundle_common.py "$PACKAGE"
+        shell: bash
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 🔨 Build wheels
@@ -185,6 +187,7 @@ jobs:
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
         run: uv run tasks/bundle_common.py "$PACKAGE"
+        shell: bash
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 🔨 Build wheels
@@ -214,6 +217,7 @@ jobs:
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
         run: uv run tasks/bundle_common.py "$PACKAGE"
+        shell: bash
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 📦 Build sdist
