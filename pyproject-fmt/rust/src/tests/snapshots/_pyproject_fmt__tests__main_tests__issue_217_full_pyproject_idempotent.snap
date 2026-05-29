@@ -131,19 +131,7 @@ telegram = [ "python-telegram-bot[http2,socks]~=22.0" ]
 transmission = [ "transmission-rpc~=7.0" ]
 
 [tool.hatch]
-build.skip-excluded-dirs = true
-build.targets.sdist.include = [
-  "/flexget",
-  "/scripts/build_locked_extras.py",
-  "/scripts/bundle_webui.py",
-]
-build.targets.wheel.include = [
-  "/flexget",
-]
-# The webui will be bundled when the BUNDLE_WEBUI env variable is defined
-build.targets.wheel.hooks.custom.path = "scripts/bundle_webui.py"
-# Extras with locked dependencies will be generated if BUILD_LOCKED env variable is specified
-metadata.hooks.custom.path = "scripts/build_locked_extras.py"
+version.path = "flexget/_version.py"
 metadata.hooks.custom.locked-groups = [
   "boto3",
   "deluge",
@@ -158,7 +146,19 @@ metadata.hooks.custom.locked-groups = [
   "transmission",
   "all",
 ]
-version.path = "flexget/_version.py"
+# Extras with locked dependencies will be generated if BUILD_LOCKED env variable is specified
+metadata.hooks.custom.path = "scripts/build_locked_extras.py"
+build.skip-excluded-dirs = true
+build.targets.wheel.include = [
+  "/flexget",
+]
+# The webui will be bundled when the BUNDLE_WEBUI env variable is defined
+build.targets.wheel.hooks.custom.path = "scripts/bundle_webui.py"
+build.targets.sdist.include = [
+  "/flexget",
+  "/scripts/build_locked_extras.py",
+  "/scripts/bundle_webui.py",
+]
 
 [tool.ruff]
 line-length = 99
