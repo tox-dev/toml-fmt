@@ -841,6 +841,39 @@ and linker argv arrays).
     packages = [ "my_pkg" ]
     dynamic.readme = { file = "README.md", content-type = "text/markdown" }
     zip-safe = false
+``[tool.pytest.ini_options]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Covers the pytest configuration block. Keys are grouped to follow the pytest reference: pytest itself →
+discovery → CLI arguments → markers/parametrize → warnings → doctest → output → logging (capture / CLI / file)
+→ JUnit XML → cache and tmp_path → assertion / faulthandler.
+
+**Sorted arrays** (set/unordered semantics):
+
+``testpaths``, ``norecursedirs``, ``collect_ignore``, ``collect_ignore_glob``, ``python_files``,
+``python_classes``, ``python_functions``, ``markers``, ``filterwarnings``, ``doctest_optionflags``,
+``usefixtures``, ``required_plugins``.
+
+``addopts`` and ``pythonpath`` are deliberately preserved as written: ``addopts`` is CLI argv (order matters)
+and ``pythonpath`` is a search path with priority semantics.
+
+.. code-block:: toml
+
+    # Before
+    [tool.pytest.ini_options]
+    log_cli_level = "INFO"
+    markers = [ "slow: marks tests as slow", "fast: marks tests as fast" ]
+    addopts = [ "--strict-markers", "-ra" ]
+    testpaths = [ "tests" ]
+    minversion = "8"
+
+    # After
+    [tool.pytest]
+    ini_options.minversion = "8"
+    ini_options.testpaths = [ "tests" ]
+    ini_options.addopts = [ "--strict-markers", "-ra" ]
+    ini_options.markers = [ "fast: marks tests as fast", "slow: marks tests as slow" ]
+    ini_options.log_cli_level = "INFO"
 
 Other Tables
 ~~~~~~~~~~~~
