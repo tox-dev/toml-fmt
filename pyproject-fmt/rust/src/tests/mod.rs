@@ -29,6 +29,7 @@ mod setuptools_tests;
 mod tox_tests;
 mod towncrier_tests;
 mod uv_tests;
+mod yapf_tests;
 
 pub fn collect_entries(tables: &common::table::Tables) -> Vec<SyntaxElement> {
     tables.table_set.iter().flat_map(|e| e.borrow().clone()).collect()
