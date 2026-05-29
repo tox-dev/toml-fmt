@@ -12,6 +12,7 @@ mod hatch_tests;
 mod isort_tests;
 mod main_tests;
 mod mypy_tests;
+mod pdm_tests;
 mod pixi_tests;
 mod poetry_tests;
 mod project_tests;
