@@ -102,7 +102,9 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "$PACKAGE"
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -145,7 +147,9 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "$PACKAGE"
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -180,7 +184,9 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "$PACKAGE"
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -207,7 +213,9 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "$PACKAGE"
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 📦 Build sdist
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -237,7 +245,9 @@ jobs:
           wheel=$(ls dist/*.whl | head -n1)
           # No project, no workspace: the wheel must satisfy its own imports without
           # toml-fmt-common on the index — this is the exact #355 failure mode.
-          uv run --isolated --no-project --with "$wheel" -- "${{ inputs.package-name }}" --version
+          uv run --isolated --no-project --with "$wheel" -- "$PACKAGE" --version
+        env:
+          PACKAGE: ${{ inputs.package-name }}
 
   release:
     name: 🚀 release
