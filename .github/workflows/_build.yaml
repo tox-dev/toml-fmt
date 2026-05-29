@@ -9,6 +9,11 @@ on:
         required: true
         type: string
         description: "Pre-commit mirror repo (e.g. tox-dev/pyproject-fmt)"
+    outputs:
+      version:
+        value: ${{ jobs.bump.outputs.version }}
+      changelog:
+        value: ${{ jobs.bump.outputs.changelog }}
 
 permissions:
   contents: read
@@ -222,70 +227,6 @@ jobs:
         with:
           name: wheels-sdist
           path: dist
-
-  release:
-    name: 🚀 release
-    runs-on: ubuntu-24.04
-    environment:
-      name: release
-      url: https://pypi.org/project/${{ inputs.package-name }}/${{ needs.bump.outputs.version }}
-    permissions:
-      id-token: write
-      contents: write
-    if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
-    needs: [bump, sdist, linux, macos, windows]
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          persist-credentials: true
-      - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: source
-          path: .
-      - name: 👀 Show changes
-        run: git diff HEAD -u
-      - name: 💾 Commit release
-        run: |
-          git config --global user.name 'Bernat Gabor'
-          git config --global user.email 'gaborbernat@users.noreply.github.com'
-          git commit -am "Release ${PACKAGE} ${VERSION} [skip ci]"
-        env:
-          PACKAGE: ${{ inputs.package-name }}
-          VERSION: ${{ needs.bump.outputs.version }}
-      - name: 📥 Download wheels
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          pattern: wheels-*
-          path: dist
-          merge-multiple: "true"
-      - name: 👀 Show wheels
-        run: ls -lth dist
-      - name: 🚀 Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # v1.14.0
-        with:
-          skip-existing: true
-      - name: 📢 Create GitHub release
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          PACKAGE: ${{ inputs.package-name }}
-          VERSION: ${{ needs.bump.outputs.version }}
-          CHANGELOG: ${{ needs.bump.outputs.changelog }}
-        run: |
-          git pull --rebase origin main
-          git tag "${PACKAGE}/${VERSION}"
-          git push
-          git push --tags
-          gh release create "${PACKAGE}/${VERSION}" \
-              --title="${PACKAGE}/${VERSION}" --verify-tag \
-            --notes "${CHANGELOG}"
-      - name: 🔄 Trigger pre-commit mirror sync
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          MIRROR: ${{ inputs.pre-commit-mirror }}
-        run: gh workflow run main.yaml --repo "$MIRROR"
 
   all-pass:
     name: ✅ ${{ inputs.package-name }}-build
