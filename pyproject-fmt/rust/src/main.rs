@@ -20,6 +20,7 @@ mod mypy;
 mod pixi;
 mod poetry;
 mod ruff;
+mod setuptools;
 #[cfg(test)]
 mod tests;
 mod uv;
@@ -169,6 +170,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     commitizen::fix(&mut tables);
     poetry::fix(&mut tables);
     mypy::fix(&mut tables);
+    setuptools::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
@@ -178,6 +180,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     // mypy needs to walk the AST after AoT entries (`[[tool.mypy.overrides]]`) collapse
     // into inline-array form via reorder_tables.
     mypy::reorder_inline_tables(&root_ast);
+    setuptools::reorder_inline_tables(&root_ast);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
     common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
 

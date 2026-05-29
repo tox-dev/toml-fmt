@@ -760,6 +760,87 @@ expanded or collapsed.
     overrides = [
       { module = "third_party.*", ignore_missing_imports = true, disable_error_code = [ "attr-defined", "import-untyped" ] },
     ]
+``[tool.setuptools]`` and ``[tool.setuptools_scm]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Covers the setuptools build backend and the version-from-SCM plugin.
+
+**``[tool.setuptools]`` top-level key ordering** (grouped):
+
+1. Packaging discovery: ``py-modules`` → ``packages.find.*`` / ``packages.find-namespace.*`` → ``packages`` →
+   ``package-dir``
+2. Package data: ``include-package-data`` → ``package-data`` → ``exclude-package-data``
+3. Dynamic metadata: ``dynamic``
+4. Extensions / build customization: ``ext-modules`` → ``cmdclass``
+5. Distribution metadata: ``platforms`` → ``provides`` → ``obsoletes`` → ``license-files``
+6. Data files: ``data-files``
+7. Deprecated / obsolete (pushed last): ``script-files`` → ``namespace-packages`` → ``zip-safe`` →
+   ``eager-resources`` → ``dependency-links``
+
+**``[tool.setuptools.packages.find]`` / ``[tool.setuptools.packages.find-namespace]`` inner ordering:**
+
+``where`` → ``include`` → ``exclude`` → ``namespaces``.
+
+**``[tool.setuptools.package-data]`` / ``[tool.setuptools.exclude-package-data]`` / ``[tool.setuptools.data-files]``
+ordering:**
+
+The catch-all ``"*"`` pattern always goes first, then the other package patterns alphabetically. Each value (an
+array of glob patterns) is sorted alphabetically.
+
+**``[tool.setuptools.dynamic]`` ordering:**
+
+Field names alphabetized. Inline-table directives (e.g. ``version = { attr = "pkg.__version__" }`` or
+``readme = { file = "README.md", content-type = "text/markdown" }``) get their keys ordered ``attr`` → ``file`` →
+``content-type``.
+
+**Sorted arrays:**
+
+- ``py-modules``, ``platforms``, ``provides``, ``obsoletes``, ``script-files``, ``namespace-packages``,
+  ``eager-resources``: alphabetized.
+- ``packages.find.include`` / ``packages.find.exclude`` / ``packages.find-namespace.*``: alphabetized.
+- Values inside ``package-data`` / ``exclude-package-data`` / ``data-files`` tables: alphabetized.
+
+Arrays whose order is meaningful are preserved as written: ``packages`` (literal list — first match wins),
+``license-files`` (PEP 639 concatenation order), and everything under ``[[tool.setuptools.ext-modules]]`` (compiler
+and linker argv arrays).
+
+**``[tool.setuptools_scm]`` key ordering** (grouped):
+
+1. Version output: ``version_file`` → ``version_file_template``
+2. Version computation: ``version_scheme`` → ``local_scheme`` → ``version_cls`` → ``normalize``
+3. Root discovery: ``root`` → ``relative_to`` → ``fallback_root`` → ``parent`` → ``search_parent_directories`` →
+   ``dist_name``
+4. Tag / parse: ``tag_regex`` → ``parse`` → ``parentdir_prefix_version`` → ``fallback_version``
+5. Nested SCM-specific tables: ``scm.git.pre_parse`` → ``scm.git.describe_command``
+6. Deprecated (pushed last): ``git_describe_command`` (use ``scm.git.describe_command``) → ``write_to`` (use
+   ``version_file``) → ``write_to_template`` (use ``version_file_template``) → ``version_class`` (use
+   ``version_cls``) → ``template``
+
+.. code-block:: toml
+
+    # Before
+    [tool.setuptools]
+    zip-safe = false
+    py-modules = ["foo", "bar"]
+    packages = ["my_pkg"]
+
+    [tool.setuptools.packages.find]
+    namespaces = true
+    where = ["src"]
+    include = ["my_pkg*"]
+
+    [tool.setuptools.dynamic]
+    readme = { content-type = "text/markdown", file = "README.md" }
+
+    # After
+    [tool.setuptools]
+    py-modules = [ "bar", "foo" ]
+    packages.find.where = [ "src" ]
+    packages.find.include = [ "my_pkg*" ]
+    packages.find.namespaces = true
+    packages = [ "my_pkg" ]
+    dynamic.readme = { file = "README.md", content-type = "text/markdown" }
+    zip-safe = false
 
 Other Tables
 ~~~~~~~~~~~~

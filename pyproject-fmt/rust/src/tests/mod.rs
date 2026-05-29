@@ -13,6 +13,7 @@ mod pixi_tests;
 mod poetry_tests;
 mod project_tests;
 mod ruff_tests;
+mod setuptools_tests;
 mod uv_tests;
 
 pub fn collect_entries(tables: &common::table::Tables) -> Vec<SyntaxElement> {
