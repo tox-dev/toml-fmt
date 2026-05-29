@@ -234,10 +234,10 @@ skip = [
   "flexget/api/templates/swagger-ui.html",
   "flexget/utils/bittorrent.py",
   "flexget/utils/parsers/series.py",
+  "pyproject.toml",
   "tests/couchpotato_movie_list_test_response.json",
   "tests/LICENSE.torrent",
   "tests/test_thetvdb.py",
-  "pyproject.toml",
 ]
 
 [tool.pyproject-fmt]

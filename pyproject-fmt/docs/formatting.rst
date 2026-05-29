@@ -1023,6 +1023,15 @@ Maturin builds Rust extensions for Python. Top-level ordering: module identity (
 
 **Sorted arrays:** ``python-packages``, ``include``, ``exclude``, ``sdist-include``, ``features`` (all
 set-semantics). ``cargo-extra-args`` / ``rustc-extra-args`` are CLI argv and preserved.
+``[tool.codespell]``
+~~~~~~~~~~~~~~~~~~~~
+
+Top-level ordering: dictionaries (``builtin``, ``dictionary``, ``ignore-words``, ``ignore-words-list``,
+``ignore-regex``, ``ignore-multiline-regex``, ``exclude-file``) → scope (``skip``, ``uri-ignore-words-list``,
+``check-filenames``, ``check-hidden``, ``hidden``, ``regex``, ``user-input``) → fix behavior (``write-changes``,
+``interactive``, ``enable-colors``, ``disable-colors``) → output (``count``, ``quiet-level``, ``summary``).
+
+**Sorted arrays:** ``builtin``, ``dictionary``, ``skip``, ``ignore-words-list``, ``uri-ignore-words-list``.
 
 Other Tables
 ~~~~~~~~~~~~
