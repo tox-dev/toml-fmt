@@ -973,6 +973,25 @@ scripts → source → dev-dependencies → publish → options.
 **Sorted arrays:** ``plugins``, ``build.includes``, ``build.excludes``, ``build.source-includes``,
 ``resolution.excludes``, every ``dev-dependencies.<group>`` value array, and ``include_packages`` /
 ``exclude_packages`` inside source entries.
+``[tool.cibuildwheel]``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Covers cibuildwheel. Top-level ordering: selection (``build``, ``skip``, ``test-skip``, ``archs``, ``enable``,
+``free-threaded-support``) → build configuration (``build-frontend``, ``build-verbosity``, ``config-settings``,
+``dependency-versions``, ``environment``, ``environment-pass``) → build phases (``before-all``, ``before-build``,
+``repair-wheel-command``) → test phases (``before-test``, ``test-command``, ``test-requires``, ``test-extras``,
+``test-groups``, ``test-sources``) → platform images (``manylinux-*-image``, ``musllinux-*-image``) →
+``container-engine`` → per-platform sub-tables (``linux``, ``macos``, ``windows``, ``android``, ``ios``,
+``pyodide``) → ``overrides`` last.
+
+Per-platform sub-tables follow the same inner ordering. ``[[tool.cibuildwheel.overrides]]`` entries place
+``select`` first (required), then the regular cibuildwheel keys; the array order itself is preserved (later
+overrides win).
+
+**Sorted arrays:** ``enable``, ``test-extras``, ``test-groups``.
+
+Most other array-valued keys (``test-requires``, ``before-all``, ``test-command``, the various ``environment*``
+fields) are CLI argv or ordered lists and are preserved as written.
 
 Other Tables
 ~~~~~~~~~~~~
