@@ -1066,6 +1066,11 @@ regardless of which sub-table it appears in.
 
 Profile/scope → formatting → linting → ignores → output. **Sorted arrays:** ``exclude``, ``extend_exclude``,
 ``custom_blocks``, ``custom_html``, ``ignore``, ``ignore_blocks``.
+``[tool.yapf]``
+~~~~~~~~~~~~~~~
+
+Single flat table. ``based_on_style`` first (it sets defaults), then ``column_limit``, ``indent_width``,
+``continuation_indent_width``, then the rest alphabetized.
 
 Other Tables
 ~~~~~~~~~~~~
