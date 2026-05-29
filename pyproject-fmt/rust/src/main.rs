@@ -34,6 +34,7 @@ mod setuptools;
 #[cfg(test)]
 mod tests;
 mod tox;
+mod towncrier;
 mod uv;
 
 #[pyclass(frozen, get_all)]
@@ -193,6 +194,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     bandit::fix(&mut tables);
     maturin::fix(&mut tables);
     codespell::fix(&mut tables);
+    towncrier::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed

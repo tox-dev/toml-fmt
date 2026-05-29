@@ -25,6 +25,7 @@ mod pyright_tests;
 mod ruff_tests;
 mod setuptools_tests;
 mod tox_tests;
+mod towncrier_tests;
 mod uv_tests;
 
 pub fn collect_entries(tables: &common::table::Tables) -> Vec<SyntaxElement> {
