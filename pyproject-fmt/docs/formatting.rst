@@ -1134,6 +1134,12 @@ PEP8 auto-fixer. Order: length/indent → mode (``in-place``, ``recursive``, ``d
 Dependency checker. Order: scope/exclude → ignore rules → per-rule ignores → behavior → mapping. Sorted arrays
 cover all the ``ignore_*`` / ``exclude`` / ``requirements_files`` / ``pep621_dev_dependency_groups`` /
 ``known_first_party`` lists.
+``[tool.ty]``
+~~~~~~~~~~~~~
+
+Astral's type checker. Order: ``src`` → ``respect-ignore-files`` → ``environment`` → ``rules`` → ``terminal``
+→ ``overrides`` last. ``src`` array alphabetizes. Schema is still pre-1.0; unknown keys alphabetize after the
+canonical set.
 
 Other Tables
 ~~~~~~~~~~~~
