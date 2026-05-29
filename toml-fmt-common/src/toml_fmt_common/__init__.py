@@ -395,6 +395,9 @@ def _color_diff(diff: Iterable[str]) -> Iterable[str]:
 
     :param diff: the diff lines
     """
+    if "NO_COLOR" in os.environ:  # https://no-color.org
+        yield from diff
+        return
     for line in diff:
         if line.startswith("+"):
             yield f"{GREEN}{line}{RESET}"

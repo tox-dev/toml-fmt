@@ -6,7 +6,18 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from toml_fmt_common import GREEN, RED, RESET, ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, build_cli, run
+from toml_fmt_common import (
+    GREEN,
+    RED,
+    RESET,
+    ArgumentGroup,
+    FmtNamespace,
+    TOMLFormatter,
+    _build_cli,
+    _color_diff,
+    build_cli,
+    run,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -84,6 +95,11 @@ def test_dumb_format_with_override(capsys: pytest.CaptureFixture[str], tmp_path:
         " extra = 'B'",
         f"{GREEN}+extras = 'B'{RESET}",
     ]
+
+
+def test_color_diff_disabled_by_no_color(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert list(_color_diff(["+added", "-removed", " context"])) == ["+added", "-removed", " context"]
 
 
 def test_dumb_format_with_override_custom_type(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:

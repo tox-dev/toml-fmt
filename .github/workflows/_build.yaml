@@ -13,6 +13,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # our in-tree build_backend wraps maturin; silence its missing-backend warning
+  MATURIN_NO_MISSING_BUILD_BACKEND_WARNING: "1"
+
 jobs:
   bump:
     name: 🔖 bump
@@ -105,6 +109,14 @@ jobs:
             -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: 📦 Vendor toml-fmt-common into wheels
+        # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
+        run: uv run --no-project "$PACKAGE/build_backend.py" dist
+        shell: bash
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -140,6 +152,14 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: 📦 Vendor toml-fmt-common into wheels
+        # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
+        run: uv run --no-project "$PACKAGE/build_backend.py" dist
+        shell: bash
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -169,6 +189,14 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: 📦 Vendor toml-fmt-common into wheels
+        # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
+        run: uv run --no-project "$PACKAGE/build_backend.py" dist
+        shell: bash
+        env:
+          PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:

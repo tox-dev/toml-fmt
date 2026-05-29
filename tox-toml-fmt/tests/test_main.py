@@ -10,8 +10,6 @@ from tox_toml_fmt.__main__ import runner as run
 if TYPE_CHECKING:
     from pathlib import Path
 
-    from pytest_mock import MockerFixture
-
 
 @pytest.mark.parametrize(
     "in_place",
@@ -62,11 +60,10 @@ def test_main(
     outcome: str,
     output: str,
     monkeypatch: pytest.MonkeyPatch,
-    mocker: MockerFixture,
     cwd: bool,
     check: bool,
 ) -> None:
-    mocker.patch("toml_fmt_common._color_diff", lambda t: t)
+    monkeypatch.setenv("NO_COLOR", "1")
     if cwd:
         monkeypatch.chdir(tmp_path)
     pyproject_toml = tmp_path / "tox.toml"
