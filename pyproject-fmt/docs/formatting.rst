@@ -1089,6 +1089,16 @@ Path arrays alphabetize.
 python-semantic-release. Order: tag/version → assets → version source → repo → commit parser → branches →
 publish → changelog → remote. Sorted arrays: ``version_variables``, ``version_toml``, ``assets``,
 ``exclude_commit_patterns``.
+``[tool.scikit-build]``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+scikit-build-core (CMake builds for Python). Top-level order: meta keys (``minimum-version``, ``build-dir``,
+``fail``, ``experimental``, ``strict-config``) → ``build`` → ``cmake`` → ``ninja`` → ``sdist`` → ``wheel`` →
+``install`` → ``editable`` → ``logging`` / ``messages`` → ``metadata`` → ``search`` → ``generate`` AoT →
+``overrides`` AoT.
+
+**Sorted arrays:** ``include``, ``exclude``, ``packages``, ``files``, ``targets``, ``components``,
+``exclude-fields``. ``args`` and ``define`` (CLI argv for cmake/ninja) are preserved as written.
 
 Other Tables
 ~~~~~~~~~~~~
