@@ -874,6 +874,20 @@ and ``pythonpath`` is a search path with priority semantics.
     ini_options.addopts = [ "--strict-markers", "-ra" ]
     ini_options.markers = [ "fast: marks tests as fast", "slow: marks tests as slow" ]
     ini_options.log_cli_level = "INFO"
+``[tool.black]``
+~~~~~~~~~~~~~~~~
+
+Black's configuration is small but ubiquitous. Keys are ordered: ``required-version`` → ``target-version`` →
+``line-length`` → ``include`` / ``extend-exclude`` / ``force-exclude`` / ``exclude`` → behavior flags
+(``skip-string-normalization``, ``skip-magic-trailing-comma``, ``preview``, ``unstable``,
+``enable-unstable-feature``, ``fast``, ``workers``) → output (``color``, ``verbose``, ``quiet``).
+
+**Sorted arrays:**
+
+- ``target-version``: alphabetized so ``py39`` precedes ``py310`` etc.
+- ``enable-unstable-feature``: alphabetized.
+
+The ``include`` / ``exclude`` family are regex strings, not arrays, so they're left as-is.
 
 Other Tables
 ~~~~~~~~~~~~
