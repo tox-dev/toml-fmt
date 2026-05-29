@@ -1106,6 +1106,11 @@ bump-my-version / legacy bumpversion. Order: identity (``current_version``) → 
 ``search``, ``replace``, ``regex``, ``ignore_missing_*``) → tag (``tag``, ``sign_tags``, ``tag_name``,
 ``tag_message``) → commit (``allow_dirty``, ``commit``, ``commit_args``, ``message``, ``moveable_tags``) →
 behavior → ``files`` / ``parts`` AoT last.
+``[tool.interrogate]``
+~~~~~~~~~~~~~~~~~~~~~~
+
+Docstring coverage. Threshold → ignore flags → exclude → output. Sorted arrays: ``exclude``, ``extend-exclude``,
+``ignore-regex``.
 
 Other Tables
 ~~~~~~~~~~~~

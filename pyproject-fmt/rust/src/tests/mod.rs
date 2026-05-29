@@ -16,6 +16,7 @@ mod djlint_tests;
 mod global_tests;
 mod hatch_tests;
 mod isort_tests;
+mod interrogate_tests;
 mod main_tests;
 mod mypy_tests;
 mod pdm_tests;
