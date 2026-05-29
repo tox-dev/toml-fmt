@@ -46,6 +46,7 @@ mod scikit_build;
 mod tests;
 mod tox;
 mod towncrier;
+mod ty;
 mod uv;
 mod yapf;
 mod vulture;
@@ -221,6 +222,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     vulture::fix(&mut tables);
     autopep8::fix(&mut tables);
     deptry::fix(&mut tables);
+    ty::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
