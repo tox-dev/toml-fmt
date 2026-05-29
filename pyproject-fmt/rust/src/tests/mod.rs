@@ -8,6 +8,7 @@ mod build_systems_tests;
 mod commitizen_tests;
 mod cibuildwheel_tests;
 mod codespell_tests;
+mod check_manifest_tests;
 mod coverage_tests;
 mod dependency_groups_tests;
 mod djlint_tests;

@@ -18,6 +18,7 @@ mod black;
 mod cibuildwheel;
 mod bandit;
 mod codespell;
+mod check_manifest;
 mod coverage;
 mod djlint;
 mod global;
@@ -201,6 +202,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     pylint::fix(&mut tables);
     djlint::fix(&mut tables);
     yapf::fix(&mut tables);
+    check_manifest::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
