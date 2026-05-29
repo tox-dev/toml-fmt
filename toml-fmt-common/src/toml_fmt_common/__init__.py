@@ -246,7 +246,12 @@ def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callab
         metavar="path",
     )
 
-    format_group = parser.add_argument_group("formatting behavior")
+    # conflict_handler="resolve": released consumers (pyproject-fmt <=2.21.2) re-register
+    # these same flags in their add_format_flags, since 1.3.2 didn't define them here.
+    # Resolving lets the consumer's identical definition override ours instead of raising
+    # ArgumentError, so a fresh resolve of toml-fmt-common doesn't break them
+    # (tox-dev/toml-fmt#355).
+    format_group = parser.add_argument_group("formatting behavior", conflict_handler="resolve")
     format_group.add_argument(
         "--column-width",
         type=int,
