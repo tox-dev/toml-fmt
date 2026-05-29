@@ -9,6 +9,7 @@ mod coverage_tests;
 mod dependency_groups_tests;
 mod global_tests;
 mod hatch_tests;
+mod isort_tests;
 mod main_tests;
 mod mypy_tests;
 mod pixi_tests;

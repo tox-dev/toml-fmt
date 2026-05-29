@@ -1,0 +1,145 @@
+use common::array::sort_strings;
+use common::table::{for_entries, reorder_table_keys, Tables};
+use lexical_sort::natural_lexical_cmp;
+
+// profile leads since it sets defaults everything else overrides. sections, force_to_top,
+// and import_heading_* keep their input order, which drives output section sequencing.
+const KEY_ORDER: &[&str] = &[
+    "",
+    // Defaults / global
+    "profile",
+    "py_version",
+    "atomic",
+    "color_output",
+    "quiet",
+    "verbose",
+    // Output style
+    "line_length",
+    "wrap_length",
+    "indent",
+    "multi_line_output",
+    "balanced_wrapping",
+    "use_parentheses",
+    "include_trailing_comma",
+    "force_single_line",
+    "force_grid_wrap",
+    "single_line_exclusions",
+    "force_alphabetical_sort",
+    "force_alphabetical_sort_within_sections",
+    "force_sort_within_sections",
+    "force_to_top",
+    "lexicographical",
+    "length_sort",
+    "length_sort_straight",
+    "length_sort_sections",
+    "order_by_type",
+    "case_sensitive",
+    "reverse_relative",
+    "reverse_sort",
+    "sort_relative_in_force_sorted_sections",
+    "honor_case_in_force_sorted_sections",
+    "ensure_newline_before_comments",
+    "lines_after_imports",
+    "lines_before_imports",
+    "lines_between_sections",
+    "lines_between_types",
+    "split_on_trailing_comma",
+    "combine_as_imports",
+    "combine_star",
+    "no_inline_sort",
+    "from_first",
+    "float_to_top",
+    "honor_noqa",
+    "old_finders",
+    // Known sources
+    "sections",
+    "default_section",
+    "no_lines_before",
+    "known_standard_library",
+    "extra_standard_library",
+    "known_third_party",
+    "known_first_party",
+    "known_local_folder",
+    "known_other",
+    "namespace_packages",
+    "known_pattern",
+    // Forced separation
+    "forced_separate",
+    "treat_comments_as_code",
+    "treat_all_comments_as_code",
+    // Skip / include
+    "src_paths",
+    "skip",
+    "skip_glob",
+    "extend_skip",
+    "extend_skip_glob",
+    "skip_gitignore",
+    "supported_extensions",
+    "blocked_extensions",
+    // Imports add/remove/required
+    "add_imports",
+    "remove_imports",
+    "required_imports",
+    "append_only",
+    "dedup_headings",
+    // Section heading comments
+    "section_comments",
+    "import_heading_future",
+    "import_heading_stdlib",
+    "import_heading_thirdparty",
+    "import_heading_firstparty",
+    "import_heading_localfolder",
+    // Constants / variables
+    "constants",
+    "variables",
+    // Format / virtual envs / overrides
+    "format_error",
+    "format_success",
+    "virtual_env",
+    "conda_env",
+    // Output / cache
+    "filter_files",
+    "show_diff",
+    "show_files",
+    "check",
+    "stop",
+    "verbose_output",
+];
+
+// Set-semantics arrays only; order-sensitive keys (sections, force_to_top, *_imports,
+// no_lines_before) are excluded because they define section sequencing.
+const SORT_ARRAYS: &[&str] = &[
+    "known_standard_library",
+    "extra_standard_library",
+    "known_third_party",
+    "known_first_party",
+    "known_local_folder",
+    "known_other",
+    "namespace_packages",
+    "src_paths",
+    "skip",
+    "skip_glob",
+    "extend_skip",
+    "extend_skip_glob",
+    "supported_extensions",
+    "blocked_extensions",
+    "single_line_exclusions",
+    "forced_separate",
+    "treat_comments_as_code",
+    "treat_all_comments_as_code",
+    "constants",
+    "variables",
+];
+
+pub fn fix(tables: &mut Tables) {
+    let Some(elements) = tables.get("tool.isort") else {
+        return;
+    };
+    let table = &mut elements.first().unwrap().borrow_mut();
+    for_entries(table, &mut |key, entry| {
+        if SORT_ARRAYS.contains(&key.as_str()) {
+            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+        }
+    });
+    reorder_table_keys(table, KEY_ORDER);
+}
