@@ -599,6 +599,7 @@ source (``version``, ``version_scheme``, ``version_provider``, ``version_files``
 changelog → hooks (``pre_bump_hooks``, ``post_bump_hooks``) → ``customize``.
 
 **Sorted arrays:** ``version_files``, ``allowed_prefixes``, ``extras``, ``extra_files``.
+
 ``[tool.poetry]``
 ~~~~~~~~~~~~~~~~~
 
@@ -684,6 +685,7 @@ Inline tables that don't match any Poetry-specific schema (for example ``[[proje
     dependencies.foo = { git = "https://github.com/example/foo", branch = "main" }
     dependencies.zebra = "^1.0"
     source = [ { name = "private", url = "https://pypi.example.com/simple", priority = "primary" } ]
+
 ``[tool.mypy]``
 ~~~~~~~~~~~~~~~
 
@@ -760,6 +762,7 @@ expanded or collapsed.
     overrides = [
       { module = "third_party.*", ignore_missing_imports = true, disable_error_code = [ "attr-defined", "import-untyped" ] },
     ]
+
 ``[tool.setuptools]`` and ``[tool.setuptools_scm]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -841,6 +844,7 @@ and linker argv arrays).
     packages = [ "my_pkg" ]
     dynamic.readme = { file = "README.md", content-type = "text/markdown" }
     zip-safe = false
+
 ``[tool.pytest.ini_options]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -874,6 +878,7 @@ and ``pythonpath`` is a search path with priority semantics.
     ini_options.addopts = [ "--strict-markers", "-ra" ]
     ini_options.markers = [ "fast: marks tests as fast", "slow: marks tests as slow" ]
     ini_options.log_cli_level = "INFO"
+
 ``[tool.black]``
 ~~~~~~~~~~~~~~~~
 
@@ -888,6 +893,7 @@ Black's configuration is small but ubiquitous. Keys are ordered: ``required-vers
 - ``enable-unstable-feature``: alphabetized.
 
 The ``include`` / ``exclude`` family are regex strings, not arrays, so they're left as-is.
+
 ``[tool.hatch.*]``
 ~~~~~~~~~~~~~~~~~~
 
@@ -920,6 +926,7 @@ Hatch configuration spans many sub-tables. Keys at ``[tool.hatch]`` level (which
 
 ``scripts`` and ``env-vars`` sub-tables under each environment have their inner keys alphabetized. Build hook
 order and matrix entry order are preserved as written (both carry semantic meaning).
+
 ``[tool.isort]``
 ~~~~~~~~~~~~~~~~
 
@@ -939,6 +946,7 @@ heading comments.
 
 Order-sensitive arrays preserved as written: ``sections`` (output section sequence), ``no_lines_before``,
 ``add_imports``, ``remove_imports``, ``required_imports``, ``force_to_top``.
+
 ``[tool.pyright]`` and ``[tool.basedpyright]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -955,6 +963,7 @@ The ``report*`` rules (70+ in pyright; basedpyright adds more) are collected fro
 alphabetically rather than hardcoded, so new diagnostic rules don't require formatter changes.
 
 **Sorted arrays:** ``include``, ``exclude``, ``ignore``, ``extraPaths``, ``strict``.
+
 ``[tool.pdm.*]``
 ~~~~~~~~~~~~~~~~
 
@@ -973,6 +982,7 @@ scripts → source → dev-dependencies → publish → options.
 **Sorted arrays:** ``plugins``, ``build.includes``, ``build.excludes``, ``build.source-includes``,
 ``resolution.excludes``, every ``dev-dependencies.<group>`` value array, and ``include_packages`` /
 ``exclude_packages`` inside source entries.
+
 ``[tool.cibuildwheel]``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -992,6 +1002,7 @@ overrides win).
 
 Most other array-valued keys (``test-requires``, ``before-all``, ``test-command``, the various ``environment*``
 fields) are CLI argv or ordered lists and are preserved as written.
+
 ``[tool.tox]``
 ~~~~~~~~~~~~~~
 
@@ -1004,6 +1015,7 @@ canonical key ordering for the root table and every env table, PEP 508 requireme
 
 See the ``tox-toml-fmt`` documentation for the full schema and per-key behavior; the only difference here is the
 namespace (``tool.tox`` instead of the root table).
+
 ``[tool.bandit]``
 ~~~~~~~~~~~~~~~~~
 
@@ -1011,6 +1023,7 @@ Top-level ordering: ``exclude_dirs`` → ``targets`` → ``tests`` → ``skips``
 (``assert_used``, ``hardcoded_tmp_directory``, etc.).
 
 All array values alphabetize (rule IDs, directory paths, function-name lists — all set semantics).
+
 ``[tool.maturin]``
 ~~~~~~~~~~~~~~~~~~
 
@@ -1023,6 +1036,7 @@ Maturin builds Rust extensions for Python. Top-level ordering: module identity (
 
 **Sorted arrays:** ``python-packages``, ``include``, ``exclude``, ``sdist-include``, ``features`` (all
 set-semantics). ``cargo-extra-args`` / ``rustc-extra-args`` are CLI argv and preserved.
+
 ``[tool.codespell]``
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -1032,6 +1046,7 @@ Top-level ordering: dictionaries (``builtin``, ``dictionary``, ``ignore-words``,
 ``interactive``, ``enable-colors``, ``disable-colors``) → output (``count``, ``quiet-level``, ``summary``).
 
 **Sorted arrays:** ``builtin``, ``dictionary``, ``skip``, ``ignore-words-list``, ``uri-ignore-words-list``.
+
 ``[tool.towncrier]``
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -1045,6 +1060,7 @@ Top-level ordering: package identity (``name``, ``version``, ``package``, ``pack
 (display order in the rendered changelog).
 
 **Sorted arrays:** ``ignore`` (file globs to skip).
+
 ``[tool.pylint.*]``
 ~~~~~~~~~~~~~~~~~~~
 
@@ -1061,21 +1077,25 @@ Sub-table order: ``main`` (and legacy alias ``master``) → ``messages_control``
 ``known-third-party``, ``known-standard-library``, ``allowed-modules``, ``expected-line-ending-format``,
 ``overgeneral-exceptions``, ``defining-attr-methods``, ``exclude-protected``. Match is on the leaf key name
 regardless of which sub-table it appears in.
+
 ``[tool.djlint]``
 ~~~~~~~~~~~~~~~~~
 
 Profile/scope → formatting → linting → ignores → output. **Sorted arrays:** ``exclude``, ``extend_exclude``,
 ``custom_blocks``, ``custom_html``, ``ignore``, ``ignore_blocks``.
+
 ``[tool.yapf]``
 ~~~~~~~~~~~~~~~
 
 Single flat table. ``based_on_style`` first (it sets defaults), then ``column_limit``, ``indent_width``,
 ``continuation_indent_width``, then the rest alphabetized.
+
 ``[tool.check-manifest]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``ignore`` → ``ignore-bad-ideas`` → ``ignore-default-rules``. Both ``ignore`` and ``ignore-bad-ideas`` (file-glob
 lists) alphabetize.
+
 ``[tool.pyrefly]``
 ~~~~~~~~~~~~~~~~~~
 
@@ -1083,12 +1103,14 @@ Meta's type checker. Order: ``python_version`` → ``python_platform`` → ``pyt
 ``project_includes`` → ``project_excludes`` → ``search_path`` → ``site_package_path`` →
 ``use_untyped_imports`` → ``replace_imports_with_any`` → ``ignore_errors_in_generated_code`` → ``errors``.
 Path arrays alphabetize.
+
 ``[tool.semantic_release]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 python-semantic-release. Order: tag/version → assets → version source → repo → commit parser → branches →
 publish → changelog → remote. Sorted arrays: ``version_variables``, ``version_toml``, ``assets``,
 ``exclude_commit_patterns``.
+
 ``[tool.scikit-build]``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1099,6 +1121,7 @@ scikit-build-core (CMake builds for Python). Top-level order: meta keys (``minim
 
 **Sorted arrays:** ``include``, ``exclude``, ``packages``, ``files``, ``targets``, ``components``,
 ``exclude-fields``. ``args`` and ``define`` (CLI argv for cmake/ninja) are preserved as written.
+
 ``[tool.bumpversion]``
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1106,34 +1129,40 @@ bump-my-version / legacy bumpversion. Order: identity (``current_version``) → 
 ``search``, ``replace``, ``regex``, ``ignore_missing_*``) → tag (``tag``, ``sign_tags``, ``tag_name``,
 ``tag_message``) → commit (``allow_dirty``, ``commit``, ``commit_args``, ``message``, ``moveable_tags``) →
 behavior → ``files`` / ``parts`` AoT last.
+
 ``[tool.interrogate]``
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Docstring coverage. Threshold → ignore flags → exclude → output. Sorted arrays: ``exclude``, ``extend-exclude``,
 ``ignore-regex``.
+
 ``[tool.docformatter]``
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 Docstring formatter. Order: behavior (``in-place``, ``recursive``, ``check``, ``diff``, ``black``, ``pep257``,
 ``non-strict``) → format width (``line-length``, ``wrap-summaries``, ``wrap-descriptions``, ``tab-width``) →
 wrap/summary tweaks → other.
+
 ``[tool.vulture]``
 ~~~~~~~~~~~~~~~~~~
 
 Dead-code finder. Order: paths → ignore (``exclude``, ``ignore_names``, ``ignore_decorators``) → behavior
 (``make_whitelist``, ``min_confidence``, ``sort_by_size``) → output (``verbose``). Sorted arrays: ``paths``,
 ``exclude``, ``ignore_names``, ``ignore_decorators``.
+
 ``[tool.autopep8]``
 ~~~~~~~~~~~~~~~~~~~
 
 PEP8 auto-fixer. Order: length/indent → mode (``in-place``, ``recursive``, ``diff``, ``list-fixes``) → rules
 (``ignore``, ``select``, ``exclude``) → behavior. Sorted arrays: ``ignore``, ``select``, ``exclude``.
+
 ``[tool.deptry]``
 ~~~~~~~~~~~~~~~~~
 
 Dependency checker. Order: scope/exclude → ignore rules → per-rule ignores → behavior → mapping. Sorted arrays
 cover all the ``ignore_*`` / ``exclude`` / ``requirements_files`` / ``pep621_dev_dependency_groups`` /
 ``known_first_party`` lists.
+
 ``[tool.ty]``
 ~~~~~~~~~~~~~
 
