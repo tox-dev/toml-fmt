@@ -29,6 +29,7 @@ mod pixi;
 mod poetry;
 mod pytest;
 mod pyright;
+mod pylint;
 mod ruff;
 mod setuptools;
 #[cfg(test)]
@@ -195,6 +196,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     maturin::fix(&mut tables);
     codespell::fix(&mut tables);
     towncrier::fix(&mut tables);
+    pylint::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
