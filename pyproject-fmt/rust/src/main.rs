@@ -28,6 +28,7 @@ mod hatch;
 mod isort;
 mod pdm;
 mod maturin;
+mod interrogate;
 mod pixi;
 mod poetry;
 mod pytest;
@@ -211,6 +212,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     semantic_release::fix(&mut tables);
     scikit_build::fix(&mut tables);
     bumpversion::fix(&mut tables);
+    interrogate::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
