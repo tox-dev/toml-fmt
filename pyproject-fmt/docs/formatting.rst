@@ -1117,6 +1117,12 @@ Docstring coverage. Threshold → ignore flags → exclude → output. Sorted ar
 Docstring formatter. Order: behavior (``in-place``, ``recursive``, ``check``, ``diff``, ``black``, ``pep257``,
 ``non-strict``) → format width (``line-length``, ``wrap-summaries``, ``wrap-descriptions``, ``tab-width``) →
 wrap/summary tweaks → other.
+``[tool.vulture]``
+~~~~~~~~~~~~~~~~~~
+
+Dead-code finder. Order: paths → ignore (``exclude``, ``ignore_names``, ``ignore_decorators``) → behavior
+(``make_whitelist``, ``min_confidence``, ``sort_by_size``) → output (``verbose``). Sorted arrays: ``paths``,
+``exclude``, ``ignore_names``, ``ignore_decorators``.
 
 Other Tables
 ~~~~~~~~~~~~

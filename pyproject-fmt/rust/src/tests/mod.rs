@@ -37,6 +37,7 @@ mod semantic_release_tests;
 mod scikit_build_tests;
 mod uv_tests;
 mod yapf_tests;
+mod vulture_tests;
 
 pub fn collect_entries(tables: &common::table::Tables) -> Vec<SyntaxElement> {
     tables.table_set.iter().flat_map(|e| e.borrow().clone()).collect()
