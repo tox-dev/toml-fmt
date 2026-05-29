@@ -939,6 +939,22 @@ heading comments.
 
 Order-sensitive arrays preserved as written: ``sections`` (output section sequence), ``no_lines_before``,
 ``add_imports``, ``remove_imports``, ``required_imports``, ``force_to_top``.
+``[tool.pyright]`` and ``[tool.basedpyright]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Both type checkers share the same configuration schema. Keys are ordered: platform/interpreter
+(``pythonVersion`` → ``pythonPlatform`` → ``pythonPath`` → ``venv`` → ``venvPath`` → ``typeshedPath`` →
+``stubPath``) → mode flags (``typeCheckingMode`` → ``strict`` → ``failOnWarnings`` →
+``useLibraryCodeForTypes``) → paths (``include`` → ``exclude`` → ``ignore`` → ``extraPaths``) → strict-flavor
+toggles (``strictListInference``, ``strictDictionaryInference``, ``strictSetInference``,
+``strictParameterNoneValue``, ``enableExperimentalFeatures``, ``enableTypeIgnoreComments``,
+``analyzeUnannotatedFunctions``, ``disableBytesTypePromotions``, ``deprecateTypingAliases``) →
+``defineConstant`` → **all ``report*`` rules alphabetized** → ``executionEnvironments`` (last).
+
+The ``report*`` rules (70+ in pyright; basedpyright adds more) are collected from the input and inserted
+alphabetically rather than hardcoded, so new diagnostic rules don't require formatter changes.
+
+**Sorted arrays:** ``include``, ``exclude``, ``ignore``, ``extraPaths``, ``strict``.
 
 Other Tables
 ~~~~~~~~~~~~

@@ -23,6 +23,7 @@ mod isort;
 mod pixi;
 mod poetry;
 mod pytest;
+mod pyright;
 mod ruff;
 mod setuptools;
 #[cfg(test)]
@@ -179,6 +180,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     black::fix(&mut tables);
     hatch::fix(&mut tables);
     isort::fix(&mut tables);
+    pyright::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
