@@ -3,6 +3,7 @@ use tombi_syntax::SyntaxElement;
 pub use common::test_util::{assert_valid_toml, format_syntax, format_toml_str, parse};
 
 mod black_tests;
+mod bandit_tests;
 mod build_systems_tests;
 mod commitizen_tests;
 mod cibuildwheel_tests;
