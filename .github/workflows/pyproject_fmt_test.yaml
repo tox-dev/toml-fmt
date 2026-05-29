@@ -153,6 +153,9 @@ jobs:
       - name: 📝 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
+      - name: 📝 Generate tox-toml-fmt README.rst
+        run: tox run -e readme
+        working-directory: tox-toml-fmt
       - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.py }}
       - name: ✅ Run tests
@@ -191,6 +194,9 @@ jobs:
       - name: 📝 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
+      - name: 📝 Generate tox-toml-fmt README.rst
+        run: tox run -e readme
+        working-directory: tox-toml-fmt
       - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
       - name: ✅ Run tests
