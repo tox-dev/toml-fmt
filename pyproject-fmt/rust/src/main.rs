@@ -35,6 +35,7 @@ mod pylint;
 mod pyrefly;
 mod ruff;
 mod setuptools;
+mod semantic_release;
 #[cfg(test)]
 mod tests;
 mod tox;
@@ -205,6 +206,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     yapf::fix(&mut tables);
     check_manifest::fix(&mut tables);
     pyrefly::fix(&mut tables);
+    semantic_release::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
