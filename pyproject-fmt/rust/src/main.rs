@@ -14,6 +14,7 @@ mod dependency_groups;
 mod project;
 
 mod commitizen;
+mod black;
 mod coverage;
 mod global;
 mod mypy;
@@ -173,6 +174,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     mypy::fix(&mut tables);
     setuptools::fix(&mut tables);
     pytest::fix(&mut tables);
+    black::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
