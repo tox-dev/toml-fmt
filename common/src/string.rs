@@ -12,7 +12,9 @@ fn is_string_kind(kind: SyntaxKind) -> bool {
     )
 }
 
-use crate::create::{make_literal_string_node, make_multiline_string_node, make_string_node};
+use crate::create::{
+    make_literal_string_node, make_multiline_literal_string_node, make_multiline_string_node, make_string_node,
+};
 
 fn escape(text: &str) -> String {
     let escaped = tombi_toml_text::to_basic_string(text);
@@ -120,6 +122,13 @@ fn matches_pattern(key_path: &str, pattern: &str) -> bool {
 
 fn can_use_literal_string(s: &str) -> bool {
     !s.contains('\'') && !s.chars().any(|c| c.is_control() && c != '\t')
+}
+
+/// Triple-literal `'''...'''` strings preserve everything verbatim except they must not
+/// contain the closing delimiter `'''`. Newlines, tabs, and CR are explicitly allowed
+/// (they are the whole reason to use a multi-line form).
+fn can_use_multiline_literal_string(s: &str) -> bool {
+    !s.contains("'''") && !s.chars().any(|c| c.is_control() && c != '\n' && c != '\r' && c != '\t')
 }
 
 fn make_multiline_string_preserving_newlines(text: &str) -> String {
@@ -391,15 +400,24 @@ fn wrap_string_node_if_needed(
         .iter()
         .any(|pattern| matches_pattern(&key_path, pattern));
 
-    let use_literal = text.contains('"') && can_use_literal_string(&text);
+    let has_newlines = text.contains('\n');
+    // A multi-line literal source like `'''(\n  \.eggs\n  | \.git\n)'''` cannot be
+    // re-emitted as triple-basic without escaping every `\`. Preserve the literal form
+    // whenever it is still valid: the source was literal and the text has no `'''`
+    // (or no `'` for single-line) and no disallowed control chars.
+    let literal_safe = if is_multiline {
+        can_use_multiline_literal_string(&text)
+    } else {
+        can_use_literal_string(&text)
+    };
+    let use_literal = literal_safe && (is_literal || text.contains('"'));
     let quote_style_change = is_literal != use_literal;
-    let multiline_to_single = is_multiline && !text.contains('\n');
+    let multiline_to_single = is_multiline && !has_newlines;
 
     let escaped_len = escape(&text).len() + 2;
     let key_prefix_len = get_key_prefix_len(string_node);
     let total_line_len = key_prefix_len + escaped_len;
     let in_inline_table = is_inside_inline_table(string_node);
-    let has_newlines = text.contains('\n');
     let preserve_newlines = (is_multiline && has_newlines) || skip_wrap;
     let needs_wrap = total_line_len > column_width && !in_inline_table && !preserve_newlines;
 
@@ -407,7 +425,11 @@ fn wrap_string_node_if_needed(
     let changed = quote_style_change || multiline_to_single || needs_wrap || single_to_multiline;
     if changed {
         let new_element = if preserve_newlines {
-            make_multiline_string_node(&make_multiline_string_preserving_newlines(&text))
+            if use_literal {
+                make_multiline_literal_string_node(&text)
+            } else {
+                make_multiline_string_node(&make_multiline_string_preserving_newlines(&text))
+            }
         } else if needs_wrap {
             make_wrapped_string_node(&text, column_width, indent)
         } else if use_literal {
