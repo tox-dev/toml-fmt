@@ -21,6 +21,7 @@ mod pytest_tests;
 mod pyright_tests;
 mod ruff_tests;
 mod setuptools_tests;
+mod tox_tests;
 mod uv_tests;
 
 pub fn collect_entries(tables: &common::table::Tables) -> Vec<SyntaxElement> {

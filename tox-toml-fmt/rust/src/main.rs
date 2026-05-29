@@ -1,8 +1,11 @@
 use std::collections::HashSet;
 use std::string::String;
 
+#[cfg(feature = "extension-module")]
 use pyo3::prelude::{PyModule, PyModuleMethods};
-use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
+use pyo3::{pyclass, pymethods};
+#[cfg(feature = "extension-module")]
+use pyo3::{pyfunction, pymodule, wrap_pyfunction, Bound, PyResult, Python};
 
 use tombi_config::TomlVersion;
 use tombi_syntax::SyntaxKind::KEY_VALUE;
@@ -13,7 +16,7 @@ use crate::global::{
 use common::array::ensure_all_arrays_multiline;
 use common::table::{apply_table_formatting, count_unquoted_dots, first_unquoted_dot, split_table_name, Tables};
 
-mod global;
+pub mod global;
 #[cfg(test)]
 mod tests;
 
@@ -105,6 +108,7 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
     formatter.format(content).await.unwrap_or_else(|_| content.to_string())
 }
 
+#[cfg(feature = "extension-module")]
 #[pyfunction]
 #[pyo3(name = "format_toml")]
 fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
@@ -189,6 +193,9 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
 /// # Errors
 ///
 /// Will return `PyErr` if an error is raised during formatting.
+// Gated so sibling crates (pyproject-fmt) that pull this in as an rlib don't get a
+// duplicate `PyInit__lib` symbol from pyo3 at link time.
+#[cfg(feature = "extension-module")]
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {

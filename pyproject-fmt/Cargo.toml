@@ -13,6 +13,10 @@ crate-type = ["cdylib"]
 
 [dependencies]
 common = {path = "../common" }
+# Sibling crate, pulled in as a library so the [tool.tox] handler shares one source of
+# truth with the standalone tox.toml formatter. Default features disabled so the linked
+# copy here doesn't pull in pyo3's `extension-module` and double-link Python symbols.
+tox-toml-fmt = { path = "../tox-toml-fmt", default-features = false }
 regex = { version = "1.12.3" }
 pyo3 = { version = "0.28.3", features = ["generate-import-lib"] } # integration with Python
 lexical-sort = { version = "0.3.1" }

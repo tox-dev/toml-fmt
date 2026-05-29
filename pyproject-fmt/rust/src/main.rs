@@ -30,6 +30,7 @@ mod ruff;
 mod setuptools;
 #[cfg(test)]
 mod tests;
+mod tox;
 mod uv;
 
 #[pyclass(frozen, get_all)]
@@ -185,6 +186,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     pyright::fix(&mut tables);
     pdm::fix(&mut tables);
     cibuildwheel::fix(&mut tables);
+    tox::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
@@ -195,6 +197,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     // into inline-array form via reorder_tables.
     mypy::reorder_inline_tables(&root_ast);
     setuptools::reorder_inline_tables(&root_ast);
+    tox::reorder_inline_tables(&root_ast);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
     common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
 
