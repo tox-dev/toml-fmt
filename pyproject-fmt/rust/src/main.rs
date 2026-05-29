@@ -13,6 +13,7 @@ mod build_system;
 mod dependency_groups;
 mod project;
 
+mod commitizen;
 mod coverage;
 mod global;
 mod pixi;
@@ -163,6 +164,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     ruff::fix(&mut tables);
     uv::fix(&mut tables);
     pixi::fix(&mut tables);
+    commitizen::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     ensure_all_arrays_multiline(&root_ast, opt.column_width);
