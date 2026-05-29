@@ -955,6 +955,24 @@ The ``report*`` rules (70+ in pyright; basedpyright adds more) are collected fro
 alphabetically rather than hardcoded, so new diagnostic rules don't require formatter changes.
 
 **Sorted arrays:** ``include``, ``exclude``, ``ignore``, ``extraPaths``, ``strict``.
+``[tool.pdm.*]``
+~~~~~~~~~~~~~~~~
+
+Covers PDM. Top-level ordering: distribution / package-type / plugins → resolution → version → build →
+scripts → source → dev-dependencies → publish → options.
+
+**Sub-table ordering** (collapsed to dotted keys):
+
+- ``version``: ``source`` → ``path`` → ``getter`` → ``write_to`` → ``write_template`` → ``tag_regex`` →
+  ``tag_filter`` → ``fallback_version`` → ``version_format``.
+- ``build``: ``includes`` → ``excludes`` → ``source-includes`` → ``package-dir`` → ``is-purelib`` →
+  ``run-setuptools`` → ``custom-hook`` → ``editable-backend``.
+- ``[[tool.pdm.source]]`` (AoT, preserve array order): per-entry ``name`` → ``url`` → ``type`` →
+  ``verify_ssl`` → ``include_packages`` → ``exclude_packages``.
+
+**Sorted arrays:** ``plugins``, ``build.includes``, ``build.excludes``, ``build.source-includes``,
+``resolution.excludes``, every ``dev-dependencies.<group>`` value array, and ``include_packages`` /
+``exclude_packages`` inside source entries.
 
 Other Tables
 ~~~~~~~~~~~~
