@@ -1099,6 +1099,13 @@ scikit-build-core (CMake builds for Python). Top-level order: meta keys (``minim
 
 **Sorted arrays:** ``include``, ``exclude``, ``packages``, ``files``, ``targets``, ``components``,
 ``exclude-fields``. ``args`` and ``define`` (CLI argv for cmake/ninja) are preserved as written.
+``[tool.bumpversion]``
+~~~~~~~~~~~~~~~~~~~~~~
+
+bump-my-version / legacy bumpversion. Order: identity (``current_version``) → format (``parse``, ``serialize``,
+``search``, ``replace``, ``regex``, ``ignore_missing_*``) → tag (``tag``, ``sign_tags``, ``tag_name``,
+``tag_message``) → commit (``allow_dirty``, ``commit``, ``commit_args``, ``message``, ``moveable_tags``) →
+behavior → ``files`` / ``parts`` AoT last.
 
 Other Tables
 ~~~~~~~~~~~~

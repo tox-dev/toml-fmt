@@ -9,6 +9,7 @@ mod commitizen_tests;
 mod cibuildwheel_tests;
 mod codespell_tests;
 mod check_manifest_tests;
+mod bumpversion_tests;
 mod coverage_tests;
 mod dependency_groups_tests;
 mod djlint_tests;
