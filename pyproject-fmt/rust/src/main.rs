@@ -24,6 +24,7 @@ mod autopep8;
 mod coverage;
 mod djlint;
 mod docformatter;
+mod deptry;
 mod global;
 mod mypy;
 mod hatch;
@@ -219,6 +220,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     docformatter::fix(&mut tables);
     vulture::fix(&mut tables);
     autopep8::fix(&mut tables);
+    deptry::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed

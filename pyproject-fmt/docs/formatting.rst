@@ -1128,6 +1128,12 @@ Dead-code finder. Order: paths → ignore (``exclude``, ``ignore_names``, ``igno
 
 PEP8 auto-fixer. Order: length/indent → mode (``in-place``, ``recursive``, ``diff``, ``list-fixes``) → rules
 (``ignore``, ``select``, ``exclude``) → behavior. Sorted arrays: ``ignore``, ``select``, ``exclude``.
+``[tool.deptry]``
+~~~~~~~~~~~~~~~~~
+
+Dependency checker. Order: scope/exclude → ignore rules → per-rule ignores → behavior → mapping. Sorted arrays
+cover all the ``ignore_*`` / ``exclude`` / ``requirements_files`` / ``pep621_dev_dependency_groups`` /
+``known_first_party`` lists.
 
 Other Tables
 ~~~~~~~~~~~~
