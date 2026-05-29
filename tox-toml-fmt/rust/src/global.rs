@@ -15,19 +15,37 @@ use common::table::{
     Tables,
 };
 
-fn is_env_table(key: &str) -> bool {
-    key == "env_run_base"
-        || key == "env_pkg_base"
-        || (key.starts_with("env.") && count_unquoted_dots(key) == 1)
-        || (key.starts_with("env_base.") && count_unquoted_dots(key) == 1)
+/// Strips `<prefix>.` from `key` and returns the relative key. When `prefix` is empty
+/// returns the key unchanged. Returns `None` when `key` is outside the prefix scope.
+fn strip_prefix<'a>(key: &'a str, prefix: &str) -> Option<&'a str> {
+    if prefix.is_empty() {
+        Some(key)
+    } else if key == prefix {
+        Some("")
+    } else {
+        key.strip_prefix(prefix).and_then(|rest| rest.strip_prefix('.'))
+    }
 }
 
-fn env_tables(tables: &Tables) -> Vec<(&String, Vec<&RefCell<Vec<SyntaxElement>>>)> {
+fn is_env_table(key: &str, prefix: &str) -> bool {
+    let Some(rel) = strip_prefix(key, prefix) else {
+        return false;
+    };
+    rel == "env_run_base"
+        || rel == "env_pkg_base"
+        || (rel.starts_with("env.") && count_unquoted_dots(rel) == 1)
+        || (rel.starts_with("env_base.") && count_unquoted_dots(rel) == 1)
+}
+
+fn env_tables<'a>(tables: &'a Tables, prefix: &str) -> Vec<(&'a String, Vec<&'a RefCell<Vec<SyntaxElement>>>)> {
     tables
         .header_to_pos
         .keys()
-        .filter(|k| is_env_table(k))
-        .map(|k| (k, tables.get(k).unwrap()))
+        .filter(|k| is_env_table(k, prefix))
+        // After collapse the sub-table cells can be empty; `Tables::get` returns None in
+        // that case. Skip those entries instead of unwrapping (the collapsed content is
+        // already living under the parent table and gets handled there).
+        .filter_map(|k| tables.get(k).map(|v| (k, v)))
         .collect()
 }
 
@@ -133,12 +151,16 @@ const ENV_KEY_ORDER: &[&str] = &[
 ];
 
 pub fn normalize_aliases(tables: &Tables) {
-    if let Some(root_tables) = tables.get("") {
+    normalize_aliases_with_prefix(tables, "");
+}
+
+pub fn normalize_aliases_with_prefix(tables: &Tables, prefix: &str) {
+    if let Some(root_tables) = tables.get(prefix) {
         for table_ref in root_tables {
             rename_keys(&mut table_ref.borrow_mut(), ROOT_ALIASES);
         }
     }
-    for (_key, table_refs) in env_tables(tables) {
+    for (_key, table_refs) in env_tables(tables, prefix) {
         for table_ref in table_refs {
             rename_keys(&mut table_ref.borrow_mut(), ENV_ALIASES);
         }
@@ -146,7 +168,11 @@ pub fn normalize_aliases(tables: &Tables) {
 }
 
 pub fn fix_root(tables: &Tables) {
-    let Some(root_tables) = tables.get("") else {
+    fix_root_with_prefix(tables, "");
+}
+
+pub fn fix_root_with_prefix(tables: &Tables, prefix: &str) {
+    let Some(root_tables) = tables.get(prefix) else {
         return;
     };
     for table_ref in root_tables {
@@ -166,7 +192,11 @@ pub fn fix_root(tables: &Tables) {
 }
 
 pub fn fix_envs(tables: &Tables) {
-    for (_key, table_refs) in env_tables(tables) {
+    fix_envs_with_prefix(tables, "");
+}
+
+pub fn fix_envs_with_prefix(tables: &Tables, prefix: &str) {
+    for (_key, table_refs) in env_tables(tables, prefix) {
         for table_ref in table_refs {
             let table = &mut table_ref.borrow_mut();
             upgrade_use_develop(table);
@@ -303,7 +333,11 @@ fn classify_env_part(part: &str) -> Option<(i32, i32, i32)> {
 }
 
 pub fn sort_env_list(tables: &Tables, pin_envs: &[String]) {
-    let Some(root_tables) = tables.get("") else {
+    sort_env_list_with_prefix(tables, pin_envs, "");
+}
+
+pub fn sort_env_list_with_prefix(tables: &Tables, pin_envs: &[String], prefix: &str) {
+    let Some(root_tables) = tables.get(prefix) else {
         return;
     };
     for table_ref in root_tables {
@@ -372,9 +406,18 @@ pub fn normalize_strings(tables: &Tables) {
 }
 
 fn get_env_list_order(tables: &Tables) -> Vec<String> {
-    let mut env_order = Vec::new();
+    get_env_list_order_with_prefix(tables, "")
+}
 
-    if let Some(root_tables) = tables.get("") {
+fn get_env_list_order_with_prefix(tables: &Tables, prefix: &str) -> Vec<String> {
+    let mut env_order = Vec::new();
+    let env_prefix = if prefix.is_empty() {
+        String::from("env.")
+    } else {
+        format!("{prefix}.env.")
+    };
+
+    if let Some(root_tables) = tables.get(prefix) {
         for table_ref in root_tables {
             let table = table_ref.borrow();
             for_entries(&table, &mut |key, entry| {
@@ -382,12 +425,12 @@ fn get_env_list_order(tables: &Tables) -> Vec<String> {
                     for array_child in entry.children_with_tokens() {
                         if array_child.kind() == BASIC_STRING {
                             let env_name = load_text(&array_child.to_string(), BASIC_STRING);
-                            env_order.push(format!("env.{env_name}"));
+                            env_order.push(format!("{env_prefix}{env_name}"));
                         } else if array_child.kind() == VALUE_WITH_COMMA_GROUP {
                             for inner in array_child.as_node().unwrap().children_with_tokens() {
                                 if inner.kind() == BASIC_STRING {
                                     let env_name = load_text(&inner.to_string(), BASIC_STRING);
-                                    env_order.push(format!("env.{env_name}"));
+                                    env_order.push(format!("{env_prefix}{env_name}"));
                                 }
                             }
                         }

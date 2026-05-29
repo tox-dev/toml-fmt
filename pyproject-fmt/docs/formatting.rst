@@ -992,6 +992,18 @@ overrides win).
 
 Most other array-valued keys (``test-requires``, ``before-all``, ``test-command``, the various ``environment*``
 fields) are CLI argv or ordered lists and are preserved as written.
+``[tool.tox]``
+~~~~~~~~~~~~~~
+
+Reuses the rules from ``tox-toml-fmt`` so a ``[tool.tox]`` block in ``pyproject.toml`` is formatted identically to a
+standalone ``tox.toml``: alias normalization (``envlist`` → ``env_list``, ``setenv`` → ``set_env``, etc.),
+canonical key ordering for the root table and every env table, PEP 508 requirement normalization and sorting in
+``deps`` and ``constraints``, sorted ``pass_env`` (inline-table entries first), version-aware ``env_list`` sorting
+(``py313`` before ``py312`` before ``py311``), and inline-table reordering for ``replace``, ``prefix``,
+``product``, and ``value`` directives.
+
+See the ``tox-toml-fmt`` documentation for the full schema and per-key behavior; the only difference here is the
+namespace (``tool.tox`` instead of the root table).
 
 Other Tables
 ~~~~~~~~~~~~

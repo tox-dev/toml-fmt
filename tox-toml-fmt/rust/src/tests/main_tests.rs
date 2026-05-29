@@ -421,6 +421,7 @@ fn test_format_toml_with_direct_settings() {
     assert!(result.contains("\"b\""));
 }
 
+#[cfg(feature = "extension-module")]
 #[test]
 fn test_lib_module_registration() {
     use pyo3::types::PyAnyMethods;
