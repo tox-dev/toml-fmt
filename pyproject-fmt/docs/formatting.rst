@@ -591,6 +591,15 @@ Report phase:
     report.omit = ["tests/*"]
     report.exclude_also = ["if TYPE_CHECKING:"]
 
+``[tool.commitizen]``
+~~~~~~~~~~~~~~~~~~~~~
+
+Top-level ordering: rule selection (``name``, ``schema``, ``schema_pattern``, ``allowed_prefixes``) → version
+source (``version``, ``version_scheme``, ``version_provider``, ``version_files``) → bump behavior → tag/sign →
+changelog → hooks (``pre_bump_hooks``, ``post_bump_hooks``) → ``customize``.
+
+**Sorted arrays:** ``version_files``, ``allowed_prefixes``, ``extras``, ``extra_files``.
+
 Other Tables
 ~~~~~~~~~~~~
 
