@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from toml_fmt_common import GREEN, RED, RESET, ArgumentGroup, FmtNamespace, TOMLFormatter, run
+from toml_fmt_common import GREEN, RED, RESET, ArgumentGroup, FmtNamespace, TOMLFormatter, _build_cli, build_cli, run
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -482,3 +482,9 @@ def test_shared_args_config_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert fmt.last_format_opt.table_format == "long"
     assert fmt.last_format_opt.sub_table_spacing == "\n"
     assert fmt.last_format_opt.expand_tables == ["x", "y"]
+
+
+def test_build_cli_underscore_alias_preserved() -> None:
+    # _build_cli is the pre-1.3.3 name every released pyproject-fmt/tox-toml-fmt imports;
+    # dropping it breaks those wheels on a fresh resolve (tox-dev/toml-fmt#355).
+    assert _build_cli is build_cli
