@@ -1083,6 +1083,12 @@ Meta's type checker. Order: ``python_version`` → ``python_platform`` → ``pyt
 ``project_includes`` → ``project_excludes`` → ``search_path`` → ``site_package_path`` →
 ``use_untyped_imports`` → ``replace_imports_with_any`` → ``ignore_errors_in_generated_code`` → ``errors``.
 Path arrays alphabetize.
+``[tool.semantic_release]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+python-semantic-release. Order: tag/version → assets → version source → repo → commit parser → branches →
+publish → changelog → remote. Sorted arrays: ``version_variables``, ``version_toml``, ``assets``,
+``exclude_commit_patterns``.
 
 Other Tables
 ~~~~~~~~~~~~
