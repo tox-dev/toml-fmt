@@ -31,6 +31,7 @@ mod setuptools_tests;
 mod tox_tests;
 mod towncrier_tests;
 mod semantic_release_tests;
+mod scikit_build_tests;
 mod uv_tests;
 mod yapf_tests;
 
