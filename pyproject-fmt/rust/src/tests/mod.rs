@@ -25,6 +25,7 @@ mod project_tests;
 mod pytest_tests;
 mod pyright_tests;
 mod pylint_tests;
+mod pyrefly_tests;
 mod ruff_tests;
 mod setuptools_tests;
 mod tox_tests;

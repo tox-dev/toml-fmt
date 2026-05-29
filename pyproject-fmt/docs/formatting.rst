@@ -1076,6 +1076,13 @@ Single flat table. ``based_on_style`` first (it sets defaults), then ``column_li
 
 ``ignore`` → ``ignore-bad-ideas`` → ``ignore-default-rules``. Both ``ignore`` and ``ignore-bad-ideas`` (file-glob
 lists) alphabetize.
+``[tool.pyrefly]``
+~~~~~~~~~~~~~~~~~~
+
+Meta's type checker. Order: ``python_version`` → ``python_platform`` → ``python_interpreter`` →
+``project_includes`` → ``project_excludes`` → ``search_path`` → ``site_package_path`` →
+``use_untyped_imports`` → ``replace_imports_with_any`` → ``ignore_errors_in_generated_code`` → ``errors``.
+Path arrays alphabetize.
 
 Other Tables
 ~~~~~~~~~~~~
