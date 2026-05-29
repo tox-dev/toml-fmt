@@ -1032,6 +1032,19 @@ Top-level ordering: dictionaries (``builtin``, ``dictionary``, ``ignore-words``,
 ``interactive``, ``enable-colors``, ``disable-colors``) → output (``count``, ``quiet-level``, ``summary``).
 
 **Sorted arrays:** ``builtin``, ``dictionary``, ``skip``, ``ignore-words-list``, ``uri-ignore-words-list``.
+``[tool.towncrier]``
+~~~~~~~~~~~~~~~~~~~~
+
+Top-level ordering: package identity (``name``, ``version``, ``package``, ``package_dir``) → news location
+(``directory``, ``filename``, ``start_string``, ``template``, ``title_format``, ``issue_format``, ``underlines``)
+→ rendering (``wrap``, ``all_bullets``, ``single_file``, ``orphan_prefix``, ``create_eof_newline``,
+``create_add_extension``) → behavior (``ignore``) → ``type`` and ``section`` (AoT, last).
+
+``[[tool.towncrier.type]]`` entries get keys ordered ``directory`` → ``name`` → ``showcontent``;
+``[[tool.towncrier.section]]`` entries get ``path`` → ``name`` → ``showcontent``. Array order is preserved
+(display order in the rendered changelog).
+
+**Sorted arrays:** ``ignore`` (file globs to skip).
 
 Other Tables
 ~~~~~~~~~~~~
