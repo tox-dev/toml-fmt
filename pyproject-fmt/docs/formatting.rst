@@ -920,6 +920,25 @@ Hatch configuration spans many sub-tables. Keys at ``[tool.hatch]`` level (which
 
 ``scripts`` and ``env-vars`` sub-tables under each environment have their inner keys alphabetized. Build hook
 order and matrix entry order are preserved as written (both carry semantic meaning).
+``[tool.isort]``
+~~~~~~~~~~~~~~~~
+
+Covers the isort import sorter. ``profile`` first (it sets defaults that everything else overrides), then output
+style (line/wrap/indent/multi-line options), then known sources (``sections`` → ``default_section`` →
+``known_standard_library`` / ``extra_standard_library`` / ``known_third_party`` / ``known_first_party`` /
+``known_local_folder`` / ``known_other``), then forced separation, skip patterns, import add/remove, and section
+heading comments.
+
+**Sorted arrays:**
+
+``known_standard_library``, ``extra_standard_library``, ``known_third_party``, ``known_first_party``,
+``known_local_folder``, ``known_other``, ``namespace_packages``, ``src_paths``, ``skip``, ``skip_glob``,
+``extend_skip``, ``extend_skip_glob``, ``supported_extensions``, ``blocked_extensions``,
+``single_line_exclusions``, ``forced_separate``, ``treat_comments_as_code``, ``treat_all_comments_as_code``,
+``constants``, ``variables``.
+
+Order-sensitive arrays preserved as written: ``sections`` (output section sequence), ``no_lines_before``,
+``add_imports``, ``remove_imports``, ``required_imports``, ``force_to_top``.
 
 Other Tables
 ~~~~~~~~~~~~
