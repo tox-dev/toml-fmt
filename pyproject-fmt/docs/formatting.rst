@@ -1011,6 +1011,18 @@ Top-level ordering: ``exclude_dirs`` → ``targets`` → ``tests`` → ``skips``
 (``assert_used``, ``hardcoded_tmp_directory``, etc.).
 
 All array values alphabetize (rule IDs, directory paths, function-name lists — all set semantics).
+``[tool.maturin]``
+~~~~~~~~~~~~~~~~~~
+
+Maturin builds Rust extensions for Python. Top-level ordering: module identity (``module-name``, ``bindings``,
+``python-source``, ``python-packages``, ``python-bin-path``) → source layout (``src``, ``manifest-path``,
+``include``, ``exclude``, ``sdist-include``, ``sdist-generator``, ``data``) → cargo settings (``features``,
+``no-default-features``, ``all-features``, ``cargo-extra-args``, ``rustc-extra-args``, ``config``, ``profile``,
+``target``, ``target-dir``) → compatibility / strip (``compatibility``, ``auditwheel``, ``skip-auditwheel``,
+``strip``, ``frozen``, ``locked``, ``offline``, ``zig``) → behavior (``use-cross``).
+
+**Sorted arrays:** ``python-packages``, ``include``, ``exclude``, ``sdist-include``, ``features`` (all
+set-semantics). ``cargo-extra-args`` / ``rustc-extra-args`` are CLI argv and preserved.
 
 Other Tables
 ~~~~~~~~~~~~
