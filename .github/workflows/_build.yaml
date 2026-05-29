@@ -97,6 +97,9 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
+      - name: 📦 Bundle toml-fmt-common
+        if: inputs.package-name != 'toml-fmt-common'
+        run: python3 tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -134,6 +137,9 @@ jobs:
         with:
           python-version: ${{ matrix.platform.python }}
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || matrix.platform.target == 'aarch64' && 'arm64' || 'x64' }}
+      - name: 📦 Bundle toml-fmt-common
+        if: inputs.package-name != 'toml-fmt-common'
+        run: python tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -163,6 +169,9 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
+      - name: 📦 Bundle toml-fmt-common
+        if: inputs.package-name != 'toml-fmt-common'
+        run: python3 tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -184,6 +193,9 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
+      - name: 📦 Bundle toml-fmt-common
+        if: inputs.package-name != 'toml-fmt-common'
+        run: python3 tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 📦 Build sdist
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -195,6 +207,26 @@ jobs:
           name: wheels-sdist
           path: dist
 
+  smoke:
+    name: 🚬 smoke (bundled wheel)
+    needs: [linux]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: 📥 Download wheels
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: wheels-linux-x86_64
+          path: dist
+          merge-multiple: "true"
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - name: 🚬 Import the bundled wheel in isolation
+        run: |
+          wheel=$(ls dist/*.whl | head -n1)
+          # No project, no workspace: the wheel must satisfy its own imports without
+          # toml-fmt-common on the index — this is the exact #355 failure mode.
+          uv run --isolated --no-project --with "$wheel" -- "${{ inputs.package-name }}" --version
+
   release:
     name: 🚀 release
     runs-on: ubuntu-24.04
@@ -205,7 +237,7 @@ jobs:
       id-token: write
       contents: write
     if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
-    needs: [bump, sdist, linux, macos, windows]
+    needs: [bump, sdist, linux, macos, windows, smoke]
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
