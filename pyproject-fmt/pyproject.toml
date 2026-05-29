@@ -1,8 +1,9 @@
 [build-system]
-build-backend = "maturin"
+build-backend = "build_backend"
 requires = [
   "maturin>=1.13.3",
 ]
+backend-path = [ "." ]
 
 [project]
 name = "pyproject-fmt"
@@ -84,6 +85,8 @@ module-name = "pyproject_fmt._lib"
 python-source = "src"
 strip = true
 include = [
+  # ship the in-tree PEP 517 backend in the sdist so wheels can be built from the sdist
+  { path = "build_backend.py", format = "sdist" },
   { path = "rust-toolchain.toml", format = "sdist" },
   { path = "docs/", format = "sdist" },
   { path = "CHANGELOG.md", format = "sdist" },
@@ -103,6 +106,9 @@ show_error_codes = true
 strict = true
 
 [tool.coverage]
+run.omit = [
+  "*/_vendor/*", # vendored toml_fmt_common is covered by its own test suite
+]
 run.parallel = true
 run.plugins = [
   "covdefaults",

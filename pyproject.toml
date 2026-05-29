@@ -21,6 +21,11 @@ lint.ignore = [
   "RUF067", # allow code in __init__.py for toml-fmt-common
   "S104",   # Possible binding to all interface
 ]
+lint.per-file-ignores."**/build_backend.py" = [
+  "D103",   # the build-backend hooks are PEP 517 contract, documented at module level
+  "INP001", # is not a namespace
+  "T201",   # the CLI reports what it patched
+]
 lint.per-file-ignores."**/tests/**/*.py" = [
   "D",       # don't care about documentation in tests
   "FBT",     # don't care about booleans as positional arguments in tests
