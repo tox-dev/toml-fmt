@@ -888,6 +888,38 @@ Black's configuration is small but ubiquitous. Keys are ordered: ``required-vers
 - ``enable-unstable-feature``: alphabetized.
 
 The ``include`` / ``exclude`` family are regex strings, not arrays, so they're left as-is.
+``[tool.hatch.*]``
+~~~~~~~~~~~~~~~~~~
+
+Hatch configuration spans many sub-tables. Keys at ``[tool.hatch]`` level (which after collapse appear as dotted
+``version.*`` / ``build.*`` / ``metadata.*`` / ``envs.*`` / ``publish.*`` / ``workspace.*``) are ordered:
+
+1. Version: ``version.source`` → ``version.path`` → ``version.pattern`` → ``version.expression`` →
+   ``version.scheme`` → ``version.validate-bump`` → ``version.fallback-version`` → ``version.raw-options``.
+2. Metadata: ``metadata.allow-direct-references`` → ``metadata.allow-ambiguous-features`` → ``metadata.hooks``.
+3. Build: ``build.dev-mode-dirs`` → ``build.directory`` → ``build.sources`` → ``build.packages`` →
+   ``build.include`` → ``build.exclude`` → ``build.force-include`` → ``build.artifacts`` → ``build.ignore-vcs`` →
+   ``build.skip-excluded-dirs`` → ``build.reproducible`` → ``build.hooks`` → wheel target (``packages``,
+   ``include``, ``exclude``, ``force-include``, ``artifacts``, ``hooks``, ``shared-data``, ``extra-metadata``,
+   etc.) → sdist target (``include``, ``exclude``, ``force-include``, ``support-legacy``, ``strict-naming``).
+4. Publish: ``publish.index.disable`` → ``publish.index.repos`` → ``publish.index``.
+5. Workspace: ``workspace.members`` → ``workspace.exclude``.
+6. Environments (``envs.<name>.*``): each environment's keys follow ``type`` → ``template`` → ``detached`` →
+   ``description`` → ``platforms`` → ``python`` → ``path`` → ``installer`` → ``skip-install`` →
+   ``system-packages`` → ``dev-mode`` → ``features`` → ``dependencies`` → ``extra-dependencies`` →
+   ``extra-args`` → ``pre-install-commands`` → ``post-install-commands`` → ``env-include`` → ``env-exclude``
+   → ``env-vars`` → ``scripts`` → ``matrix`` → ``matrix-name-format`` → ``overrides``.
+
+**Sorted arrays:**
+
+- Build: ``include``, ``exclude``, ``force-include``, ``artifacts``, ``packages``, ``sources``, ``dev-mode-dirs``,
+  and the matching ``build.targets.wheel.*`` / ``build.targets.sdist.*`` arrays.
+- Environments: per-env ``dependencies``, ``extra-dependencies``, ``features``, ``platforms``, ``env-include``,
+  ``env-exclude``, ``pre-install-commands``, ``post-install-commands``.
+- Workspace: ``members``, ``exclude``.
+
+``scripts`` and ``env-vars`` sub-tables under each environment have their inner keys alphabetized. Build hook
+order and matrix entry order are preserved as written (both carry semantic meaning).
 
 Other Tables
 ~~~~~~~~~~~~
