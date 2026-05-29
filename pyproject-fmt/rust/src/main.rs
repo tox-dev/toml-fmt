@@ -22,6 +22,7 @@ mod check_manifest;
 mod bumpversion;
 mod coverage;
 mod djlint;
+mod docformatter;
 mod global;
 mod mypy;
 mod hatch;
@@ -213,6 +214,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     scikit_build::fix(&mut tables);
     bumpversion::fix(&mut tables);
     interrogate::fix(&mut tables);
+    docformatter::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed

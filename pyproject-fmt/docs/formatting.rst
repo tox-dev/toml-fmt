@@ -1111,6 +1111,12 @@ behavior → ``files`` / ``parts`` AoT last.
 
 Docstring coverage. Threshold → ignore flags → exclude → output. Sorted arrays: ``exclude``, ``extend-exclude``,
 ``ignore-regex``.
+``[tool.docformatter]``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Docstring formatter. Order: behavior (``in-place``, ``recursive``, ``check``, ``diff``, ``black``, ``pep257``,
+``non-strict``) → format width (``line-length``, ``wrap-summaries``, ``wrap-descriptions``, ``tab-width``) →
+wrap/summary tweaks → other.
 
 Other Tables
 ~~~~~~~~~~~~
