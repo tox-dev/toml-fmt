@@ -7,6 +7,7 @@ mod bandit_tests;
 mod build_systems_tests;
 mod commitizen_tests;
 mod cibuildwheel_tests;
+mod codespell_tests;
 mod coverage_tests;
 mod dependency_groups_tests;
 mod global_tests;
