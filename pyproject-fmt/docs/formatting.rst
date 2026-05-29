@@ -1045,6 +1045,22 @@ Top-level ordering: package identity (``name``, ``version``, ``package``, ``pack
 (display order in the rendered changelog).
 
 **Sorted arrays:** ``ignore`` (file globs to skip).
+``[tool.pylint.*]``
+~~~~~~~~~~~~~~~~~~~
+
+Sub-table order: ``main`` (and legacy alias ``master``) → ``messages_control`` → ``reports`` → ``basic`` →
+``format`` → ``design`` → ``classes`` → ``exceptions`` → ``imports`` → ``logging`` → ``method_args`` →
+``refactoring`` → ``similarities`` → ``spelling`` → ``string`` → ``typecheck`` → ``variables`` →
+``miscellaneous``.
+
+**Sorted arrays:** ``enable``, ``disable``, ``load-plugins``, ``extension-pkg-allow-list``,
+``extension-pkg-whitelist``, ``ignore``, ``ignore-patterns``, ``ignore-paths``, ``ignored-modules``,
+``ignored-classes``, ``ignored-argument-names``, ``good-names``, ``bad-names``, ``logging-modules``,
+``valid-classmethod-first-arg``, ``valid-metaclass-classmethod-first-arg``, ``callbacks``,
+``additional-builtins``, ``allowed-redefined-builtins``, ``preferred-modules``, ``deprecated-modules``,
+``known-third-party``, ``known-standard-library``, ``allowed-modules``, ``expected-line-ending-format``,
+``overgeneral-exceptions``, ``defining-attr-methods``, ``exclude-protected``. Match is on the leaf key name
+regardless of which sub-table it appears in.
 
 Other Tables
 ~~~~~~~~~~~~
