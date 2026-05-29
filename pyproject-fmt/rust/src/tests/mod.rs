@@ -15,6 +15,7 @@ mod coverage_tests;
 mod dependency_groups_tests;
 mod djlint_tests;
 mod docformatter_tests;
+mod deptry_tests;
 mod global_tests;
 mod hatch_tests;
 mod isort_tests;
