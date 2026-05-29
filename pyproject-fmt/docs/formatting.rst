@@ -1061,6 +1061,11 @@ Sub-table order: ``main`` (and legacy alias ``master``) → ``messages_control``
 ``known-third-party``, ``known-standard-library``, ``allowed-modules``, ``expected-line-ending-format``,
 ``overgeneral-exceptions``, ``defining-attr-methods``, ``exclude-protected``. Match is on the leaf key name
 regardless of which sub-table it appears in.
+``[tool.djlint]``
+~~~~~~~~~~~~~~~~~
+
+Profile/scope → formatting → linting → ignores → output. **Sorted arrays:** ``exclude``, ``extend_exclude``,
+``custom_blocks``, ``custom_html``, ``ignore``, ``ignore_blocks``.
 
 Other Tables
 ~~~~~~~~~~~~
