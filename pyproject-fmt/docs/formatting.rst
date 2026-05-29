@@ -599,6 +599,91 @@ source (``version``, ``version_scheme``, ``version_provider``, ``version_files``
 changelog → hooks (``pre_bump_hooks``, ``post_bump_hooks``) → ``customize``.
 
 **Sorted arrays:** ``version_files``, ``allowed_prefixes``, ``extras``, ``extra_files``.
+``[tool.poetry]``
+~~~~~~~~~~~~~~~~~
+
+Covers both Poetry 1.x (legacy metadata under ``[tool.poetry]``) and Poetry 2.x (metadata moved to standard
+``[project]``; Poetry-specific keys still under ``[tool.poetry]``).
+
+**Top-level key ordering:**
+
+1. Identity: ``name`` → ``version`` → ``description`` → ``package-mode``
+2. License & authorship: ``license`` → ``authors`` → ``maintainers``
+3. Documentation: ``readme`` → ``homepage`` → ``repository`` → ``documentation``
+4. Discovery: ``keywords`` → ``classifiers``
+5. Packaging contents: ``packages`` → ``include`` → ``exclude`` → ``build``
+6. Dependencies (sub-tables): ``dependencies`` → ``dev-dependencies`` → ``group`` → ``extras``
+7. Entry points / distribution: ``scripts`` → ``plugins`` → ``urls`` → ``source``
+8. Poetry runtime constraints: ``requires-poetry`` → ``requires-plugins`` → ``build-constraints``
+
+**Sub-table key ordering:**
+
+``[tool.poetry.dependencies]`` / ``[tool.poetry.dev-dependencies]`` / per-group dependencies
+    ``python`` first (interpreter constraint), all other package names alphabetized.
+
+``[tool.poetry.group.<name>]``
+    ``optional`` → ``include-groups`` → ``dependencies``.
+
+``[tool.poetry.extras]``, ``[tool.poetry.scripts]``, ``[tool.poetry.urls]``, ``[tool.poetry.plugins.*]``, ``[tool.poetry.requires-plugins]``, ``[tool.poetry.build-constraints]``
+    Keys alphabetized.
+
+``[tool.poetry.build]``
+    ``script`` → ``generate-setup-file``.
+
+``[[tool.poetry.source]]``
+    Each entry's keys ordered ``name`` → ``url`` → ``priority`` → ``links`` → ``indexed``, with the deprecated
+    ``default`` and ``secondary`` keys placed last. Array order itself is preserved (priority ordering is
+    semantically significant).
+
+**Sorted arrays:**
+
+- ``keywords``, ``classifiers``: deduplicated (case-insensitive) and sorted alphabetically.
+- ``exclude``: sorted alphabetically.
+- ``[tool.poetry.extras]`` values (each ``extras.<name>``): sorted alphabetically.
+- ``[tool.poetry.group.<name>.include-groups]``: sorted alphabetically.
+- Per-dependency ``extras`` arrays (in ``dependencies``, ``dev-dependencies``, per-group dependencies,
+  ``requires-plugins``, ``build-constraints``): sorted alphabetically.
+
+Arrays whose order carries semantic meaning are preserved as written: ``authors``, ``maintainers``, ``packages``,
+``include``, ``readme`` (when an array), multi-constraint dependency arrays, and ``[[tool.poetry.source]]`` entries.
+
+**Inline-table key ordering:**
+
+When a Poetry-specific inline table is detected (via discriminator keys unique to Poetry's schema), its keys are
+reordered:
+
+- Sources (``{ priority = ... }``, ``{ secondary = ... }``, ``{ links = ... }``, ``{ indexed = ... }``):
+  ``name`` → ``url`` → ``priority`` → ``links`` → ``indexed`` → ``default`` → ``secondary``.
+- Git dependencies (``{ git = ... }``):
+  ``git`` → ``branch`` → ``tag`` → ``rev`` → ``subdirectory`` → ``python`` → ``platform`` → ``markers`` →
+  ``allow-prereleases`` → ``allows-prereleases`` → ``optional`` → ``extras`` → ``develop``.
+- Path dependencies (``{ path = ... }``):
+  ``path`` → ``develop`` → ``subdirectory`` → ``python`` → ``platform`` → ``markers`` → ``optional`` → ``extras``.
+- File dependencies (``{ file = ... }``):
+  ``file`` → ``subdirectory`` → ``python`` → ``platform`` → ``markers`` → ``optional`` → ``extras``.
+
+Inline tables that don't match any Poetry-specific schema (for example ``[[project.authors]]`` inline form
+``{ name = "...", email = "..." }``) are left untouched.
+
+.. code-block:: toml
+
+    # Before
+    [[tool.poetry.source]]
+    priority = "primary"
+    url = "https://pypi.example.com/simple"
+    name = "private"
+
+    [tool.poetry.dependencies]
+    zebra = "^1.0"
+    python = "^3.11"
+    foo = { branch = "main", git = "https://github.com/example/foo" }
+
+    # After
+    [tool.poetry]
+    dependencies.python = "^3.11"
+    dependencies.foo = { git = "https://github.com/example/foo", branch = "main" }
+    dependencies.zebra = "^1.0"
+    source = [ { name = "private", url = "https://pypi.example.com/simple", priority = "primary" } ]
 
 Other Tables
 ~~~~~~~~~~~~
