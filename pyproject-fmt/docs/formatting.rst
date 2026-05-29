@@ -1071,6 +1071,11 @@ Profile/scope → formatting → linting → ignores → output. **Sorted arrays
 
 Single flat table. ``based_on_style`` first (it sets defaults), then ``column_limit``, ``indent_width``,
 ``continuation_indent_width``, then the rest alphabetized.
+``[tool.check-manifest]``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``ignore`` → ``ignore-bad-ideas`` → ``ignore-default-rules``. Both ``ignore`` and ``ignore-bad-ideas`` (file-glob
+lists) alphabetize.
 
 Other Tables
 ~~~~~~~~~~~~
