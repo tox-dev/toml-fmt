@@ -97,9 +97,12 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
+      - name: 📦 Setup uv
+        if: inputs.package-name != 'toml-fmt-common'
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: python3 tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -137,9 +140,12 @@ jobs:
         with:
           python-version: ${{ matrix.platform.python }}
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || matrix.platform.target == 'aarch64' && 'arm64' || 'x64' }}
+      - name: 📦 Setup uv
+        if: inputs.package-name != 'toml-fmt-common'
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: python tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -169,9 +175,12 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
+      - name: 📦 Setup uv
+        if: inputs.package-name != 'toml-fmt-common'
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: python3 tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -193,9 +202,12 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: source
+      - name: 📦 Setup uv
+        if: inputs.package-name != 'toml-fmt-common'
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
       - name: 📦 Bundle toml-fmt-common
         if: inputs.package-name != 'toml-fmt-common'
-        run: python3 tasks/bundle_common.py "${{ inputs.package-name }}"
+        run: uv run tasks/bundle_common.py "${{ inputs.package-name }}"
       - name: 📦 Build sdist
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:

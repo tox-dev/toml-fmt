@@ -1,3 +1,6 @@
+# /// script
+# requires-python = ">=3.11"
+# ///
 """Bundle ``toml-fmt-common`` into a consumer wheel at build time.
 
 The consumers (``pyproject-fmt``, ``tox-toml-fmt``) import ``toml_fmt_common`` from a
@@ -17,8 +20,10 @@ from __future__ import annotations
 
 import re
 import shutil
-import sys
+from argparse import ArgumentParser
 from pathlib import Path
+
+import tomllib
 
 VENDOR_NAME = "toml_fmt_common"
 
@@ -54,16 +59,13 @@ def repoint_imports(consumer_src: Path, vendor_root: Path, module: str) -> None:
 
 
 def swap_dependency(common_pyproject: Path, consumer_pyproject: Path) -> None:
-    # tomllib is 3.11+, but this runs on the 3.10 Windows wheel runner, so parse the
-    # top-level dependencies array with a regex instead.
-    common_text = common_pyproject.read_text(encoding="utf-8")
-    block = re.search(r"(?ms)^dependencies = \[(.*?)\]", common_text)
-    common_deps = re.findall(r'"([^"]*)"', block.group(1)) if block else []
+    with common_pyproject.open("rb") as handle:
+        common_deps = tomllib.load(handle)["project"].get("dependencies", [])
 
-    text = consumer_pyproject.read_text(encoding="utf-8")
     indent = "  "
     replacement = "".join(f'{indent}"{dep}",\n' for dep in common_deps)
     pattern = re.compile(rf'^{indent}"toml-fmt-common[^"]*",\n', re.MULTILINE)
+    text = consumer_pyproject.read_text(encoding="utf-8")
     if not pattern.search(text):
         msg = f"toml-fmt-common dependency entry not found in {consumer_pyproject}"
         raise SystemExit(msg)
@@ -71,7 +73,6 @@ def swap_dependency(common_pyproject: Path, consumer_pyproject: Path) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:  # noqa: PLR2004
-        print("Usage: bundle_common.py <package-name>")
-        raise SystemExit(1)
-    main(sys.argv[1])
+    parser = ArgumentParser(description="Bundle toml-fmt-common into a consumer wheel at build time.")
+    parser.add_argument("package", help="consumer package name, e.g. pyproject-fmt")
+    main(parser.parse_args().package)
