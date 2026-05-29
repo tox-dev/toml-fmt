@@ -4,6 +4,7 @@ pub use common::test_util::{assert_valid_toml, format_syntax, format_toml_str, p
 
 mod black_tests;
 mod bandit_tests;
+mod autopep8_tests;
 mod build_systems_tests;
 mod commitizen_tests;
 mod cibuildwheel_tests;

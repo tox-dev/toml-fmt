@@ -1123,6 +1123,11 @@ wrap/summary tweaks → other.
 Dead-code finder. Order: paths → ignore (``exclude``, ``ignore_names``, ``ignore_decorators``) → behavior
 (``make_whitelist``, ``min_confidence``, ``sort_by_size``) → output (``verbose``). Sorted arrays: ``paths``,
 ``exclude``, ``ignore_names``, ``ignore_decorators``.
+``[tool.autopep8]``
+~~~~~~~~~~~~~~~~~~~
+
+PEP8 auto-fixer. Order: length/indent → mode (``in-place``, ``recursive``, ``diff``, ``list-fixes``) → rules
+(``ignore``, ``select``, ``exclude``) → behavior. Sorted arrays: ``ignore``, ``select``, ``exclude``.
 
 Other Tables
 ~~~~~~~~~~~~
