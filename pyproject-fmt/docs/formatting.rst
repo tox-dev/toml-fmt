@@ -684,6 +684,82 @@ Inline tables that don't match any Poetry-specific schema (for example ``[[proje
     dependencies.foo = { git = "https://github.com/example/foo", branch = "main" }
     dependencies.zebra = "^1.0"
     source = [ { name = "private", url = "https://pypi.example.com/simple", priority = "primary" } ]
+``[tool.mypy]``
+~~~~~~~~~~~~~~~
+
+Covers all documented mypy options plus the ``[[tool.mypy.overrides]]`` array of tables. Keys are reordered to match
+the section structure of the official mypy configuration reference.
+
+**Top-level key ordering** (sectioned):
+
+1. Import discovery: ``mypy_path`` → ``files`` → ``modules`` → ``packages`` → ``exclude`` → ``exclude_gitignore`` →
+   ``namespace_packages`` → ``explicit_package_bases`` → ``ignore_missing_imports`` → ``follow_untyped_imports`` →
+   ``follow_imports`` → ``follow_imports_for_stubs`` → ``python_executable`` → ``no_site_packages`` →
+   ``no_silence_site_packages``
+2. Platform configuration: ``python_version`` → ``platform`` → ``always_true`` → ``always_false``
+3. Disallow dynamic typing: ``disallow_any_unimported`` → ``disallow_any_expr`` → ``disallow_any_decorated`` →
+   ``disallow_any_explicit`` → ``disallow_any_generics`` → ``disallow_subclassing_any``
+4. Untyped definitions and calls: ``disallow_untyped_calls`` → ``untyped_calls_exclude`` → ``disallow_untyped_defs``
+   → ``disallow_incomplete_defs`` → ``check_untyped_defs`` → ``disallow_untyped_decorators``
+5. None and Optional: ``implicit_optional`` → ``strict_optional``
+6. Configuring warnings: ``warn_redundant_casts`` → ``warn_unused_ignores`` → ``warn_no_return`` →
+   ``warn_return_any`` → ``warn_unreachable`` → ``deprecated_calls_exclude``
+7. Suppressing errors: ``ignore_errors``
+8. Miscellaneous strictness: ``allow_untyped_globals`` → ``allow_redefinition`` → ``local_partial_types`` →
+   ``disable_error_code`` → ``enable_error_code`` → ``extra_checks`` → ``implicit_reexport`` →
+   ``strict_equality`` → ``strict_bytes`` → ``strict``
+9. Configuring error messages: ``show_error_context`` → ``show_column_numbers`` → ``show_error_end`` →
+   ``hide_error_codes`` → ``show_error_code_links`` → ``pretty`` → ``color_output`` → ``error_summary`` →
+   ``show_absolute_path``
+10. Incremental mode: ``incremental`` → ``cache_dir`` → ``sqlite_cache`` → ``cache_fine_grained`` →
+    ``skip_version_check`` → ``skip_cache_mtime_checks``
+11. Advanced options: ``plugins`` → ``pdb`` → ``show_traceback`` → ``raise_exceptions`` →
+    ``custom_typing_module`` → ``custom_typeshed_dir`` → ``warn_incomplete_stub`` → ``native_parser``
+12. Report generation: ``any_exprs_report`` → ``cobertura_xml_report`` → ``html_report`` → ``linecount_report`` →
+    ``linecoverage_report`` → ``lineprecision_report`` → ``txt_report`` → ``xml_report`` → ``xslt_html_report`` →
+    ``xslt_txt_report``
+13. Miscellaneous: ``junit_xml`` → ``junit_format`` → ``scripts_are_modules`` → ``warn_unused_configs`` →
+    ``verbosity``
+14. ``overrides`` last.
+
+**``[[tool.mypy.overrides]]`` entry key ordering:**
+
+``module`` first (required), then per-module overridable keys in the same logical grouping as the parent table
+(import behavior, platform markers, disallow dynamic typing, untyped defs/calls, optional handling, warnings,
+suppression, miscellaneous strictness).
+
+**Sorted arrays:**
+
+- Top-level: ``files``, ``modules``, ``packages``, ``exclude``, ``always_true``, ``always_false``,
+  ``untyped_calls_exclude``, ``deprecated_calls_exclude``, ``disable_error_code``, ``enable_error_code``.
+- Inside overrides entries: ``module`` (when an array of patterns), ``always_true``, ``always_false``,
+  ``disable_error_code``, ``enable_error_code``.
+
+``plugins`` and ``mypy_path`` are deliberately preserved as written: plugins run in declared order and reordering
+changes behavior; ``mypy_path`` is a search path with priority semantics.
+
+**Inline-table handling:**
+
+When ``[[tool.mypy.overrides]]`` collapses to ``overrides = [{...}, {...}]`` under the default ``table_format =
+"short"``, key order inside each entry is normalized via discriminators unique to mypy
+(``disable_error_code`` / ``enable_error_code`` / ``ignore_missing_imports`` / ``follow_untyped_imports`` /
+``ignore_errors`` / ``warn_unused_ignores`` / ``disallow_untyped_defs`` / ``check_untyped_defs``). The arrays inside
+each inline entry are sorted in place, so ``disable_error_code = [...]`` is alphabetized whether the override is
+expanded or collapsed.
+
+.. code-block:: toml
+
+    # Before
+    [[tool.mypy.overrides]]
+    ignore_missing_imports = true
+    disable_error_code = ["import-untyped", "attr-defined"]
+    module = "third_party.*"
+
+    # After
+    [tool.mypy]
+    overrides = [
+      { module = "third_party.*", ignore_missing_imports = true, disable_error_code = [ "attr-defined", "import-untyped" ] },
+    ]
 
 Other Tables
 ~~~~~~~~~~~~
