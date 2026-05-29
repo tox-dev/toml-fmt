@@ -399,10 +399,16 @@ def _color_diff(diff: Iterable[str]) -> Iterable[str]:
             yield line
 
 
+# Backwards-compatibility alias: build_cli was named _build_cli through 1.3.2 and every
+# released pyproject-fmt/tox-toml-fmt imports that name. Keep it so a fresh resolve of
+# this package does not break already-published consumers (tox-dev/toml-fmt#355).
+_build_cli = build_cli
+
 __all__ = [
     "ArgumentGroup",
     "FmtNamespace",
     "TOMLFormatter",
+    "_build_cli",
     "build_cli",
     "list_argument",
     "run",
