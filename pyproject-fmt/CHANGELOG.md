@@ -1,4 +1,81 @@
-<a id="2.21.2"></a>
+<a id="2.22.0"></a>
+
+## 2.22.0 - 2026-05-29
+
+- ✨ feat(build): ship self-contained pyproject-fmt and tox-toml-fmt wheels by
+  [@gaborbernat](https://github.com/gaborbernat) in [#363](https://github.com/tox-dev/toml-fmt/pull/363)
+- 🐛 fix(common): restore \_build_cli alias for backward compatibility by [@gaborbernat](https://github.com/gaborbernat)
+  in [#361](https://github.com/tox-dev/toml-fmt/pull/361)
+- ✨ feat(pyproject-fmt): add [tool.ty] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#354](https://github.com/tox-dev/toml-fmt/pull/354)
+- ✨ feat(pyproject-fmt): add [tool.deptry] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#353](https://github.com/tox-dev/toml-fmt/pull/353)
+- ✨ feat(pyproject-fmt): add [tool.autopep8] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#352](https://github.com/tox-dev/toml-fmt/pull/352)
+- ✨ feat(pyproject-fmt): add [tool.vulture] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#351](https://github.com/tox-dev/toml-fmt/pull/351)
+- ✨ feat(pyproject-fmt): add [tool.docformatter] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#350](https://github.com/tox-dev/toml-fmt/pull/350)
+- ✨ feat(pyproject-fmt): add [tool.interrogate] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#349](https://github.com/tox-dev/toml-fmt/pull/349)
+- ✨ feat(pyproject-fmt): add [tool.bumpversion] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#348](https://github.com/tox-dev/toml-fmt/pull/348)
+- ✨ feat(pyproject-fmt): add [tool.scikit-build] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#347](https://github.com/tox-dev/toml-fmt/pull/347)
+- ✨ feat(pyproject-fmt): add [tool.semantic_release] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#346](https://github.com/tox-dev/toml-fmt/pull/346)
+- ✨ feat(pyproject-fmt): add [tool.pyrefly] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#345](https://github.com/tox-dev/toml-fmt/pull/345)
+- ✨ feat(pyproject-fmt): add [tool.check-manifest] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#344](https://github.com/tox-dev/toml-fmt/pull/344)
+- ✨ feat(pyproject-fmt): add [tool.yapf] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#343](https://github.com/tox-dev/toml-fmt/pull/343)
+- ✨ feat(pyproject-fmt): add [tool.djlint] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#342](https://github.com/tox-dev/toml-fmt/pull/342)
+- ✨ feat(pyproject-fmt): add [tool.pylint.*] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#341](https://github.com/tox-dev/toml-fmt/pull/341)
+- ✨ feat(pyproject-fmt): add [tool.towncrier] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#340](https://github.com/tox-dev/toml-fmt/pull/340)
+- ✨ feat(pyproject-fmt): add [tool.codespell] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#338](https://github.com/tox-dev/toml-fmt/pull/338)
+- ✨ feat(pyproject-fmt): add [tool.maturin] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#337](https://github.com/tox-dev/toml-fmt/pull/337)
+- ✨ feat(pyproject-fmt): add [tool.bandit] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#336](https://github.com/tox-dev/toml-fmt/pull/336)
+- ✨ feat(pyproject-fmt): add [tool.tox] handler reusing tox-toml-fmt rules by
+  [@gaborbernat](https://github.com/gaborbernat) in [#335](https://github.com/tox-dev/toml-fmt/pull/335)
+- ✨ feat(pyproject-fmt): add [tool.cibuildwheel] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#334](https://github.com/tox-dev/toml-fmt/pull/334)
+- ✨ feat(pyproject-fmt): add [tool.pdm.*] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#333](https://github.com/tox-dev/toml-fmt/pull/333)
+- ✨ feat(pyproject-fmt): add [tool.pyright] + [tool.basedpyright] handler by
+  [@gaborbernat](https://github.com/gaborbernat) in [#332](https://github.com/tox-dev/toml-fmt/pull/332)
+- ✨ feat(pyproject-fmt): add [tool.isort] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#331](https://github.com/tox-dev/toml-fmt/pull/331)
+- ✨ feat(pyproject-fmt): add [tool.hatch.*] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#329](https://github.com/tox-dev/toml-fmt/pull/329)
+- ✨ feat(pyproject-fmt): add [tool.black] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#328](https://github.com/tox-dev/toml-fmt/pull/328)
+- ✨ feat(pyproject-fmt): add [tool.pytest.ini_options] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#327](https://github.com/tox-dev/toml-fmt/pull/327)
+- ✨ feat(pyproject-fmt): add [tool.setuptools] + [tool.setuptools_scm] handlers by
+  [@gaborbernat](https://github.com/gaborbernat) in [#326](https://github.com/tox-dev/toml-fmt/pull/326)
+- ✨ feat(pyproject-fmt): add [tool.mypy] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#325](https://github.com/tox-dev/toml-fmt/pull/325)
+- ✨ feat(pyproject-fmt): add [tool.poetry] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#324](https://github.com/tox-dev/toml-fmt/pull/324)
+- ✨ feat(pyproject-fmt): add [tool.commitizen] handler by [@gaborbernat](https://github.com/gaborbernat) in
+  [#339](https://github.com/tox-dev/toml-fmt/pull/339)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#358](https://github.com/tox-dev/toml-fmt/pull/358)
+- 🐛 fix(common): preserve triple-literal strings when re-emitting by [@gaborbernat](https://github.com/gaborbernat) in
+  [#356](https://github.com/tox-dev/toml-fmt/pull/356)
+- ♻️ refactor(common): deduplicate table formatting CLI args by [@gaborbernat](https://github.com/gaborbernat) in
+  [#320](https://github.com/tox-dev/toml-fmt/pull/320)
+- ✨ feat(common): add configurable table spacing options by [@gaborbernat](https://github.com/gaborbernat) in
+  [#319](https://github.com/tox-dev/toml-fmt/pull/319)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#310](https://github.com/tox-dev/toml-fmt/pull/310) <a id="2.21.2"></a>
 
 ## 2.21.2 - 2026-05-05
 
