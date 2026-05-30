@@ -1,4 +1,9 @@
-<a id="2.22.0"></a>
+<a id="2.23.0"></a>
+
+## 2.23.0 - 2026-05-30
+
+- 📝 docs(pyproject-fmt): overhaul the formatting reference by [@gaborbernat](https://github.com/gaborbernat) in
+  [#366](https://github.com/tox-dev/toml-fmt/pull/366) <a id="2.22.0"></a>
 
 ## 2.22.0 - 2026-05-29
 
