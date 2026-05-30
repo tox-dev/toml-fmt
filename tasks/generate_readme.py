@@ -42,7 +42,28 @@ def strip_main_title(content: str) -> str:
     return content
 
 
+def unwrap_dropdowns(content: str) -> str:
+    """Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive."""
+    result: list[str] = []
+    in_dropdown = False
+    for line in content.splitlines():
+        if not in_dropdown:
+            if line.startswith(".. dropdown::"):
+                in_dropdown = True
+            else:
+                result.append(line)
+        elif not line:
+            result.append("")
+        elif line.startswith("    "):
+            result.append(line[4:])
+        else:
+            in_dropdown = False
+            result.append(line)
+    return "\n".join(result)
+
+
 def process_rst_for_pypi(content: str) -> str:
+    content = unwrap_dropdowns(content)
     content = re.sub(r":pypi:`([^`]+)`", r"`\1 <https://pypi.org/project/\1>`_", content)
     content = re.sub(r":gh:`([^`]+)`", r"`\1 <https://github.com/\1>`_", content)
     content = re.sub(r"^See :doc:`[^`]+`.*$\n?", "", content, flags=re.MULTILINE)
@@ -110,7 +131,8 @@ def convert_md_to_rst_inline(line: str) -> str:
             result += ch
     if in_backtick:
         result += "``"
-    while (start := result.find("[")) != -1:
+    pos = 0
+    while (start := result.find("[", pos)) != -1:
         if (bracket_end := result.find("]", start)) == -1:
             break
         if (
@@ -120,8 +142,9 @@ def convert_md_to_rst_inline(line: str) -> str:
         ):
             link = f"`{result[start + 1 : bracket_end]} <{result[bracket_end + 2 : paren_end]}>`_"
             result = f"{result[:start]}{link}{result[paren_end + 1 :]}"
-            continue
-        break
+            pos = start + len(link)
+        else:
+            pos = bracket_end + 1
     return result
 
 

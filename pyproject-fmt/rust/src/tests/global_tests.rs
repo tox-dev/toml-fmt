@@ -162,3 +162,66 @@ fn test_reorder_bandit_as_linter() {
     mk = "mv"
     "#);
 }
+
+#[test]
+fn test_reorder_newly_categorized_tools() {
+    let start = indoc! {r#"
+    [tool.tbump]
+    tk="tv"
+    [tool.yapf]
+    yk="yv"
+    [tool.vulture]
+    vk="vv"
+    [tool.semantic_release]
+    sk="sv"
+    [tool.djlint]
+    dk="dv"
+    [tool.commitizen]
+    ck="cv"
+    [tool.interrogate]
+    ik="iv"
+    [tool.black]
+    bk="bv"
+    [tool.deptry]
+    dk="dv"
+    [tool.pydoclint]
+    pk="pv"
+    [tool.bumpversion]
+    buk="buv"
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    [tool.black]
+    bk = "bv"
+
+    [tool.yapf]
+    yk = "yv"
+
+    [tool.djlint]
+    dk = "dv"
+
+    [tool.pydoclint]
+    pk = "pv"
+
+    [tool.interrogate]
+    ik = "iv"
+
+    [tool.deptry]
+    dk = "dv"
+
+    [tool.vulture]
+    vk = "vv"
+
+    [tool.bumpversion]
+    buk = "buv"
+
+    [tool.commitizen]
+    ck = "cv"
+
+    [tool.semantic_release]
+    sk = "sv"
+
+    [tool.tbump]
+    tk = "tv"
+    "#);
+}

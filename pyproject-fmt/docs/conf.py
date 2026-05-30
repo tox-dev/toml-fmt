@@ -24,6 +24,7 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx_inline_tabs",
     "sphinx_copybutton",
+    "sphinx_design",
 ]
 
 exclude_patterns = ["_build", "changelog/*", "_draft.rst"]
