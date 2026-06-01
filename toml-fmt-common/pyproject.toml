@@ -66,8 +66,8 @@ build-backend.source-include = [ "tests/**", "tox.toml" ]
 max_supported_python = "3.14"
 
 [tool.mypy]
-show_error_codes = true
 strict = true
+show_error_codes = true
 
 [tool.coverage]
 run.parallel = true
