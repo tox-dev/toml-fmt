@@ -1283,9 +1283,9 @@ docs = [
     { name = "furo", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.19" },
     { name = "sphinx", marker = "python_full_version >= '3.14'", specifier = ">=9.1" },
     { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.21.3" },
-    { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.10.3" },
+    { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.10.4" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.14'", specifier = ">=0.5.2" },
-    { name = "sphinx-design", marker = "python_full_version >= '3.14'", specifier = ">=0.6.1" },
+    { name = "sphinx-design", marker = "python_full_version >= '3.14'", specifier = ">=0.7" },
     { name = "sphinx-inline-tabs", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.21.14" },
 ]
 fix = [{ name = "pre-commit-uv", specifier = ">=4.2.1" }]
@@ -1585,14 +1585,14 @@ wheels = [
 
 [[package]]
 name = "sphinx-autodoc-typehints"
-version = "3.10.3"
+version = "3.10.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "sphinx", marker = "python_full_version >= '3.14'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/98/fd/44b8cf4465af19bf6684142f83b9b4123f6b97dc640fbdcd01f7fc01064e/sphinx_autodoc_typehints-3.10.3.tar.gz", hash = "sha256:01798d25041a16b95c5e053a45b133228e66ff37dbeef0ae8b3add4937aa41a2", size = 78698, upload-time = "2026-05-28T05:13:36.421Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/aa/d676b736c126250e91fff6da35f14160eb85b3a5b75b076915b9f249a9f6/sphinx_autodoc_typehints-3.10.4.tar.gz", hash = "sha256:8fa06b4c92f4bd883928d9d38a7c676d94a05a170b7ee20084a1ad360d6b25ea", size = 79571, upload-time = "2026-05-31T16:08:19.061Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/30/4891d0503d4c32d857fb60ee1ea5b46f1bb13880866624f955bcb1dc9834/sphinx_autodoc_typehints-3.10.3-py3-none-any.whl", hash = "sha256:c6f9909dbdf81085f01b8a677f4da9accf97bd403d9bf820718fd5a745da355f", size = 40080, upload-time = "2026-05-28T05:13:35.04Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/aa/cb936b1f0a741873d8841040d51e65a4888f99dd4a92f6122de8ad7c4c01/sphinx_autodoc_typehints-3.10.4-py3-none-any.whl", hash = "sha256:53f5273956497c96d44a149025a8f8eed2f3a0e8c36adec7fb09d8c02da2e11a", size = 40386, upload-time = "2026-05-31T16:08:17.606Z" },
 ]
 
 [[package]]
@@ -1884,7 +1884,7 @@ docs = [
     { name = "furo", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.19" },
     { name = "sphinx", marker = "python_full_version >= '3.14'", specifier = ">=9.1" },
     { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.21.3" },
-    { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.10.3" },
+    { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.10.4" },
     { name = "sphinx-copybutton", marker = "python_full_version >= '3.14'", specifier = ">=0.5.2" },
     { name = "sphinx-inline-tabs", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.21.14" },
 ]
@@ -2006,7 +2006,7 @@ wheels = [
 
 [[package]]
 name = "virtualenv"
-version = "21.4.1"
+version = "21.4.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "distlib" },
@@ -2015,9 +2015,9 @@ dependencies = [
     { name = "python-discovery" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/f0/b47ecf438211a25a97f8f0e4b23c22bc2496ebfea18dd6ec16210f09cc36/virtualenv-21.4.1.tar.gz", hash = "sha256:2ca543c713b72840ceffd94e9bdedfbd09a661defa1f7f69e5429ad4059442e2", size = 7613344, upload-time = "2026-05-28T04:12:49.905Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/0d/4e93c8e6d1001a75763f87d8f5ecda8ebc7f4aa2153dddfaf4ae8892821a/virtualenv-21.4.2.tar.gz", hash = "sha256:38e6ee0a555615c0ea9da2ac7e9998fe8dc3b911dd33ad8eaad2020957653b0c", size = 7613326, upload-time = "2026-05-31T17:01:22.827Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/dc/ac4f3a987a87e1a18556896f257c4e15c95ed157b7975347ec6b313b75ce/virtualenv-21.4.1-py3-none-any.whl", hash = "sha256:caf4ff72d1b4039057f41d8e8466e859513d67c0400d9c6b62c02c9d1ebc3e12", size = 7594078, upload-time = "2026-05-28T04:12:47.686Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/c4/557dc082be035381b85fdb2b74e21d3d21b57750b74f2b47a32f3a639ff9/virtualenv-21.4.2-py3-none-any.whl", hash = "sha256:854210ca524a1a4d0d744734f4acbc721c3ffe163b85bbf5d56d14d5ae2f0fae", size = 7594079, upload-time = "2026-05-31T17:01:20.735Z" },
 ]
 
 [[package]]
