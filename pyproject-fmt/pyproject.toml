@@ -80,11 +80,10 @@ pkg-meta = [
 ]
 
 [tool.maturin]
-bindings = "pyo3"
-manifest-path = "Cargo.toml"
 module-name = "pyproject_fmt._lib"
+bindings = "pyo3"
 python-source = "src"
-strip = true
+manifest-path = "Cargo.toml"
 include = [
   # ship the in-tree PEP 517 backend in the sdist so wheels can be built from the sdist
   { path = "build_backend.py", format = "sdist" },
@@ -94,17 +93,18 @@ include = [
   { path = "README.rst", format = "sdist" },
 ]
 exclude = [
-  "**/__pycache__/**",
   "**/*.pyc",
   "**/*.pyo",
+  "**/__pycache__/**",
 ]
+strip = true
 
 [tool.pyproject-fmt]
 max_supported_python = "3.15"
 
 [tool.mypy]
-show_error_codes = true
 strict = true
+show_error_codes = true
 
 [tool.coverage]
 run.omit = [
