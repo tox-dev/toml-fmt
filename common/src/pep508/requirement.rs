@@ -122,6 +122,10 @@ impl Requirement {
         self
     }
 
+    pub fn is_name_only(&self) -> bool {
+        self.extras.is_empty() && self.version_or_url.is_none() && self.marker.is_none() && !self.private
+    }
+
     pub fn canonical_name(&self) -> String {
         Regex::new(r"[-_.]+")
             .unwrap()
