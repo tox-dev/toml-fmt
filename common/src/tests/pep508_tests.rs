@@ -428,3 +428,37 @@ fn test_invalid_epoch_falls_back() {
     let req = Requirement::new("pkg>=abc!1.0").unwrap().normalize(false);
     assert!(req.to_string().starts_with("pkg>="));
 }
+
+#[test]
+fn test_is_name_only_bare_name() {
+    assert!(Requirement::new("wheel").unwrap().is_name_only());
+}
+
+#[test]
+fn test_is_name_only_version_constraint() {
+    assert!(!Requirement::new("wheel>=0.40").unwrap().is_name_only());
+}
+
+#[test]
+fn test_is_name_only_extras() {
+    assert!(!Requirement::new("wheel[extra]").unwrap().is_name_only());
+}
+
+#[test]
+fn test_is_name_only_marker() {
+    assert!(!Requirement::new("wheel; sys_platform=='win32'").unwrap().is_name_only());
+}
+
+#[test]
+fn test_is_name_only_url() {
+    assert!(
+        !Requirement::new("wheel @ https://example.com/wheel.whl")
+            .unwrap()
+            .is_name_only()
+    );
+}
+
+#[test]
+fn test_is_name_only_private() {
+    assert!(!Requirement::new("wheel; private").unwrap().is_name_only());
+}

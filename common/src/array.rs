@@ -383,11 +383,19 @@ pub fn dedupe_strings<K>(array: &SyntaxNode, to_key: K)
 where
     K: Fn(&str) -> String,
 {
+    let mut seen: HashSet<String> = HashSet::new();
+    remove_strings(array, |s| !seen.insert(to_key(s)));
+}
+
+/// Remove string entries from an array for which `predicate` returns true
+pub fn remove_strings<P>(array: &SyntaxNode, mut predicate: P)
+where
+    P: FnMut(&str) -> bool,
+{
     if array.kind() != ARRAY {
         return;
     }
     flatten_array_in_place(array);
-    let mut seen: HashSet<String> = HashSet::new();
     let mut to_insert: Vec<SyntaxElement> = Vec::new();
     let mut skip_until_next_value = false;
     let count = array.children_with_tokens().count();
@@ -395,7 +403,7 @@ where
     for entry in array.children_with_tokens() {
         let kind = entry.kind();
         if is_array_value(kind) {
-            let key = if kind == BASIC_STRING || kind == LITERAL_STRING {
+            let text = if kind == BASIC_STRING || kind == LITERAL_STRING {
                 entry
                     .as_node()
                     .and_then(|n| {
@@ -403,16 +411,15 @@ where
                             .filter_map(|e| e.into_token())
                             .find(|token| token.kind() == kind)
                     })
-                    .map(|token| to_key(&load_text(token.text(), kind)))
+                    .map(|token| load_text(token.text(), kind))
             } else {
                 None
             };
-            if let Some(k) = key {
-                if seen.contains(&k) {
-                    skip_until_next_value = true;
-                    continue;
-                }
-                seen.insert(k);
+            if let Some(value) = text
+                && predicate(&value)
+            {
+                skip_until_next_value = true;
+                continue;
             }
             skip_until_next_value = false;
             to_insert.push(entry);

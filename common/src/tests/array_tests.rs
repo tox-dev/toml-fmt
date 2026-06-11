@@ -3,8 +3,8 @@ use tombi_syntax::SyntaxKind::{ARRAY, KEY_VALUE, KEY_VALUE_GROUP, KEYS};
 use tombi_syntax::SyntaxNode;
 
 use crate::array::{
-    align_array_comments, dedupe_strings, ensure_all_arrays_multiline, ensure_trailing_comma, sort, sort_strings,
-    transform,
+    align_array_comments, dedupe_strings, ensure_all_arrays_multiline, ensure_trailing_comma, remove_strings, sort,
+    sort_strings, transform,
 };
 use crate::pep508::Requirement;
 use crate::tests::{format_toml, format_toml_str};
@@ -1057,4 +1057,37 @@ fn test_dedupe_on_non_array_is_noop() {
     let value_node = find_first_value(&root_ast);
     dedupe_strings(&value_node, |s| s.to_lowercase());
     insta::assert_snapshot!(root_ast.to_string(), @r#"a = "src""#);
+}
+
+fn remove_strings_helper(start: &str, value: &str) -> String {
+    apply_to_arrays(start, |array| {
+        remove_strings(array, |s| s == value);
+    })
+}
+
+#[test]
+fn test_remove_strings_match() {
+    let start = indoc! {r#"
+    a = ["b", "c", "d"]
+    "#};
+    let res = remove_strings_helper(start, "c");
+    insta::assert_snapshot!(res, @r#"a = [ "b", "d" ]"#);
+}
+
+#[test]
+fn test_remove_strings_no_match() {
+    let start = indoc! {r#"
+    a = ["b", "c"]
+    "#};
+    let res = remove_strings_helper(start, "z");
+    insta::assert_snapshot!(res, @r#"a = [ "b", "c" ]"#);
+}
+
+#[test]
+fn test_remove_strings_last_entry_no_trailing_comma() {
+    let start = indoc! {r#"
+    a = ["b", "c"]
+    "#};
+    let res = remove_strings_helper(start, "c");
+    insta::assert_snapshot!(res, @r#"a = [ "b" ]"#);
 }

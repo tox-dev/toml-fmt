@@ -117,3 +117,123 @@ fn test_format_build_systems_backend_path_sorting() {
     backend-path = [ "another", "lib", "src" ]
     "#);
 }
+
+#[test]
+fn test_format_build_systems_setuptools_backend_removes_bare_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["setuptools >= 45", "wheel"]
+    build-backend = "setuptools.build_meta"
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "setuptools.build_meta"
+    requires = [ "setuptools>=45" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_setuptools_legacy_backend_removes_bare_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["setuptools", "wheel"]
+    build-backend = "setuptools.build_meta:__legacy__"
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "setuptools.build_meta:__legacy__"
+    requires = [ "setuptools" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_setuptools_backend_keeps_constrained_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["setuptools", "wheel>=0.40"]
+    build-backend = "setuptools.build_meta"
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "setuptools.build_meta"
+    requires = [ "setuptools", "wheel>=0.40" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_setuptools_backend_keeps_wheel_with_marker() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["setuptools", "wheel; sys_platform=='win32'"]
+    build-backend = "setuptools.build_meta"
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "setuptools.build_meta"
+    requires = [ "setuptools", "wheel; sys_platform=='win32'" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_other_backend_keeps_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["hatchling", "wheel"]
+    build-backend = "hatchling.build"
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "hatchling.build"
+    requires = [ "hatchling", "wheel" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_no_backend_keeps_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["setuptools", "wheel"]
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    requires = [ "setuptools", "wheel" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_backend_path_keeps_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["setuptools", "wheel"]
+    build-backend = "setuptools.build_meta"
+    backend-path = ["_custom"]
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "setuptools.build_meta"
+    requires = [ "setuptools", "wheel" ]
+    backend-path = [ "_custom" ]
+    "#);
+}
+
+#[test]
+fn test_format_build_systems_no_setuptools_keeps_wheel() {
+    let start = indoc! {r#"
+    [build-system]
+    requires = ["wheel"]
+    build-backend = "setuptools.build_meta"
+    "#};
+    let res = format_build_systems_helper(start, false);
+    insta::assert_snapshot!(res, @r#"
+    [build-system]
+    build-backend = "setuptools.build_meta"
+    requires = [ "wheel" ]
+    "#);
+}

@@ -228,7 +228,8 @@ Beyond general formatting, each table has specific key ordering and value normal
 The :pep:`517` / :pep:`518` table that declares how your project is built. See the
 `packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#build-system-table>`_.
 
-Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``requires`` is normalized and sorted.
+Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``requires`` is normalized and sorted. A
+redundant ``wheel`` requirement is removed when the build backend is setuptools.
 
 .. dropdown:: Formatting details
 
@@ -238,6 +239,15 @@ Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``
 
     - ``requires``: dependencies normalized per :pep:`508` and sorted alphabetically by package name
     - ``backend-path``: entries sorted alphabetically
+
+    **Redundant wheel removal:**
+
+    A bare ``wheel`` entry is removed from ``requires`` when ``build-backend`` is ``setuptools.build_meta`` or
+    ``setuptools.build_meta:__legacy__``: setuptools either injects ``wheel`` dynamically when building (before
+    version 70.1) or bundles its own copy of ``bdist_wheel`` (70.1 and later), so listing it has no effect. The
+    entry is kept when it carries a version constraint, extras, or markers (it then expresses intent the backend's
+    dynamic injection would honor), when ``backend-path`` is set (an in-tree backend may import ``wheel``
+    directly), or when ``setuptools`` itself is missing from ``requires``.
 
     .. code-block:: toml
 
@@ -249,7 +259,7 @@ Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``
         # After
         [build-system]
         build-backend = "setuptools.build_meta"
-        requires = ["setuptools>=45", "wheel"]
+        requires = ["setuptools>=45"]
 
 ``[project]``
 ~~~~~~~~~~~~~
