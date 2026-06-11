@@ -1,4 +1,11 @@
-<a id="2.23.0"></a>
+<a id="2.24.0"></a>
+
+## 2.24.0 - 2026-06-11
+
+- ✨ feat(pyproject-fmt): drop redundant wheel from setuptools build requires by
+  [@gaborbernat](https://github.com/gaborbernat) in [#373](https://github.com/tox-dev/toml-fmt/pull/373)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#368](https://github.com/tox-dev/toml-fmt/pull/368) <a id="2.23.0"></a>
 
 ## 2.23.0 - 2026-05-30
 
