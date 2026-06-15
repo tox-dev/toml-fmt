@@ -17,7 +17,7 @@ common = {path = "../common" }
 # truth with the standalone tox.toml formatter. Default features disabled so the linked
 # copy here doesn't pull in pyo3's `extension-module` and double-link Python symbols.
 tox-toml-fmt = { path = "../tox-toml-fmt", default-features = false }
-regex = { version = "1.12.3" }
+regex = { version = "1.12.4" }
 pyo3 = { version = "0.29.0", features = ["generate-import-lib"] } # integration with Python
 lexical-sort = { version = "0.3.1" }
 tombi-parser = { workspace = true }
@@ -38,6 +38,6 @@ default = ["extension-module", "abi3"]
 common = { path = "../common", features = ["test-util"] }
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-insta = { version = "1.47.2", features = ["redactions"] } # snapshot testing
+insta = { version = "1.48.0", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.29.0", features = ["auto-initialize"] }
 toml = "1.1.2"
