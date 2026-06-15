@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "build_backend"
 requires = [
-  "maturin>=1.13.3",
+  "maturin>=1.14",
 ]
 backend-path = [ "." ]
 
@@ -51,7 +51,7 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
-  "pytest>=9.0.3",
+  "pytest>=9.1",
   "pytest-cov>=7.1",
   "pytest-mock>=3.15.1",
 ]
@@ -65,7 +65,7 @@ docs = [
   "furo>=2025.12.19; python_version>='3.14'",
   "sphinx>=9.1; python_version>='3.14'",
   "sphinx-argparse-cli>=1.21.3; python_version>='3.14'",
-  "sphinx-autodoc-typehints>=3.10.4; python_version>='3.14'",
+  "sphinx-autodoc-typehints>=3.11; python_version>='3.14'",
   "sphinx-copybutton>=0.5.2; python_version>='3.14'",
   "sphinx-design>=0.7; python_version>='3.14'",
   "sphinx-inline-tabs>=2025.12.21.14; python_version>='3.14'",
@@ -76,7 +76,7 @@ fix = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.11.17",
+  "uv>=0.11.21",
 ]
 
 [tool.maturin]

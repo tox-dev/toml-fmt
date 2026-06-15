@@ -1,4 +1,4 @@
-requires = ["tox>=4.55", "tox-uv>=1.35.2"]
+requires = ["tox>=4.55.1", "tox-uv>=1.35.2"]
 env_list = ["fix"]
 
 [env.fix]
