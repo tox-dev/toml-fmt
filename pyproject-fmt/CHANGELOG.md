@@ -1,4 +1,21 @@
-<a id="2.24.0"></a>
+<a id="2.25.0"></a>
+
+## 2.25.0 - 2026-06-17
+
+- 🐛 fix(common): keep empty table when sub-table stays expanded by [@gaborbernat](https://github.com/gaborbernat) in
+  [#385](https://github.com/tox-dev/toml-fmt/pull/385)
+- ✨ feat(common): share disabled-key handling across formatters by [@gaborbernat](https://github.com/gaborbernat) in
+  [#383](https://github.com/tox-dev/toml-fmt/pull/383)
+- uv direct tool install support by [@bn-andrew](https://github.com/bn-andrew) in
+  [#382](https://github.com/tox-dev/toml-fmt/pull/382)
+- ✨ feat(common): keep disabled keys anchored to their table by [@gaborbernat](https://github.com/gaborbernat) in
+  [#381](https://github.com/tox-dev/toml-fmt/pull/381)
+- ✨ feat(common): add # Group: markers for scoped reordering by [@gaborbernat](https://github.com/gaborbernat) in
+  [#380](https://github.com/tox-dev/toml-fmt/pull/380)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#377](https://github.com/tox-dev/toml-fmt/pull/377)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#378](https://github.com/tox-dev/toml-fmt/pull/378) <a id="2.24.0"></a>
 
 ## 2.24.0 - 2026-06-11
 
