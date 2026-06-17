@@ -39,7 +39,7 @@ fn test_disabled_keys_stay_anchored_to_their_entry() {
         url = "https://pypi.org/simple"
         authenticate = "never"
         # TODO: once ticket XYZ is complete
-        #  to prioritise those over pypi
+        #  to prioritize those over pypi
         # default = true
 
         # These definitions will be used as priority over the ones specified in uv.toml
@@ -56,7 +56,7 @@ fn test_disabled_keys_stay_anchored_to_their_entry() {
     url = "https://pypi.org/simple"
     authenticate = "never"
     # TODO: once ticket XYZ is complete
-    #  to prioritise those over pypi
+    #  to prioritize those over pypi
     # default = true
 
     # These definitions will be used as priority over the ones specified in uv.toml
