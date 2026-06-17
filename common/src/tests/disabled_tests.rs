@@ -1,9 +1,30 @@
-use crate::disabled::{MARKER, enable_disabled_keys, restore_disabled_keys};
+use crate::disabled::{MARKER, enable_disabled_keys, restore_disabled_keys, with_disabled_keys};
+
+#[test]
+fn test_with_disabled_keys_brackets_the_format_pass() {
+    let out = with_disabled_keys("# x = 1\n", 120, |enabled| {
+        assert!(enabled.contains(MARKER), "the format pass sees the enabled key");
+        enabled.to_string()
+    });
+    assert_eq!(out, "# x = 1\n");
+}
 
 #[test]
 fn test_enable_promotes_valid_key() {
     let out = enable_disabled_keys("# default = true\n", 120);
     assert_eq!(out, format!("default = true  # {MARKER}\n"));
+}
+
+#[test]
+fn test_enable_promotes_inline_table_key() {
+    let out = enable_disabled_keys("# set_env = {A = \"1\"}\n", 120);
+    assert_eq!(out, format!("set_env = {{A = \"1\"}}  # {MARKER}\n"));
+}
+
+#[test]
+fn test_enable_leaves_two_keys_on_one_line() {
+    let source = "# a = 1 b = 2\n";
+    assert_eq!(enable_disabled_keys(source, 120), source);
 }
 
 #[test]

@@ -198,6 +198,33 @@ Inline comments within arrays are aligned independently per array, based on that
       "pytest-mock",  # mocking
     ]
 
+Disabled Keys
+~~~~~~~~~~~~~
+
+A commented-out line whose body is itself a single valid key-value (for example ``# set_env = { A = "1" }``) is treated
+as a temporarily *disabled* field rather than free text. The formatter enables it for the duration of the pass, so it is
+laid out and ordered together with the table it belongs to, then comments it out again on the way out. This keeps a
+disabled key anchored to its entry instead of drifting to the next table, and formats the line the same way the enabled
+key would be:
+
+.. code-block:: toml
+
+    # Before
+    [env_run_base]
+    description = "run the tests"
+    # set_env = {A = "1"}
+
+    # After
+    [env_run_base]
+    description = "run the tests"
+    # set_env = { A = "1" }
+
+Comments that are not a single valid key-value (prose, multi-line blocks, commented-out table headers like
+``# [env.docs]``) are left untouched and follow the usual comment-preservation rules above. The heuristic is purely
+structural, so a prose comment that *happens* to be valid TOML is reflowed too; if that matters, phrase the comment so it
+does not parse as a key-value. Keys that would not fit on a single line within ``column_width`` are left as plain
+comments.
+
 Group Markers
 ~~~~~~~~~~~~~
 
