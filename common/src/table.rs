@@ -45,6 +45,13 @@ fn ensure_table_exists(tables: &mut Tables, name: &str) {
     }
 }
 
+fn has_live_descendant_table(tables: &Tables, full_name: &str) -> bool {
+    let prefix = format!("{full_name}.");
+    tables.header_to_pos.iter().any(|(name, positions)| {
+        name.starts_with(&prefix) && positions.iter().any(|&pos| !tables.table_set[pos].borrow().is_empty())
+    })
+}
+
 fn filter_entries(table: &mut RefMut<Vec<SyntaxElement>>, entries_to_remove: &HashSet<usize>) {
     let mut new_elements = Vec::new();
     let mut entry_index = 0;
@@ -657,6 +664,9 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
 
         let is_empty_table = !sub.iter().any(|child| child.kind() == KEY_VALUE);
         if is_empty_table {
+            if has_live_descendant_table(tables, key) {
+                continue;
+            }
             if main.last().is_some_and(|e| e.kind() != LINE_BREAK) {
                 main.push(make_newline());
             }
@@ -789,6 +799,14 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
 
     if is_array_table {
         collapse_array_of_tables(tables, parent_name, sub_name, &sub_positions, column_width);
+        return;
+    }
+
+    let sub_is_empty = !tables.table_set[*sub_positions.first().unwrap()]
+        .borrow()
+        .iter()
+        .any(|child| child.kind() == KEY_VALUE);
+    if sub_is_empty && has_live_descendant_table(tables, &full_name) {
         return;
     }
 
