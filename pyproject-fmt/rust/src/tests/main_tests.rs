@@ -1033,7 +1033,7 @@ fn test_issue_376_collapse_with_comments_stays_valid() {
     [[tool.uv.index]]
     name = "company-master"
     url = "https://dl.cloudsmith.io/x"
-    # ignore-error-codes = [400, 401, 403]
+    # ignore-error-codes = [ 400, 401, 403 ]
     authenticate = "always"
     "#);
 }
