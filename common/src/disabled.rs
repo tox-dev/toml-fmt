@@ -7,13 +7,23 @@
 //! This keeps a disabled key anchored to its entry instead of drifting to the next
 //! table, and formats the line the same way the enabled key would be formatted.
 
-use tombi_syntax::SyntaxKind::{ARRAY_OF_TABLE, COMMENT, KEY_VALUE, TABLE};
+use tombi_syntax::SyntaxKind::{ARRAY_OF_TABLE, COMMENT, KEY_VALUE, KEY_VALUE_GROUP, TABLE};
+use tombi_syntax::SyntaxNode;
 
 /// Marker appended to a disabled key's trailing comment so the pass can find the key
 /// again after it has travelled through reordering and re-parsing. Inline trailing
 /// comments stay attached to their key-value, so the marker rides along for free.
 /// It never reaches the formatted output: [`restore_disabled_keys`] strips it.
 pub const MARKER: &str = "__toml_fmt_disabled__";
+
+/// Count the top-level key-values, ignoring any nested inside inline tables or arrays of
+/// tables (a `set_env = { A = "1" }` body is one key, not two).
+fn top_level_key_values(root: &SyntaxNode) -> usize {
+    root.children()
+        .filter(|child| child.kind() == KEY_VALUE_GROUP)
+        .map(|group| group.children().filter(|kv| kv.kind() == KEY_VALUE).count())
+        .sum()
+}
 
 /// Rewrite a comment body into its enabled key-value form, or `None` when the body is
 /// not a single key-value (prose, a commented table header, multiple keys, ...).
@@ -23,9 +33,8 @@ fn enabled_form(body: &str) -> Option<String> {
         return None;
     }
     let root = parsed.syntax_node();
-    let key_values = root.descendants().filter(|n| n.kind() == KEY_VALUE).count();
-    let has_table = root.descendants().any(|n| matches!(n.kind(), TABLE | ARRAY_OF_TABLE));
-    if key_values != 1 || has_table {
+    let has_table = root.children().any(|n| matches!(n.kind(), TABLE | ARRAY_OF_TABLE));
+    if top_level_key_values(&root) != 1 || has_table {
         return None;
     }
     let has_trailing_comment = root.descendants_with_tokens().any(|t| t.kind() == COMMENT);
@@ -36,12 +45,20 @@ fn enabled_form(body: &str) -> Option<String> {
     })
 }
 
+/// Bracket a formatter pass with disabled-key handling: enable disabled keys in `content`,
+/// run `format`, then restore them. This is the single entry point every formatter uses, so
+/// the two passes always wrap the whole pipeline as a pair.
+pub fn with_disabled_keys(content: &str, column_width: usize, format: impl FnOnce(&str) -> String) -> String {
+    let enabled = enable_disabled_keys(content, column_width);
+    restore_disabled_keys(&format(&enabled))
+}
+
 /// Pre-pass: turn each disabled key into a real key-value tagged with [`MARKER`].
 ///
 /// Keys that would not fit on a single line within `column_width` are left as plain
 /// comments, since enabling them could reflow the value across several lines and break
 /// the single-line restore.
-pub fn enable_disabled_keys(source: &str, column_width: usize) -> String {
+pub(crate) fn enable_disabled_keys(source: &str, column_width: usize) -> String {
     let mut out: Vec<String> = Vec::with_capacity(source.lines().count());
     for line in source.lines() {
         let trimmed = line.trim_start();
@@ -62,7 +79,7 @@ pub fn enable_disabled_keys(source: &str, column_width: usize) -> String {
 
 /// Post-pass: turn every marker-tagged key-value back into a comment, dropping the
 /// marker. The key kept its surrounding comment (if any), which is restored verbatim.
-pub fn restore_disabled_keys(formatted: &str) -> String {
+pub(crate) fn restore_disabled_keys(formatted: &str) -> String {
     let mut out: Vec<String> = Vec::with_capacity(formatted.lines().count());
     for line in formatted.lines() {
         if let Some(idx) = line.find(MARKER) {

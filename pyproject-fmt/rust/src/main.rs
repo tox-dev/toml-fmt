@@ -157,8 +157,11 @@ fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
 /// Format toml file
 #[must_use]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
-    let content = common::disabled::enable_disabled_keys(content, opt.column_width);
-    let root_ast = parse(&content);
+    common::disabled::with_disabled_keys(content, opt.column_width, |content| format_core(content, opt))
+}
+
+fn format_core(content: &str, opt: &Settings) -> String {
+    let root_ast = parse(content);
     common::string::normalize_key_quotes(&root_ast);
     let mut tables = Tables::from_ast(&root_ast);
     let table_config = TableFormatConfig::from_settings(opt);
@@ -255,8 +258,7 @@ pub fn format_toml(content: &str, opt: &Settings) -> String {
     } else {
         formatted
     };
-    let result = common::util::limit_blank_lines(&result, 2);
-    common::disabled::restore_disabled_keys(&result)
+    common::util::limit_blank_lines(&result, 2)
 }
 
 fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefixes: &[&str]) -> String {
