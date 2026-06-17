@@ -45,6 +45,15 @@ where
     None
 }
 
+pub fn is_group_marker(comment_text: &str) -> bool {
+    comment_text
+        .trim_start()
+        .strip_prefix('#')
+        .map(str::trim_start)
+        .and_then(|rest| rest.get(..6))
+        .is_some_and(|head| head.eq_ignore_ascii_case("group:"))
+}
+
 pub fn limit_blank_lines(content: &str, max_blank_lines: usize) -> String {
     let lines: Vec<&str> = content.lines().collect();
     let mut result = Vec::new();

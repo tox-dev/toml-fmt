@@ -69,6 +69,30 @@ fn filter_entries(table: &mut RefMut<Vec<SyntaxElement>>, entries_to_remove: &Ha
     table.splice(0..table_len, new_elements);
 }
 use crate::string::load_text;
+use crate::util::is_group_marker;
+
+fn split_leading_group_marker(kv: &SyntaxElement) -> Option<Vec<SyntaxElement>> {
+    let node = kv.as_node()?;
+    let children: Vec<SyntaxElement> = node.children_with_tokens().collect();
+    let after = group_marker_prefix_len(&children)?;
+    let header = children[..after].to_vec();
+    let mut remaining = vec![make_newline()];
+    remaining.extend_from_slice(&children[after..]);
+    node.splice_children(0..children.len(), remaining);
+    Some(header)
+}
+
+fn emit_key(to_insert: &mut Vec<SyntaxElement>, set: &[SyntaxElement]) {
+    let first_has_leading = set.first().is_some_and(has_leading_newline);
+    if first_has_leading {
+        while to_insert.last().is_some_and(|e| e.kind() == LINE_BREAK) {
+            to_insert.pop();
+        }
+    } else if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
+        to_insert.push(make_newline());
+    }
+    to_insert.extend(set.iter().cloned());
+}
 
 fn parse(source: &str) -> SyntaxNode {
     tombi_parser::parse(source).syntax_node().clone_for_update()
@@ -235,12 +259,33 @@ impl Tables {
         let sub_breaks = sub_table_spacing.chars().filter(|&c| c == '\n').count() + 1;
         let mut to_insert = Vec::<SyntaxElement>::new();
         let order = calculate_order(&self.header_to_pos, &self.table_set, order, multi_level_prefixes);
+
+        let pos_group = compute_pos_groups(&self.table_set);
+        let mut group_marker: HashMap<usize, Vec<SyntaxElement>> = HashMap::new();
+        for (pos, cell) in self.table_set.iter().enumerate() {
+            if let Some(header) = take_leading_group_marker(&mut cell.borrow_mut()) {
+                group_marker.insert(pos_group[pos], header);
+            }
+        }
+        let group_of_name: HashMap<&String, usize> = self
+            .header_to_pos
+            .iter()
+            .map(|(name, positions)| (name, pos_group[*positions.iter().min().unwrap()]))
+            .collect();
+        let mut emitted_groups = HashSet::<usize>::new();
+
         let mut next = order.clone();
         if !next.is_empty() {
             next.remove(0);
         }
         next.push(String::new());
         for (name, next_name) in zip(order.iter(), next.iter()) {
+            let group = group_of_name[name];
+            if emitted_groups.insert(group)
+                && let Some(header) = group_marker.get(&group)
+            {
+                to_insert.extend(header.iter().cloned());
+            }
             let entries_list = self.get(name).unwrap();
             let num_entries = entries_list.len();
 
@@ -300,6 +345,8 @@ fn calculate_order(
         .map(|(k, v)| (v, k * 2))
         .collect::<HashMap<&&str, usize>>();
 
+    let pos_group = compute_pos_groups(table_set);
+
     let mut header_pos: Vec<(String, usize)> = header_to_pos
         .clone()
         .into_iter()
@@ -316,32 +363,62 @@ fn calculate_order(
             .or_insert(*file_pos);
     }
 
-    header_pos.sort_by(|(k1, _), (k2, _)| {
-        let key1 = get_key(k1, multi_level_prefixes);
-        let key2 = get_key(k2, multi_level_prefixes);
-        let pos1 = key_to_pos.get(&key1.as_str());
-        let pos2 = key_to_pos.get(&key2.as_str());
+    header_pos.sort_by(|(k1, fp1), (k2, fp2)| {
+        pos_group[*fp1].cmp(&pos_group[*fp2]).then_with(|| {
+            let key1 = get_key(k1, multi_level_prefixes);
+            let key2 = get_key(k2, multi_level_prefixes);
+            let pos1 = key_to_pos.get(&key1.as_str());
+            let pos2 = key_to_pos.get(&key2.as_str());
 
-        match (pos1, pos2) {
-            (Some(&p1), Some(&p2)) => {
-                let offset1 = usize::from(key1 != *k1);
-                let offset2 = usize::from(key2 != *k2);
-                (p1 + offset1)
-                    .cmp(&(p2 + offset2))
-                    .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
+            match (pos1, pos2) {
+                (Some(&p1), Some(&p2)) => {
+                    let offset1 = usize::from(key1 != *k1);
+                    let offset2 = usize::from(key2 != *k2);
+                    (p1 + offset1)
+                        .cmp(&(p2 + offset2))
+                        .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
+                }
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => {
+                    let base_pos1 = base_key_first_pos.get(&key1).unwrap_or(&usize::MAX);
+                    let base_pos2 = base_key_first_pos.get(&key2).unwrap_or(&usize::MAX);
+                    base_pos1
+                        .cmp(base_pos2)
+                        .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
+                }
             }
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => {
-                let base_pos1 = base_key_first_pos.get(&key1).unwrap_or(&usize::MAX);
-                let base_pos2 = base_key_first_pos.get(&key2).unwrap_or(&usize::MAX);
-                base_pos1
-                    .cmp(base_pos2)
-                    .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
-            }
-        }
+        })
     });
     header_pos.into_iter().map(|(k, _)| k).collect()
+}
+
+fn compute_pos_groups(table_set: &[RefCell<Vec<SyntaxElement>>]) -> Vec<usize> {
+    let mut pos_group = vec![0_usize; table_set.len()];
+    let mut group = 0;
+    for (pos, cell) in table_set.iter().enumerate() {
+        if group_marker_prefix_len(&cell.borrow()).is_some() {
+            group += 1;
+        }
+        pos_group[pos] = group;
+    }
+    pos_group
+}
+
+fn group_marker_prefix_len(elements: &[SyntaxElement]) -> Option<usize> {
+    let marker_at = elements
+        .iter()
+        .position(|e| !matches!(e.kind(), LINE_BREAK | WHITESPACE))?;
+    if elements[marker_at].kind() != COMMENT || !is_group_marker(&elements[marker_at].to_string()) {
+        return None;
+    }
+    let trailing_break = usize::from(elements.get(marker_at + 1).is_some_and(|e| e.kind() == LINE_BREAK));
+    Some(marker_at + 1 + trailing_break)
+}
+
+fn take_leading_group_marker(content: &mut Vec<SyntaxElement>) -> Option<Vec<SyntaxElement>> {
+    let after = group_marker_prefix_len(content)?;
+    Some(content.drain(..after).collect())
 }
 
 fn get_key(k: &str, multi_level_prefixes: &[&str]) -> String {
@@ -357,51 +434,62 @@ fn get_key(k: &str, multi_level_prefixes: &[&str]) -> String {
 pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]) {
     let (size, mut to_insert) = (table.len(), Vec::<SyntaxElement>::new());
     let (key_to_position, key_set) = load_keys(table);
+
+    let mut headers: Vec<Vec<SyntaxElement>> = vec![Vec::new()];
+    let mut pos_group = vec![0_usize; key_set.len()];
+    let mut current_group = 0;
+    for position in 0..key_set.len() {
+        if let Some(first) = key_set[position].first()
+            && let Some(header) = split_leading_group_marker(first)
+        {
+            headers.push(header);
+            current_group = headers.len() - 1;
+        }
+        pos_group[position] = current_group;
+    }
+
     let mut handled_positions = HashSet::<usize>::new();
-    for current_key in order {
-        let mut matching_keys = key_to_position
-            .iter()
-            .filter(|(checked_key, position)| {
-                !handled_positions.contains(position)
-                    && (current_key == checked_key
-                        || (checked_key.starts_with(current_key)
-                            && checked_key.len() > current_key.len()
-                            && checked_key.chars().nth(current_key.len()).unwrap() == '.'))
-            })
-            .map(|(key, _)| key)
-            .clone()
-            .collect::<Vec<&String>>();
-        matching_keys.sort_by_key(|key| key.to_lowercase());
-        for key in matching_keys {
-            let position = key_to_position[key];
-            let first_has_leading = key_set[position].first().is_some_and(has_leading_newline);
-            if first_has_leading {
-                while to_insert.last().is_some_and(|e| e.kind() == LINE_BREAK) {
-                    to_insert.pop();
-                }
-            } else if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
+    for (group, header) in headers.iter().enumerate() {
+        if !header.is_empty() {
+            let starts_with_break = header.first().map(SyntaxElement::kind) == Some(LINE_BREAK);
+            if !starts_with_break && !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
                 to_insert.push(make_newline());
             }
-            to_insert.extend(key_set[position].clone());
+            to_insert.extend(header.iter().cloned());
+        }
+        for current_key in order {
+            let mut matching_keys = key_to_position
+                .iter()
+                .filter(|(checked_key, position)| {
+                    !handled_positions.contains(position)
+                        && (current_key == checked_key
+                            || (checked_key.starts_with(current_key)
+                                && checked_key.len() > current_key.len()
+                                && checked_key.chars().nth(current_key.len()).unwrap() == '.'))
+                })
+                .map(|(key, _)| key)
+                .clone()
+                .collect::<Vec<&String>>();
+            matching_keys.sort_by_key(|key| key.to_lowercase());
+            for key in matching_keys {
+                let position = key_to_position[key];
+                if pos_group[position] != group {
+                    continue;
+                }
+                emit_key(&mut to_insert, &key_set[position]);
+                handled_positions.insert(position);
+            }
+        }
+        let mut unhandled: Vec<(String, usize)> = key_to_position
+            .iter()
+            .filter(|(_, position)| !handled_positions.contains(position) && pos_group[**position] == group)
+            .map(|(key, position)| (key.clone(), *position))
+            .collect();
+        unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+        for (_, position) in unhandled {
+            emit_key(&mut to_insert, &key_set[position]);
             handled_positions.insert(position);
         }
-    }
-    let mut unhandled: Vec<(String, usize)> = key_to_position
-        .iter()
-        .filter(|(_, position)| !handled_positions.contains(position))
-        .map(|(key, position)| (key.clone(), *position))
-        .collect();
-    unhandled.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
-    for (_, position) in unhandled {
-        let first_has_leading = key_set[position].first().is_some_and(has_leading_newline);
-        if first_has_leading {
-            while to_insert.last().is_some_and(|e| e.kind() == LINE_BREAK) {
-                to_insert.pop();
-            }
-        } else if !to_insert.is_empty() && to_insert.last().map(|e| e.kind()) != Some(LINE_BREAK) {
-            to_insert.push(make_newline());
-        }
-        to_insert.extend(key_set[position].clone());
     }
     table.splice(0..size, to_insert);
 }
@@ -692,12 +780,6 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         _ => return,
     };
 
-    ensure_table_exists(tables, parent_name);
-    let main_positions = tables.header_to_pos[parent_name].clone();
-    if main_positions.len() != 1 {
-        return;
-    }
-
     let first_sub = tables.table_set[*sub_positions.first().unwrap()].borrow();
     // Check for both ARRAY_OF_TABLE node (old structure) and DOUBLE_BRACKET_START (new structure)
     let is_array_table = first_sub
@@ -710,6 +792,11 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
         return;
     }
 
+    ensure_table_exists(tables, parent_name);
+    let main_positions = tables.header_to_pos[parent_name].clone();
+    if main_positions.len() != 1 {
+        return;
+    }
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
     let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
 
@@ -839,23 +926,11 @@ fn collapse_array_of_tables(
     let has_comments_between_keys = all_entries
         .iter()
         .any(|aot_entries| aot_entries.iter().skip(1).any(|entry| !entry.comments.is_empty()));
+    if has_comments_between_keys {
+        return;
+    }
 
-    let array_value = if has_comments_between_keys {
-        let mut parts: Vec<String> = Vec::new();
-        for aot_entries in &all_entries {
-            for entry in aot_entries {
-                for comment in &entry.comments {
-                    parts.push(format!("  {comment}"));
-                }
-                let inline_table = format!("{{ {} = {} }}", entry.key, entry.value);
-                if inline_table.len() > column_width {
-                    return;
-                }
-                parts.push(format!("  {inline_table},"));
-            }
-        }
-        format!("[\n{}\n]", parts.join("\n"))
-    } else {
+    let array_value = {
         let has_leading_comments = all_entries
             .iter()
             .any(|aot_entries| aot_entries.first().is_some_and(|e| !e.comments.is_empty()));
@@ -890,7 +965,11 @@ fn collapse_array_of_tables(
     };
     let entry_text = format!("{sub_name} = {array_value}\n");
 
-    let main_positions = &tables.header_to_pos[parent_name];
+    ensure_table_exists(tables, parent_name);
+    let main_positions = tables.header_to_pos[parent_name].clone();
+    if main_positions.len() != 1 {
+        return;
+    }
     let mut main = tables.table_set[*main_positions.first().unwrap()].borrow_mut();
 
     if main.last().is_some_and(|e| e.kind() != LINE_BREAK) {
