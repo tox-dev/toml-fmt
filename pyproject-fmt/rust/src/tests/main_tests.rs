@@ -1037,3 +1037,47 @@ fn test_issue_376_collapse_with_comments_stays_valid() {
     authenticate = "always"
     "#);
 }
+
+#[test]
+fn test_wide_array_of_tables_under_implicit_parent() {
+    let start = indoc! {r#"
+        [[tool.demo.labels.file-rules]]
+        any-glob-to-any-file = ["src/managers/apt*", "src/managers/dpkg*", "src/managers/opkg*", "tests/*apt*", "tests/*dpkg*", "tests/*opkg*"]
+    "#};
+    let result = format_toml(start, &default_settings());
+    assert_valid_toml(&result);
+    insta::assert_snapshot!(result, @r#"
+    [[tool.demo.labels.file-rules]]
+    any-glob-to-any-file = [
+      "src/managers/apt*",
+      "src/managers/dpkg*",
+      "src/managers/opkg*",
+      "tests/*apt*",
+      "tests/*dpkg*",
+      "tests/*opkg*"
+    ]
+    "#);
+}
+
+#[test]
+fn test_wide_array_of_tables_under_explicit_empty_parent() {
+    let start = indoc! {r#"
+        [tool.demo.labels]
+        [[tool.demo.labels.file-rules]]
+        any-glob-to-any-file = ["src/managers/apt*", "src/managers/dpkg*", "src/managers/opkg*", "tests/*apt*", "tests/*dpkg*", "tests/*opkg*"]
+    "#};
+    let result = format_toml(start, &default_settings());
+    assert_valid_toml(&result);
+    insta::assert_snapshot!(result, @r#"
+    [tool.demo.labels]
+    [[tool.demo.labels.file-rules]]
+    any-glob-to-any-file = [
+      "src/managers/apt*",
+      "src/managers/dpkg*",
+      "src/managers/opkg*",
+      "tests/*apt*",
+      "tests/*dpkg*",
+      "tests/*opkg*"
+    ]
+    "#);
+}

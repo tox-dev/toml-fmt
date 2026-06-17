@@ -2537,3 +2537,87 @@ fn test_reorder_table_keys_group_markers_respect_order() {
     delta = 3
     "#);
 }
+
+#[test]
+fn test_collapse_sub_table_keeps_empty_parent_with_wide_array_of_tables() {
+    let toml = indoc! {r#"
+        [tool.demo.labels]
+
+        [[tool.demo.labels.file-rules]]
+        any-glob-to-any-file = ["src/managers/apt*", "src/managers/dpkg*", "src/managers/opkg*", "tests/*apt*", "tests/*dpkg*", "tests/*opkg*"]
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    apply_table_formatting(&mut tables, |_| true, &["tool.demo"], 120);
+
+    assert!(
+        tables.get("tool.demo").is_none(),
+        "empty parent must not be collapsed to an inline table"
+    );
+    let file_rules = tables.get("tool.demo.labels.file-rules").unwrap();
+    assert!(
+        !file_rules[0].borrow().is_empty(),
+        "wide array of tables must stay expanded"
+    );
+
+    tables.reorder(
+        &root_ast,
+        &["tool.demo.labels", "tool.demo.labels.file-rules"],
+        &[],
+        "\n",
+        "",
+    );
+    let result = format_toml(&root_ast, 120);
+    crate::test_util::assert_valid_toml(&result);
+    insta::assert_snapshot!(result, @r#"
+    [tool.demo.labels]
+    [[tool.demo.labels.file-rules]]
+    any-glob-to-any-file = [
+      "src/managers/apt*",
+      "src/managers/dpkg*",
+      "src/managers/opkg*",
+      "tests/*apt*",
+      "tests/*dpkg*",
+      "tests/*opkg*"
+    ]
+    "#);
+}
+
+#[test]
+fn test_collapse_sub_tables_keeps_empty_table_with_array_of_tables_descendant() {
+    let toml = indoc! {r#"
+        [dependency-groups.docs]
+
+        [[dependency-groups.docs.entries]]
+        name = "sphinx"
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_tables(&mut tables, "dependency-groups");
+
+    let main = tables.get("dependency-groups").unwrap();
+    let main_text = main[0].borrow().iter().map(|e| e.to_string()).collect::<String>();
+    assert!(
+        !main_text.contains("docs ="),
+        "empty table must not be collapsed to an inline table"
+    );
+    assert!(tables.header_to_pos.contains_key("dependency-groups.docs.entries"));
+
+    tables.reorder(
+        &root_ast,
+        &["dependency-groups.docs", "dependency-groups.docs.entries"],
+        &[],
+        "\n",
+        "",
+    );
+    let result = format_toml(&root_ast, 120);
+    crate::test_util::assert_valid_toml(&result);
+    insta::assert_snapshot!(result, @r#"
+    [dependency-groups]
+    [dependency-groups.docs]
+    [[dependency-groups.docs.entries]]
+    name = "sphinx"
+    "#);
+}
