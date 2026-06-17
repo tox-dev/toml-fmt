@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use tombi_syntax::SyntaxKind::{BASIC_STRING, KEY_VALUE, KEYS};
 
-use crate::util::{find_first, iter, limit_blank_lines};
+use crate::util::{find_first, is_group_marker, iter, limit_blank_lines};
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
     tombi_parser::parse(source).syntax_node().clone_for_update()
@@ -125,4 +125,23 @@ fn test_limit_blank_lines_zero_max() {
     let expected = "line1\nline2\n";
     let result = limit_blank_lines(input, 0);
     assert_eq!(result, expected);
+}
+
+#[test]
+fn test_is_group_marker() {
+    for (text, expected) in [
+        ("# Group: web", true),
+        ("#Group:web", true),
+        ("#   Group:   web", true),
+        ("# group: web", true),
+        ("# GROUP: web", true),
+        ("   # Group: x", true),
+        ("# web frameworks", false),
+        ("# Group of things", false),
+        ("Group: web", false),
+        ("", false),
+        ("#", false),
+    ] {
+        assert_eq!(is_group_marker(text), expected, "{text:?}");
+    }
 }

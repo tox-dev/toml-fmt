@@ -2335,3 +2335,34 @@ fn test_project_classifiers_with_invalid_classifier() {
     ]
     "#);
 }
+
+#[test]
+fn test_project_dependencies_group_markers() {
+    let start = indoc! {r#"
+        [project]
+        name = "x"
+        version = "1"
+        dependencies = [
+          # Group: web
+          "flask",
+          "django",
+          # Group: db
+          "sqlalchemy",
+          "psycopg2",
+        ]
+    "#};
+    let result = evaluate_project(start, false, (3, 9), false);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    name = "x"
+    version = "1"
+    dependencies = [
+      # Group: web
+      "django",
+      "flask",
+      # Group: db
+      "psycopg2",
+      "sqlalchemy",
+    ]
+    "#);
+}

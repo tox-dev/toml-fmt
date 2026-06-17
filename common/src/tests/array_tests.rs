@@ -1091,3 +1091,70 @@ fn test_remove_strings_last_entry_no_trailing_comma() {
     let res = remove_strings_helper(start, "c");
     insta::assert_snapshot!(res, @r#"a = [ "b" ]"#);
 }
+
+#[test]
+fn test_sort_group_markers_partition() {
+    let start = indoc! {r#"
+        a = [
+          # Group: web
+          "flask",
+          "django",
+          # Group: net
+          "requests",
+          "aiohttp",
+        ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      # Group: web
+      "django",
+      "flask",
+      # Group: net
+      "aiohttp",
+      "requests",
+    ]
+    "#);
+}
+
+#[test]
+fn test_sort_group_markers_leading_group() {
+    let start = indoc! {r#"
+        a = [
+          "zebra",
+          "apple",
+          # Group: more
+          "yak",
+          "bear",
+        ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      "apple",
+      "zebra",
+      # Group: more
+      "bear",
+      "yak",
+    ]
+    "#);
+}
+
+#[test]
+fn test_sort_non_marker_comment_travels_with_value() {
+    let start = indoc! {r#"
+        a = [
+          # web frameworks
+          "flask",
+          "django",
+        ]
+    "#};
+    let res = sort_array_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    a = [
+      "django",
+      # web frameworks
+      "flask",
+    ]
+    "#);
+}

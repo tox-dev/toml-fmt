@@ -198,6 +198,39 @@ Inline comments within arrays are aligned independently per array, based on that
       "pytest-mock",  # mocking
     ]
 
+Group Markers
+~~~~~~~~~~~~~
+
+By default the formatter reorders each array and table as a single unit, so any entry can move to its sorted position.
+Mark a boundary with a standalone comment that starts with ``# Group:``: the formatter then sorts within each group,
+holds the groups in their original order, and keeps the marker at the top of its group. Reach for this when related
+entries belong together but should still be sorted.
+
+Files without a ``# Group:`` marker format the same as before, so the feature stays opt-in. Case does not matter, so
+``# group:`` works too. Only standalone comment lines count; the formatter ignores inline trailing comments.
+
+.. code-block:: toml
+
+    # Before
+    deps = [
+      # Group: runtime
+      "requests",
+      "click",
+      # Group: testing
+      "pytest-cov",
+      "pytest",
+    ]
+
+    # After
+    deps = [
+      # Group: runtime
+      "click",
+      "requests",
+      # Group: testing
+      "pytest",
+      "pytest-cov",
+    ]
+
 Table-Specific Handling
 -----------------------
 

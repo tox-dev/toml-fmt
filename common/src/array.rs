@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -31,7 +30,9 @@ fn unwrap_leading_trivia(result: &mut Vec<SyntaxElement>, elem: SyntaxElement) {
     let children: Vec<_> = node.children_with_tokens().collect();
     let leading_count = children
         .iter()
-        .take_while(|c| matches!(c.kind(), LINE_BREAK | WHITESPACE))
+        .take_while(|c| {
+            matches!(c.kind(), LINE_BREAK | WHITESPACE) || (c.kind() == COMMENT && is_group_marker(&c.to_string()))
+        })
         .count();
     if leading_count == 0 {
         result.push(elem);
@@ -69,6 +70,7 @@ fn flatten_array_in_place(array: &SyntaxNode) {
 
 use crate::create::{make_comma, make_newline, make_whitespace_n};
 use crate::string::{load_text, update_content};
+use crate::util::is_group_marker;
 
 fn is_array_value(kind: SyntaxKind) -> bool {
     !matches!(
@@ -214,6 +216,48 @@ where
     }
 }
 
+/// A run of array values bounded by `# Group:` markers. Values are reordered only within a group;
+/// the marker `header` stays anchored at the group's start and groups keep their original order.
+struct ValueGroup<T> {
+    header: Vec<SyntaxElement>,
+    order_sets: Vec<Vec<SyntaxElement>>,
+    key_to_order_set: HashMap<T, usize>,
+}
+
+impl<T: Clone + Eq + Hash> ValueGroup<T> {
+    fn new(header: Vec<SyntaxElement>) -> Self {
+        Self {
+            header,
+            order_sets: Vec::new(),
+            key_to_order_set: HashMap::new(),
+        }
+    }
+
+    fn add(&mut self, key: T, set: &mut Vec<SyntaxElement>) {
+        if let Some(&existing_idx) = self.key_to_order_set.get(&key) {
+            self.order_sets[existing_idx].append(set);
+        } else {
+            self.key_to_order_set.insert(key, self.order_sets.len());
+            self.order_sets.push(std::mem::take(set));
+        }
+    }
+
+    fn emit<C: Fn(&T, &T) -> Ordering>(mut self, entries: &mut Vec<SyntaxElement>, cmp: &C) {
+        entries.extend(self.header);
+        for set in &mut self.order_sets {
+            let has_comma = set.iter().any(|e| e.kind() == COMMA);
+            if !has_comma && let Some(pos) = set.iter().position(|e| is_array_value(e.kind())) {
+                set.insert(pos + 1, make_comma());
+            }
+        }
+        let mut order: Vec<T> = self.key_to_order_set.keys().cloned().collect();
+        order.sort_by(cmp);
+        for key in order {
+            entries.extend(self.order_sets[self.key_to_order_set[&key]].clone());
+        }
+    }
+}
+
 #[allow(clippy::range_plus_one, clippy::too_many_lines)]
 pub fn sort<T, K, C>(array: &SyntaxNode, to_key: K, cmp: &C)
 where
@@ -233,24 +277,11 @@ where
         == Some(COMMA);
 
     let mut entries = Vec::<SyntaxElement>::new();
-    let mut order_sets = Vec::<Vec<SyntaxElement>>::new();
-    let mut key_to_order_set = HashMap::<T, usize>::new();
-    let current_set = RefCell::new(Vec::<SyntaxElement>::new());
+    let mut groups = vec![ValueGroup::<T>::new(Vec::new())];
+    let mut current_set = Vec::<SyntaxElement>::new();
     let mut current_set_value: Option<T> = None;
     let mut after_bracket_start = false;
-
-    let mut add_to_order_sets = |entry: T| {
-        let mut entry_set_borrow = current_set.borrow_mut();
-        if !entry_set_borrow.is_empty() {
-            if let Some(&existing_idx) = key_to_order_set.get(&entry) {
-                order_sets[existing_idx].extend(entry_set_borrow.clone());
-            } else {
-                key_to_order_set.insert(entry, order_sets.len());
-                order_sets.push(entry_set_borrow.clone());
-            }
-            entry_set_borrow.clear();
-        }
-    };
+    let mut pending_marker = false;
 
     let mut count = 0;
 
@@ -263,26 +294,25 @@ where
             }
             after_bracket_start = false;
         }
-        match &entry.kind() {
+        match entry.kind() {
             BRACKET_START => {
                 entries.push(entry);
                 after_bracket_start = true;
             }
             BRACKET_END => {
                 match current_set_value.take() {
-                    None => {
-                        entries.extend(current_set.borrow_mut().drain(..));
-                    }
-                    Some(val) => {
-                        add_to_order_sets(val);
-                    }
+                    None => entries.append(&mut current_set),
+                    Some(val) => groups.last_mut().unwrap().add(val, &mut current_set),
                 }
                 entries.push(entry);
             }
             LINE_BREAK => {
-                current_set.borrow_mut().push(entry);
-                if current_set_value.is_some() {
-                    add_to_order_sets(current_set_value.take().unwrap());
+                current_set.push(entry);
+                if pending_marker {
+                    groups.push(ValueGroup::new(std::mem::take(&mut current_set)));
+                    pending_marker = false;
+                } else if let Some(val) = current_set_value.take() {
+                    groups.last_mut().unwrap().add(val, &mut current_set);
                 }
             }
             COMMA => {
@@ -290,49 +320,38 @@ where
                     .as_node()
                     .is_some_and(|n| n.children_with_tokens().any(|c| c.kind() == COMMENT));
                 if has_comment {
-                    current_set.borrow_mut().push(entry);
+                    current_set.push(entry);
                 } else {
-                    current_set.borrow_mut().push(make_comma());
+                    current_set.push(make_comma());
                 }
             }
-            kind if is_array_value(*kind) => {
-                match current_set_value.take() {
-                    None => {}
-                    Some(val) => {
-                        add_to_order_sets(val);
-                    }
+            COMMENT if is_group_marker(&entry.to_string()) => {
+                current_set.push(entry);
+                pending_marker = true;
+            }
+            kind if is_array_value(kind) => {
+                if let Some(val) = current_set_value.take() {
+                    groups.last_mut().unwrap().add(val, &mut current_set);
                 }
                 if let Some(value_node) = entry.as_node() {
                     current_set_value = to_key(value_node);
                 }
-
-                current_set.borrow_mut().push(entry);
+                current_set.push(entry);
             }
-            _ => {
-                current_set.borrow_mut().push(entry);
-            }
+            _ => current_set.push(entry),
         }
     }
 
-    let remaining: Vec<SyntaxElement> = current_set.borrow_mut().drain(..).collect();
+    let remaining: Vec<SyntaxElement> = std::mem::take(&mut current_set);
 
     let leading_count = entries
         .iter()
         .take_while(|e| matches!(e.kind(), BRACKET_START | LINE_BREAK))
         .count();
     let trailing_content = entries.split_off(leading_count);
-    let mut order: Vec<T> = key_to_order_set.keys().cloned().collect();
-    order.sort_by(&cmp);
 
-    for set in &mut order_sets {
-        let has_comma = set.iter().any(|e| e.kind() == COMMA);
-        if !has_comma && let Some(pos) = set.iter().position(|e| is_array_value(e.kind())) {
-            set.insert(pos + 1, make_comma());
-        }
-    }
-
-    for key in order {
-        entries.extend(order_sets[key_to_order_set[&key]].clone());
+    for group in groups {
+        group.emit(&mut entries, cmp);
     }
     entries.extend(trailing_content);
     entries.extend(remaining);

@@ -1018,7 +1018,7 @@ fn test_collapse_array_of_tables_preserves_comments() {
 }
 
 #[test]
-fn test_collapse_array_of_tables_preserves_multiple_comments_per_entry() {
+fn test_collapse_array_of_tables_skips_when_comments_between_keys() {
     let toml = indoc! {r#"
         [tool.cibuildwheel]
         name = "foo"
@@ -1036,21 +1036,15 @@ fn test_collapse_array_of_tables_preserves_multiple_comments_per_entry() {
 
     collapse_sub_table(&mut tables, "tool.cibuildwheel", "overrides", 120);
 
+    let overrides = tables.get("tool.cibuildwheel.overrides").unwrap();
+    assert!(
+        !overrides[0].borrow().is_empty(),
+        "entries with comments between keys must stay expanded to keep valid TOML"
+    );
     let parent = tables.get("tool.cibuildwheel").unwrap();
     let parent_table = parent[0].borrow();
     let result = parent_table.iter().map(|e| e.to_string()).collect::<String>();
-    insta::assert_snapshot!(result, @r#"
-    [tool.cibuildwheel]
-    name = "foo"
-    overrides = [
-      # iOS environment comment
-      # yeah
-      { select = "*_iphoneos" },
-      # s
-      # oh yeah
-      { pure = "ss" },
-    ]
-    "#);
+    assert!(!result.contains("overrides ="), "table must not be collapsed inline");
 }
 
 #[test]
@@ -2384,5 +2378,135 @@ fn test_reorder_inline_table_keys_unknown_keys_appended() {
     insta::assert_snapshot!(result, @r#"
     [section]
     val = { replace = "env", name = "X", extra = true }
+    "#);
+}
+
+fn reorder_keys_render(start: &str, table_name: &str, order: &[&str]) -> String {
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    let refs = tables.get(table_name).unwrap();
+    reorder_table_keys(&mut refs[0].borrow_mut(), order);
+    refs[0].borrow().iter().map(|e| e.to_string()).collect::<String>()
+}
+
+#[test]
+fn test_reorder_table_keys_group_markers_partition() {
+    let start = indoc! {r#"
+        [tool.x]
+        # Group: a
+        zebra = 1
+        apple = 2
+        # Group: b
+        yak = 3
+        bear = 4
+    "#};
+    let res = reorder_keys_render(start, "tool.x", &[""]);
+    insta::assert_snapshot!(res, @r#"
+    [tool.x]
+    # Group: a
+    apple = 2
+    zebra = 1
+    # Group: b
+    bear = 4
+    yak = 3
+    "#);
+}
+
+#[test]
+fn test_reorder_table_keys_no_markers_unchanged() {
+    let start = indoc! {r#"
+        [tool.x]
+        zebra = 1
+        apple = 2
+    "#};
+    let res = reorder_keys_render(start, "tool.x", &[""]);
+    insta::assert_snapshot!(res, @r#"
+    [tool.x]
+    apple = 2
+    zebra = 1
+    "#);
+}
+
+#[test]
+fn test_reorder_sections_group_markers_block_cross_group() {
+    let start = indoc! {r#"
+        # Group: one
+        [tool.zzz]
+        a = 1
+
+        [tool.aaa]
+        b = 2
+
+        # Group: two
+        [tool.yyy]
+        c = 3
+
+        [tool.bbb]
+        d = 4
+    "#};
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    tables.reorder(&root_ast, &[], &[], "\n", "");
+    insta::assert_snapshot!(format_toml(&root_ast, 120), @r#"
+    # Group: one
+    [tool.aaa]
+    b = 2
+
+    [tool.zzz]
+    a = 1
+
+    # Group: two
+    [tool.bbb]
+    d = 4
+
+    [tool.yyy]
+    c = 3
+    "#);
+}
+
+#[test]
+fn test_collapse_array_of_tables_skips_multi_position_parent() {
+    let toml = indoc! {r#"
+        [[project]]
+        name = "a"
+
+        [[project]]
+        name = "b"
+
+        [[project.foo]]
+        x = 1
+    "#};
+    let root_ast = parse(toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "foo", 120);
+
+    let foo = tables.get("project.foo").unwrap();
+    assert!(
+        !foo[0].borrow().is_empty(),
+        "must not collapse into a parent with multiple positions"
+    );
+}
+
+#[test]
+fn test_reorder_table_keys_group_markers_respect_order() {
+    let start = indoc! {r#"
+        [tool.x]
+        # Group: a
+        beta = 1
+        alpha = 2
+        # Group: b
+        delta = 3
+        charlie = 4
+    "#};
+    let res = reorder_keys_render(start, "tool.x", &["alpha", "charlie"]);
+    insta::assert_snapshot!(res, @r#"
+    [tool.x]
+    # Group: a
+    alpha = 2
+    beta = 1
+    # Group: b
+    charlie = 4
+    delta = 3
     "#);
 }

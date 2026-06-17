@@ -217,6 +217,44 @@ Inline comments within arrays are aligned independently per array, based on that
       "ISC001",  # Another rule
     ]
 
+Group Markers
+~~~~~~~~~~~~~
+
+By default the formatter reorders each array, table, and section list as a single unit, so any entry can move to its
+sorted position. Mark a boundary with a standalone comment that starts with ``# Group:``: the formatter then sorts within
+each group, holds the groups in their original order, and keeps the marker at the top of its group. Reach for this when
+related entries belong together but should still be sorted.
+
+Files without a ``# Group:`` marker format the same as before, so the feature stays opt-in. Case does not matter, so
+``# group:`` works too. Only standalone comment lines count; the formatter ignores inline trailing comments.
+
+The formatter sorts the entries inside each group:
+
+.. code-block:: toml
+
+    # Before
+    dependencies = [
+      # Group: web
+      "flask",
+      "django",
+      # Group: db
+      "sqlalchemy",
+      "psycopg2",
+    ]
+
+    # After
+    dependencies = [
+      # Group: web
+      "django",
+      "flask",
+      # Group: db
+      "psycopg2",
+      "sqlalchemy",
+    ]
+
+A ``# Group:`` marker works the same way before a key in a table or before a ``[tool.*]`` header: the formatter sorts the
+keys or sections up to the next marker, and never moves them across the boundary.
+
 Table-Specific Handling
 -----------------------
 
