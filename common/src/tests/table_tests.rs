@@ -1048,6 +1048,33 @@ fn test_collapse_array_of_tables_skips_when_comments_between_keys() {
 }
 
 #[test]
+fn test_collapse_array_of_tables_skips_when_entry_has_disabled_key() {
+    let toml = format!(
+        indoc! {r#"
+        [project]
+        name = "foo"
+
+        [[project.authors]]
+        name = "Alice"  # {}
+    "#},
+        crate::disabled::MARKER
+    );
+    let root_ast = parse(&toml);
+    let mut tables = Tables::from_ast(&root_ast);
+
+    collapse_sub_table(&mut tables, "project", "authors", 120);
+
+    let authors = tables.get("project.authors").unwrap();
+    assert!(
+        !authors[0].borrow().is_empty(),
+        "entries with a disabled key must stay expanded to keep valid TOML"
+    );
+    let parent = tables.get("project").unwrap();
+    let result = parent[0].borrow().iter().map(|e| e.to_string()).collect::<String>();
+    assert!(!result.contains("authors ="), "table must not be collapsed inline");
+}
+
+#[test]
 fn test_collapse_array_of_tables_no_comments() {
     let toml = indoc! {r#"
         [project]

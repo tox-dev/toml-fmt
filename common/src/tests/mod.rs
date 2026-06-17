@@ -4,6 +4,7 @@ pub use crate::test_util::format_toml_str;
 
 pub mod array_tests;
 pub mod create_tests;
+pub mod disabled_tests;
 pub mod pep508_tests;
 pub mod string_tests;
 pub mod table_tests;

@@ -883,6 +883,18 @@ fn collapse_array_of_tables(
     sub_positions: &[usize],
     column_width: usize,
 ) {
+    // A disabled key carries the marker in a trailing comment; collapsing the entry into an
+    // inline table would embed that comment and produce invalid TOML, so keep it expanded.
+    let has_disabled_key = sub_positions.iter().any(|pos| {
+        tables.table_set[*pos]
+            .borrow()
+            .iter()
+            .any(|e| e.to_string().contains(crate::disabled::MARKER))
+    });
+    if has_disabled_key {
+        return;
+    }
+
     let mut all_entries: Vec<Vec<KeyValueWithComments>> = Vec::new();
 
     for pos in sub_positions {
