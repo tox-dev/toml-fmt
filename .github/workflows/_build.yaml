@@ -39,7 +39,7 @@ jobs:
         with:
           crate: cargo-edit
       - name: 📥 Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -49,7 +49,7 @@ jobs:
           PACKAGE: ${{ inputs.package-name }}
           RELEASE_TYPE: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: true
           cache-dependency-glob: "tasks/changelog.py"
@@ -115,7 +115,7 @@ jobs:
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
         run: uv run --no-project "$PACKAGE/build_backend.py" dist
@@ -158,7 +158,7 @@ jobs:
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.10' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
         run: uv run --no-project "$PACKAGE/build_backend.py" dist
@@ -195,7 +195,7 @@ jobs:
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
         run: uv run --no-project "$PACKAGE/build_backend.py" dist
