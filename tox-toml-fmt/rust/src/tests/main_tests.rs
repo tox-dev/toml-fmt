@@ -654,11 +654,13 @@ fn test_env_key_reorder() {
         description = "run tests"
         pass_env = ["HOME"]
         set_env = { FOO = "bar" }
+        base_python_file = [".python-version"]
         "#};
     let got = format_toml_helper(start, 2);
     assert_snapshot!(got, @r#"
     [env_run_base]
     description = "run tests"
+    base_python_file = [ ".python-version" ]
     deps = [ "pytest" ]
     pass_env = [ "HOME" ]
     set_env = { FOO = "bar" }
