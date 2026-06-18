@@ -97,6 +97,7 @@ const ENV_KEY_ORDER: &[&str] = &[
     "runner",
     "description",
     "base_python",
+    "base_python_file",
     "default_base_python",
     "system_site_packages",
     "always_copy",
