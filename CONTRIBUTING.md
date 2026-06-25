@@ -7,8 +7,8 @@ benefits all of them. Four packages make up the workspace:
 
 - `common/`: pure Rust library with the TOML parsing, syntax tree manipulation, and formatting utilities. No Python
   bindings; every formatter here builds on it.
-- `toml-fmt-common/`: pure Python library with the CLI utilities, argument parsing, and diff output shared by the
-  Python formatters.
+- `toml-fmt-common/`: pure Python library with the CLI utilities, argument parsing, and diff output shared by the Python
+  formatters.
 - `pyproject-fmt/`: Python package with Rust internals (via PyO3) that formats `pyproject.toml` per PEP 621 and
   community conventions, covering project metadata, dependencies, classifiers, and tool sections.
 - `tox-toml-fmt/`: Python package, also Rust-backed, that formats the `tox.toml` files used by tox.
@@ -94,8 +94,8 @@ tox run -e type
 
 #### Working on `pyproject-fmt/` or `tox-toml-fmt/` (Python packages with Rust internals)
 
-The Rust layer holds the formatting logic; the Python layer is the CLI and higher-level API. Modify the Rust code
-first, then confirm the Python tests still pass.
+The Rust layer holds the formatting logic; the Python layer is the CLI and higher-level API. Modify the Rust code first,
+then confirm the Python tests still pass.
 
 For Rust layer development:
 
@@ -372,8 +372,8 @@ Some code may not reach 100% coverage, and this is acceptable:
 
 ### Writing Good Assertions
 
-Assert the complete expected output instead of checking for a substring. A full assertion catches subtle structural
-bugs a substring check slides past.
+Assert the complete expected output instead of checking for a substring. A full assertion catches subtle structural bugs
+a substring check slides past.
 
 Good assertion style uses exact equality checks:
 
