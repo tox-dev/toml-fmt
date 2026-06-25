@@ -4,7 +4,7 @@ use std::iter::zip;
 use std::ops::Index;
 
 use tombi_syntax::SyntaxKind::{
-    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACKET_END, BRACKET_START, COMMENT, DANGLING_COMMENT_GROUP,
+    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACE_START, BRACKET_END, BRACKET_START, COMMENT, DANGLING_COMMENT_GROUP,
     DOUBLE_BRACKET_START, EQUAL, INLINE_TABLE, KEY_VALUE, KEY_VALUE_GROUP, KEY_VALUE_WITH_COMMA_GROUP, KEYS,
     LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
 };
@@ -1239,7 +1239,11 @@ fn reorder_single_inline_table(node: &SyntaxNode, schemas: &[InlineTableSchema])
         .map(|n| n.children_with_tokens().collect());
 
     if let Some(children) = new_children {
-        node.splice_children(0..node.children_with_tokens().count(), children);
+        let original: Vec<SyntaxElement> = node.children_with_tokens().collect();
+        let brace_idx = original.iter().position(|c| c.kind() == BRACE_START).unwrap_or(0);
+        let mut merged = original[..brace_idx].to_vec();
+        merged.extend(children);
+        node.splice_children(0..original.len(), merged);
     }
 }
 
