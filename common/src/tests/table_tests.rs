@@ -2449,6 +2449,96 @@ fn test_reorder_inline_table_keys_array_trailing_comment_issue_387() {
 }
 
 #[test]
+fn test_reorder_inline_table_keys_keeps_trailing_comment_inside_table() {
+    let start = indoc! {r#"
+        [section]
+        val = { default = "x", replace = "env", # keep me
+          name = "Y" }
+    "#};
+    let result = reorder_inline_helper(start, TEST_SCHEMAS);
+    crate::test_util::assert_valid_toml(&result);
+    assert!(result.contains("# keep me"));
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = {
+      replace = "env", # keep me
+      name = "Y",
+      default = "x"
+    }
+    "#);
+    let again = reorder_inline_helper(&result, TEST_SCHEMAS);
+    assert_eq!(again, result);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_keeps_own_line_comment_inside_table() {
+    let start = indoc! {r#"
+        [section]
+        val = { default = "x",
+          # keep me
+          replace = "env", name = "Y" }
+    "#};
+    let result = reorder_inline_helper(start, TEST_SCHEMAS);
+    crate::test_util::assert_valid_toml(&result);
+    assert!(result.contains("# keep me"));
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = {
+      # keep me
+      replace = "env",
+      name = "Y",
+      default = "x"
+    }
+    "#);
+    let again = reorder_inline_helper(&result, TEST_SCHEMAS);
+    assert_eq!(again, result);
+}
+
+#[test]
+fn test_reorder_inline_table_keys_dangling_comment_left_untouched() {
+    let start = indoc! {r#"
+        [section]
+        val = { default = "x", replace = "env", name = "Y",
+          # dangling
+        }
+    "#};
+    let result = reorder_inline_helper(start, TEST_SCHEMAS);
+    crate::test_util::assert_valid_toml(&result);
+    assert_eq!(result, start);
+}
+
+const VALUE_SCHEMAS: &[InlineTableSchema] = &[InlineTableSchema {
+    discriminator: "kind",
+    key_order: &["kind", "items", "opts"],
+}];
+
+#[test]
+fn test_reorder_inline_table_keys_preserves_list_and_table_values_with_comment() {
+    let start = indoc! {r#"
+        [section]
+        val = { opts = { deep = true }, items = [ "a", "b" ], # note
+          kind = "x" }
+    "#};
+    let result = reorder_inline_helper(start, VALUE_SCHEMAS);
+    crate::test_util::assert_valid_toml(&result);
+    let parsed = result.parse::<toml::Table>().unwrap();
+    let val = parsed["section"]["val"].as_table().unwrap();
+    assert_eq!(val["kind"].as_str(), Some("x"));
+    assert_eq!(val["items"].as_array().unwrap().len(), 2);
+    assert_eq!(val["opts"]["deep"].as_bool(), Some(true));
+    insta::assert_snapshot!(result, @r#"
+    [section]
+    val = {
+      kind = "x",
+      items = [ "a", "b" ], # note
+      opts = { deep = true }
+    }
+    "#);
+    let again = reorder_inline_helper(&result, VALUE_SCHEMAS);
+    assert_eq!(again, result);
+}
+
+#[test]
 fn test_reorder_inline_table_keys_array_own_line_comment_issue_387() {
     let start = indoc! {r#"
         [tool.mypy]

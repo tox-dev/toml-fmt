@@ -4,9 +4,9 @@ use std::iter::zip;
 use std::ops::Index;
 
 use tombi_syntax::SyntaxKind::{
-    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACE_START, BRACKET_END, BRACKET_START, COMMENT, DANGLING_COMMENT_GROUP,
-    DOUBLE_BRACKET_START, EQUAL, INLINE_TABLE, KEY_VALUE, KEY_VALUE_GROUP, KEY_VALUE_WITH_COMMA_GROUP, KEYS,
-    LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
+    ARRAY_OF_TABLE, BARE_KEY, BASIC_STRING, BRACE_START, BRACKET_END, BRACKET_START, COMMA, COMMENT,
+    DANGLING_COMMENT_GROUP, DOUBLE_BRACKET_START, EQUAL, INLINE_TABLE, KEY_VALUE, KEY_VALUE_GROUP,
+    KEY_VALUE_WITH_COMMA_GROUP, KEYS, LINE_BREAK, LITERAL_STRING, TABLE, WHITESPACE,
 };
 use tombi_syntax::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -1200,38 +1200,136 @@ fn detect_schema<'a>(keys: &[String], schemas: &'a [InlineTableSchema]) -> Optio
         .map(|s| s.key_order)
 }
 
-fn reorder_single_inline_table(node: &SyntaxNode, schemas: &[InlineTableSchema]) {
-    let kv_pairs: Vec<(String, String)> = node
-        .children()
-        .filter(|n| n.kind() == KEY_VALUE_WITH_COMMA_GROUP)
-        .flat_map(|group| {
-            group
-                .children()
-                .filter(|n| n.kind() == KEY_VALUE)
-                .map(|kv| (inline_table_key_name(&kv), kv.text().to_string().trim().to_string()))
-                .collect::<Vec<_>>()
-        })
-        .collect();
+/// One key-value of an inline table together with the comments bound to it: `leading` holds
+/// own-line comments that sit before the key, `trailing` the same-line comment after its comma.
+/// Carrying both lets a key keep its comments when the keys get reordered.
+struct InlineEntry {
+    key: String,
+    text: String,
+    leading: Vec<String>,
+    trailing: Option<String>,
+}
 
-    if kv_pairs.len() < 2 {
+/// Split a `KEY_VALUE` node into its `key = value` text and the own-line comments that precede
+/// the key. Tombi stores those comments (and the multi-line layout) as leading trivia before the
+/// `KEYS` child, so everything from `KEYS` onward is the value text and the rest is layout.
+fn clean_key_value(kv: &SyntaxNode) -> (String, Vec<String>) {
+    let (mut text, mut leading, mut started) = (String::new(), Vec::new(), false);
+    for child in kv.children_with_tokens() {
+        if started {
+            text.push_str(&child.to_string());
+        } else if child.kind() == KEYS {
+            started = true;
+            text.push_str(&child.to_string());
+        } else if child.kind() == COMMENT {
+            leading.push(child.to_string().trim().to_string());
+        }
+    }
+    (text.trim().to_string(), leading)
+}
+
+/// Collect the inline table's entries with their comments, or `None` when the table holds a
+/// comment that is not bound to a key. Own-line comments before a key live in that key's leading
+/// trivia and trailing comments live in the preceding `COMMA`, so both move with their key. A
+/// comment that is a direct child of the inline table (a dangling comment before the closing
+/// brace) belongs to no key and would be lost by the rebuild, so the caller leaves the table
+/// untouched instead.
+fn collect_inline_entries(node: &SyntaxNode) -> Option<Vec<InlineEntry>> {
+    // Comments before `BRACE_START` are the array entry's own leading trivia (the splice keeps
+    // them); a comment inside the braces that is not part of a key or comma (a dangling comment
+    // before the closing brace) would be lost by the rebuild, so leave the table untouched.
+    if node
+        .children_with_tokens()
+        .skip_while(|c| c.kind() != BRACE_START)
+        .any(|c| matches!(c.kind(), COMMENT | DANGLING_COMMENT_GROUP))
+    {
+        return None;
+    }
+    let mut entries: Vec<InlineEntry> = Vec::new();
+    for group in node.children().filter(|n| n.kind() == KEY_VALUE_WITH_COMMA_GROUP) {
+        for child in group.children_with_tokens() {
+            match child.kind() {
+                KEY_VALUE => {
+                    let kv = child.as_node().unwrap();
+                    let (text, leading) = clean_key_value(kv);
+                    entries.push(InlineEntry {
+                        key: inline_table_key_name(kv),
+                        text,
+                        leading,
+                        trailing: None,
+                    });
+                }
+                COMMA => {
+                    if let Some(comment) = child
+                        .as_node()
+                        .and_then(|comma| comma.children_with_tokens().find(|c| c.kind() == COMMENT))
+                    {
+                        entries
+                            .last_mut()
+                            .expect("a comma always follows a key-value in an inline table")
+                            .trailing = Some(comment.to_string().trim().to_string());
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Some(entries)
+}
+
+/// Render the reordered entries back into inline-table source. With no comments the compact
+/// single-line form is kept; any comment forces the multi-line form, the only shape that can
+/// carry a comment inside an inline table.
+fn build_inline_table_text(entries: &[&InlineEntry]) -> String {
+    if entries.iter().all(|e| e.leading.is_empty() && e.trailing.is_none()) {
+        let joined = entries.iter().map(|e| e.text.as_str()).collect::<Vec<_>>().join(", ");
+        return format!("_x = {{ {joined} }}\n");
+    }
+    let mut out = String::from("_x = {\n");
+    for (idx, entry) in entries.iter().enumerate() {
+        for comment in &entry.leading {
+            out.push_str("  ");
+            out.push_str(comment);
+            out.push('\n');
+        }
+        out.push_str("  ");
+        out.push_str(&entry.text);
+        if idx + 1 < entries.len() {
+            out.push(',');
+        }
+        if let Some(comment) = &entry.trailing {
+            out.push(' ');
+            out.push_str(comment);
+        }
+        out.push('\n');
+    }
+    out.push_str("}\n");
+    out
+}
+
+fn reorder_single_inline_table(node: &SyntaxNode, schemas: &[InlineTableSchema]) {
+    let Some(entries) = collect_inline_entries(node) else {
+        return;
+    };
+    if entries.len() < 2 {
         return;
     }
 
-    let keys: Vec<String> = kv_pairs.iter().map(|(k, _)| k.clone()).collect();
+    let keys: Vec<String> = entries.iter().map(|e| e.key.clone()).collect();
     let Some(schema) = detect_schema(&keys, schemas) else {
         return;
     };
 
     let key_position = |k: &str| -> usize { schema.iter().position(|s| *s == k).unwrap_or(usize::MAX) };
-    let mut sorted = kv_pairs.clone();
-    sorted.sort_by_key(|(k, _)| key_position(k));
+    let mut order: Vec<usize> = (0..entries.len()).collect();
+    order.sort_by_key(|&i| key_position(&entries[i].key));
 
-    if sorted.iter().map(|(k, _)| k).eq(kv_pairs.iter().map(|(k, _)| k)) {
+    if order.iter().enumerate().all(|(new, &old)| new == old) {
         return;
     }
 
-    let entries: Vec<&str> = sorted.iter().map(|(_, v)| v.as_str()).collect();
-    let rebuilt = format!("_x = {{ {} }}\n", entries.join(", "));
+    let sorted: Vec<&InlineEntry> = order.iter().map(|&i| &entries[i]).collect();
+    let rebuilt = build_inline_table_text(&sorted);
     let parsed = parse(&rebuilt);
     let new_children: Option<Vec<SyntaxElement>> = parsed
         .descendants()
