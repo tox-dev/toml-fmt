@@ -133,6 +133,9 @@ fn can_use_multiline_literal_string(s: &str) -> bool {
 
 fn make_multiline_string_preserving_newlines(text: &str) -> String {
     let mut result = String::from("\"\"\"");
+    if text.starts_with(['\n', '\r']) {
+        result.push('\n');
+    }
     result.push_str(text);
     result.push_str("\"\"\"");
     result
@@ -223,7 +226,10 @@ pub fn load_text(value: &str, kind: SyntaxKind) -> String {
         content
     };
 
-    if kind == BASIC_STRING || kind == MULTI_LINE_BASIC_STRING {
+    if kind == MULTI_LINE_BASIC_STRING {
+        tombi_toml_text::parse_basic_string(content, TomlVersion::default(), true)
+            .unwrap_or_else(|_| content.to_string())
+    } else if kind == BASIC_STRING {
         unescape(content).unwrap_or_else(|_| content.to_string())
     } else {
         content.to_string()

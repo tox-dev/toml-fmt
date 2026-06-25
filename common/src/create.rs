@@ -62,7 +62,8 @@ pub fn make_multiline_string_node(wrapped: &str) -> SyntaxElement {
 /// `text` is inserted verbatim between the delimiters; callers must ensure it does not
 /// contain the `'''` substring.
 pub fn make_multiline_literal_string_node(text: &str) -> SyntaxElement {
-    let expr = format!("a = '''{text}'''");
+    let leading = if text.starts_with(['\n', '\r']) { "\n" } else { "" };
+    let expr = format!("a = '''{leading}{text}'''");
     let root = parse(&expr);
     first_key_value(&root)
         .children_with_tokens()

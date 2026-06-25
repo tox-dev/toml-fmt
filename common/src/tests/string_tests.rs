@@ -1092,6 +1092,64 @@ fn test_can_use_multiline_literal_string_rejects_triple_single_quote() {
 }
 
 #[test]
+fn test_issue_388_load_text_multiline_basic_line_ending_backslash() {
+    // A multi-line basic string using a line-ending backslash (trims the newline and the
+    // next line's leading whitespace) must decode to its true value, not the raw escaped text.
+    let token = "\"\"\"\\\necho \"one\"\necho \"two\"\\\n\"\"\"";
+    let result = load_text(token, MULTI_LINE_BASIC_STRING);
+    assert_eq!(result, "echo \"one\"\necho \"two\"");
+}
+
+#[test]
+fn test_issue_388_line_ending_backslash_value_preserved_and_idempotent() {
+    let toml = "[tool.example]\ncmd = \"\"\"\\\necho \"one\"\necho \"two\"\\\n\"\"\"\n";
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
+    let result = root_ast.to_string();
+
+    let parsed: toml::Value = toml::from_str(&result).unwrap();
+    assert_eq!(
+        parsed["tool"]["example"]["cmd"].as_str().unwrap(),
+        "echo \"one\"\necho \"two\""
+    );
+
+    let root_ast2 = parse(&result);
+    wrap_all_long_strings(&root_ast2, 120, "  ", &[]);
+    assert_eq!(result, root_ast2.to_string(), "formatting must be idempotent");
+}
+
+#[test]
+fn test_issue_388_leading_newline_preserved_literal_form() {
+    // Value starts with a newline and contains `"`, so it is emitted as a triple-literal.
+    // The builder must prepend an extra newline so TOML's first-newline trim is harmless.
+    let toml = "v = \"\"\"\n\\necho \"x\" done\"\"\"\n";
+    let original: toml::Value = toml::from_str(toml).unwrap();
+    assert_eq!(original["v"].as_str().unwrap(), "\necho \"x\" done");
+
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "  ", &[]);
+    let result = root_ast.to_string();
+    assert!(result.contains("'''"), "expected triple-literal output, got: {result}");
+
+    let parsed: toml::Value = toml::from_str(&result).unwrap();
+    assert_eq!(parsed["v"].as_str().unwrap(), "\necho \"x\" done");
+}
+
+#[test]
+fn test_issue_388_leading_newline_preserved_basic_form() {
+    // Value starts with a newline and goes through the basic-preserving builder
+    // (single-line -> multi-line via skip_wrap, literal form unsafe due to the newline).
+    let toml = "[tool.x]\nv = \"\\nhello\"\n";
+    let root_ast = parse(toml);
+    wrap_all_long_strings(&root_ast, 120, "  ", &[String::from("*.v")]);
+    let result = root_ast.to_string();
+    assert!(result.contains("\"\"\""), "expected triple-basic output, got: {result}");
+
+    let parsed: toml::Value = toml::from_str(&result).unwrap();
+    assert_eq!(parsed["tool"]["x"]["v"].as_str().unwrap(), "\nhello");
+}
+
+#[test]
 fn test_skip_wrap_for_keys_partial_wildcard() {
     let toml = r#"[project]
 description = "Short"
