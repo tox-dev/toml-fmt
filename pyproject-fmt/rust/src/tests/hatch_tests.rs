@@ -292,3 +292,27 @@ fn test_hatch_long_format_matrix_aot() {
     let result = evaluate_long(start);
     assert!(result.contains("[[tool.hatch.envs.default.matrix]]"));
 }
+
+#[test]
+fn test_disabled_keys_reorder_and_stay_valid_comments_issue_390() {
+    let start = indoc::indoc! {r#"
+        [tool.hatch]
+        # TODO: re-activate after https://github.com/pypa/hatch/issues/2252
+        # metadata.hooks.docstring-description = {}
+        # metadata.hooks.fancy-pypi-readme.fragments = [ { path = "README.rst", start-after = ".. begin" } ]
+        version.source = "vcs"
+        version.raw-options = { local_scheme = "no-local-version" }  # be able to publish dev version
+    "#};
+    let result = evaluate_full(start);
+    insta::assert_snapshot!(result, @r#"
+    [tool.hatch]
+    version.source = "vcs"
+    version.raw-options = { local_scheme = "no-local-version" }  # be able to publish dev version
+    # TODO: re-activate after https://github.com/pypa/hatch/issues/2252
+    # metadata.hooks.docstring-description = {}
+    # metadata.hooks.fancy-pypi-readme.fragments = [
+    #   { path = "README.rst", start-after = ".. begin" }
+    # ]
+    "#);
+    assert_eq!(evaluate_full(&result), result, "idempotent");
+}
