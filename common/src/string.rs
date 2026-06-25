@@ -124,9 +124,7 @@ fn can_use_literal_string(s: &str) -> bool {
     !s.contains('\'') && !s.chars().any(|c| c.is_control() && c != '\t')
 }
 
-/// Triple-literal `'''...'''` strings preserve everything verbatim except they must not
-/// contain the closing delimiter `'''`. Newlines, tabs, and CR are explicitly allowed
-/// (they are the whole reason to use a multi-line form).
+/// Allows `\n\r\t` (the point of a multi-line form) but not `'''`, which a literal string cannot represent.
 fn can_use_multiline_literal_string(s: &str) -> bool {
     !s.contains("'''") && !s.chars().any(|c| c.is_control() && c != '\n' && c != '\r' && c != '\t')
 }
@@ -407,10 +405,8 @@ fn wrap_string_node_if_needed(
         .any(|pattern| matches_pattern(&key_path, pattern));
 
     let has_newlines = text.contains('\n');
-    // A multi-line literal source like `'''(\n  \.eggs\n  | \.git\n)'''` cannot be
-    // re-emitted as triple-basic without escaping every `\`. Preserve the literal form
-    // whenever it is still valid: the source was literal and the text has no `'''`
-    // (or no `'` for single-line) and no disallowed control chars.
+    // A literal source like `'''(\n  \.eggs\n  | \.git\n)'''` would need every `\` escaped to become triple-basic,
+    // so keep the literal form while it stays valid.
     let literal_safe = if is_multiline {
         can_use_multiline_literal_string(&text)
     } else {

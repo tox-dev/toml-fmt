@@ -32,12 +32,11 @@ which defaults to an empty list).
 Shared configuration file
 -------------------------
 
-You can place formatting settings in a standalone ``tox-toml-fmt.toml`` file instead of (or in addition to) the
-``[tox-toml-fmt]`` table. This is useful for monorepos or when you want to share the same configuration across multiple
-projects without duplicating it in each ``tox.toml``.
+Place formatting settings in a standalone ``tox-toml-fmt.toml`` file instead of (or alongside) the ``[tox-toml-fmt]``
+table. In a monorepo this shares one configuration across projects without repeating it in every ``tox.toml``.
 
-The formatter searches for ``tox-toml-fmt.toml`` starting from the directory of the file being formatted and walking up
-to the filesystem root. The first match wins. You can also pass an explicit path via ``--config``:
+The formatter searches for ``tox-toml-fmt.toml`` from the directory of the file being formatted up to the filesystem
+root, and the first match wins. Pass an explicit path via ``--config``:
 
 .. code-block:: bash
 

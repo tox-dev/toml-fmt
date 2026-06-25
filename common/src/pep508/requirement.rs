@@ -21,7 +21,7 @@ pub struct Requirement {
 
 impl Requirement {
     pub fn new(raw: &str) -> Result<Self, String> {
-        // Check for ; private suffix (PEP 794)
+        // PEP 794 `; private` suffix.
         let (raw_without_private, private) = if let Some(idx) = raw.rfind(';') {
             let suffix = raw[idx + 1..].trim();
             if suffix.eq_ignore_ascii_case("private") {
@@ -33,21 +33,18 @@ impl Requirement {
             (raw, false)
         };
 
-        // Extract the marker (find ';' separator)
         let (raw_req, marker_start) = if let Some(idx) = raw_without_private.find(';') {
             (&raw_without_private[..idx], Some(idx + 1))
         } else {
             (raw_without_private, None)
         };
 
-        // Extract URL from remaining (find "@" separator)
         let (req_part, url_start) = if let Some(idx) = raw_req.find("@") {
             (&raw_req[..idx], Some(idx + 1))
         } else {
             (raw_req, None)
         };
 
-        // Split extras (inside [...]) and extract name
         let (name, extras) = if let Some(start) = req_part.find('[') {
             let end = req_part.find(']').ok_or("Unclosed extras bracket")?;
             let name = &req_part[..start];
@@ -57,13 +54,11 @@ impl Requirement {
                 .collect();
             (name, extras)
         } else {
-            // No extras, but need to find where version specifiers start
             let name_end = req_part.find(|c: char| "=!<>~(".contains(c)).unwrap_or(req_part.len());
             let name = &req_part[..name_end];
             (name, vec![])
         };
 
-        // Parse version specifiers into Vec<VersionOp>
         let version_or_url = if let Some(url_idx) = url_start {
             let url = &raw_req[url_idx..];
             Some(VersionOrUrl::Url(url.trim().to_string()))
@@ -105,7 +100,7 @@ impl Requirement {
         self.name = self.canonical_name();
         if !keep_full_version && let Some(VersionOrUrl::Versions(ref mut specs)) = self.version_or_url {
             for version_op in specs.iter_mut() {
-                // Only strip trailing .0 if there are no pre, post, dev, or local segments
+                // Trailing `.0` is only redundant without pre/post/dev/local segments.
                 if version_op.op != Operator::Compatible
                     && !version_op.version.has_wildcard
                     && version_op.version.pre.is_none()

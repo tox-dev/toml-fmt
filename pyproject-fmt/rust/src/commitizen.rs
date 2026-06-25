@@ -4,30 +4,25 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // Rule selection
     "name",
     "version_type",
     "schema",
     "schema_pattern",
     "allowed_prefixes",
-    // Version source
     "version",
     "version_scheme",
     "version_provider",
     "version_files",
-    // Bump behavior
     "bump_message",
     "always_signoff",
     "retry_after_failure",
     "encoding",
     "major_version_zero",
-    // Tag / sign
     "tag_format",
     "annotated_tag",
     "annotated_tag_message",
     "gpg_sign",
     "use_shortcuts",
-    // Changelog
     "changelog_file",
     "changelog_format",
     "changelog_incremental",
@@ -38,12 +33,9 @@ const KEY_ORDER: &[&str] = &[
     "extras",
     "extra_files",
     "template",
-    // Hooks
     "pre_bump_hooks",
     "post_bump_hooks",
-    // Customization
     "customize",
-    // Commit
     "discover_secret",
 ];
 

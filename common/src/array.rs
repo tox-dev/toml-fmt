@@ -216,8 +216,7 @@ where
     }
 }
 
-/// A run of array values bounded by `# Group:` markers. Values are reordered only within a group;
-/// the marker `header` stays anchored at the group's start and groups keep their original order.
+/// Sorting reorders values only within a group; group `header`s and the relative order of groups stay put.
 struct ValueGroup<T> {
     header: Vec<SyntaxElement>,
     order_sets: Vec<Vec<SyntaxElement>>,
@@ -397,7 +396,6 @@ where
     );
 }
 
-/// Remove duplicate string entries from an array (case-insensitive comparison)
 pub fn dedupe_strings<K>(array: &SyntaxNode, to_key: K)
 where
     K: Fn(&str) -> String,
@@ -406,7 +404,6 @@ where
     remove_strings(array, |s| !seen.insert(to_key(s)));
 }
 
-/// Remove string entries from an array for which `predicate` returns true
 pub fn remove_strings<P>(array: &SyntaxNode, mut predicate: P)
 where
     P: FnMut(&str) -> bool,

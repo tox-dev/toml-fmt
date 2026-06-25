@@ -18,7 +18,6 @@ impl Version {
             input = &input[..input.len() - 2];
         }
 
-        // Parse epoch (e.g., "1!" from "1!2.0.0")
         let epoch = if let Some(idx) = input.find('!') {
             if let Ok(epoch) = input[..idx].parse() {
                 input = &input[idx + 1..];
@@ -30,7 +29,6 @@ impl Version {
             None
         };
 
-        // Parse local version (e.g., "+local" from "1.0.0+local")
         let local = if let Some(idx) = input.find('+') {
             let local = Some(input[idx + 1..].to_ascii_lowercase());
             input = &input[..idx];
@@ -39,13 +37,11 @@ impl Version {
             None
         };
 
-        // Parse pre/post/dev releases
         let mut main = input;
         let mut pre = None;
         let mut post = None;
         let mut dev = None;
 
-        // Parse dev release (e.g., ".dev3" or "dev3")
         if let Some(idx) = main.to_ascii_lowercase().rfind("dev") {
             let (before, after) = main.split_at(idx);
             let after = &after[3..];
@@ -54,7 +50,6 @@ impl Version {
             main = Self::trim_separators_end(before);
         }
 
-        // Parse post release (e.g., ".post2" or "post2")
         if let Some(idx) = main.to_ascii_lowercase().rfind("post") {
             let (before, after) = main.split_at(idx);
             let after = &after[4..];
@@ -63,8 +58,7 @@ impl Version {
             main = Self::trim_separators_end(before);
         }
 
-        // Parse pre-release (e.g., "a1", "beta2", "rc3")
-        // Labels checked longest first to avoid partial matches (e.g. "rc" before "c")
+        // Labels are checked longest first so a shorter one is not matched inside a longer one ("rc" before "c").
         let pre_labels = ["preview", "alpha", "beta", "pre", "rc", "a", "b", "c"];
         for label in &pre_labels {
             if let Some(idx) = main.to_ascii_lowercase().rfind(label) {
@@ -77,7 +71,6 @@ impl Version {
             }
         }
 
-        // Parse release numbers (e.g., "1.2.3" -> [1, 2, 3])
         let release: Vec<u64> = main.split('.').filter_map(|x| x.parse().ok()).collect();
 
         Self {
@@ -107,14 +100,12 @@ impl std::fmt::Display for Version {
         if let Some(epoch) = self.epoch {
             write!(f, "{}!", epoch)?;
         }
-        // Release segment
         for (i, part) in self.release.iter().enumerate() {
             if i > 0 {
                 write!(f, ".")?;
             }
             write!(f, "{}", part)?;
         }
-        // Pre-release
         if let Some((ref pre_l, pre_n)) = self.pre {
             f.write_str(match pre_l.as_str() {
                 "alpha" | "a" => "a",
@@ -128,7 +119,6 @@ impl std::fmt::Display for Version {
                 f.write_str("0")?;
             }
         }
-        // Post-release
         if let Some((ref _post_l, post_n)) = self.post {
             f.write_str(".post")?;
             if let Some(n) = post_n {
@@ -137,7 +127,6 @@ impl std::fmt::Display for Version {
                 f.write_str("0")?;
             }
         }
-        // Dev-release
         if let Some((_, dev_n)) = self.dev {
             f.write_str(".dev")?;
             if let Some(n) = dev_n {
@@ -146,12 +135,10 @@ impl std::fmt::Display for Version {
                 f.write_str("0")?;
             }
         }
-        // Local
         if let Some(ref local) = self.local {
             f.write_str("+")?;
             f.write_str(&local.replace(['-', '_'], "."))?;
         }
-        // Append .*, if this version had a wildcard
         if self.has_wildcard {
             f.write_str(".*")?;
         }

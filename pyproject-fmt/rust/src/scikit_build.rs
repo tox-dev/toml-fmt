@@ -4,31 +4,23 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // top-level
     "minimum-version",
     "build-dir",
     "fail",
     "experimental",
     "strict-config",
-    // build
     "build",
-    // cmake
     "cmake",
     "ninja",
-    // distribution
     "sdist",
     "wheel",
     "install",
     "editable",
-    // logging / messages
     "logging",
     "messages",
-    // metadata
     "metadata",
     "search",
-    // generate (AoT)
     "generate",
-    // overrides (AoT)
     "overrides",
 ];
 

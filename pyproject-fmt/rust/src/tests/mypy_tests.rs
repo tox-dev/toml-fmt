@@ -277,8 +277,8 @@ fn test_mypy_no_table_is_noop() {
 
 #[test]
 fn test_mypy_does_not_reorder_unrelated_inline_tables() {
-    // [[project.authors]] has `{ name, email }`. Our schemas key on mypy-specific
-    // discriminators, so authors must be untouched.
+    // [[project.authors]] has `{ name, email }`. Our schemas key on mypy-specific discriminators, so authors stay
+    // untouched.
     let start = indoc::indoc! {r#"
     [project]
     name = "demo"
@@ -358,7 +358,6 @@ fn test_mypy_long_format_overrides_expanded() {
         result.contains("[[tool.mypy.overrides]]"),
         "expected AoT preserved:\n{result}"
     );
-    // module first, then disable_error_code sorted
     let m = result.find("module = ").expect("module");
     let i = result
         .find("ignore_missing_imports = ")

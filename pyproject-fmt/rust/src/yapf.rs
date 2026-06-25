@@ -1,7 +1,6 @@
 use common::table::{reorder_table_keys, Tables};
 
-// based_on_style sets defaults and column_limit is most-used, so they lead; the rest
-// alphabetizes via the fallback.
+// based_on_style sets defaults and column_limit is most-used, so they lead; the rest alphabetizes via the fallback.
 const KEY_ORDER: &[&str] = &[
     "",
     "based_on_style",

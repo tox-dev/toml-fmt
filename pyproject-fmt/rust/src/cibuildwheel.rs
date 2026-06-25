@@ -4,32 +4,27 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // Selection
     "build",
     "skip",
     "test-skip",
     "archs",
     "enable",
     "free-threaded-support",
-    // Build configuration
     "build-frontend",
     "build-verbosity",
     "config-settings",
     "dependency-versions",
     "environment",
     "environment-pass",
-    // Build phases
     "before-all",
     "before-build",
     "repair-wheel-command",
-    // Test phases
     "before-test",
     "test-command",
     "test-requires",
     "test-extras",
     "test-groups",
     "test-sources",
-    // Platform images
     "manylinux-x86_64-image",
     "manylinux-i686-image",
     "manylinux-aarch64-image",
@@ -45,16 +40,13 @@ const KEY_ORDER: &[&str] = &[
     "musllinux-ppc64le-image",
     "musllinux-s390x-image",
     "musllinux-armv7l-image",
-    // Engine
     "container-engine",
-    // Per-platform sub-tables (collapsed)
     "linux",
     "macos",
     "windows",
     "android",
     "ios",
     "pyodide",
-    // Overrides last
     "overrides",
 ];
 
@@ -63,7 +55,7 @@ const SORT_ARRAYS: &[&str] = &["enable", "test-extras", "test-groups"];
 
 pub fn fix(tables: &mut Tables) {
     fix_one(tables, "tool.cibuildwheel");
-    // Per-platform tables follow the same order when not collapsed into the parent.
+    // Per-platform tables reuse KEY_ORDER for when they stay expanded instead of collapsing into the parent.
     for plat in ["linux", "macos", "windows", "android", "ios", "pyodide"] {
         fix_one(tables, &format!("tool.cibuildwheel.{plat}"));
     }
@@ -94,7 +86,7 @@ fn fix_overrides_aot(tables: &mut Tables) {
                 sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
             }
         });
-        // `select` always first (required), then the regular cibuildwheel keys.
+        // `select` leads because cibuildwheel requires it on every override entry.
         let mut order: Vec<&str> = vec!["", "select"];
         order.extend(KEY_ORDER.iter().filter(|k| !k.is_empty() && **k != "overrides"));
         reorder_table_keys(table, &order);

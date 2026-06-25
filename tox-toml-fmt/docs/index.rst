@@ -7,9 +7,8 @@ Apply a consistent format to your ``tox.toml`` file with comment support. See
 
 Philosophy
 ----------
-This tool aims to be an *opinionated formatter*, with similar objectives to `black <https://github.com/psf/black>`_.
-This means it deliberately does not support a wide variety of configuration settings. In return, you get consistency,
-predictability, and smaller diffs.
+This is an *opinionated formatter*, with the same objectives as `black <https://github.com/psf/black>`_: it offers few
+configuration settings on purpose. In return you get consistency, predictability, and smaller diffs.
 
 Use
 ---
@@ -17,10 +16,9 @@ Use
 Via ``CLI``
 ~~~~~~~~~~~
 
-:pypi:`tox-toml-fmt` is a CLI tool that needs a Python interpreter (version 3.10 or higher) to run. We recommend
-either :pypi:`pipx` or :pypi:`uv` to install tox-toml-fmt into an isolated environment. This has the added benefit that
-later you will be able to upgrade tox-toml-fmt without affecting other parts of the system. We provide a method for
-``pip`` too here, but we discourage that path if you can:
+:pypi:`tox-toml-fmt` is a CLI tool that needs Python 3.10 or higher to run. Install it into an isolated environment
+with :pypi:`pipx` or :pypi:`uv`; that way you can upgrade tox-toml-fmt later without disturbing the rest of your
+system. A ``pip`` path follows for completeness, though we discourage it:
 
 .. tab:: uv
 
@@ -46,10 +44,9 @@ later you will be able to upgrade tox-toml-fmt without affecting other parts of 
         python -m pip install --user tox-toml-fmt
         tox-toml-fmt --help
 
-    You can install it within the global Python interpreter itself (perhaps as a user package via the
-    ``--user`` flag). Be cautious if you are using a Python installation that is managed by your operating system or
-    another package manager. ``pip`` might not coordinate with those tools, and may leave your system in an inconsistent
-    state. Note, if you go down this path you need to ensure pip is new enough per the subsections below
+    You can install it into the global Python interpreter (as a user package via the ``--user`` flag). Take care if
+    your Python is managed by the operating system or another package manager: ``pip`` may not coordinate with those
+    tools and can leave your system inconsistent. On this path, make sure pip is new enough per the subsections below.
 
 
 Via ``pre-commit`` hook
@@ -67,7 +64,7 @@ See :gh:`pre-commit/pre-commit` for instructions, sample ``.pre-commit-config.ya
 Via Python
 ~~~~~~~~~~
 
-You can use ``tox-toml-fmt`` as a Python module to format TOML content programmatically.
+Call ``tox-toml-fmt`` as a Python module to format TOML from your own code.
 
 .. code-block:: python
 

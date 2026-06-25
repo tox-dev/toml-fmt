@@ -2,7 +2,6 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// Group: scope (exclude_dirs, targets) → plugins (tests, skips) → plugin sub-tables.
 const KEY_ORDER: &[&str] = &[
     "",
     "exclude_dirs",

@@ -3,35 +3,29 @@ use common::table::{for_entries, reorder_inline_table_keys, reorder_table_keys, 
 use lexical_sort::natural_lexical_cmp;
 use tombi_syntax::SyntaxNode;
 
-// Sub-table prefixes are appended dynamically because some (group.<name>.*) need
-// per-instance entries to control inner key order.
+// Sub-table prefixes are appended dynamically because some (group.<name>.*) need per-instance entries to control
+// inner key order.
 const TOP_LEVEL_ORDER: &[&str] = &[
     "",
-    // Identity
     "name",
     "version",
     "description",
     "package-mode",
-    // License & authorship
     "license",
     "authors",
     "maintainers",
-    // Documentation
     "readme",
     "homepage",
     "repository",
     "documentation",
-    // Discovery
     "keywords",
     "classifiers",
-    // Packaging contents
     "packages",
     "include",
     "exclude",
 ];
 
-// Order for [[tool.poetry.source]] entries (AoT, kept as separate tables). Deprecated
-// keys (default, secondary) are placed last so we don't promote them above current keys.
+// Deprecated source keys (default, secondary) sort last so reordering never promotes them above current keys.
 const SOURCE_KEY_ORDER: &[&str] = &[
     "",
     "name",
@@ -43,14 +37,12 @@ const SOURCE_KEY_ORDER: &[&str] = &[
     "secondary",
 ];
 
-// Order for [tool.poetry.build] when expanded as its own table.
 const BUILD_KEY_ORDER: &[&str] = &["", "script", "generate-setup-file"];
 
-// Order for [tool.poetry.group.<name>] when expanded.
 const GROUP_KEY_ORDER: &[&str] = &["", "optional", "include-groups", "dependencies"];
 
-// Within [tool.poetry.dependencies] (and the per-group equivalents), "python" is the
-// interpreter constraint and conventionally comes first; everything else is sorted.
+// Within [tool.poetry.dependencies] (and the per-group equivalents), `python` is the interpreter constraint and
+// conventionally leads; everything else sorts.
 const DEPENDENCIES_KEY_ORDER: &[&str] = &["", "python"];
 
 pub fn fix(tables: &mut Tables) {
@@ -59,10 +51,9 @@ pub fn fix(tables: &mut Tables) {
     fix_source(tables);
 }
 
-// Inline-table key order for things that get collapsed to inline form. Discriminators are
-// chosen to be Poetry-specific (priority/links/indexed/secondary only appear on sources;
-// git/path/file only on dependencies), to avoid colliding with inline tables in other
-// `[tool.*]` sections that happen to share generic keys like `name` or `url`.
+// Inline-table key order for specs collapsed to inline form. Discriminators are Poetry-specific
+// (priority/links/indexed/secondary appear only on sources; git/path/file only on dependencies) to avoid colliding
+// with inline tables in other `[tool.*]` sections that share generic keys like `name` or `url`.
 const SOURCE_INLINE_KEYS: &[&str] = &["name", "url", "priority", "links", "indexed", "default", "secondary"];
 
 const GIT_DEP_INLINE_KEYS: &[&str] = &[
@@ -199,7 +190,6 @@ fn is_sort_value_array(key: &str) -> bool {
     false
 }
 
-/// Matches `<pkg>.extras` where `<pkg>` has no further dots.
 fn is_dep_extras(s: &str) -> bool {
     let Some((_pkg, tail)) = split_first_segment(s) else {
         return false;
@@ -214,19 +204,16 @@ fn split_first_segment(s: &str) -> Option<(&str, &str)> {
 fn build_root_key_order(table: &[tombi_syntax::SyntaxElement]) -> Vec<String> {
     let mut order: Vec<String> = TOP_LEVEL_ORDER.iter().map(|s| (*s).to_string()).collect();
 
-    // `build` may appear as a scalar (build = "build.py"), an inline-table key, or via
-    // dotted sub-keys (build.script, build.generate-setup-file). The "build" prefix
-    // entry catches all those.
+    // `build` may appear as a scalar (build = "build.py"), an inline-table key, or via dotted sub-keys
+    // (build.script, build.generate-setup-file); the `build` prefix entry catches every form.
     order.push(String::from("build.script"));
     order.push(String::from("build.generate-setup-file"));
     order.push(String::from("build"));
 
-    // Dependencies: python first, then alphabetized.
     order.push(String::from("dependencies.python"));
     order.push(String::from("dependencies"));
     order.push(String::from("dev-dependencies"));
 
-    // Per-group ordering: optional, include-groups, dependencies (python first inside).
     let group_names = collect_dotted_segment(table, "group");
     for group in &group_names {
         order.push(format!("group.{group}.optional"));
@@ -248,7 +235,6 @@ fn build_root_key_order(table: &[tombi_syntax::SyntaxElement]) -> Vec<String> {
     order
 }
 
-/// Distinct first segments following a dotted prefix (prefix "group" → ["dev", "test"]).
 fn collect_dotted_segment(table: &[tombi_syntax::SyntaxElement], prefix: &str) -> Vec<String> {
     use tombi_syntax::SyntaxKind::{KEYS, KEY_VALUE};
     let prefix_dot = format!("{prefix}.");
@@ -278,8 +264,7 @@ fn unquote(s: &str) -> &str {
 }
 
 fn fix_expanded_sub_tables(tables: &mut Tables) {
-    // When the user runs with `table_format = "long"` (no collapse), sub-tables remain
-    // as their own headers. Apply per-table normalization in that case.
+    // In `table_format = "long"` mode sub-tables stay as their own headers, so normalize each one here.
     fix_expanded_dependencies(tables, "tool.poetry.dependencies");
     fix_expanded_dependencies(tables, "tool.poetry.dev-dependencies");
     fix_expanded_dependencies(tables, "tool.poetry.requires-plugins");
@@ -297,9 +282,6 @@ fn fix_expanded_dependencies(tables: &mut Tables, table_key: &str) {
         return;
     };
     let table = &mut elements.first().unwrap().borrow_mut();
-    // Entries here are package names (`fastapi`, `requests`, …) mapped to either a version
-    // string or an inline-table dep spec. The InlineTableSchema set handles the inline-
-    // table key order; here we just promote `python` to the top via DEPENDENCIES_KEY_ORDER.
     reorder_table_keys(table, DEPENDENCIES_KEY_ORDER);
 }
 
@@ -372,7 +354,6 @@ fn fix_source(tables: &mut Tables) {
     }
 }
 
-/// Immediate next segment of every header under `prefix` (group. headers → ["dev", "test"]).
 fn collect_header_segments(tables: &Tables, prefix: &str) -> Vec<String> {
     let mut names: Vec<String> = tables
         .header_to_pos

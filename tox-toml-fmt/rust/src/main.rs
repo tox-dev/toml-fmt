@@ -197,8 +197,8 @@ fn format_core(content: &str, opt: &Settings) -> String {
 /// # Errors
 ///
 /// Will return `PyErr` if an error is raised during formatting.
-// Gated so sibling crates (pyproject-fmt) that pull this in as an rlib don't get a
-// duplicate `PyInit__lib` symbol from pyo3 at link time.
+// Gated so sibling crates (pyproject-fmt) that pull this in as an rlib don't get a duplicate `PyInit__lib` symbol from
+// pyo3 at link time.
 #[cfg(feature = "extension-module")]
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]

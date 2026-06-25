@@ -5,17 +5,14 @@ use lexical_sort::natural_lexical_cmp;
 // Sub-tables collapse to dotted keys (version.source, build.includes, etc.).
 const KEY_ORDER: &[&str] = &[
     "",
-    // Distribution / project mode
     "distribution",
     "package-type",
     "plugins",
-    // Resolution
     "resolution.respect-source-order",
     "resolution.allow-prereleases",
     "resolution.excludes",
     "resolution.overrides",
     "resolution",
-    // Version (collapsed sub-table)
     "version.source",
     "version.path",
     "version.getter",
@@ -26,7 +23,6 @@ const KEY_ORDER: &[&str] = &[
     "version.fallback_version",
     "version.version_format",
     "version",
-    // Build (collapsed sub-table)
     "build.includes",
     "build.excludes",
     "build.source-includes",
@@ -36,20 +32,15 @@ const KEY_ORDER: &[&str] = &[
     "build.custom-hook",
     "build.editable-backend",
     "build",
-    // Scripts
     "scripts",
-    // Sources (legacy non-AoT form)
     "source",
-    // Dev / dependency groups
     "dev-dependencies",
-    // Publish
     "publish.repository",
     "publish.username",
     "publish.password",
     "publish.ca_certs",
     "publish.verify_ssl",
     "publish",
-    // Options
     "options.install",
     "options.lock",
     "options.update",

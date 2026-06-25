@@ -1,6 +1,5 @@
 use common::table::{reorder_table_keys, Tables};
 
-// Group: identity → format → tag → commit → behavior → [[files]]/[[parts]] (AoT, last).
 const KEY_ORDER: &[&str] = &[
     "",
     "current_version",

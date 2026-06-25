@@ -1,20 +1,18 @@
-//! Commented-out (disabled) keys, kept in step with the table they belong to.
+//! A comment whose body is one valid key-value (`# default = true`) is a disabled field rather than prose. The pass
+//! uncomments it so the formatter sorts it with its table, then comments it back; otherwise it would drift to the next
+//! table and never get ordered.
 //!
-//! A comment whose body is one valid key-value (`# default = true`) is a disabled field, not
-//! prose. The pass uncomments it so the formatter sorts it with its table, then comments it back;
-//! otherwise it would drift to the next table and never get ordered.
-//!
-//! A value can span several comment lines. `# x = [` alone is invalid, yet `# x = [` / `#   1,` /
-//! `# ]` parses once the run is uncommented together, so enabling works on whole runs. That also
-//! keeps the round-trip stable when the formatter wraps a value across lines.
+//! A value can span several comment lines. `# x = [` alone is invalid, yet `# x = [` / `#   1,` / `# ]` parses once the
+//! run is uncommented together, so enabling works on whole runs. That also keeps the round-trip stable when the
+//! formatter wraps a value across lines.
 
 use tombi_syntax::SyntaxKind::{
     ARRAY_OF_TABLE, COMMENT, KEY_VALUE, KEY_VALUE_GROUP, KEYS, LINE_BREAK, TABLE, WHITESPACE,
 };
 use tombi_syntax::SyntaxNode;
 
-/// Tags a disabled key's trailing comment so the pass can find it again after the formatter has
-/// reordered and re-parsed everything. [`restore_disabled_keys`] strips it.
+/// Tags a disabled key's trailing comment so the pass can find it again after the formatter has reordered and
+/// re-parsed everything. [`restore_disabled_keys`] strips it.
 pub const MARKER: &str = "__toml_fmt_disabled__";
 
 /// Top-level key-values only; a nested `set_env = { A = "1" }` is one key, not two.
@@ -25,9 +23,8 @@ fn top_level_key_values(root: &SyntaxNode) -> usize {
         .sum()
 }
 
-/// Uncomment `body` (one line or several) into a single marker-tagged key-value, or `None` when it
-/// is not exactly one key-value. The marker extends a comment already on the last line so the
-/// value never ends up with two trailing comments.
+/// `None` unless `body` is exactly one key-value. The marker extends a comment already on the last line, so the value
+/// never ends up with two trailing comments.
 fn enabled_form(body: &str) -> Option<String> {
     let parsed = tombi_parser::parse(body);
     if !parsed.errors.is_empty() {
@@ -56,8 +53,7 @@ pub fn with_disabled_keys(content: &str, format: impl FnOnce(&str) -> String) ->
     restore_disabled_keys(&format(&enabled))
 }
 
-/// Indent before the `#` and the body after it, dropping one space to mirror how
-/// [`comment_disabled_line`] writes a comment back. `None` for a non-comment line.
+/// Drops one space after `#` to mirror how [`comment_disabled_line`] writes it back, keeping the round-trip stable.
 fn split_comment(line: &str) -> Option<(&str, &str)> {
     let trimmed = line.trim_start();
     let rest = trimmed.strip_prefix('#')?;
@@ -72,8 +68,7 @@ fn is_table_header(body: &str) -> bool {
         .any(|n| matches!(n.kind(), TABLE | ARRAY_OF_TABLE))
 }
 
-/// Shortest run from `start` that uncomments to one key-value, with its last line index and the
-/// tagged text. A nested table header ends the run, since the keys under it are a separate value.
+/// A nested table header ends the run, since the keys under it are a separate value.
 fn enable_block(lines: &[&str], start: usize, run_end: usize) -> Option<(usize, String)> {
     let mut bodies: Vec<&str> = Vec::new();
     for (end, line) in lines.iter().enumerate().take(run_end).skip(start) {
@@ -89,9 +84,8 @@ fn enable_block(lines: &[&str], start: usize, run_end: usize) -> Option<(usize, 
     None
 }
 
-/// Uncomment every disabled key-value, tagging each with [`MARKER`]; prose and incomplete fragments
-/// stay commented. A commented table header ends enabling for the rest of its run, since the keys
-/// under it would otherwise leave the table they belong to.
+/// A commented table header ends enabling for the rest of its run, since the keys under it would otherwise leave
+/// the table they belong to.
 pub(crate) fn enable_disabled_keys(source: &str) -> String {
     let lines: Vec<&str> = source.lines().collect();
     let mut out: Vec<String> = Vec::with_capacity(lines.len());
@@ -128,9 +122,8 @@ pub(crate) fn enable_disabled_keys(source: &str) -> String {
     join_like(source, out)
 }
 
-/// Comment every marker-tagged key-value back, dropping the marker. A wrapped value carries the
-/// marker on its last line only, so the whole span gets commented. The span starts at the key, not
-/// the node: the node also owns the leading comments and blank lines before it, which stay put.
+/// A wrapped value carries the marker on its last line only, so the whole span gets commented. The span starts at
+/// the key rather than the node, which also owns the leading comments and blank lines before it that stay put.
 pub(crate) fn restore_disabled_keys(formatted: &str) -> String {
     if !formatted.contains(MARKER) {
         return formatted.to_string();
@@ -159,8 +152,7 @@ pub(crate) fn restore_disabled_keys(formatted: &str) -> String {
     join_like(formatted, restored)
 }
 
-/// Comment one line of a disabled key-value, stripping the marker if present. `base` is the key's
-/// own indent, so the `#` lands at its column and the value's deeper indentation survives after it.
+/// `base` is the key's own indent, so the `#` lands at its column and the value's deeper indentation survives.
 fn comment_disabled_line(line: &str, base: usize) -> String {
     let cleaned = match line.find(MARKER) {
         Some(idx) => {

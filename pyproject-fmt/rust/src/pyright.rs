@@ -6,7 +6,6 @@ use tombi_syntax::SyntaxElement;
 // Shared schema for [tool.pyright] and [tool.basedpyright].
 const KEY_ORDER_PRE_REPORTS: &[&str] = &[
     "",
-    // Platform / interpreter
     "pythonVersion",
     "pythonPlatform",
     "pythonPath",
@@ -14,17 +13,14 @@ const KEY_ORDER_PRE_REPORTS: &[&str] = &[
     "venvPath",
     "typeshedPath",
     "stubPath",
-    // Mode flags
     "typeCheckingMode",
     "strict",
     "failOnWarnings",
     "useLibraryCodeForTypes",
-    // Paths
     "include",
     "exclude",
     "ignore",
     "extraPaths",
-    // Strict-flavor toggles
     "strictListInference",
     "strictDictionaryInference",
     "strictSetInference",
@@ -34,7 +30,6 @@ const KEY_ORDER_PRE_REPORTS: &[&str] = &[
     "analyzeUnannotatedFunctions",
     "disableBytesTypePromotions",
     "deprecateTypingAliases",
-    // Constants
     "defineConstant",
 ];
 
@@ -67,10 +62,8 @@ fn fix_one(tables: &mut Tables, table_name: &str) {
     reorder_table_keys(table, &refs);
 }
 
-/// Build a per-input KEY_ORDER. Pre-report keys are static; report* rules are collected
-/// from the input table and inserted alphabetized between the static blocks. This handles
-/// pyright's 70+ diagnostic rules plus any basedpyright extensions without hardcoding
-/// the full list (which evolves between releases).
+/// report* rules are collected from the input and inserted alphabetized between the static pre/post blocks, so
+/// pyright's 70+ diagnostic rules and any basedpyright extensions need no hardcoded list (it evolves between releases).
 fn build_key_order(table: &[SyntaxElement]) -> Vec<String> {
     use tombi_syntax::SyntaxKind::{KEYS, KEY_VALUE};
     let mut order: Vec<String> = KEY_ORDER_PRE_REPORTS.iter().map(|s| (*s).to_string()).collect();

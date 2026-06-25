@@ -103,7 +103,6 @@ impl Settings {
     }
 }
 
-/// Configuration for table formatting behavior.
 pub struct TableFormatConfig {
     pub default_collapse: bool,
     pub expand_tables: HashSet<String>,
@@ -154,7 +153,6 @@ fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
     py.detach(|| format_toml(content, opt))
 }
 
-/// Format toml file
 #[must_use]
 pub fn format_toml(content: &str, opt: &Settings) -> String {
     common::disabled::with_disabled_keys(content, |content| format_core(content, opt))
@@ -229,12 +227,9 @@ fn format_core(content: &str, opt: &Settings) -> String {
     ty::fix(&mut tables);
     coverage::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
-    // Inline-table reordering runs AFTER reorder_tables so that AoT entries collapsed
-    // to inline arrays of inline tables (e.g. [[tool.poetry.source]] → source = [{...}])
-    // are visible in root_ast as INLINE_TABLE descendants.
+    // Must follow reorder_tables: only then have AoT entries collapsed to inline arrays of inline tables
+    // (e.g. [[tool.poetry.source]] → source = [{...}]) and become INLINE_TABLE descendants of root_ast.
     poetry::reorder_inline_tables(&root_ast);
-    // mypy needs to walk the AST after AoT entries (`[[tool.mypy.overrides]]`) collapse
-    // into inline-array form via reorder_tables.
     mypy::reorder_inline_tables(&root_ast);
     setuptools::reorder_inline_tables(&root_ast);
     tox::reorder_inline_tables(&root_ast);
@@ -266,13 +261,11 @@ fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefi
     let mut result = Vec::new();
 
     for i in 0..lines.len() {
-        // Check if this is a blank line between two table headers in the same group
         if lines[i].is_empty() && i > 0 && i + 1 < lines.len() {
             let trimmed_next = lines[i + 1].trim();
             let next_is_table = trimmed_next.starts_with('[');
 
             if next_is_table {
-                // Look backwards to find the previous table header
                 let mut prev_table_name = None;
                 for j in (0..i).rev() {
                     if let Some(name) = extract_any_table_name(lines[j]) {
@@ -288,7 +281,6 @@ fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefi
                     let next_key = get_table_key(&next, multi_level_prefixes);
 
                     if prev_key == next_key {
-                        // Same group - skip this blank line
                         continue;
                     }
                 }
@@ -299,7 +291,6 @@ fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefi
     }
 
     let mut output = result.join("\n");
-    // Preserve trailing newline if original content had one
     if content.ends_with('\n') && !output.ends_with('\n') {
         output.push('\n');
     }

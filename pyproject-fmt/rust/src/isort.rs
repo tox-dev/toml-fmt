@@ -2,18 +2,16 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// profile leads since it sets defaults everything else overrides. sections, force_to_top,
-// and import_heading_* keep their input order, which drives output section sequencing.
+// profile leads since it sets defaults everything else overrides; sections, force_to_top, and import_heading_* keep
+// their input order, which drives output section sequencing.
 const KEY_ORDER: &[&str] = &[
     "",
-    // Defaults / global
     "profile",
     "py_version",
     "atomic",
     "color_output",
     "quiet",
     "verbose",
-    // Output style
     "line_length",
     "wrap_length",
     "indent",
@@ -51,7 +49,6 @@ const KEY_ORDER: &[&str] = &[
     "float_to_top",
     "honor_noqa",
     "old_finders",
-    // Known sources
     "sections",
     "default_section",
     "no_lines_before",
@@ -63,11 +60,9 @@ const KEY_ORDER: &[&str] = &[
     "known_other",
     "namespace_packages",
     "known_pattern",
-    // Forced separation
     "forced_separate",
     "treat_comments_as_code",
     "treat_all_comments_as_code",
-    // Skip / include
     "src_paths",
     "skip",
     "skip_glob",
@@ -76,28 +71,23 @@ const KEY_ORDER: &[&str] = &[
     "skip_gitignore",
     "supported_extensions",
     "blocked_extensions",
-    // Imports add/remove/required
     "add_imports",
     "remove_imports",
     "required_imports",
     "append_only",
     "dedup_headings",
-    // Section heading comments
     "section_comments",
     "import_heading_future",
     "import_heading_stdlib",
     "import_heading_thirdparty",
     "import_heading_firstparty",
     "import_heading_localfolder",
-    // Constants / variables
     "constants",
     "variables",
-    // Format / virtual envs / overrides
     "format_error",
     "format_success",
     "virtual_env",
     "conda_env",
-    // Output / cache
     "filter_files",
     "show_diff",
     "show_files",
@@ -106,8 +96,8 @@ const KEY_ORDER: &[&str] = &[
     "verbose_output",
 ];
 
-// Set-semantics arrays only; order-sensitive keys (sections, force_to_top, *_imports,
-// no_lines_before) are excluded because they define section sequencing.
+// Set-semantics arrays only; order-sensitive keys (sections, force_to_top, *_imports, no_lines_before) are excluded
+// because they define section sequencing.
 const SORT_ARRAYS: &[&str] = &[
     "known_standard_library",
     "extra_standard_library",

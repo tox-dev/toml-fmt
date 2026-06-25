@@ -3,12 +3,10 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 use tombi_syntax::SyntaxElement;
 
-// Config lives in sub-tables, so KEY_ORDER works on the collapsed parent's dotted keys
-// (version.source, build.exclude, envs.default.dependencies). Order within each group
-// follows the hatch reference (https://hatch.pypa.io).
+// Config lives in sub-tables, so KEY_ORDER targets the collapsed parent's dotted keys (version.source,
+// build.exclude, envs.default.dependencies); group order follows the hatch reference (https://hatch.pypa.io).
 const KEY_ORDER: &[&str] = &[
     "",
-    // === Version ===
     "version.source",
     "version.path",
     "version.pattern",
@@ -18,12 +16,10 @@ const KEY_ORDER: &[&str] = &[
     "version.fallback-version",
     "version.raw-options",
     "version",
-    // === Metadata ===
     "metadata.allow-direct-references",
     "metadata.allow-ambiguous-features",
     "metadata.hooks",
     "metadata",
-    // === Build ===
     "build.dev-mode-dirs",
     "build.dev-mode-exact",
     "build.directory",
@@ -58,19 +54,16 @@ const KEY_ORDER: &[&str] = &[
     "build.targets.custom",
     "build.targets",
     "build",
-    // === Publish ===
     "publish.index.disable",
     "publish.index.repos",
     "publish.index",
     "publish",
-    // === Workspace ===
     "workspace.members",
     "workspace.exclude",
     "workspace",
-    // `envs` intentionally NOT here — per-env entries are inserted dynamically by
-    // build_key_order with each environment's full inner key list, then a bare `envs`
-    // catch-all is appended last so any envs.* not in the canonical inner-key list still
-    // ends up in the envs block.
+    // `envs` intentionally NOT here: build_key_order inserts per-env entries dynamically with each environment's
+    // full inner key list, then appends a bare `envs` catch-all last so any envs.* outside the canonical inner-key
+    // list still lands in the envs block.
 ];
 
 const SORT_ARRAYS_EXACT: &[&str] = &[
@@ -118,8 +111,6 @@ fn fix_root(tables: &mut Tables) {
     reorder_table_keys(table, &refs);
 }
 
-/// Build a per-input KEY_ORDER that interpolates per-env entries so each environment
-/// keeps a consistent inner order (`type` → `python` → `dependencies` → `scripts` → …).
 fn build_key_order(table: &[SyntaxElement]) -> Vec<String> {
     let mut order: Vec<String> = KEY_ORDER.iter().map(|s| (*s).to_string()).collect();
     for env in collect_dynamic_segments(table, "envs") {
@@ -154,7 +145,6 @@ fn build_key_order(table: &[SyntaxElement]) -> Vec<String> {
         }
         order.push(p);
     }
-    // Bare catch-all for any envs.* keys not in the canonical inner-key list.
     order.push(String::from("envs"));
     order
 }
@@ -182,8 +172,7 @@ fn collect_dynamic_segments(table: &[SyntaxElement], prefix: &str) -> Vec<String
 }
 
 fn is_dynamic_sort_array(key: &str) -> bool {
-    // envs.<n>.dependencies, .extra-dependencies, .features, .pre-install-commands,
-    // .post-install-commands, .platforms — sortable (set semantics in hatch).
+    // These per-env arrays carry set semantics in hatch, so they sort.
     let Some(rest) = key.strip_prefix("envs.") else {
         return false;
     };
@@ -204,7 +193,6 @@ fn is_dynamic_sort_array(key: &str) -> bool {
 }
 
 fn fix_env_tables(tables: &mut Tables) {
-    // Expanded form: [tool.hatch.envs.<name>] as own table — reorder keys, sort arrays.
     let env_names = collect_header_segments(tables, "tool.hatch.envs.");
     for env in env_names {
         let key = format!("tool.hatch.envs.{env}");
@@ -258,7 +246,6 @@ fn fix_env_tables(tables: &mut Tables) {
                 ],
             );
         }
-        // scripts and env-vars sub-tables: alphabetize keys
         for sub in ["scripts", "env-vars"] {
             let k = format!("tool.hatch.envs.{env}.{sub}");
             if let Some(elements) = tables.get(&k) {
@@ -270,8 +257,7 @@ fn fix_env_tables(tables: &mut Tables) {
 }
 
 fn fix_overrides_aot(tables: &mut Tables) {
-    // [[tool.hatch.envs.<n>.matrix]] and overrides.* are AoT — preserve order, but reorder
-    // inner keys.
+    // matrix and overrides.* are AoT, so keep entry order and only reorder inner keys.
     for env in collect_header_segments(tables, "tool.hatch.envs.") {
         let matrix_key = format!("tool.hatch.envs.{env}.matrix");
         if let Some(entries) = tables.get(&matrix_key) {
