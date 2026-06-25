@@ -8,26 +8,21 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- 🐛 fix(common): keep empty table when sub-table stays expanded by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#385 <https://github.com/tox-dev/toml-fmt/pull/385>`_
-- ✨ feat(common): share disabled-key handling across formatters by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#383 <https://github.com/tox-dev/toml-fmt/pull/383>`_
-- uv direct tool install support by `@bn-andrew <https://github.com/bn-andrew>`_ in
-  `#382 <https://github.com/tox-dev/toml-fmt/pull/382>`_
-- ✨ feat(common): keep disabled keys anchored to their table by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#381 <https://github.com/tox-dev/toml-fmt/pull/381>`_
-- ✨ feat(common): add # Group: markers for scoped reordering by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#380 <https://github.com/tox-dev/toml-fmt/pull/380>`_
-- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#377 <https://github.com/tox-dev/toml-fmt/pull/377>`_
-- Update Rust dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#378 <https://github.com/tox-dev/toml-fmt/pull/378>`_ <a id="2.24.0"></a>
+- 📝 docs: keep comments to why only and de-slop docs by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#394 <https://github.com/tox-dev/toml-fmt/pull/394>`_
+- 🐛 fix(common): reorder and re-comment disabled keys safely by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#391 <https://github.com/tox-dev/toml-fmt/pull/391>`_
+- 🐛 fix(common): preserve array entry trivia when reordering inline tables by
+  `@gaborbernat <https://github.com/gaborbernat>`_ in `#392 <https://github.com/tox-dev/toml-fmt/pull/392>`_
+- 🐛 fix(common): decode line-ending backslash in multiline basic strings by
+  `@gaborbernat <https://github.com/gaborbernat>`_ in `#393 <https://github.com/tox-dev/toml-fmt/pull/393>`_
+- fix: Sort ``base_python_file`` key in tox environments by `@edgarrmondragon <https://github.com/edgarrmondragon>`_ in
+  `#386 <https://github.com/tox-dev/toml-fmt/pull/386>`_ <a id="2.25.0"></a>
 
 Philosophy
 ----------
-This tool aims to be an *opinionated formatter*, with similar objectives to `black <https://github.com/psf/black>`_.
-This means it deliberately does not support a wide variety of configuration settings. In return, you get consistency,
-predictability, and smaller diffs.
+This is an *opinionated formatter*, with the same objectives as `black <https://github.com/psf/black>`_: it offers few
+configuration settings on purpose. In return you get consistency, predictability, and smaller diffs.
 
 Use
 ---
@@ -35,10 +30,9 @@ Use
 Via ``CLI``
 ~~~~~~~~~~~
 
-`pyproject-fmt <https://pypi.org/project/pyproject-fmt>`_ is a CLI tool that needs a Python interpreter (version 3.10 or higher) to run. We recommend
-either `pipx <https://pypi.org/project/pipx>`_ or `uv <https://pypi.org/project/uv>`_ to install pyproject-fmt into an isolated environment. This has the added benefit that
-later you will be able to upgrade pyproject-fmt without affecting other parts of the system. We provide a method for
-``pip`` too here, but we discourage that path if you can:
+`pyproject-fmt <https://pypi.org/project/pyproject-fmt>`_ is a CLI tool that needs Python 3.10 or higher to run. Install it into an isolated environment
+with `pipx <https://pypi.org/project/pipx>`_ or `uv <https://pypi.org/project/uv>`_; that way you can upgrade pyproject-fmt later without disturbing the rest of your
+system. A ``pip`` path follows for completeness, though we discourage it:
 
 
     .. code-block:: bash
@@ -65,7 +59,7 @@ See `pre-commit/pre-commit <https://github.com/pre-commit/pre-commit>`_ for inst
 Via Python
 ~~~~~~~~~~
 
-You can use ``pyproject-fmt`` as a Python module to format TOML content programmatically.
+Call ``pyproject-fmt`` as a Python module to format TOML from your own code.
 
 .. code-block:: python
 
@@ -124,12 +118,12 @@ If not set they will default to values from the CLI.
 Shared configuration file
 -------------------------
 
-You can place formatting settings in a standalone ``pyproject-fmt.toml`` file instead of (or in addition to) the
-``[tool.pyproject-fmt]`` table. This is useful for monorepos or when you want to share the same configuration across
-multiple projects without duplicating it in each ``pyproject.toml``.
+Place formatting settings in a standalone ``pyproject-fmt.toml`` file instead of (or alongside) the
+``[tool.pyproject-fmt]`` table. In a monorepo this shares one configuration across projects without repeating it in
+every ``pyproject.toml``.
 
-The formatter searches for ``pyproject-fmt.toml`` starting from the directory of the file being formatted and walking up
-to the filesystem root. The first match wins. You can also pass an explicit path via ``--config``:
+The formatter searches for ``pyproject-fmt.toml`` from the directory of the file being formatted up to the filesystem
+root, and the first match wins. Pass an explicit path via ``--config``:
 
 .. code-block:: bash
 
@@ -168,10 +162,9 @@ Table formatting
 
     Table formatting options are available in version 2.12.0 and later.
 
-You can control how sub-tables are formatted in your ``pyproject.toml`` file. There are two formatting styles:
+Control how sub-tables are formatted with two styles:
 
-**Short format (collapsed)** - The default behavior where sub-tables are collapsed into dotted keys. Use this for a
-compact representation:
+**Short format (collapsed)** - The default, where sub-tables collapse into dotted keys. Use it for a compact layout:
 
 .. code-block:: toml
 
@@ -216,15 +209,13 @@ option takes a string of ``\n`` characters where each ``\n`` adds one blank line
 Configuration priority
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The formatting behavior is determined by a priority system that allows you to set a global default while overriding
-specific tables:
+A priority system sets a global default while letting you override specific tables:
 
-1. **collapse_tables** - Highest priority, forces specific tables to be collapsed regardless of other settings
-2. **expand_tables** - Medium priority, forces specific tables to be expanded
-3. **table_format** - Lowest priority, sets the default behavior for all tables not explicitly configured
+1. **collapse_tables** - Highest priority, forces specific tables to collapse regardless of other settings
+2. **expand_tables** - Medium priority, forces specific tables to expand
+3. **table_format** - Lowest priority, sets the default for all tables not configured above
 
-This three-tier approach lets you fine-tune formatting for specific tables while maintaining a consistent default.
-For example:
+Set a broad default, then carve out exceptions per table. For example:
 
 .. code-block:: toml
 
@@ -307,9 +298,8 @@ readability and TOML 1.0.0 compatibility (inline tables cannot span multiple lin
 String wrapping
 ---------------
 
-By default, the formatter wraps long strings that exceed the column width using line continuations. However, some strings such as regex patterns should not be wrapped because wrapping can break their functionality.
-
-You can configure which keys should skip string wrapping using the ``skip_wrap_for_keys`` option:
+By default the formatter wraps strings past the column width using line continuations. Some strings, regex patterns
+especially, break when wrapped, so exclude their keys with ``skip_wrap_for_keys``:
 
 .. code-block:: toml
 
@@ -329,20 +319,16 @@ The ``skip_wrap_for_keys`` option supports glob-like patterns:
 Examples: ``["*.parse", "*.regex"]`` to preserve regex fields, ``["tool.bumpversion.*"]`` for a specific tool section,
 or ``["*"]`` to skip all string wrapping.
 
-``pyproject-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code.
-The tool intentionally provides minimal configuration options because the goal is to establish a single standard format
-that all ``pyproject.toml`` files follow.
+``pyproject-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code. It
+keeps configuration minimal so every ``pyproject.toml`` lands on one standard format. That buys you:
 
-**Benefits of this approach:**
+- less time configuring tools
+- smaller diffs when committing changes
+- code reviews where formatting never comes up
 
-- Less time configuring tools
-- Smaller diffs when committing changes
-- Easier code reviews since formatting is never a question
-
-While a few key options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``,
-``separate_root_table``), the tool does not expose dozens of toggles. You get what the maintainers have chosen to be the
-right balance of readability, consistency, and usability. The ``column_width`` setting controls when arrays are split
-into multiple lines and when string values are wrapped using line continuations.
+A few options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``, ``separate_root_table``),
+but there are no dozens of toggles. ``column_width`` controls when arrays split across lines and when string values
+wrap with line continuations.
 
 General Formatting
 ------------------
@@ -1348,7 +1334,7 @@ separation, skip patterns, and import edits; name lists are sorted, while sequen
 ``[tool.pylint.*]``
 ~~~~~~~~~~~~~~~~~~~
 
-`Pylint <https://pylint.readthedocs.io/en/stable/>`_ is a comprehensive static analyzer and linter for Python. See
+`Pylint <https://pylint.readthedocs.io/en/stable/>`_ is a static analyzer and linter for Python. See
 its `configuration reference <https://pylint.readthedocs.io/en/stable/user_guide/configuration/index.html>`_.
 
 Sub-tables follow Pylint's checker-group order; all rule, name, and path lists are sorted by leaf key name

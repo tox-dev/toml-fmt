@@ -1,4 +1,17 @@
-<a id="2.25.0"></a>
+<a id="2.25.1"></a>
+
+## 2.25.1 - 2026-06-25
+
+- 📝 docs: keep comments to why only and de-slop docs by [@gaborbernat](https://github.com/gaborbernat) in
+  [#394](https://github.com/tox-dev/toml-fmt/pull/394)
+- 🐛 fix(common): reorder and re-comment disabled keys safely by [@gaborbernat](https://github.com/gaborbernat) in
+  [#391](https://github.com/tox-dev/toml-fmt/pull/391)
+- 🐛 fix(common): preserve array entry trivia when reordering inline tables by
+  [@gaborbernat](https://github.com/gaborbernat) in [#392](https://github.com/tox-dev/toml-fmt/pull/392)
+- 🐛 fix(common): decode line-ending backslash in multiline basic strings by
+  [@gaborbernat](https://github.com/gaborbernat) in [#393](https://github.com/tox-dev/toml-fmt/pull/393)
+- fix: Sort `base_python_file` key in tox environments by [@edgarrmondragon](https://github.com/edgarrmondragon) in
+  [#386](https://github.com/tox-dev/toml-fmt/pull/386) <a id="2.25.0"></a>
 
 ## 2.25.0 - 2026-06-17
 
