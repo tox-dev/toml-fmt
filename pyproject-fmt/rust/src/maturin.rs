@@ -4,13 +4,11 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // Module identity
     "module-name",
     "bindings",
     "python-source",
     "python-packages",
     "python-bin-path",
-    // Source layout
     "src",
     "manifest-path",
     "include",
@@ -18,7 +16,6 @@ const KEY_ORDER: &[&str] = &[
     "sdist-include",
     "sdist-generator",
     "data",
-    // Cargo
     "features",
     "no-default-features",
     "all-features",
@@ -28,7 +25,6 @@ const KEY_ORDER: &[&str] = &[
     "profile",
     "target",
     "target-dir",
-    // Compatibility / strip
     "compatibility",
     "auditwheel",
     "skip-auditwheel",
@@ -37,7 +33,6 @@ const KEY_ORDER: &[&str] = &[
     "locked",
     "offline",
     "zig",
-    // Behavior
     "use-cross",
 ];
 

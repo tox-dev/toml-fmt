@@ -2,7 +2,6 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// Group: platform → paths → behavior → errors.
 const KEY_ORDER: &[&str] = &[
     "",
     "python_version",

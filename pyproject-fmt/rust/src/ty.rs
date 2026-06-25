@@ -5,16 +5,11 @@ use lexical_sort::natural_lexical_cmp;
 // Pre-1.0 schema: keep the canonical set small, let unknown keys alphabetize.
 const KEY_ORDER: &[&str] = &[
     "",
-    // paths
     "src",
     "respect-ignore-files",
-    // environment
     "environment",
-    // rules
     "rules",
-    // terminal
     "terminal",
-    // overrides (AoT)
     "overrides",
 ];
 

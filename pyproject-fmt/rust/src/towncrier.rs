@@ -4,12 +4,10 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // Package identity
     "name",
     "version",
     "package",
     "package_dir",
-    // News location
     "directory",
     "filename",
     "start_string",
@@ -17,16 +15,13 @@ const KEY_ORDER: &[&str] = &[
     "title_format",
     "issue_format",
     "underlines",
-    // Rendering
     "wrap",
     "all_bullets",
     "single_file",
     "orphan_prefix",
     "create_eof_newline",
     "create_add_extension",
-    // Behavior
     "ignore",
-    // AoT entries last
     "type",
     "section",
 ];

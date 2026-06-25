@@ -2,8 +2,6 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// Group: tag/version → assets → version source → repo → commit parser → branches →
-// publish → changelog → remote.
 const KEY_ORDER: &[&str] = &[
     "",
     "tag_format",

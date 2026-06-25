@@ -4,14 +4,12 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // Profile / scope
     "profile",
     "extension",
     "include",
     "exclude",
     "extend_exclude",
     "use_gitignore",
-    // Formatting
     "indent",
     "indent_css",
     "indent_js",
@@ -32,7 +30,6 @@ const KEY_ORDER: &[&str] = &[
     "format_js",
     "custom_blocks",
     "custom_html",
-    // Linting
     "lint",
     "reformat",
     "statistics",
@@ -41,7 +38,6 @@ const KEY_ORDER: &[&str] = &[
     "ignore_blocks",
     "ignore",
     "per_file_ignores",
-    // Output
     "quiet",
 ];
 

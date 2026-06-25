@@ -1,19 +1,15 @@
 Formatting Rules
 ================
 
-``tox-toml-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code.
-The tool intentionally provides minimal configuration options because the goal is to establish a single standard format
-that all ``tox.toml`` files follow.
+``tox-toml-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code. It
+keeps configuration minimal so every ``tox.toml`` lands on one standard format. That buys you:
 
-**Benefits of this approach:**
+- less time configuring tools
+- smaller diffs when committing changes
+- code reviews where formatting never comes up
 
-- Less time configuring tools
-- Smaller diffs when committing changes
-- Easier code reviews since formatting is never a question
-
-While a few key options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``,
-``separate_root_table``), the tool does not expose dozens of toggles. You get what the maintainers have chosen to be the
-right balance of readability, consistency, and usability.
+A few options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``, ``separate_root_table``),
+but there are no dozens of toggles.
 
 General Formatting
 ------------------
@@ -474,7 +470,7 @@ Certain arrays within environment tables are sorted automatically:
 
 **Sorted by canonical PEP 508 package name:**
 
-- ``deps``, ``constraints`` — dependencies normalized and sorted by package name
+- ``deps``, ``constraints``: dependencies normalized and sorted by package name
 
 Pip file references (``-r``, ``-c``), editable installs (``-e``), local paths (``./``, ``../``,
 ``/``), and entries containing tox substitution variables (``{tox_root}``, etc.) are preserved as-is
@@ -507,8 +503,8 @@ then string entries are sorted alphabetically:
 
 **Arrays NOT sorted:**
 
-- ``commands``, ``commands_pre``, ``commands_post`` — execution order matters
-- ``base_python`` — first entry takes priority
+- ``commands``, ``commands_pre``, ``commands_post``: execution order matters
+- ``base_python``: first entry takes priority
 
 Inline Table Key Reordering
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -516,11 +512,11 @@ Inline Table Key Reordering
 Keys within inline tables are reordered into a consistent order based on the inline table's type. The type
 is detected by the presence of a discriminator key:
 
-- **``replace``** — ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
+- **``replace``**: ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
   ``then`` → ``else`` → ``default`` → ``extend`` → ``marker``
-- **``prefix``** — ``prefix`` → ``start`` → ``stop``
-- **``product``** — ``product`` → ``exclude``
-- **``value``** — ``value`` → ``marker``
+- **``prefix``**: ``prefix`` → ``start`` → ``stop``
+- **``product``**: ``product`` → ``exclude``
+- **``value``**: ``value`` → ``marker``
 
 Keys not listed in the schema are appended at the end in their original order.
 

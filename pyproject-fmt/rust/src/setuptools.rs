@@ -3,11 +3,10 @@ use common::table::{for_entries, reorder_inline_table_keys, reorder_table_keys, 
 use lexical_sort::natural_lexical_cmp;
 use tombi_syntax::SyntaxNode;
 
-// Sub-tables collapse to dotted keys (packages.find.where, package-data."*", etc.); the
-// "packages" prefix catches them all, with finer entries added for inner ordering.
+// Sub-tables collapse to dotted keys (packages.find.where, package-data."*", etc.); the "packages" prefix catches
+// them all, with finer entries added for inner ordering.
 const KEY_ORDER: &[&str] = &[
     "",
-    // --- Packaging discovery ---
     "py-modules",
     "packages.find.where",
     "packages.find.include",
@@ -19,23 +18,17 @@ const KEY_ORDER: &[&str] = &[
     "packages.find-namespace.namespaces",
     "packages",
     "package-dir",
-    // --- Package data ---
     "include-package-data",
     "package-data",
     "exclude-package-data",
-    // --- Dynamic metadata ---
     "dynamic",
-    // --- Extensions / build customization ---
     "ext-modules",
     "cmdclass",
-    // --- Distribution metadata ---
     "platforms",
     "provides",
     "obsoletes",
     "license-files",
-    // --- Discouraged / legacy data files ---
     "data-files",
-    // --- Deprecated / obsolete (pushed last) ---
     "script-files",
     "namespace-packages",
     "zip-safe",
@@ -43,8 +36,8 @@ const KEY_ORDER: &[&str] = &[
     "dependency-links",
 ];
 
-// Safe-to-sort arrays only; packages, license-files, and ext-module paths/argv are left
-// out — order affects build, link, or PEP-639 concatenation.
+// Safe-to-sort arrays only; packages, license-files, and ext-module paths/argv are left out because order affects
+// build, link, or PEP-639 concatenation.
 const TOP_LEVEL_SORT_ARRAYS: &[&str] = &[
     "py-modules",
     "platforms",
@@ -61,31 +54,25 @@ const TOP_LEVEL_SORT_ARRAYS: &[&str] = &[
 
 const SCM_KEY_ORDER: &[&str] = &[
     "",
-    // --- Version output ---
     "version_file",
     "version_file_template",
-    // --- Version computation / scheme ---
     "version_scheme",
     "local_scheme",
     "version_cls",
     "normalize",
-    // --- Root / discovery ---
     "root",
     "relative_to",
     "fallback_root",
     "parent",
     "search_parent_directories",
     "dist_name",
-    // --- Tag / parse ---
     "tag_regex",
     "parse",
     "parentdir_prefix_version",
     "fallback_version",
-    // --- Nested SCM-specific tables (collapse to dotted keys) ---
     "scm.git.pre_parse",
     "scm.git.describe_command",
     "scm",
-    // --- Deprecated (push last) ---
     "git_describe_command",
     "write_to",
     "write_to_template",
@@ -197,8 +184,8 @@ fn fix_expanded_alpha_table(tables: &mut Tables, table_key: &str) {
     reorder_table_keys(table, &[""]);
 }
 
-// Discriminators attr/content-type are unique to dynamic directives; file is too generic
-// to discriminate on, so it is omitted from the discriminator set.
+// Discriminators attr/content-type are unique to dynamic directives; file is too generic, so it is omitted from the
+// discriminator set.
 const DYNAMIC_DIRECTIVE_ORDER: &[&str] = &["attr", "file", "content-type"];
 
 pub const INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[

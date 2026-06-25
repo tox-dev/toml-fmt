@@ -1,12 +1,5 @@
-//! Syntax node creation utilities using the parse-and-extract pattern.
-//!
-//! This module provides functions to create TOML syntax nodes by parsing valid TOML
-//! and extracting the desired elements. While this approach involves parsing overhead,
-//! it ensures:
-//!
-//! 1. **Correctness**: All created nodes are guaranteed to be valid TOML syntax
-//! 2. **Proper escaping**: The parser handles all TOML escape sequences correctly
-//! 3. **Simplicity**: Straightforward code that's easy to understand and maintain
+//! Parsing each snippet costs more than hand-building nodes, but buys valid syntax and correct escape
+//! handling for free, since the parser owns those rules.
 
 use tombi_syntax::SyntaxKind::{
     ARRAY, BASIC_STRING, COMMA, COMMENT, KEY_VALUE_GROUP, KEYS, LINE_BREAK, LITERAL_STRING, MULTI_LINE_BASIC_STRING,
@@ -57,10 +50,7 @@ pub fn make_multiline_string_node(wrapped: &str) -> SyntaxElement {
         .expect("KEY_VALUE contains MULTI_LINE_BASIC_STRING")
 }
 
-/// Create a MULTI_LINE_LITERAL_STRING (`'''...'''`) syntax element by parsing valid TOML.
-///
-/// `text` is inserted verbatim between the delimiters; callers must ensure it does not
-/// contain the `'''` substring.
+/// `text` is inserted verbatim between the `'''` delimiters; callers must ensure it does not contain `'''`.
 pub fn make_multiline_literal_string_node(text: &str) -> SyntaxElement {
     let leading = if text.starts_with(['\n', '\r']) { "\n" } else { "" };
     let expr = format!("a = '''{leading}{text}'''");
@@ -71,10 +61,6 @@ pub fn make_multiline_literal_string_node(text: &str) -> SyntaxElement {
         .expect("KEY_VALUE contains MULTI_LINE_LITERAL_STRING")
 }
 
-/// Create a BASIC_STRING (basic/double-quoted) syntax element by parsing valid TOML.
-///
-/// This function ensures proper TOML escaping by using the escape function
-/// to handle backslash escaping, quote escaping, and control characters.
 pub fn make_string_node(text: &str) -> SyntaxElement {
     let escaped = escape(text);
     let expr = format!("a = \"{escaped}\"");
@@ -85,10 +71,7 @@ pub fn make_string_node(text: &str) -> SyntaxElement {
         .expect("KEY_VALUE contains BASIC_STRING")
 }
 
-/// Create a LITERAL_STRING (literal/single-quoted) syntax element by parsing valid TOML.
-///
-/// Use this when content contains backslashes that would need escaping in a basic string.
-/// Content must not contain single quotes (there's no way to escape them in literal strings).
+/// `text` must not contain a single quote, which literal strings cannot escape.
 pub fn make_literal_string_node(text: &str) -> SyntaxElement {
     let expr = format!("a = '{text}'");
     let root = parse(&expr);
@@ -98,10 +81,7 @@ pub fn make_literal_string_node(text: &str) -> SyntaxElement {
         .expect("KEY_VALUE contains LITERAL_STRING")
 }
 
-/// Create LINE_BREAK tokens for a blank line (two newlines).
-///
-/// Used for adding vertical spacing between sections in TOML files.
-/// Returns two LINE_BREAK elements since tombi represents each newline separately.
+/// Returns two LINE_BREAK elements: tombi models each newline as its own token.
 pub fn make_empty_newline() -> Vec<SyntaxElement> {
     parse("\n\n")
         .children_with_tokens()
@@ -109,7 +89,6 @@ pub fn make_empty_newline() -> Vec<SyntaxElement> {
         .collect()
 }
 
-/// Create a single LINE_BREAK token.
 pub fn make_newline() -> SyntaxElement {
     parse("\n")
         .children_with_tokens()
@@ -128,7 +107,6 @@ pub fn make_comment(text: &str) -> SyntaxElement {
     unreachable!("parsed comment TOML contains COMMENT")
 }
 
-/// Create a COMMA token for use in arrays.
 pub fn make_comma() -> SyntaxElement {
     let root = parse("a=[1,2]");
     let array_node = first_key_value(&root)
@@ -138,7 +116,6 @@ pub fn make_comma() -> SyntaxElement {
     find_in_array(array_node.as_node().unwrap(), COMMA).expect("ARRAY contains COMMA")
 }
 
-/// Create a WHITESPACE token with a custom number of spaces.
 pub fn make_whitespace_n(count: usize) -> SyntaxElement {
     let spaces = " ".repeat(count.max(1));
     let sample = format!("a=[1,{}2]", spaces);
@@ -150,9 +127,6 @@ pub fn make_whitespace_n(count: usize) -> SyntaxElement {
     find_in_array(array_node.as_node().unwrap(), WHITESPACE).expect("ARRAY contains WHITESPACE")
 }
 
-/// Create a KEYS node with the given text.
-///
-/// Supports dotted keys like `"foo.bar"`.
 pub fn make_key(text: &str) -> SyntaxElement {
     let root = parse(format!("{text}=1").as_str());
     first_key_value(&root)
@@ -201,13 +175,11 @@ pub fn make_entry_with_array_of_inline_tables(key: &str, inline_tables: &[String
     SyntaxElement::Node(first_key_value(&root))
 }
 
-/// Create an array of tables entry (e.g., `[[project.authors]]`)
 pub fn make_table_array_entry(key: &str) -> Vec<SyntaxElement> {
     let txt = format!("[[{key}]]\n");
     parse(txt.as_str()).children_with_tokens().collect()
 }
 
-/// Create a table array with entries (e.g., `[[project.authors]]\nname = "John"\nemail = "john@example.com"`)
 pub fn make_table_array_with_entries(key: &str, entries: &[(String, String)]) -> Vec<SyntaxElement> {
     let entries_str = entries
         .iter()

@@ -201,8 +201,8 @@ fn test_round_trip_is_identity_for_disabled_key() {
     assert_eq!(restore_disabled_keys(&enable_disabled_keys(source)), source);
 }
 
-// Guards against another #390: every value shape that fits on one comment line must round-trip
-// unchanged, not just the scalars the feature started with.
+// Guards against another #390: every value shape that fits on one comment line must round-trip unchanged, beyond
+// the scalars the feature started with.
 #[test]
 fn test_disabled_value_constructs_round_trip() {
     let constructs = [

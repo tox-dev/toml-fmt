@@ -2,8 +2,8 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// Sub-table order follows the pylint docs (main → messages_control → category checks);
-// keys within each sub-table alphabetize, since a hand-curated full order would rot.
+// Sub-table order follows the pylint docs (main → messages_control → category checks); keys within each sub-table
+// alphabetize, since a hand-curated full order would rot.
 const KEY_ORDER: &[&str] = &[
     "",
     "main",

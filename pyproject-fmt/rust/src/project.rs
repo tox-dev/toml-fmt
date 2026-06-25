@@ -325,7 +325,6 @@ fn generate_classifiers_to_entry(
                                         break;
                                     }
                                     if v.kind() == COMMA {
-                                        // Keep the comma, remove whitespace/newline after it
                                         truncate_at = fwd_idx + 1;
                                         break;
                                     }

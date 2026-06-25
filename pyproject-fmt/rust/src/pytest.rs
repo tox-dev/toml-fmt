@@ -2,14 +2,12 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// Keys carry the ini_options. prefix: after collapse every key shows up as
-// ini_options.<name> under tool.pytest, its only standardized child.
+// Keys carry the ini_options. prefix: after collapse every key appears as ini_options.<name> under tool.pytest, its
+// only standardized child.
 const KEY_ORDER: &[&str] = &[
     "",
-    // pytest itself
     "ini_options.minversion",
     "ini_options.required_plugins",
-    // Discovery
     "ini_options.testpaths",
     "ini_options.pythonpath",
     "ini_options.norecursedirs",
@@ -21,55 +19,43 @@ const KEY_ORDER: &[&str] = &[
     "ini_options.consider_namespace_packages",
     "ini_options.confcutdir",
     "ini_options.rootdir_fallback",
-    // CLI arguments (preserved — order matters)
     "ini_options.addopts",
     "ini_options.usefixtures",
-    // Markers / parametrize / xfail
     "ini_options.markers",
     "ini_options.empty_parameter_set_mark",
     "ini_options.xfail_strict",
     "ini_options.disable_test_id_escaping_and_forfeit_all_rights_to_community_support",
-    // Warnings
     "ini_options.filterwarnings",
-    // Doctest
     "ini_options.doctest_encoding",
     "ini_options.doctest_optionflags",
-    // Output style
     "ini_options.console_output_style",
     "ini_options.verbosity_assertions",
     "ini_options.verbosity_test_cases",
     "ini_options.truncation_limit_chars",
     "ini_options.truncation_limit_lines",
-    // Logging — capture
     "ini_options.log_auto_indent",
     "ini_options.log_format",
     "ini_options.log_date_format",
     "ini_options.log_level",
-    // Logging — cli
     "ini_options.log_cli",
     "ini_options.log_cli_level",
     "ini_options.log_cli_format",
     "ini_options.log_cli_date_format",
-    // Logging — file
     "ini_options.log_file",
     "ini_options.log_file_level",
     "ini_options.log_file_format",
     "ini_options.log_file_mode",
     "ini_options.log_file_date_format",
-    // JUnit XML
     "ini_options.junit_suite_name",
     "ini_options.junit_family",
     "ini_options.junit_duration_report",
     "ini_options.junit_log_passing_tests",
     "ini_options.junit_logging",
-    // Cache / tmp_path
     "ini_options.cache_dir",
     "ini_options.tmp_path_retention_count",
     "ini_options.tmp_path_retention_policy",
-    // Assertion / faulthandler
     "ini_options.enable_assertion_pass_hook",
     "ini_options.faulthandler_timeout",
-    // Catch-all for any other ini_options
     "ini_options",
 ];
 

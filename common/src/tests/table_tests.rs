@@ -715,7 +715,6 @@ fn test_comments_before_table_header_stay_with_that_table() {
     tables.reorder(&root_ast, &["build-system", "project"], &[], "\n", "");
 
     let res = format_toml(&root_ast, 120);
-    // The comment should stay with [build-system], not [project]
     assert!(res.starts_with("# comment for build-system\n[build-system]"));
 }
 
@@ -735,7 +734,6 @@ fn test_multiple_comments_before_table_header() {
     tables.reorder(&root_ast, &["build-system", "project"], &[], "\n", "");
 
     let res = format_toml(&root_ast, 120);
-    // Both comments should stay with [build-system]
     assert!(res.contains("# first comment\n# second comment\n[build-system]"));
 }
 
@@ -754,7 +752,6 @@ fn test_comment_with_blank_line_before_table_header() {
     tables.reorder(&root_ast, &["build-system", "project"], &[], "\n", "");
 
     let res = format_toml(&root_ast, 120);
-    // Comment should stay with [build-system] even with blank line before it
     assert!(res.starts_with("# comment for build-system\n[build-system]"));
 }
 
@@ -799,7 +796,6 @@ fn test_expand_sub_tables_creates_sub_table() {
 
     expand_sub_tables(&mut tables, "project");
 
-    // Verify the sub-table was created
     assert!(tables.header_to_pos.contains_key("project.urls"));
 }
 
@@ -815,7 +811,6 @@ fn test_expand_sub_tables_removes_dotted_keys_from_parent() {
 
     expand_sub_tables(&mut tables, "project");
 
-    // Verify the dotted key is removed from parent
     let main = tables.get("project").unwrap();
     let table = main[0].borrow();
     let txt = table.iter().map(|e| e.to_string()).collect::<String>();
@@ -836,7 +831,6 @@ fn test_expand_sub_tables_multiple_groups() {
 
     expand_sub_tables(&mut tables, "project");
 
-    // Verify both sub-tables were created
     assert!(tables.header_to_pos.contains_key("project.urls"));
     assert!(tables.header_to_pos.contains_key("project.scripts"));
 }
@@ -854,7 +848,6 @@ fn test_expand_sub_tables_no_dotted_keys() {
     let initial_count = tables.header_to_pos.len();
     expand_sub_tables(&mut tables, "project");
 
-    // No new tables should be created
     assert_eq!(tables.header_to_pos.len(), initial_count);
 }
 
@@ -867,7 +860,7 @@ fn test_expand_sub_tables_non_existent_table() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
 
-    // Should not panic when expanding non-existent table
+    // Expanding a missing table must be a no-op; this test would panic otherwise.
     expand_sub_tables(&mut tables, "nonexistent");
 }
 
@@ -883,7 +876,6 @@ fn test_expand_and_collapse_are_inverses() {
     let root_ast = parse(toml);
     let mut tables = Tables::from_ast(&root_ast);
 
-    // Collapse should work
     collapse_sub_tables(&mut tables, "project");
     let main = tables.get("project").unwrap();
     let table = main[0].borrow();

@@ -212,7 +212,7 @@ impl Tables {
 
                 let comments_for_new_table: Vec<SyntaxElement> = borrow.drain(comments_start..).collect();
 
-                // Strip trailing LINE_BREAKs - they represent spacing between tables, not table content
+                // Trailing LINE_BREAKs are inter-table spacing; keep them out of table content.
                 while let Some(last) = borrow.last() {
                     if last.kind() == LINE_BREAK {
                         borrow.pop();
@@ -319,7 +319,6 @@ impl Tables {
                             }
                         }
                     } else {
-                        // Not the last entry - add blank line before next entry of same table
                         add.extend(make_empty_newline());
                     }
 
@@ -330,10 +329,8 @@ impl Tables {
 
         root_ast.splice_children(0..root_ast.children_with_tokens().count(), to_insert);
 
-        // Re-parse to rebuild proper TABLE wrapper nodes and parent chain. from_ast decomposes
-        // TABLE nodes into flat children for manipulation, but splice_children puts them back
-        // without TABLE wrappers. Re-parsing reconstructs the correct tree structure so parent
-        // traversal works.
+        // from_ast flattened TABLE nodes into bare children, and splice_children put them back without TABLE wrappers.
+        // Re-parse to rebuild the wrappers and parent chain that later traversal needs.
         let reparsed = parse(&root_ast.to_string());
         let new_children: Vec<SyntaxElement> = reparsed.children_with_tokens().collect();
         root_ast.splice_children(0..root_ast.children_with_tokens().count(), new_children);
@@ -652,7 +649,7 @@ pub fn collapse_sub_tables(tables: &mut Tables, name: &str) {
         }
         let mut sub = tables.table_set[*sub_positions.first().unwrap()].borrow_mut();
 
-        // Check for both ARRAY_OF_TABLE node (old structure) and DOUBLE_BRACKET_START (new structure)
+        // Array-of-tables shows up as ARRAY_OF_TABLE (old parse) or DOUBLE_BRACKET_START (new parse).
         let is_array_table = sub
             .iter()
             .any(|child| child.kind() == ARRAY_OF_TABLE || child.kind() == DOUBLE_BRACKET_START);
@@ -791,7 +788,7 @@ pub fn collapse_sub_table(tables: &mut Tables, parent_name: &str, sub_name: &str
     };
 
     let first_sub = tables.table_set[*sub_positions.first().unwrap()].borrow();
-    // Check for both ARRAY_OF_TABLE node (old structure) and DOUBLE_BRACKET_START (new structure)
+    // Array-of-tables shows up as ARRAY_OF_TABLE (old parse) or DOUBLE_BRACKET_START (new parse).
     let is_array_table = first_sub
         .iter()
         .any(|child| child.kind() == ARRAY_OF_TABLE || child.kind() == DOUBLE_BRACKET_START);
@@ -901,8 +898,8 @@ fn collapse_array_of_tables(
     sub_positions: &[usize],
     column_width: usize,
 ) {
-    // A disabled key carries the marker in a trailing comment; collapsing the entry into an
-    // inline table would embed that comment and produce invalid TOML, so keep it expanded.
+    // A disabled key carries the marker in a trailing comment; collapsing the entry into an inline table would embed
+    // that comment and produce invalid TOML, so keep it expanded.
     let has_disabled_key = sub_positions.iter().any(|pos| {
         tables.table_set[*pos]
             .borrow()

@@ -4,7 +4,6 @@ use lexical_sort::natural_lexical_cmp;
 
 const KEY_ORDER: &[&str] = &[
     "",
-    // Dictionaries
     "builtin",
     "dictionary",
     "ignore-words",
@@ -12,7 +11,6 @@ const KEY_ORDER: &[&str] = &[
     "ignore-regex",
     "ignore-multiline-regex",
     "exclude-file",
-    // Scope
     "skip",
     "uri-ignore-words-list",
     "check-filenames",
@@ -20,7 +18,6 @@ const KEY_ORDER: &[&str] = &[
     "hidden",
     "regex",
     "user-input",
-    // Fix behavior
     "write-changes",
     "interactive",
     "enable-colors",

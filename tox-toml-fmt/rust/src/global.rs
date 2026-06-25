@@ -15,8 +15,6 @@ use common::table::{
     Tables,
 };
 
-/// Strips `<prefix>.` from `key` and returns the relative key. When `prefix` is empty
-/// returns the key unchanged. Returns `None` when `key` is outside the prefix scope.
 fn strip_prefix<'a>(key: &'a str, prefix: &str) -> Option<&'a str> {
     if prefix.is_empty() {
         Some(key)
@@ -42,9 +40,8 @@ fn env_tables<'a>(tables: &'a Tables, prefix: &str) -> Vec<(&'a String, Vec<&'a 
         .header_to_pos
         .keys()
         .filter(|k| is_env_table(k, prefix))
-        // After collapse the sub-table cells can be empty; `Tables::get` returns None in
-        // that case. Skip those entries instead of unwrapping (the collapsed content is
-        // already living under the parent table and gets handled there).
+        // Collapsed sub-tables leave empty cells where `get` returns None; their content already lives under the parent
+        // table, so skip rather than unwrap.
         .filter_map(|k| tables.get(k).map(|v| (k, v)))
         .collect()
 }
@@ -249,7 +246,6 @@ fn upgrade_use_develop(table: &mut Vec<SyntaxElement>) {
     if !is_true {
         return;
     }
-    // Remove use_develop = true and any trailing whitespace/newline
     table.remove(idx);
     while idx < table.len() && matches!(table[idx].kind(), WHITESPACE | tombi_syntax::SyntaxKind::LINE_BREAK) {
         table.remove(idx);

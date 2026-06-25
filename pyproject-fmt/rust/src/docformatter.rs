@@ -1,6 +1,5 @@
 use common::table::{reorder_table_keys, Tables};
 
-// Group: behavior → format width → wrap → other.
 const KEY_ORDER: &[&str] = &[
     "",
     "in-place",

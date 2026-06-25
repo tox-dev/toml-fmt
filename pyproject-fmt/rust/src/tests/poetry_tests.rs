@@ -13,8 +13,8 @@ fn evaluate(start: &str) -> String {
     fix(&mut tables);
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
-    // Inline-table reordering operates AST-wide, so run it after the root children have
-    // been restored from the table_set (mirrors what format_toml does in main.rs).
+    // Inline-table reordering operates AST-wide, so run it after the root children are restored from the table_set
+    // (mirrors what format_toml does in main.rs).
     reorder_inline_tables(&root_ast);
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = format_syntax(root_ast, 120);
@@ -544,9 +544,8 @@ fn test_poetry_full_pipeline_idempotent() {
 
 #[test]
 fn test_poetry_does_not_reorder_unrelated_inline_tables() {
-    // [project.authors] uses `{ name, email }` inline tables. Our schemas key on
-    // poetry-specific discriminators (priority, git, path, file, etc.), so authors
-    // should be left untouched.
+    // [project.authors] uses `{ name, email }` inline tables. Our schemas key on poetry-specific discriminators
+    // (priority, git, path, file, etc.), so authors stay untouched.
     let start = indoc::indoc! {r#"
     [project]
     name = "demo"
@@ -569,7 +568,6 @@ fn test_poetry_long_format_dependencies_expanded() {
     alpha = "^2.0"
     "#};
     let result = evaluate_long(start);
-    // python first, then alphabetized
     assert!(
         result.contains("[tool.poetry.dependencies]"),
         "expected expanded form, got:\n{result}"
@@ -592,7 +590,6 @@ fn test_poetry_long_format_extras_expanded() {
         result.contains("[tool.poetry.extras]"),
         "expected expanded form, got:\n{result}"
     );
-    // Inner arrays alphabetized
     assert!(
         result.contains(r#"cli = [ "rich", "typer" ]"#),
         "cli sort failed:\n{result}"
@@ -633,7 +630,7 @@ fn test_poetry_long_format_urls_alphabetized() {
 
 #[test]
 fn test_poetry_long_format_plugins_unquoted_inner() {
-    // Unquoted plugin group names (no dots) — fix_expanded_plugins handles these.
+    // fix_expanded_plugins handles unquoted plugin group names (no dots).
     let start = indoc::indoc! {r#"
     [tool.poetry.plugins.console_scripts]
     zebra = "z:Z"
@@ -657,7 +654,6 @@ fn test_poetry_long_format_group_inner_order() {
     let opt_pos = result.find("optional = ").expect("optional");
     let inc_pos = result.find("include-groups = ").expect("include-groups");
     assert!(opt_pos < inc_pos, "group key order wrong:\n{result}");
-    // include-groups sorted
     assert!(
         result.contains(r#"include-groups = [ "docs", "lint", "test" ]"#),
         "include-groups not sorted:\n{result}"
@@ -693,7 +689,6 @@ fn test_poetry_long_format_source_aot_preserved() {
         result.contains("[[tool.poetry.source]]"),
         "expected AoT preserved, got:\n{result}"
     );
-    // name → url → priority
     let n = result.find("name = ").expect("name");
     let u = result.find("url = ").expect("url");
     let p = result.find("priority = ").expect("priority");
@@ -759,8 +754,6 @@ fn test_poetry_long_format_build_constraints_expanded() {
 
 #[test]
 fn test_poetry_long_format_plugins_top_alphabetized() {
-    // When there are multiple plugin groups, the parent plugins table's keys are
-    // ordered via fix_expanded_plugins.
     let start = indoc::indoc! {r#"
     [tool.poetry.plugins]
     zeta = "z:Z"

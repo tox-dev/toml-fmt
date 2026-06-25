@@ -50,12 +50,12 @@ If not set they will default to values from the CLI.
 Shared configuration file
 -------------------------
 
-You can place formatting settings in a standalone ``pyproject-fmt.toml`` file instead of (or in addition to) the
-``[tool.pyproject-fmt]`` table. This is useful for monorepos or when you want to share the same configuration across
-multiple projects without duplicating it in each ``pyproject.toml``.
+Place formatting settings in a standalone ``pyproject-fmt.toml`` file instead of (or alongside) the
+``[tool.pyproject-fmt]`` table. In a monorepo this shares one configuration across projects without repeating it in
+every ``pyproject.toml``.
 
-The formatter searches for ``pyproject-fmt.toml`` starting from the directory of the file being formatted and walking up
-to the filesystem root. The first match wins. You can also pass an explicit path via ``--config``:
+The formatter searches for ``pyproject-fmt.toml`` from the directory of the file being formatted up to the filesystem
+root, and the first match wins. Pass an explicit path via ``--config``:
 
 .. code-block:: bash
 
@@ -102,10 +102,9 @@ Table formatting
 
     Table formatting options are available in version 2.12.0 and later.
 
-You can control how sub-tables are formatted in your ``pyproject.toml`` file. There are two formatting styles:
+Control how sub-tables are formatted with two styles:
 
-**Short format (collapsed)** - The default behavior where sub-tables are collapsed into dotted keys. Use this for a
-compact representation:
+**Short format (collapsed)** - The default, where sub-tables collapse into dotted keys. Use it for a compact layout:
 
 .. code-block:: toml
 
@@ -150,15 +149,13 @@ option takes a string of ``\n`` characters where each ``\n`` adds one blank line
 Configuration priority
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The formatting behavior is determined by a priority system that allows you to set a global default while overriding
-specific tables:
+A priority system sets a global default while letting you override specific tables:
 
-1. **collapse_tables** - Highest priority, forces specific tables to be collapsed regardless of other settings
-2. **expand_tables** - Medium priority, forces specific tables to be expanded
-3. **table_format** - Lowest priority, sets the default behavior for all tables not explicitly configured
+1. **collapse_tables** - Highest priority, forces specific tables to collapse regardless of other settings
+2. **expand_tables** - Medium priority, forces specific tables to expand
+3. **table_format** - Lowest priority, sets the default for all tables not configured above
 
-This three-tier approach lets you fine-tune formatting for specific tables while maintaining a consistent default.
-For example:
+Set a broad default, then carve out exceptions per table. For example:
 
 .. code-block:: toml
 
@@ -241,9 +238,8 @@ readability and TOML 1.0.0 compatibility (inline tables cannot span multiple lin
 String wrapping
 ---------------
 
-By default, the formatter wraps long strings that exceed the column width using line continuations. However, some strings such as regex patterns should not be wrapped because wrapping can break their functionality.
-
-You can configure which keys should skip string wrapping using the ``skip_wrap_for_keys`` option:
+By default the formatter wraps strings past the column width using line continuations. Some strings, regex patterns
+especially, break when wrapped, so exclude their keys with ``skip_wrap_for_keys``:
 
 .. code-block:: toml
 

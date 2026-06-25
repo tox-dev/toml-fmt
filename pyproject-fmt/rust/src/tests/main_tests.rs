@@ -111,7 +111,6 @@ fn test_format_toml_scripts() {
     "#);
 }
 
-/// Test expand_tables with main table
 #[test]
 fn test_expand_tables_with_project() {
     let start = indoc! {r#"
@@ -137,7 +136,6 @@ fn test_expand_tables_with_project() {
     "#);
 }
 
-/// Test collapse_tables with project.authors
 #[test]
 fn test_collapse_project_authors() {
     let start = indoc! {r#"
@@ -159,7 +157,6 @@ fn test_collapse_project_authors() {
     "#);
 }
 
-/// Test collapse_tables with project.maintainers
 #[test]
 fn test_collapse_project_maintainers() {
     let start = indoc! {r#"
@@ -181,7 +178,6 @@ fn test_collapse_project_maintainers() {
     "#);
 }
 
-/// Test table_format="long" with entry-points
 #[test]
 fn test_table_format_long_with_entry_points() {
     let start = indoc! {r#"
@@ -200,7 +196,6 @@ fn test_table_format_long_with_entry_points() {
     "#);
 }
 
-/// Test expand_tables with project.authors
 #[test]
 fn test_expand_project_authors() {
     let start = indoc! {r#"
@@ -230,7 +225,6 @@ fn test_expand_project_authors() {
     "#);
 }
 
-/// Test expand_tables with project.maintainers
 #[test]
 fn test_expand_project_maintainers() {
     let start = indoc! {r#"
@@ -260,7 +254,6 @@ fn test_expand_project_maintainers() {
     "#);
 }
 
-/// Test expand single author
 #[test]
 fn test_expand_single_author() {
     let start = indoc! {r#"
@@ -284,7 +277,6 @@ fn test_expand_single_author() {
     email = "john@example.com"
     "#);
 }
-/// Test collapse authors with custom url field (covers line 640 in project.rs)
 #[test]
 fn test_collapse_authors_with_url_field() {
     let start = indoc! {r#"
@@ -308,7 +300,6 @@ fn test_collapse_authors_with_url_field() {
     ]
     "#);
 }
-/// Test collapse empty authors (covers line 653 in project.rs)
 #[test]
 fn test_collapse_empty_authors() {
     let start = indoc! {r#"
@@ -328,7 +319,6 @@ fn test_collapse_empty_authors() {
     "#);
 }
 
-/// Test collapse authors when parent doesn't end with newline (covers line 664)
 #[test]
 fn test_collapse_authors_without_trailing_newline() {
     let start = "[project]\nname = \"test\"\n[[project.authors]]\nname = \"Alice\"\nemail = \"alice@example.com\"";
@@ -337,7 +327,6 @@ fn test_collapse_authors_without_trailing_newline() {
     assert!(got.contains("{ name = \"Alice\", email = \"alice@example.com\" }"));
 }
 
-/// Test collapse authors with compact parent table
 #[test]
 fn test_collapse_authors_compact_parent() {
     let start =
@@ -346,7 +335,6 @@ fn test_collapse_authors_compact_parent() {
     assert!(got.contains("authors = ["));
 }
 
-/// Test expand when authors already in array of tables format (covers line 686)
 #[test]
 fn test_expand_authors_already_expanded() {
     let start = indoc! {r#"
@@ -365,7 +353,6 @@ fn test_expand_authors_already_expanded() {
     assert!(got.contains("name = \"John Doe\""));
 }
 
-/// Test issue 146: expand_tables keeps specific sub-table expanded while others collapse
 #[test]
 fn test_issue_146_expand_specific_subtable() {
     let start = indoc! {r#"
@@ -393,7 +380,6 @@ fn test_issue_146_expand_specific_subtable() {
     assert!(got.contains("urls.homepage ="), "urls should be collapsed");
 }
 
-/// Test CSS-like specificity: more specific selector wins
 #[test]
 fn test_css_specificity_more_specific_wins() {
     let start = indoc! {r#"
@@ -422,7 +408,6 @@ fn test_css_specificity_more_specific_wins() {
     );
 }
 
-/// Test nested table specificity: project.entry-points.tox can be different from project.entry-points
 #[test]
 fn test_nested_table_specificity() {
     use crate::TableFormatConfig;
@@ -454,7 +439,6 @@ fn test_nested_table_specificity() {
     );
 }
 
-/// Test parent inheritance: sub-table inherits from parent setting
 #[test]
 fn test_parent_inheritance() {
     use crate::TableFormatConfig;
@@ -480,7 +464,6 @@ fn test_parent_inheritance() {
     );
 }
 
-/// Test that default_collapse is used when no specific setting exists
 #[test]
 fn test_default_collapse_fallback() {
     use crate::TableFormatConfig;
@@ -497,7 +480,6 @@ fn test_default_collapse_fallback() {
     assert!(config.should_collapse("tool.ruff.lint"));
 }
 
-/// Test issue 146 with deeply nested ruff table: expand_tables works for deep paths
 #[test]
 fn test_issue_146_deeply_nested_ruff_table() {
     let start = indoc! {r#"

@@ -2,7 +2,6 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-// Group: threshold → ignore flags → exclude → output.
 const KEY_ORDER: &[&str] = &[
     "",
     "fail-under",

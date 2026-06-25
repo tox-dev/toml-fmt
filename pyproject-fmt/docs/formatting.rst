@@ -1,20 +1,16 @@
 Formatting Rules
 ================
 
-``pyproject-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code.
-The tool intentionally provides minimal configuration options because the goal is to establish a single standard format
-that all ``pyproject.toml`` files follow.
+``pyproject-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code. It
+keeps configuration minimal so every ``pyproject.toml`` lands on one standard format. That buys you:
 
-**Benefits of this approach:**
+- less time configuring tools
+- smaller diffs when committing changes
+- code reviews where formatting never comes up
 
-- Less time configuring tools
-- Smaller diffs when committing changes
-- Easier code reviews since formatting is never a question
-
-While a few key options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``,
-``separate_root_table``), the tool does not expose dozens of toggles. You get what the maintainers have chosen to be the
-right balance of readability, consistency, and usability. The ``column_width`` setting controls when arrays are split
-into multiple lines and when string values are wrapped using line continuations.
+A few options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``, ``separate_root_table``),
+but there are no dozens of toggles. ``column_width`` controls when arrays split across lines and when string values
+wrap with line continuations.
 
 General Formatting
 ------------------
@@ -1039,7 +1035,7 @@ separation, skip patterns, and import edits; name lists are sorted, while sequen
 ``[tool.pylint.*]``
 ~~~~~~~~~~~~~~~~~~~
 
-`Pylint <https://pylint.readthedocs.io/en/stable/>`_ is a comprehensive static analyzer and linter for Python. See
+`Pylint <https://pylint.readthedocs.io/en/stable/>`_ is a static analyzer and linter for Python. See
 its `configuration reference <https://pylint.readthedocs.io/en/stable/user_guide/configuration/index.html>`_.
 
 Sub-tables follow Pylint's checker-group order; all rule, name, and path lists are sorted by leaf key name

@@ -9,7 +9,6 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing
             "build-system",
             "project",
             "dependency-groups",
-            // Build backends
             "tool.poetry",
             "tool.poetry-dynamic-versioning",
             "tool.pdm",
@@ -26,10 +25,8 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing
             "tool.py-build-cmake",
             "tool.sphinx-theme-builder",
             "tool.uv",
-            // Builders
             "tool.cibuildwheel",
             "tool.nuitka",
-            // Formatters and linters
             "tool.autopep8",
             "tool.black",
             "tool.yapf",
@@ -54,22 +51,18 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing
             "tool.pyproject-fmt",
             "tool.typos",
             "tool.bandit",
-            // Type checking
             "tool.mypy",
             "tool.pyrefly",
             "tool.pyright",
             "tool.ty",
             "tool.django-stubs",
-            // Testing
             "tool.pytest",
             "tool.pytest_env",
             "tool.pytest-enabler",
             "tool.coverage",
-            // Runners
             "tool.doit",
             "tool.spin",
             "tool.tox",
-            // Releasers/bumpers
             "tool.bumpversion",
             "tool.commitizen",
             "tool.jupyter-releaser",

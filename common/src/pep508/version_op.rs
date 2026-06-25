@@ -15,7 +15,7 @@ impl VersionOp {
         let spec = spec.trim();
         let (op, remaining) = Operator::new(spec)?;
         let version_str = remaining.trim();
-        // No need to handle .*, Version::new will do it
+        // Version::new parses the `.*` wildcard itself.
         let version = Version::new(version_str);
         Ok(Self { op, version })
     }
