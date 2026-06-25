@@ -105,3 +105,27 @@ fn test_round_trip_is_identity_for_disabled_key() {
     let enabled = enable_disabled_keys(source, 120);
     assert_eq!(restore_disabled_keys(&enabled), source);
 }
+
+#[test]
+fn test_enable_leaves_array_of_inline_tables() {
+    let source =
+        "# metadata.hooks.fancy-pypi-readme.fragments = [ { path = \"README.rst\", start-after = \".. begin\" } ]\n";
+    assert_eq!(enable_disabled_keys(source, 120), source);
+}
+
+#[test]
+fn test_with_disabled_keys_preserves_array_of_inline_tables_comment() {
+    let source = concat!(
+        "[tool.hatch]\n",
+        "# metadata.hooks.fancy-pypi-readme.fragments = [ { path = \"README.rst\", start-after = \".. begin\" } ]\n",
+        "version.source = \"vcs\"\n",
+    );
+    let out = with_disabled_keys(source, 120, |enabled| {
+        assert!(
+            !enabled.contains(MARKER),
+            "the array-of-inline-tables comment is never enabled"
+        );
+        enabled.to_string()
+    });
+    assert_eq!(out, source);
+}

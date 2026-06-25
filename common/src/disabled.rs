@@ -7,7 +7,7 @@
 //! This keeps a disabled key anchored to its entry instead of drifting to the next
 //! table, and formats the line the same way the enabled key would be formatted.
 
-use tombi_syntax::SyntaxKind::{ARRAY_OF_TABLE, COMMENT, KEY_VALUE, KEY_VALUE_GROUP, TABLE};
+use tombi_syntax::SyntaxKind::{ARRAY, ARRAY_OF_TABLE, COMMENT, INLINE_TABLE, KEY_VALUE, KEY_VALUE_GROUP, TABLE};
 use tombi_syntax::SyntaxNode;
 
 /// Marker appended to a disabled key's trailing comment so the pass can find the key
@@ -25,6 +25,16 @@ fn top_level_key_values(root: &SyntaxNode) -> usize {
         .sum()
 }
 
+/// Whether the value holds an array containing an inline table. The formatter always
+/// expands an array of inline tables onto several lines, even when it fits the column
+/// width, so enabling such a key would scatter the [`MARKER`] across lines the line-based
+/// restore cannot re-comment as a whole. Those keys stay verbatim comments instead.
+fn has_array_of_inline_tables(root: &SyntaxNode) -> bool {
+    root.descendants()
+        .filter(|n| n.kind() == ARRAY)
+        .any(|array| array.descendants().any(|n| n.kind() == INLINE_TABLE))
+}
+
 /// Rewrite a comment body into its enabled key-value form, or `None` when the body is
 /// not a single key-value (prose, a commented table header, multiple keys, ...).
 fn enabled_form(body: &str) -> Option<String> {
@@ -34,7 +44,7 @@ fn enabled_form(body: &str) -> Option<String> {
     }
     let root = parsed.syntax_node();
     let has_table = root.children().any(|n| matches!(n.kind(), TABLE | ARRAY_OF_TABLE));
-    if top_level_key_values(&root) != 1 || has_table {
+    if top_level_key_values(&root) != 1 || has_table || has_array_of_inline_tables(&root) {
         return None;
     }
     let has_trailing_comment = root.descendants_with_tokens().any(|t| t.kind() == COMMENT);
