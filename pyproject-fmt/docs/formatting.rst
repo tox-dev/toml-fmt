@@ -83,29 +83,29 @@ Arrays are formatted based on line length, trailing comma presence, and comments
 
     keywords = ["python", "toml"]
 
-Arrays that exceed ``column_width`` are expanded and get a trailing comma:
+Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
+keep the example short):
 
 .. fmt-example::
-    :config: generate_python_version_classifiers=false
+    :config: column_width=30 generate_python_version_classifiers=false
 
     [project]
-    keywords = ["formatting", "toml", "pyproject", "configuration", "linter", "automation", "developer-tools", "packaging"]
+    keywords = ["web", "toml", "pyproject", "formatting"]
 
-A trailing comma signals intent to keep the multiline format even when the array would fit on one line:
+A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
 
 .. fmt-example::
 
-    classifiers = [
-        "Development Status :: 4 - Beta",
-    ]
+    classifiers = ["Development Status :: 4 - Beta",]
 
-Arrays with comments are always multiline:
+A comment on an entry also forces the multiline format. Here ``["E501", "E701"]`` would fit on one line, but the
+comment keeps it expanded:
 
 .. fmt-example::
 
     lint.ignore = [
-        "E501",  # Line too long
-        "E701",
+      "E501", # too long
+      "E701",
     ]
 
 **Multiline formatting rules:**
@@ -120,11 +120,12 @@ String Wrapping
 ~~~~~~~~~~~~~~~
 
 Strings that exceed ``column_width`` (including the key name and ``" = "`` prefix) are wrapped into multi-line
-triple-quoted strings using line continuations:
+triple-quoted strings using line continuations (shown here with a small ``column_width``):
 
 .. fmt-example::
+    :config: column_width=40
 
-    description = "A very long project description that goes well beyond the configured column width limit and therefore must wrap onto multiple lines"
+    description = "Format your pyproject.toml file in place"
 
 Wrapping prefers breaking at spaces and at ``" :: "`` separators (common in Python classifiers). Strings inside inline
 tables are never wrapped. Strings that contain actual newlines are preserved as multi-line strings without adding line
@@ -478,13 +479,13 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
 
         [[tool.poetry.source]]
         priority = "primary"
-        url = "https://pypi.example.com/simple"
+        url = "https://example.com"
         name = "private"
 
         [tool.poetry.dependencies]
         zebra = "^1.0"
         python = "^3.11"
-        foo = { branch = "main", git = "https://github.com/example/foo" }
+        foo = { branch = "main", git = "https://example.com/foo" }
 
 ``[tool.pdm.*]``
 ~~~~~~~~~~~~~~~~
@@ -678,8 +679,8 @@ arrays are sorted, while cargo/rustc argv are preserved.
 ``[tool.pixi]``
 ~~~~~~~~~~~~~~~
 
-`Pixi <https://pixi.sh/latest/>`_ is a cross-platform conda/PyPI package and environment manager. See its
-`pyproject.toml reference <https://pixi.sh/latest/python/pyproject_toml/>`_.
+`Pixi <https://pixi.prefix.dev/latest/>`_ is a cross-platform conda/PyPI package and environment manager. See its
+`pyproject.toml reference <https://pixi.prefix.dev/latest/python/pyproject_toml/>`_.
 
 Keys are grouped by function (workspace metadata → configuration → dependencies → environments → build); channel and
 platform arrays are sorted.
@@ -1149,9 +1150,8 @@ configuration reference; set-semantic arrays are sorted, while ``plugins`` and `
     .. fmt-example::
 
         [[tool.mypy.overrides]]
-        ignore_missing_imports = true
         disable_error_code = ["import-untyped", "attr-defined"]
-        module = "third_party.*"
+        module = "pkg.*"
 
 ``[tool.pyrefly]``
 ~~~~~~~~~~~~~~~~~~

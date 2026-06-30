@@ -188,48 +188,40 @@ Arrays are formatted based on line length, trailing comma presence, and comments
    # After
    env_list = [ "py313", "py312", "lint" ]
 
-Arrays that exceed ``column_width`` are expanded and get a trailing comma:
+Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
+keep the example short):
 
 .. code-block:: toml
 
    # Before
    [env.test]
-   deps = ["pytest>=7", "pytest-cov>=4", "pytest-mock>=3", "this-final-entry-clearly-makes-the-array-exceed-the-column-width-limit>=1"]
+   deps = ["pytest>=7", "coverage>=7", "tox>=4"]
 
    # After
    [env.test]
    deps = [
+     "coverage>=7",
      "pytest>=7",
-     "pytest-cov>=4",
-     "pytest-mock>=3",
-     "this-final-entry-clearly-makes-the-array-exceed-the-column-width-limit>=1",
+     "tox>=4",
    ]
 
-A trailing comma signals intent to keep the multiline format even when the array would fit on one line:
+A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
 
 .. code-block:: toml
 
    # Before
-   deps = [
-       "pytest>=7",
-   ]
+   deps = ["pytest>=7",]
 
    # After
    deps = [
      "pytest>=7",
    ]
 
-Arrays with comments are always multiline:
+A comment on an entry also forces the multiline format. Here ``["pytest>=7", "coverage>=7"]`` would fit on one line,
+but the comment keeps it expanded:
 
 .. code-block:: toml
 
-   # Before
-   deps = [
-       "pytest>=7",  # testing framework
-       "coverage>=7",
-   ]
-
-   # After
    deps = [
      "pytest>=7",   # testing framework
      "coverage>=7",
@@ -246,17 +238,20 @@ An array becomes multiline when any of these conditions are met:
 String Wrapping
 ~~~~~~~~~~~~~~~
 
-Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes:
+Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes
+(shown here with a small ``column_width``):
 
 .. code-block:: toml
 
    # Before
-   description = "A very long description string that exceeds the column width limit set for this project and therefore wraps onto several lines"
+   [env.test]
+   description = "run the entire unit test suite with coverage"
 
    # After
+   [env.test]
    description = """\
-     A very long description string that exceeds the column width limit set for this project and therefore wraps onto \
-     several lines\
+     run the entire unit test suite with \
+     coverage\
      """
 
 Specific keys can be excluded from wrapping using ``skip_wrap_for_keys``. Patterns support wildcards
@@ -640,10 +635,12 @@ without PEP 508 normalization, but still participate in sorting by their lowerca
 .. code-block:: toml
 
    # Before
+   [env_run_base]
    deps = ["Pytest >= 7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]"]
 
    # After
-   deps = [ "Pytest >= 7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]" ]
+   [env_run_base]
+   deps = [ "-e ./my-pkg[test]", "-r requirements.txt", "coverage", "pytest>=7" ]
 
 **Sorted alphabetically:**
 
@@ -656,7 +653,13 @@ then string entries are sorted alphabetically:
 
 .. code-block:: toml
 
-   pass_env = ["TERM", "CI", { replace = "default", ... }, "HOME"]
+   # Before
+   [env.test]
+   pass_env = ["TERM", "CI", { replace = "env", name = "PATH" }, "HOME"]
+
+   # After
+   [env.test]
+   pass_env = [ { replace = "env", name = "PATH" }, "CI", "HOME", "TERM" ]
 
 **Arrays NOT sorted:**
 
@@ -681,10 +684,10 @@ Keys not listed in the schema are appended at the end in their original order.
 
    # Before
    pass_env = [{ default = ".", replace = "default", extend = true }]
-   env_list = [{ exclude = ["py38-django50"], product = ["py38", "py310", "django42", "django50"] }]
+   env_list = [{ exclude = ["py312-django"], product = ["py312", "py313"] }]
 
    # After
-   env_list = [ { product = [ "py38", "py310", "django42", "django50" ], exclude = [ "py38-django50" ] } ]
+   env_list = [ { product = [ "py312", "py313" ], exclude = [ "py312-django" ] } ]
    pass_env = [ { replace = "default", default = ".", extend = true } ]
 
 This reordering applies to all inline tables in the file, including those nested inside arrays.

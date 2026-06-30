@@ -426,54 +426,43 @@ Arrays are formatted based on line length, trailing comma presence, and comments
    # After
    keywords = [ "python", "toml" ]
 
-Arrays that exceed ``column_width`` are expanded and get a trailing comma:
+Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
+keep the example short):
 
 .. code-block:: toml
 
    # Before
    [project]
-   keywords = ["formatting", "toml", "pyproject", "configuration", "linter", "automation", "developer-tools", "packaging"]
+   keywords = ["web", "toml", "pyproject", "formatting"]
 
    # After
    [project]
    keywords = [
-     "automation",
-     "configuration",
-     "developer-tools",
      "formatting",
-     "linter",
-     "packaging",
      "pyproject",
-     "toml"
+     "toml",
+     "web",
    ]
 
-A trailing comma signals intent to keep the multiline format even when the array would fit on one line:
+A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
 
 .. code-block:: toml
 
    # Before
-   classifiers = [
-       "Development Status :: 4 - Beta",
-   ]
+   classifiers = ["Development Status :: 4 - Beta",]
 
    # After
    classifiers = [
      "Development Status :: 4 - Beta",
    ]
 
-Arrays with comments are always multiline:
+A comment on an entry also forces the multiline format. Here ``["E501", "E701"]`` would fit on one line, but the
+comment keeps it expanded:
 
 .. code-block:: toml
 
-   # Before
    lint.ignore = [
-       "E501",  # Line too long
-       "E701",
-   ]
-
-   # After
-   lint.ignore = [
-     "E501", # Line too long
+     "E501", # too long
      "E701",
    ]
 
@@ -489,17 +478,17 @@ String Wrapping
 ~~~~~~~~~~~~~~~
 
 Strings that exceed ``column_width`` (including the key name and ``" = "`` prefix) are wrapped into multi-line
-triple-quoted strings using line continuations:
+triple-quoted strings using line continuations (shown here with a small ``column_width``):
 
 .. code-block:: toml
 
    # Before
-   description = "A very long project description that goes well beyond the configured column width limit and therefore must wrap onto multiple lines"
+   description = "Format your pyproject.toml file in place"
 
    # After
    description = """\
-     A very long project description that goes well beyond the configured column width limit and therefore must wrap onto \
-     multiple lines\
+     Format your pyproject.toml file in \
+     place\
      """
 
 Wrapping prefers breaking at spaces and at ``" :: "`` separators (common in Python classifiers). Strings inside inline
@@ -921,20 +910,20 @@ Inline tables that don't match any Poetry-specific schema (for example ``[[proje
    # Before
    [[tool.poetry.source]]
    priority = "primary"
-   url = "https://pypi.example.com/simple"
+   url = "https://example.com"
    name = "private"
 
    [tool.poetry.dependencies]
    zebra = "^1.0"
    python = "^3.11"
-   foo = { branch = "main", git = "https://github.com/example/foo" }
+   foo = { branch = "main", git = "https://example.com/foo" }
 
    # After
    [tool.poetry]
    dependencies.python = "^3.11"
-   dependencies.foo = { git = "https://github.com/example/foo", branch = "main" }
+   dependencies.foo = { git = "https://example.com/foo", branch = "main" }
    dependencies.zebra = "^1.0"
-   source = [ { name = "private", url = "https://pypi.example.com/simple", priority = "primary" } ]
+   source = [ { name = "private", url = "https://example.com", priority = "primary" } ]
 
 ``[tool.pdm.*]``
 ~~~~~~~~~~~~~~~~
@@ -1134,8 +1123,8 @@ semantics).
 ``[tool.pixi]``
 ~~~~~~~~~~~~~~~
 
-`Pixi <https://pixi.sh/latest/>`_ is a cross-platform conda/PyPI package and environment manager. See its
-`pyproject.toml reference <https://pixi.sh/latest/python/pyproject_toml/>`_.
+`Pixi <https://pixi.prefix.dev/latest/>`_ is a cross-platform conda/PyPI package and environment manager. See its
+`pyproject.toml reference <https://pixi.prefix.dev/latest/python/pyproject_toml/>`_.
 
 Keys are grouped by function (workspace metadata → configuration → dependencies → environments → build); channel and
 platform arrays are sorted.
@@ -1601,15 +1590,12 @@ override is expanded or collapsed.
 
    # Before
    [[tool.mypy.overrides]]
-   ignore_missing_imports = true
    disable_error_code = ["import-untyped", "attr-defined"]
-   module = "third_party.*"
+   module = "pkg.*"
 
    # After
    [tool.mypy]
-   overrides = [
-     { module = "third_party.*", ignore_missing_imports = true, disable_error_code = [ "attr-defined", "import-untyped" ] }
-   ]
+   overrides = [ { module = "pkg.*", disable_error_code = [ "attr-defined", "import-untyped" ] } ]
 
 ``[tool.pyrefly]``
 ~~~~~~~~~~~~~~~~~~

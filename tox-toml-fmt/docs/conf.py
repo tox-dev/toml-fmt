@@ -47,3 +47,9 @@ extlinks = {
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 nitpicky = True
 nitpick_ignore = []
+# external reference targets reorganize their on-page anchors over time; check the page resolves, not the fragment
+linkcheck_anchors_ignore_for_url = [
+    r"https://github\.com/.*",
+    r"https://microsoft\.github\.io/.*",
+    r"https://packaging\.python\.org/.*",
+]

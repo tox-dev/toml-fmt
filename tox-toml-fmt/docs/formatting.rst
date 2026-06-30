@@ -52,28 +52,29 @@ Arrays are formatted based on line length, trailing comma presence, and comments
 
     env_list = ["py312", "py313", "lint"]
 
-Arrays that exceed ``column_width`` are expanded and get a trailing comma:
+Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
+keep the example short):
 
 .. fmt-example::
+    :config: column_width=30
 
     [env.test]
-    deps = ["pytest>=7", "pytest-cov>=4", "pytest-mock>=3", "this-final-entry-clearly-makes-the-array-exceed-the-column-width-limit>=1"]
+    deps = ["pytest>=7", "coverage>=7", "tox>=4"]
 
-A trailing comma signals intent to keep the multiline format even when the array would fit on one line:
+A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
+
+.. fmt-example::
+
+    deps = ["pytest>=7",]
+
+A comment on an entry also forces the multiline format. Here ``["pytest>=7", "coverage>=7"]`` would fit on one line,
+but the comment keeps it expanded:
 
 .. fmt-example::
 
     deps = [
-        "pytest>=7",
-    ]
-
-Arrays with comments are always multiline:
-
-.. fmt-example::
-
-    deps = [
-        "pytest>=7",  # testing framework
-        "coverage>=7",
+      "pytest>=7",   # testing framework
+      "coverage>=7",
     ]
 
 **Multiline formatting rules:**
@@ -87,11 +88,14 @@ An array becomes multiline when any of these conditions are met:
 String Wrapping
 ~~~~~~~~~~~~~~~
 
-Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes:
+Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes
+(shown here with a small ``column_width``):
 
 .. fmt-example::
+    :config: column_width=40
 
-    description = "A very long description string that exceeds the column width limit set for this project and therefore wraps onto several lines"
+    [env.test]
+    description = "run the entire unit test suite with coverage"
 
 Specific keys can be excluded from wrapping using ``skip_wrap_for_keys``. Patterns support wildcards
 (e.g. ``*.commands`` skips wrapping for ``commands`` under any table).
@@ -400,6 +404,7 @@ without PEP 508 normalization, but still participate in sorting by their lowerca
 
 .. fmt-example::
 
+    [env_run_base]
     deps = ["Pytest >= 7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]"]
 
 **Sorted alphabetically:**
@@ -413,7 +418,8 @@ then string entries are sorted alphabetically:
 
 .. fmt-example::
 
-    pass_env = ["TERM", "CI", { replace = "default", ... }, "HOME"]
+    [env.test]
+    pass_env = ["TERM", "CI", { replace = "env", name = "PATH" }, "HOME"]
 
 **Arrays NOT sorted:**
 
@@ -437,7 +443,7 @@ Keys not listed in the schema are appended at the end in their original order.
 .. fmt-example::
 
     pass_env = [{ default = ".", replace = "default", extend = true }]
-    env_list = [{ exclude = ["py38-django50"], product = ["py38", "py310", "django42", "django50"] }]
+    env_list = [{ exclude = ["py312-django"], product = ["py312", "py313"] }]
 
 This reordering applies to all inline tables in the file, including those nested inside arrays.
 
