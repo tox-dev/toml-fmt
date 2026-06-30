@@ -49,15 +49,10 @@ String Quotes
 
 All strings use double quotes by default. Single quotes are only used when the value contains double quotes:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     name = 'my-package'
     description = "He said \"hello\""
-
-    # After
-    name = "my-package"
-    description = 'He said "hello"'
 
 Key Quotes
 ~~~~~~~~~~
@@ -67,50 +62,47 @@ TOML keys are normalized to the simplest valid form. Keys that are valid bare ke
 converted to double-quoted (basic) strings with proper escaping. This applies to all keys: table headers,
 key-value pairs, and inline table keys:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     [tool."ruff"]
     "line-length" = 120
     lint.per-file-ignores.'tests/*' = ["S101"]
 
-    # After
-    [tool.ruff]
-    line-length = 120
-    lint.per-file-ignores."tests/*" = ["S101"]
-
 Backslashes and double quotes within literal keys are escaped during conversion:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     lint.per-file-ignores.'path\to\file' = ["E501"]
-
-    # After
-    lint.per-file-ignores."path\\to\\file" = ["E501"]
 
 Array Formatting
 ~~~~~~~~~~~~~~~~
 
-Arrays are formatted based on line length, trailing comma presence, and comments:
+Arrays are formatted based on line length, trailing comma presence, and comments. Short arrays stay on one line:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Short arrays stay on one line
     keywords = ["python", "toml"]
 
-    # Long arrays that exceed column_width are expanded and get a trailing comma
-    dependencies = [
-        "requests>=2.28",
-        "click>=8.0",
-    ]
+Arrays that exceed ``column_width`` are expanded and get a trailing comma:
 
-    # Trailing commas signal intent to keep multiline format
+.. fmt-example::
+    :config: generate_python_version_classifiers=false
+
+    [project]
+    keywords = ["formatting", "toml", "pyproject", "configuration", "linter", "automation", "developer-tools", "packaging"]
+
+A trailing comma signals intent to keep the multiline format even when the array would fit on one line:
+
+.. fmt-example::
+
     classifiers = [
         "Development Status :: 4 - Beta",
     ]
 
-    # Arrays with comments are always multiline
+Arrays with comments are always multiline:
+
+.. fmt-example::
+
     lint.ignore = [
         "E501",  # Line too long
         "E701",
@@ -130,16 +122,9 @@ String Wrapping
 Strings that exceed ``column_width`` (including the key name and ``" = "`` prefix) are wrapped into multi-line
 triple-quoted strings using line continuations:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before (exceeds column_width)
-    description = "A very long description that goes beyond the configured column width limit"
-
-    # After
-    description = """\
-      A very long description that goes beyond the \
-      configured column width limit\
-      """
+    description = "A very long project description that goes well beyond the configured column width limit and therefore must wrap onto multiple lines"
 
 Wrapping prefers breaking at spaces and at ``" :: "`` separators (common in Python classifiers). Strings inside inline
 tables are never wrapped. Strings that contain actual newlines are preserved as multi-line strings without adding line
@@ -152,7 +137,8 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
 
 **Short format** (collapsed to dotted keys):
 
-.. code-block:: toml
+.. fmt-example::
+    :config: generate_python_version_classifiers=false
 
     [project]
     urls.homepage = "https://example.com"
@@ -160,7 +146,8 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
 
 **Long format** (expanded to table headers):
 
-.. code-block:: toml
+.. fmt-example::
+    :config: table_format=long generate_python_version_classifiers=false
 
     [project.urls]
     homepage = "https://example.com"
@@ -174,7 +161,8 @@ between them. You can control this with ``sub_table_spacing`` and ``separate_roo
 ``\n`` characters where each ``\n`` adds one blank line. For example, setting ``sub_table_spacing = "\n"`` adds a blank
 line between sub-tables:
 
-.. code-block:: toml
+.. fmt-example::
+    :config: table_format=long sub_table_spacing=\n
 
     [tool.ruff]
     line-length = 120
@@ -197,20 +185,12 @@ All comments are preserved during formatting:
 
 Inline comments within arrays are aligned independently per array, based on that array's longest value:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before - comments at inconsistent positions
     lint.ignore = [
       "COM812", # Conflict with formatter
       "CPY", # No copyright statements
       "ISC001",   # Another rule
-    ]
-
-    # After - comments align to longest value in this array
-    lint.ignore = [
-      "COM812",  # Conflict with formatter
-      "CPY",     # No copyright statements
-      "ISC001",  # Another rule
     ]
 
 Disabled Keys
@@ -222,21 +202,13 @@ out and ordered together with the table it belongs to, then comments it out agai
 key anchored to its entry instead of drifting to the next table, and formats the line the same way the enabled key would
 be:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     [[tool.uv.index]]
     name = "pypi"
     authenticate = "never"
     # default = true
     # ignore-error-codes = [400,401,403]
-
-    # After
-    [[tool.uv.index]]
-    name = "pypi"
-    authenticate = "never"
-    # default = true
-    # ignore-error-codes = [ 400, 401, 403 ]
 
 Comments that are not a single valid key-value (prose, multi-line blocks, commented-out table headers like
 ``# [tool.x]``) are left untouched and follow the usual comment-preservation rules above. The heuristic is purely
@@ -257,9 +229,10 @@ Files without a ``# Group:`` marker format the same as before, so the feature st
 
 The formatter sorts the entries inside each group:
 
-.. code-block:: toml
+.. fmt-example::
+    :config: generate_python_version_classifiers=false
 
-    # Before
+    [project]
     dependencies = [
       # Group: web
       "flask",
@@ -267,16 +240,6 @@ The formatter sorts the entries inside each group:
       # Group: db
       "sqlalchemy",
       "psycopg2",
-    ]
-
-    # After
-    dependencies = [
-      # Group: web
-      "django",
-      "flask",
-      # Group: db
-      "psycopg2",
-      "sqlalchemy",
     ]
 
 A ``# Group:`` marker works the same way before a key in a table or before a ``[tool.*]`` header: the formatter sorts the
@@ -314,17 +277,11 @@ redundant ``wheel`` requirement is removed when the build backend is setuptools.
     dynamic injection would honor), when ``backend-path`` is set (an in-tree backend may import ``wheel``
     directly), or when ``setuptools`` itself is missing from ``requires``.
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [build-system]
         requires = ["setuptools >= 45", "wheel"]
         build-backend = "setuptools.build_meta"
-
-        # After
-        [build-system]
-        build-backend = "setuptools.build_meta"
-        requires = ["setuptools>=45"]
 
 ``[project]``
 ~~~~~~~~~~~~~
@@ -375,60 +332,50 @@ Keys follow the canonical metadata order; name, dependencies, classifiers, and k
     normalized per :pep:`508` (spaces removed, redundant ``.0`` suffixes stripped unless
     ``keep_full_version = true``) and sorted alphabetically by canonical package name:
 
-    .. code-block:: toml
+    .. fmt-example::
+        :config: generate_python_version_classifiers=false
 
-        # Before
+        [project]
         dependencies = ["requests >= 2.0.0", "click~=8.0"]
-
-        # After
-        dependencies = ["click>=8", "requests>=2"]
 
     **Optional-dependency extra names** are normalized to lowercase with hyphens:
 
-    .. code-block:: toml
+    .. fmt-example::
+        :config: generate_python_version_classifiers=false
 
-        # Before
         [project.optional-dependencies]
         Dev_Tools = ["pytest"]
 
-        # After
-        [project.optional-dependencies]
-        dev-tools = ["pytest"]
-
     **Python version classifiers** are generated automatically from ``requires-python`` and
-    ``max_supported_python``. Disable with ``generate_python_version_classifiers = false``:
+    ``max_supported_python`` (here ``3.14``). Disable with ``generate_python_version_classifiers = false``:
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # With requires-python = ">=3.10" and max_supported_python = "3.14"
-        classifiers = [
-            "Programming Language :: Python :: 3 :: Only",
-            "Programming Language :: Python :: 3.10",
-            "Programming Language :: Python :: 3.11",
-            "Programming Language :: Python :: 3.12",
-            "Programming Language :: Python :: 3.13",
-            "Programming Language :: Python :: 3.14",
-        ]
+        [project]
+        requires-python = ">=3.10"
 
     **Entry points:** inline tables within ``entry-points`` are expanded to dotted keys:
 
-    .. code-block:: toml
+    .. fmt-example::
+        :config: generate_python_version_classifiers=false
 
-        # Before
+        [project]
         entry-points.console_scripts = { mycli = "mypackage:main" }
 
-        # After
-        entry-points.console_scripts.mycli = "mypackage:main"
+    **Authors / maintainers** can be inline tables (short format):
 
-    **Authors / maintainers** can be inline tables or an expanded array of tables (controlled by ``table_format``,
-    ``expand_tables``, and ``collapse_tables``):
+    .. fmt-example::
+        :config: generate_python_version_classifiers=false
 
-    .. code-block:: toml
-
-        # Short format (inline)
+        [project]
         authors = [{ name = "Alice", email = "alice@example.com" }]
 
-        # Long format (array of tables)
+    or an expanded array of tables (long format, controlled by ``table_format``, ``expand_tables``, and
+    ``collapse_tables``):
+
+    .. fmt-example::
+        :config: table_format=long generate_python_version_classifiers=false
+
         [[project.authors]]
         name = "Alice"
         email = "alice@example.com"
@@ -450,15 +397,10 @@ Groups are ordered ``dev`` → ``test`` → ``type`` → ``docs`` → others alp
     - all dependencies normalized per :pep:`508`
     - sorted with regular dependencies first, then ``include-group`` entries
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [dependency-groups]
         dev = [{ include-group = "test" }, "ruff>=0.4", "mypy>=1"]
-
-        # After
-        [dependency-groups]
-        dev = ["mypy>=1", "ruff>=0.4", { include-group = "test" }]
 
 ``[tool.poetry]``
 ~~~~~~~~~~~~~~~~~
@@ -532,9 +474,8 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
     Inline tables that don't match any Poetry-specific schema (for example ``[[project.authors]]`` inline form
     ``{ name = "...", email = "..." }``) are left untouched.
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [[tool.poetry.source]]
         priority = "primary"
         url = "https://pypi.example.com/simple"
@@ -544,13 +485,6 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
         zebra = "^1.0"
         python = "^3.11"
         foo = { branch = "main", git = "https://github.com/example/foo" }
-
-        # After
-        [tool.poetry]
-        dependencies.python = "^3.11"
-        dependencies.foo = { git = "https://github.com/example/foo", branch = "main" }
-        dependencies.zebra = "^1.0"
-        source = [ { name = "private", url = "https://pypi.example.com/simple", priority = "primary" } ]
 
 ``[tool.pdm.*]``
 ~~~~~~~~~~~~~~~~
@@ -638,9 +572,8 @@ literal lists like ``packages`` are preserved.
        ``version_file``) → ``write_to_template`` (use ``version_file_template``) → ``version_class`` (use
        ``version_cls``) → ``template``
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [tool.setuptools]
         zip-safe = false
         py-modules = ["foo", "bar"]
@@ -653,16 +586,6 @@ literal lists like ``packages`` are preserved.
 
         [tool.setuptools.dynamic]
         readme = { content-type = "text/markdown", file = "README.md" }
-
-        # After
-        [tool.setuptools]
-        py-modules = [ "bar", "foo" ]
-        packages.find.where = [ "src" ]
-        packages.find.include = [ "my_pkg*" ]
-        packages.find.namespaces = true
-        packages = [ "my_pkg" ]
-        dynamic.readme = { file = "README.md", content-type = "text/markdown" }
-        zip-safe = false
 
 ``[tool.hatch.*]``
 ~~~~~~~~~~~~~~~~~~
@@ -826,17 +749,11 @@ workspace); package-name arrays and the ``sources`` table are sorted alphabetica
 
     **Sources table:** ``sources`` entries are sorted alphabetically by package name:
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [tool.uv.sources]
         zebra = { git = "..." }
         alpha = { path = "..." }
-
-        # After
-        [tool.uv.sources]
-        alpha = { path = "..." }
-        zebra = { git = "..." }
 
     **pip subsection:** ``[tool.uv.pip]`` follows the same rules, with arrays like ``extra``, ``no-binary-package``,
     ``no-build-package``, ``reinstall-package``, and ``upgrade-package`` sorted alphabetically.
@@ -957,16 +874,15 @@ name arrays are sorted with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``).
     6. ``lint.*`` keys: ``select`` → ``extend-select`` → ``ignore`` → ``extend-ignore`` → ``per-file-ignores`` →
        ``fixable`` → ``unfixable`` → plugin configurations
 
-    **Sorted arrays:** alphabetical with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``):
+    **Sorted arrays:** alphabetical with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``); per-file-ignores values
+    are sorted too:
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # These arrays are sorted:
-        lint.select = ["E", "F", "I", "RUF"]
-        lint.ignore = ["E501", "E701"]
-
-        # Per-file-ignores values are also sorted:
-        lint.per-file-ignores."tests/*.py" = ["D103", "S101"]
+        [tool.ruff]
+        lint.select = ["F", "E", "RUF", "I"]
+        lint.ignore = ["E701", "E501"]
+        lint.per-file-ignores."tests/*.py" = ["S101", "D103"]
 
     The full set of sorted array keys:
 
@@ -1230,19 +1146,12 @@ configuration reference; set-semantic arrays are sorted, while ``plugins`` and `
     inside each inline entry are sorted in place, so ``disable_error_code = [...]`` is alphabetized whether the
     override is expanded or collapsed.
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [[tool.mypy.overrides]]
         ignore_missing_imports = true
         disable_error_code = ["import-untyped", "attr-defined"]
         module = "third_party.*"
-
-        # After
-        [tool.mypy]
-        overrides = [
-          { module = "third_party.*", ignore_missing_imports = true, disable_error_code = [ "attr-defined", "import-untyped" ] },
-        ]
 
 ``[tool.pyrefly]``
 ~~~~~~~~~~~~~~~~~~
@@ -1330,23 +1239,14 @@ Keys in the ``ini_options`` block follow the pytest reference order; set-semanti
     **Preserved as written:** ``addopts`` (CLI argv, order matters) and ``pythonpath`` (a search path with
     priority semantics).
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before
         [tool.pytest.ini_options]
         log_cli_level = "INFO"
         markers = [ "slow: marks tests as slow", "fast: marks tests as fast" ]
         addopts = [ "--strict-markers", "-ra" ]
         testpaths = [ "tests" ]
         minversion = "8"
-
-        # After
-        [tool.pytest]
-        ini_options.minversion = "8"
-        ini_options.testpaths = [ "tests" ]
-        ini_options.addopts = [ "--strict-markers", "-ra" ]
-        ini_options.markers = [ "fast: marks tests as fast", "slow: marks tests as slow" ]
-        ini_options.log_cli_level = "INFO"
 
 ``[tool.coverage]``
 ~~~~~~~~~~~~~~~~~~~
@@ -1404,21 +1304,13 @@ set-semantic arrays are sorted.
     Report phase
       ``include``, ``omit``, ``exclude_lines``, ``exclude_also``, ``partial_branches``, ``partial_also``
 
-    .. code-block:: toml
+    .. fmt-example::
 
-        # Before (alphabetical)
         [tool.coverage]
         report.exclude_also = ["if TYPE_CHECKING:"]
         report.omit = ["tests/*"]
         run.branch = true
         run.omit = ["tests/*"]
-
-        # After (workflow order with groupings)
-        [tool.coverage]
-        run.branch = true
-        run.omit = ["tests/*"]
-        report.omit = ["tests/*"]
-        report.exclude_also = ["if TYPE_CHECKING:"]
 
 ``[tool.tox]``
 ~~~~~~~~~~~~~~

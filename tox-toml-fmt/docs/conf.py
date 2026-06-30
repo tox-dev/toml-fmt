@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import datetime, timezone
 from importlib.metadata import version as metadata_version
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parents[2] / "tasks"))
 
 company, name = "tox-dev", "tox-toml-fmt"
 ver = metadata_version("tox-toml-fmt")
@@ -24,7 +28,9 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx_inline_tabs",
     "sphinx_copybutton",
+    "sphinx_fmt_example",
 ]
+fmt_example_module = "tox_toml_fmt"
 
 exclude_patterns = ["_build", "changelog/*", "_draft.rst"]
 autoclass_content, autodoc_member_order, autodoc_typehints = "class", "bysource", "none"

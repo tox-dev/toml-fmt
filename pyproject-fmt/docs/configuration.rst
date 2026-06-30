@@ -106,7 +106,8 @@ Control how sub-tables are formatted with two styles:
 
 **Short format (collapsed)** - The default, where sub-tables collapse into dotted keys. Use it for a compact layout:
 
-.. code-block:: toml
+.. fmt-example::
+    :config: generate_python_version_classifiers=false
 
     [project]
     name = "myproject"
@@ -117,17 +118,14 @@ Control how sub-tables are formatted with two styles:
 **Long format (expanded)** - Sub-tables are expanded into separate ``[table.subtable]`` sections. Use this for
 readability when tables have many keys or complex values:
 
-.. code-block:: toml
+.. fmt-example::
+    :config: table_format=long generate_python_version_classifiers=false
 
     [project]
     name = "myproject"
-
-    [project.urls]
-    homepage = "https://example.com"
-    repository = "https://github.com/example/myproject"
-
-    [project.scripts]
-    mycli = "mypackage:main"
+    urls.homepage = "https://example.com"
+    urls.repository = "https://github.com/example/myproject"
+    scripts.mycli = "mypackage:main"
 
 Table spacing
 ~~~~~~~~~~~~~
