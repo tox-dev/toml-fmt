@@ -104,8 +104,8 @@ commands = [
 [env.readme]
 description = "generate README.rst from docs"
 runner = "uv-venv-runner"
-skip_install = true
-package = "skip"
+package = "wheel"
+wheel_build_env = ".pkg"
 dependency_groups = []
 change_dir = "{tox_root}{/}.."
 commands = [["python", "tasks{/}generate_readme.py", "pyproject-fmt"]]

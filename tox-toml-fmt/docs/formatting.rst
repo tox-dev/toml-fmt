@@ -21,15 +21,11 @@ String Quotes
 
 All strings use double quotes by default. Single quotes are only used when the value contains double quotes:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
+    [env.test]
     description = 'Run tests'
     commands = ["echo \"hello\""]
-
-    # After
-    description = "Run tests"
-    commands = ['echo "hello"']
 
 Key Quotes
 ~~~~~~~~~~
@@ -39,46 +35,46 @@ TOML keys are normalized to the simplest valid form. Keys that are valid bare ke
 converted to double-quoted (basic) strings with proper escaping. This applies to all keys: table headers,
 key-value pairs, and inline table keys:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
-    [env.'my-env']
+    [env.'my env']
     "description" = "run tests"
     pass_env = [{ "else" = "no" }]
-
-    # After
-    [env."my-env"]
-    description = "run tests"
-    pass_env = [{ else = "no" }]
 
 Backslashes and double quotes within literal keys are escaped during conversion.
 
 Array Formatting
 ~~~~~~~~~~~~~~~~
 
-Arrays are formatted based on line length, trailing comma presence, and comments:
+Arrays are formatted based on line length, trailing comma presence, and comments. Short arrays stay on one line:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Short arrays stay on one line
     env_list = ["py312", "py313", "lint"]
 
-    # Long arrays that exceed column_width are expanded and get a trailing comma
-    deps = [
-        "pytest>=7",
-        "pytest-cov>=4",
-        "pytest-mock>=3",
-    ]
+Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
+keep the example short):
 
-    # Trailing commas signal intent to keep multiline format
-    deps = [
-        "pytest>=7",
-    ]
+.. fmt-example::
+    :config: column_width=30
 
-    # Arrays with comments are always multiline
+    [env.test]
+    deps = ["pytest>=7", "coverage>=7", "tox>=4"]
+
+A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
+
+.. fmt-example::
+
+    deps = ["pytest>=7",]
+
+A comment on an entry also forces the multiline format. Here ``["pytest>=7", "coverage>=7"]`` would fit on one line,
+but the comment keeps it expanded:
+
+.. fmt-example::
+
     deps = [
-        "pytest>=7",  # testing framework
-        "coverage>=7",
+      "pytest>=7",   # testing framework
+      "coverage>=7",
     ]
 
 **Multiline formatting rules:**
@@ -92,20 +88,14 @@ An array becomes multiline when any of these conditions are met:
 String Wrapping
 ~~~~~~~~~~~~~~~
 
-Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes:
+Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes
+(shown here with a small ``column_width``):
 
-.. code-block:: toml
+.. fmt-example::
+    :config: column_width=40
 
-    # Before
-    description = "A very long description string that exceeds the column width limit set for this project"
-
-    # After (with column_width = 40)
-    description = """\
-      A very long description \
-      string that exceeds the \
-      column width limit set \
-      for this project\
-      """
+    [env.test]
+    description = "run the entire unit test suite with coverage"
 
 Specific keys can be excluded from wrapping using ``skip_wrap_for_keys``. Patterns support wildcards
 (e.g. ``*.commands`` skips wrapping for ``commands`` under any table).
@@ -117,7 +107,7 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
 
 **Short format** (default, collapsed to dotted keys):
 
-.. code-block:: toml
+.. fmt-example::
 
     [env.test]
     description = "run tests"
@@ -125,13 +115,12 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
 
 **Long format** (expanded to table headers):
 
-.. code-block:: toml
+.. fmt-example::
+    :config: table_format=long
 
     [env.test]
     description = "run tests"
-
-    [env.test.sub]
-    value = 1
+    sub.value = 1
 
 Individual tables can override the default using ``expand_tables`` and ``collapse_tables``.
 
@@ -178,20 +167,12 @@ All comments are preserved during formatting:
 
 Inline comments within arrays are aligned independently per array, based on that array's longest value:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before - comments at inconsistent positions
     deps = [
       "pytest", # testing
       "pytest-cov",  # coverage
       "pytest-mock", # mocking
-    ]
-
-    # After - comments align to longest value in this array
-    deps = [
-      "pytest",       # testing
-      "pytest-cov",   # coverage
-      "pytest-mock",  # mocking
     ]
 
 Disabled Keys
@@ -203,17 +184,11 @@ laid out and ordered together with the table it belongs to, then comments it out
 disabled key anchored to its entry instead of drifting to the next table, and formats the line the same way the enabled
 key would be:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     [env_run_base]
     description = "run the tests"
     # set_env = {A = "1"}
-
-    # After
-    [env_run_base]
-    description = "run the tests"
-    # set_env = { A = "1" }
 
 Comments that are not a single valid key-value (prose, multi-line blocks, commented-out table headers like
 ``# [env.docs]``) are left untouched and follow the usual comment-preservation rules above. The heuristic is purely
@@ -232,9 +207,9 @@ entries belong together but should still be sorted.
 Files without a ``# Group:`` marker format the same as before, so the feature stays opt-in. Case does not matter, so
 ``# group:`` works too. Only standalone comment lines count; the formatter ignores inline trailing comments.
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
+    [env.test]
     deps = [
       # Group: runtime
       "requests",
@@ -242,16 +217,6 @@ Files without a ``# Group:`` marker format the same as before, so the feature st
       # Group: testing
       "pytest-cov",
       "pytest",
-    ]
-
-    # After
-    deps = [
-      # Group: runtime
-      "click",
-      "requests",
-      # Group: testing
-      "pytest",
-      "pytest-cov",
     ]
 
 Table-Specific Handling
@@ -309,17 +274,11 @@ to the root table, ``[env_run_base]``, ``[env_pkg_base]``, and all ``[env.*]`` t
 
 **Root table aliases:**
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     envlist = ["py312", "py313"]
     minversion = "4.2"
     skipsdist = true
-
-    # After
-    env_list = ["py312", "py313"]
-    min_version = "4.2"
-    no_package = true
 
 Full list: ``envlist`` → ``env_list``, ``toxinidir`` → ``tox_root``, ``toxworkdir`` → ``work_dir``,
 ``skipsdist`` → ``no_package``, ``isolated_build_env`` → ``package_env``, ``setupdir`` → ``package_root``,
@@ -327,19 +286,12 @@ Full list: ``envlist`` → ``env_list``, ``toxinidir`` → ``tox_root``, ``toxwo
 
 **Environment table aliases:**
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     [env_run_base]
     basepython = "python3.12"
     setenv.PYTHONPATH = "src"
     passenv = ["HOME"]
-
-    # After
-    [env_run_base]
-    base_python = "python3.12"
-    set_env.PYTHONPATH = "src"
-    pass_env = ["HOME"]
 
 Full list: ``setenv`` → ``set_env``, ``passenv`` → ``pass_env``, ``envdir`` → ``env_dir``,
 ``envtmpdir`` → ``env_tmp_dir``, ``envlogdir`` → ``env_log_dir``, ``changedir`` → ``change_dir``,
@@ -355,17 +307,11 @@ Keys in the root table are reordered into a consistent sequence:
 ``package_env`` → ``package_root`` → ``no_package`` → ``skip_missing_interpreters`` →
 ``ignore_base_python_conflict`` → ``work_dir`` → ``temp_dir`` → ``tox_root``
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     env_list = ["py312", "lint"]
     requires = ["tox>=4.2"]
     min_version = "4.2"
-
-    # After
-    min_version = "4.2"
-    requires = ["tox>=4.2"]
-    env_list = ["py312", "lint"]
 
 Environment Key Ordering
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -386,19 +332,12 @@ settings:
 ``allowlist_externals`` → ``labels`` → ``suicide_timeout`` → ``interrupt_timeout`` →
 ``terminate_timeout`` → ``depends`` → ``env_dir`` → ``env_tmp_dir`` → ``env_log_dir``
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     [env_run_base]
     commands = ["pytest"]
     deps = ["pytest>=7"]
     description = "run tests"
-
-    # After
-    [env_run_base]
-    description = "run tests"
-    deps = ["pytest>=7"]
-    commands = ["pytest"]
 
 ``requires`` Normalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -406,13 +345,9 @@ settings:
 Dependencies in the root ``requires`` array are normalized per PEP 508 (canonical package names,
 consistent spacing around specifiers) and sorted alphabetically by package name:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     requires = ["tox >= 4.2", "tox-uv"]
-
-    # After
-    requires = ["tox>=4.2", "tox-uv"]
 
 ``env_list`` Sorting
 ~~~~~~~~~~~~~~~~~~~~
@@ -429,20 +364,16 @@ in their original positions.
 
 Compound environment names separated by ``-`` are classified by their first recognized part:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     env_list = ["lint", "py38", "py312", "docs", "py310-django"]
 
-    # After
-    env_list = ["py312", "py310-django", "py38", "docs", "lint"]
+Use ``--pin-env`` (here ``fix,type``) to pin specific environments to the start:
 
-Use ``--pin-env`` to pin specific environments to the start:
+.. fmt-example::
+    :config: pin_envs=fix,type
 
-.. code-block:: toml
-
-    # With --pin-env fix,type
-    env_list = ["fix", "type", "py313", "py312", "docs", "lint"]
+    env_list = ["lint", "py312", "py313", "docs", "fix", "type"]
 
 See :doc:`configuration` for how to set ``pin-env`` via the config file or CLI.
 
@@ -453,15 +384,10 @@ The legacy ``use_develop = true`` setting is automatically converted to the mode
 equivalent. If ``use_develop = false``, the key is left as-is. If a ``package`` key already exists,
 only the ``use_develop`` key is removed:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     [env_run_base]
     use_develop = true
-
-    # After
-    [env_run_base]
-    package = "editable"
 
 Array Sorting
 ~~~~~~~~~~~~~
@@ -476,13 +402,10 @@ Pip file references (``-r``, ``-c``), editable installs (``-e``), local paths (`
 ``/``), and entries containing tox substitution variables (``{tox_root}``, etc.) are preserved as-is
 without PEP 508 normalization, but still participate in sorting by their lowercased value:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
+    [env_run_base]
     deps = ["Pytest >= 7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]"]
-
-    # After
-    deps = ["-e ./my-pkg[test]", "-r requirements.txt", "coverage", "pytest>=7"]
 
 **Sorted alphabetically:**
 
@@ -493,13 +416,10 @@ without PEP 508 normalization, but still participate in sorting by their lowerca
 Replacement objects (inline tables like ``{ replace = "default", ... }``) are pinned to the start,
 then string entries are sorted alphabetically:
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
-    pass_env = ["TERM", "CI", { replace = "default", ... }, "HOME"]
-
-    # After
-    pass_env = [{ replace = "default", ... }, "CI", "HOME", "TERM"]
+    [env.test]
+    pass_env = ["TERM", "CI", { replace = "env", name = "PATH" }, "HOME"]
 
 **Arrays NOT sorted:**
 
@@ -512,23 +432,18 @@ Inline Table Key Reordering
 Keys within inline tables are reordered into a consistent order based on the inline table's type. The type
 is detected by the presence of a discriminator key:
 
-- **``replace``**: ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
+- ``replace``: ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
   ``then`` → ``else`` → ``default`` → ``extend`` → ``marker``
-- **``prefix``**: ``prefix`` → ``start`` → ``stop``
-- **``product``**: ``product`` → ``exclude``
-- **``value``**: ``value`` → ``marker``
+- ``prefix``: ``prefix`` → ``start`` → ``stop``
+- ``product``: ``product`` → ``exclude``
+- ``value``: ``value`` → ``marker``
 
 Keys not listed in the schema are appended at the end in their original order.
 
-.. code-block:: toml
+.. fmt-example::
 
-    # Before
     pass_env = [{ default = ".", replace = "default", extend = true }]
-    env_list = [{ exclude = ["py38-django50"], product = ["py38", "py310", "django42", "django50"] }]
-
-    # After
-    pass_env = [{ replace = "default", default = ".", extend = true }]
-    env_list = [{ product = ["py38", "py310", "django42", "django50"], exclude = ["py38-django50"] }]
+    env_list = [{ exclude = ["py312-django"], product = ["py312", "py313"] }]
 
 This reordering applies to all inline tables in the file, including those nested inside arrays.
 

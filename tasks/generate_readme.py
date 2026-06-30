@@ -6,14 +6,20 @@ import re
 import sys
 from pathlib import Path
 
+from fmt_examples import render_example
+
 
 def main(package: str) -> None:
     pkg = Path(package)
+    module = package.replace("-", "_")
     docs_dir = pkg / "docs"
     if not (index_path := docs_dir / "index.rst").exists():
         return
 
-    processed = process_rst_for_pypi(index_path.read_text(encoding="utf-8"))
+    def read(path: Path) -> str:
+        return expand_fmt_examples(path.read_text(encoding="utf-8"), module)
+
+    processed = process_rst_for_pypi(read(index_path))
 
     changelog_rst = ""
     if (changelog_path := pkg / "CHANGELOG.md").exists() and (
@@ -27,12 +33,48 @@ def main(package: str) -> None:
             processed = processed + "\n\n" + changelog_rst
 
     if (config_path := docs_dir / "configuration.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(config_path.read_text(encoding="utf-8")))
+        processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(config_path)))
 
     if (formatting_path := docs_dir / "formatting.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(formatting_path.read_text(encoding="utf-8")))
+        processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(formatting_path)))
 
-    (pkg / "README.rst").write_text(processed, encoding="utf-8")
+    (pkg / "README.rst").write_text(processed.rstrip() + "\n", encoding="utf-8")
+
+
+def expand_fmt_examples(content: str, module: str) -> str:
+    """Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to."""
+    lines = content.splitlines()
+    result: list[str] = []
+    i = 0
+    while i < len(lines):
+        if (match := re.match(r"^(\s*)\.\. fmt-example::\s*$", lines[i])) is None:
+            result.append(lines[i])
+            i += 1
+            continue
+        base = match.group(1)
+        config = ""
+        i += 1
+        while i < len(lines) and (option := re.match(rf"^{base}\s+:config:\s*(.*)$", lines[i])):
+            config = option.group(1).strip()
+            i += 1
+        while i < len(lines) and not lines[i].strip():
+            i += 1
+        body: list[str] = []
+        while i < len(lines) and (not lines[i].strip() or lines[i].startswith(f"{base} ")):
+            body.append(lines[i])
+            i += 1
+        before = "\n".join(line[len(base) :] for line in body).strip("\n")
+        rendered = render_example(module, _dedent(before), config)
+        result.extend((f"{base}.. code-block:: toml", ""))
+        result.extend(f"{base}   {line}" if line else "" for line in rendered.splitlines())
+        result.append("")
+    return "\n".join(result)
+
+
+def _dedent(text: str) -> str:
+    body = [line for line in text.splitlines() if line.strip()]
+    pad = min((len(line) - len(line.lstrip()) for line in body), default=0)
+    return "\n".join(line[pad:] if line.strip() else "" for line in text.splitlines())
 
 
 def strip_main_title(content: str) -> str:

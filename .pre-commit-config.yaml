@@ -1,7 +1,23 @@
 ci:
   autoupdate_schedule: monthly
+  # these build the local Rust extension via uv; pre-commit.ci has no toolchain, so CI regenerates instead
+  skip: [readme-pyproject-fmt, readme-tox-toml-fmt]
 
 repos:
+  - repo: local
+    hooks:
+      - id: readme-pyproject-fmt
+        name: regenerate pyproject-fmt README (runs doc examples through the formatter)
+        language: system
+        entry: uv run --project pyproject-fmt python tasks/generate_readme.py pyproject-fmt
+        pass_filenames: false
+        always_run: true
+      - id: readme-tox-toml-fmt
+        name: regenerate tox-toml-fmt README (runs doc examples through the formatter)
+        language: system
+        entry: uv run --project tox-toml-fmt python tasks/generate_readme.py tox-toml-fmt
+        pass_filenames: false
+        always_run: true
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: "v2.23.0"
     hooks:

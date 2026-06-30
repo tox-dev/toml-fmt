@@ -27,10 +27,12 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
     # Maximum Python version for generating version classifiers
     max_supported_python = "3.14"
 
-    # Table format: "short" collapses sub-tables to dotted keys, "long" expands to [table.subtable] headers
+    # Table format: "short" collapses sub-tables to dotted keys, "long" expands to
+    # [table.subtable] headers
     table_format = "short"
 
-    # Extra newlines between sub-tables in the same group (e.g. "\n" for one blank line between sub-tables)
+    # Extra newlines between sub-tables in the same group (e.g. "\n" for one blank line
+    # between sub-tables)
     sub_table_spacing = ""
 
     # Extra newlines between root table groups (e.g. "\n" for one blank line, "\n\n" for two)
@@ -42,7 +44,8 @@ The ``tool.pyproject-fmt`` table is used when present in the ``pyproject.toml`` 
     # List of tables to force collapse regardless of table_format or expand_tables settings
     collapse_tables = []
 
-    # List of key patterns to skip string wrapping (supports wildcards like *.parse or tool.bumpversion.*)
+    # List of key patterns to skip string wrapping (supports wildcards like *.parse or
+    # tool.bumpversion.*)
     skip_wrap_for_keys = []
 
 If not set they will default to values from the CLI.
@@ -106,7 +109,8 @@ Control how sub-tables are formatted with two styles:
 
 **Short format (collapsed)** - The default, where sub-tables collapse into dotted keys. Use it for a compact layout:
 
-.. code-block:: toml
+.. fmt-example::
+    :config: generate_python_version_classifiers=false
 
     [project]
     name = "myproject"
@@ -117,17 +121,14 @@ Control how sub-tables are formatted with two styles:
 **Long format (expanded)** - Sub-tables are expanded into separate ``[table.subtable]`` sections. Use this for
 readability when tables have many keys or complex values:
 
-.. code-block:: toml
+.. fmt-example::
+    :config: table_format=long generate_python_version_classifiers=false
 
     [project]
     name = "myproject"
-
-    [project.urls]
-    homepage = "https://example.com"
-    repository = "https://github.com/example/myproject"
-
-    [project.scripts]
-    mycli = "mypackage:main"
+    urls.homepage = "https://example.com"
+    urls.repository = "https://github.com/example/myproject"
+    scripts.mycli = "mypackage:main"
 
 Table spacing
 ~~~~~~~~~~~~~

@@ -60,14 +60,14 @@ jobs:
           PACKAGE: ${{ inputs.package-name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 🐍 Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.14"
       - name: 🎨 Run pre-commit
-        uses: tox-dev/action-pre-commit-uv@41a04ab74d5ec7ca33c8db8a59b6e3291d576033 # 1.0.4
+        uses: tox-dev/action-pre-commit-uv@41a04ab74d5ec7ca33c8db8a59b6e3291d576033 # v1.0.4
         continue-on-error: true
       - name: 📝 Generate README.rst
-        run: python tasks/generate_readme.py "$PACKAGE"
+        run: uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 👀 Show changes
@@ -147,7 +147,7 @@ jobs:
         with:
           name: source
       - name: 🐍 Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: ${{ matrix.platform.python }}
           architecture: ${{ matrix.platform.target == 'x86' && 'x86' || matrix.platform.target == 'aarch64' && 'arm64' || 'x64' }}
