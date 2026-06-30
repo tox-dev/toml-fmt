@@ -432,11 +432,11 @@ Inline Table Key Reordering
 Keys within inline tables are reordered into a consistent order based on the inline table's type. The type
 is detected by the presence of a discriminator key:
 
-- **``replace``**: ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
+- ``replace``: ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
   ``then`` → ``else`` → ``default`` → ``extend`` → ``marker``
-- **``prefix``**: ``prefix`` → ``start`` → ``stop``
-- **``product``**: ``product`` → ``exclude``
-- **``value``**: ``value`` → ``marker``
+- ``prefix``: ``prefix`` → ``start`` → ``stop``
+- ``product``: ``product`` → ``exclude``
+- ``value``: ``value`` → ``marker``
 
 Keys not listed in the schema are appended at the end in their original order.
 
