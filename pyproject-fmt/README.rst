@@ -650,7 +650,7 @@ Beyond general formatting, each table has specific key ordering and value normal
 ~~~~~~~~~~~~~~~~~~
 
 The :pep:`517` / :pep:`518` table that declares how your project is built. See the
-`packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#build-system-table>`_.
+`packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#pyproject-build-system-table>`_.
 
 Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``requires`` is normalized and sorted. A
 redundant ``wheel`` requirement is removed when the build backend is setuptools.
@@ -688,7 +688,7 @@ directly), or when ``setuptools`` itself is missing from ``requires``.
 ~~~~~~~~~~~~~
 
 The :pep:`621` core metadata table. See the
-`packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#the-project-table>`_.
+`packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#pyproject-project-table>`_.
 
 Keys follow the canonical metadata order; name, dependencies, classifiers, and keywords are normalized and sorted.
 

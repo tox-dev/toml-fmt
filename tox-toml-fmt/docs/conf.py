@@ -47,9 +47,9 @@ extlinks = {
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
 nitpicky = True
 nitpick_ignore = []
-# external reference targets reorganize their on-page anchors over time; check the page resolves, not the fragment
+# anchors that resolve in a browser but linkcheck cannot verify: GitHub renders README heading ids with a
+# user-content- prefix added client-side, and pyright's docs are a single-page app with hash-routed sections
 linkcheck_anchors_ignore_for_url = [
     r"https://github\.com/.*",
-    r"https://microsoft\.github\.io/.*",
-    r"https://packaging\.python\.org/.*",
+    r"https://microsoft\.github\.io/pyright/.*",
 ]
