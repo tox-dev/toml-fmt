@@ -68,13 +68,13 @@ class TOMLFormatter(ABC, Generic[T]):
     @property
     @abstractmethod
     def prog(self) -> str:
-        """:returns: name of the application (must be same as the package name)"""
+        """Name of the application (must be same as the package name)."""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def filename(self) -> str:
-        """:returns: name of the file type it formats"""
+        """Name of the file type it formats."""
         raise NotImplementedError
 
     @abstractmethod
