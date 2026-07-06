@@ -29,12 +29,12 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
     @property
     def prog(self) -> str:
-        """:return: program name"""
+        """Program name."""
         return "pyproject-fmt"
 
     @property
     def filename(self) -> str:
-        """:return: filename operating on"""
+        """Filename operating on."""
         return "pyproject.toml"
 
     def add_format_flags(self, parser: ArgumentGroup) -> None:  # noqa: PLR6301
@@ -74,7 +74,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
-        """:return: path where config overrides live"""
+        """Path where config overrides live."""
         return "tool", "pyproject-fmt"
 
     def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # noqa: PLR6301
