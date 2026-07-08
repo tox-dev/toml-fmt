@@ -3,9 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: ["main"]
-    paths: ["common/**", ".github/workflows/common.yaml"]
   pull_request:
-    paths: ["common/**", ".github/workflows/common.yaml"]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,8 +13,29 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: 🔍 changes
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: 🔍 Check for changes
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'common/**'
+              - '.github/workflows/common.yaml'
+
   clippy:
     name: 📎 clippy
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -33,6 +52,8 @@ jobs:
 
   fmt:
     name: 🎨 fmt
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -49,6 +70,8 @@ jobs:
 
   build:
     name: 🔨 build
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Checkout
@@ -63,6 +86,8 @@ jobs:
 
   test:
     name: ✅ test
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     environment: test
     steps:
@@ -87,3 +112,17 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
           flags: rust
+
+  all-pass:
+    name: ✅ common
+    if: always()
+    needs: [changes, clippy, fmt, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether all jobs passed or were skipped
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs failed or were canceled"
+            exit 1
+          fi
+          echo "All jobs passed or were skipped"
