@@ -3,8 +3,8 @@ use indoc::indoc;
 use super::format_toml;
 use crate::table::{
     InlineTableSchema, Tables, apply_table_formatting, collapse_sub_table, collapse_sub_tables, collect_all_sub_tables,
-    expand_sub_table, expand_sub_tables, find_key, for_entries, get_table_name, reorder_inline_table_keys,
-    reorder_table_keys,
+    expand_sub_table, expand_sub_tables, find_key, for_entries, get_table_name, normalize_table_spacing,
+    reorder_inline_table_keys, reorder_table_keys,
 };
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
@@ -286,6 +286,87 @@ fn test_sub_table_spacing_blank_line() {
 
     [tool.mypy]
     strict = true
+    "#);
+}
+
+#[test]
+fn test_normalize_table_spacing_expands_root_gap() {
+    let formatted = "[build-system]\nrequires = [ \"hatchling\" ]\n\n[project]\nname = \"a\"\n";
+    let got = normalize_table_spacing(formatted, &["tool"], "\n\n", Some(""));
+    insta::assert_snapshot!(got, @r#"
+    [build-system]
+    requires = [ "hatchling" ]
+
+
+    [project]
+    name = "a"
+    "#);
+}
+
+#[test]
+fn test_normalize_table_spacing_expands_sub_gap() {
+    let formatted = "[tool.uv.sources]\npkg = { workspace = true }\n\n[tool.uv.workspace]\nmembers = [ \"a\" ]\n";
+    let got = normalize_table_spacing(formatted, &["tool"], "\n", Some("\n\n"));
+    insta::assert_snapshot!(got, @r#"
+    [tool.uv.sources]
+    pkg = { workspace = true }
+
+
+    [tool.uv.workspace]
+    members = [ "a" ]
+    "#);
+}
+
+#[test]
+fn test_normalize_table_spacing_compacts_sub_gap() {
+    let formatted = "[tool.ruff]\nx = 1\n\n[tool.ruff.lint]\ny = 2\n";
+    let got = normalize_table_spacing(formatted, &["tool"], "\n", Some(""));
+    insta::assert_snapshot!(got, @r#"
+    [tool.ruff]
+    x = 1
+    [tool.ruff.lint]
+    y = 2
+    "#);
+}
+
+#[test]
+fn test_normalize_table_spacing_none_leaves_sub_gap() {
+    let formatted = "[project]\nname = \"a\"\n\n[project.urls]\nhome = \"h\"\n";
+    let got = normalize_table_spacing(formatted, &["tool"], "\n", None);
+    insta::assert_snapshot!(got, @r#"
+    [project]
+    name = "a"
+
+    [project.urls]
+    home = "h"
+    "#);
+}
+
+#[test]
+fn test_normalize_table_spacing_keeps_array_of_tables_gap() {
+    let formatted = "[[project.authors]]\nname = \"a\"\n\n[[project.authors]]\nname = \"b\"\n";
+    let got = normalize_table_spacing(formatted, &["tool"], "\n", Some(""));
+    insta::assert_snapshot!(got, @r#"
+    [[project.authors]]
+    name = "a"
+
+    [[project.authors]]
+    name = "b"
+    "#);
+}
+
+#[test]
+fn test_normalize_table_spacing_keeps_comment_with_next_table() {
+    let formatted = "[build-system]\nrequires = [ \"x\" ]\n\n# for project\n[project]\nname = \"a\"\n";
+    let got = normalize_table_spacing(formatted, &["tool"], "\n\n", Some(""));
+    insta::assert_snapshot!(got, @r#"
+    [build-system]
+    requires = [ "x" ]
+
+
+    # for project
+    [project]
+    name = "a"
     "#);
 }
 

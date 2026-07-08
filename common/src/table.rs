@@ -435,6 +435,83 @@ fn get_key(k: &str, multi_level_prefixes: &[&str]) -> String {
     }
 }
 
+/// Re-apply the table spacing the tombi format pass flattened. Tombi collapses every gap between
+/// top-level tables to one blank line, so the counts [`Tables::reorder`] inserted are lost. Reset
+/// each gap: `root_spacing` blank lines between different groups, `sub_spacing` between same-group
+/// sub-tables, where each `\n` is one blank line. Pass `sub_spacing` as `None` to leave same-group
+/// gaps as tombi left them (short format, where a force-expanded sub-table keeps its single blank
+/// line). Grouping matches `reorder`, so pass the same `multi_level_prefixes`.
+#[must_use]
+pub fn normalize_table_spacing(
+    content: &str,
+    multi_level_prefixes: &[&str],
+    root_spacing: &str,
+    sub_spacing: Option<&str>,
+) -> String {
+    let root_blanks = root_spacing.matches('\n').count();
+    let sub_blanks = sub_spacing.map(|s| s.matches('\n').count());
+    let lines: Vec<&str> = content.lines().collect();
+
+    let headers: Vec<(usize, String, String)> = lines
+        .iter()
+        .enumerate()
+        .filter_map(|(i, line)| header_name(line).map(|name| (i, get_key(&name, multi_level_prefixes), name)))
+        .collect();
+
+    let mut gap_before: HashMap<usize, usize> = HashMap::new();
+    for pair in headers.windows(2) {
+        let (prev_pos, prev_group, prev_name) = &pair[0];
+        let (pos, group, name) = &pair[1];
+        // Repeated array-of-tables entries share a name and keep reorder's fixed single blank line.
+        if name == prev_name {
+            continue;
+        }
+        let blanks = if group == prev_group {
+            let Some(blanks) = sub_blanks else { continue };
+            blanks
+        } else {
+            root_blanks
+        };
+        // Leading comments belong to the following table, so the gap sits above them.
+        let start = (prev_pos + 1..*pos)
+            .rev()
+            .take_while(|&line| lines[line].trim_start().starts_with('#'))
+            .last()
+            .unwrap_or(*pos);
+        gap_before.insert(start, blanks);
+    }
+
+    let mut out: Vec<&str> = Vec::with_capacity(lines.len());
+    for (i, line) in lines.iter().enumerate() {
+        if let Some(&blanks) = gap_before.get(&i) {
+            while out.last().is_some_and(|l| l.trim().is_empty()) {
+                out.pop();
+            }
+            out.resize(out.len() + blanks, "");
+        }
+        out.push(line);
+    }
+
+    let mut result = out.join("\n");
+    if content.ends_with('\n') {
+        result.push('\n');
+    }
+    result
+}
+
+fn header_name(line: &str) -> Option<String> {
+    if !line.starts_with('[') {
+        return None;
+    }
+    let trimmed = line.trim_end();
+    if let Some(rest) = trimmed.strip_prefix("[[") {
+        rest.find("]]").map(|end| rest[..end].trim().to_string())
+    } else {
+        let rest = &trimmed[1..];
+        rest.find(']').map(|end| rest[..end].trim().to_string())
+    }
+}
+
 pub fn reorder_table_keys(table: &mut RefMut<Vec<SyntaxElement>>, order: &[&str]) {
     let (size, mut to_insert) = (table.len(), Vec::<SyntaxElement>::new());
     let (key_to_position, key_set) = load_keys(table);

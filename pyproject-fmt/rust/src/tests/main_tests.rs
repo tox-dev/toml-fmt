@@ -868,6 +868,60 @@ fn test_sub_table_spacing_with_project_tables() {
 }
 
 #[test]
+fn test_issue_402_sub_table_spacing_two_blank_lines() {
+    let start = indoc! {r#"
+        [tool.uv.sources]
+        pkg = { workspace = true }
+
+        [tool.uv.workspace]
+        members = ["a", "b"]
+
+        [tool.pyproject-fmt]
+        indent = 4
+        "#};
+    let settings = Settings {
+        sub_table_spacing: String::from("\n\n"),
+        ..long_format_settings()
+    };
+    let got = format_toml(start, &settings);
+    assert_snapshot!(got, @r#"
+    [tool.uv.sources]
+    pkg = { workspace = true }
+
+
+    [tool.uv.workspace]
+    members = [ "a", "b" ]
+
+    [tool.pyproject-fmt]
+    indent = 4
+    "#);
+}
+
+#[test]
+fn test_issue_402_separate_root_table_two_blank_lines() {
+    let start = indoc! {r#"
+        [build-system]
+        requires = ["hatchling"]
+
+        [project]
+        name = "test"
+        "#};
+    let settings = Settings {
+        separate_root_table: String::from("\n\n"),
+        ..default_settings()
+    };
+    let got = format_toml(start, &settings);
+    assert_snapshot!(got, @r#"
+    [build-system]
+    requires = [ "hatchling" ]
+
+
+    [project]
+    name = "test"
+    "#);
+}
+
+#[test]
 fn test_issue_217_mixed_quotes_idempotent() {
     let start = indoc! {r#"
     [project]
