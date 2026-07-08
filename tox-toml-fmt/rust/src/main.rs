@@ -191,7 +191,10 @@ fn format_core(content: &str, opt: &Settings) -> String {
     common::array::align_array_comments(&formatted_ast);
     let aligned = formatted_ast.to_string();
 
-    common::util::limit_blank_lines(&aligned, 2)
+    let sub_spacing = (opt.table_format == "long").then_some(opt.sub_table_spacing.as_str());
+    let result =
+        common::table::normalize_table_spacing(&aligned, &["env_base", "env"], &opt.separate_root_table, sub_spacing);
+    common::util::limit_blank_lines(&result, 2)
 }
 
 /// # Errors

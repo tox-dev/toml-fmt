@@ -248,78 +248,9 @@ fn format_core(content: &str, opt: &Settings) -> String {
     common::array::align_array_comments(&formatted_ast);
     let formatted = formatted_ast.to_string();
 
-    let result = if opt.table_format == "long" && opt.sub_table_spacing.is_empty() {
-        remove_blank_lines_between_same_group_tables(&formatted, &prefix_refs)
-    } else {
-        formatted
-    };
+    let sub_spacing = (opt.table_format == "long").then_some(opt.sub_table_spacing.as_str());
+    let result = common::table::normalize_table_spacing(&formatted, &["tool"], &opt.separate_root_table, sub_spacing);
     common::util::limit_blank_lines(&result, 2)
-}
-
-fn remove_blank_lines_between_same_group_tables(content: &str, multi_level_prefixes: &[&str]) -> String {
-    let lines: Vec<&str> = content.lines().collect();
-    let mut result = Vec::new();
-
-    for i in 0..lines.len() {
-        if lines[i].is_empty() && i > 0 && i + 1 < lines.len() {
-            let trimmed_next = lines[i + 1].trim();
-            let next_is_table = trimmed_next.starts_with('[');
-
-            if next_is_table {
-                let mut prev_table_name = None;
-                for j in (0..i).rev() {
-                    if let Some(name) = extract_any_table_name(lines[j]) {
-                        prev_table_name = Some(name);
-                        break;
-                    }
-                }
-
-                let next_table_name = extract_any_table_name(lines[i + 1]);
-
-                if let (Some(prev), Some(next)) = (prev_table_name, next_table_name) {
-                    let prev_key = get_table_key(&prev, multi_level_prefixes);
-                    let next_key = get_table_key(&next, multi_level_prefixes);
-
-                    if prev_key == next_key {
-                        continue;
-                    }
-                }
-            }
-        }
-
-        result.push(lines[i]);
-    }
-
-    let mut output = result.join("\n");
-    if content.ends_with('\n') && !output.ends_with('\n') {
-        output.push('\n');
-    }
-    output
-}
-
-fn extract_any_table_name(line: &str) -> Option<String> {
-    let trimmed = line.trim();
-    if trimmed.starts_with("[[") {
-        let end = trimmed.find("]]")?;
-        Some(trimmed[2..end].to_string())
-    } else if trimmed.starts_with('[') {
-        let end = trimmed.find(']')?;
-        Some(trimmed[1..end].to_string())
-    } else {
-        None
-    }
-}
-
-fn get_table_key(name: &str, multi_level_prefixes: &[&str]) -> String {
-    for prefix in multi_level_prefixes {
-        if name == *prefix || name.starts_with(&format!("{}.", prefix)) {
-            return prefix.to_string();
-        }
-    }
-    name.split('.')
-        .next()
-        .expect("split returns at least one element")
-        .to_string()
 }
 
 /// # Errors

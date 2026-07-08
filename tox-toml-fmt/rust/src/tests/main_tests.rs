@@ -559,7 +559,6 @@ fn test_table_expand_long_format() {
     assert_snapshot!(got, @r#"
     [env.test]
     description = "run tests"
-
     [env.test.sub]
     value = 1
     "#);
