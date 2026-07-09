@@ -9,6 +9,11 @@ on:
         required: true
         type: string
         description: "Pre-commit mirror repo (e.g. tox-dev/pyproject-fmt)"
+      run:
+        required: false
+        type: string
+        default: "true"
+        description: "When 'false', skip the build jobs but still post the aggregate gate"
     outputs:
       version:
         value: ${{ jobs.bump.outputs.version }}
@@ -25,6 +30,7 @@ env:
 jobs:
   bump:
     name: 🔖 bump
+    if: ${{ inputs.run == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: read

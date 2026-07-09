@@ -17,12 +17,6 @@ on:
       - ".github/workflows/pyproject_fmt_build.yaml"
       - ".github/workflows/_build.yaml"
   pull_request:
-    paths:
-      - "common/**"
-      - "toml-fmt-common/**"
-      - "pyproject-fmt/**"
-      - ".github/workflows/pyproject_fmt_build.yaml"
-      - ".github/workflows/_build.yaml"
   schedule:
     - cron: "0 8 * * *"
 
@@ -31,11 +25,37 @@ concurrency:
   cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
 
 jobs:
+  changes:
+    name: 🔍 changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: 🔍 Check for changes
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+        id: filter
+        with:
+          filters: |
+            run:
+              - 'common/**'
+              - 'toml-fmt-common/**'
+              - 'pyproject-fmt/**'
+              - '.github/workflows/pyproject_fmt_build.yaml'
+              - '.github/workflows/_build.yaml'
+
   build:
+    needs: changes
     uses: ./.github/workflows/_build.yaml
     with:
       package-name: pyproject-fmt
       pre-commit-mirror: tox-dev/pyproject-fmt
+      run: ${{ needs.changes.outputs.run }}
     secrets: inherit # zizmor: ignore[secrets-inherit]
     permissions:
       contents: write
