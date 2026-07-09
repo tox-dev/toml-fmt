@@ -1,4 +1,13 @@
-<a id="2.25.1"></a>
+<a id="2.25.2"></a>
+
+## 2.25.2 - 2026-07-08
+
+- 🐛 fix(common): honor multi-blank table spacing options by [@gaborbernat](https://github.com/gaborbernat) in
+  [#403](https://github.com/tox-dev/toml-fmt/pull/403)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#399](https://github.com/tox-dev/toml-fmt/pull/399)
+- 📝 docs: generate formatting examples via the live formatter by [@gaborbernat](https://github.com/gaborbernat) in
+  [#397](https://github.com/tox-dev/toml-fmt/pull/397) <a id="2.25.1"></a>
 
 ## 2.25.1 - 2026-06-25
 

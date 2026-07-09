@@ -8,16 +8,12 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- 📝 docs: keep comments to why only and de-slop docs by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#394 <https://github.com/tox-dev/toml-fmt/pull/394>`_
-- 🐛 fix(common): reorder and re-comment disabled keys safely by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#391 <https://github.com/tox-dev/toml-fmt/pull/391>`_
-- 🐛 fix(common): preserve array entry trivia when reordering inline tables by
-  `@gaborbernat <https://github.com/gaborbernat>`_ in `#392 <https://github.com/tox-dev/toml-fmt/pull/392>`_
-- 🐛 fix(common): decode line-ending backslash in multiline basic strings by
-  `@gaborbernat <https://github.com/gaborbernat>`_ in `#393 <https://github.com/tox-dev/toml-fmt/pull/393>`_
-- fix: Sort ``base_python_file`` key in tox environments by `@edgarrmondragon <https://github.com/edgarrmondragon>`_ in
-  `#386 <https://github.com/tox-dev/toml-fmt/pull/386>`_ <a id="2.25.0"></a>
+- 🐛 fix(common): honor multi-blank table spacing options by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#403 <https://github.com/tox-dev/toml-fmt/pull/403>`_
+- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#399 <https://github.com/tox-dev/toml-fmt/pull/399>`_
+- 📝 docs: generate formatting examples via the live formatter by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#397 <https://github.com/tox-dev/toml-fmt/pull/397>`_ <a id="2.25.1"></a>
 
 Philosophy
 ----------

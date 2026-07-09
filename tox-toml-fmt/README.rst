@@ -283,7 +283,6 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
    # After
    [env.test]
    description = "run tests"
-
    [env.test.sub]
    value = 1
 
