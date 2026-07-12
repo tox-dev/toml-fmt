@@ -32,14 +32,14 @@ body:
     attributes:
       label: ✅ Expected output
       description: What you expected the formatted output to look like.
-      render: toml
+      render: text
 
   - type: textarea
     id: actual
     attributes:
       label: ❌ Actual output
       description: What actually happened (formatted output or error message).
-      render: toml
+      render: text
 
   - type: input
     id: version
