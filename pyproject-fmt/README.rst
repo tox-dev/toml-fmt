@@ -8,12 +8,8 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- 🐛 fix(common): honor multi-blank table spacing options by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#403 <https://github.com/tox-dev/toml-fmt/pull/403>`_
-- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#399 <https://github.com/tox-dev/toml-fmt/pull/399>`_
-- 📝 docs: generate formatting examples via the live formatter by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#397 <https://github.com/tox-dev/toml-fmt/pull/397>`_ <a id="2.25.1"></a>
+- 🐛 fix(common): space before marker after URL by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#410 <https://github.com/tox-dev/toml-fmt/pull/410>`_ <a id="2.25.2"></a>
 
 Philosophy
 ----------
@@ -740,6 +736,19 @@ normalized per :pep:`508` (spaces removed, redundant ``.0`` suffixes stripped un
    # After
    [project]
    dependencies = [ "click~=8.0", "requests>=2" ]
+
+A direct-reference dependency keeps a space before its marker separator, because :pep:`508` only ends the URL
+at whitespace; without it, installers read the ``;`` and the marker as part of the URL and reject the entry:
+
+.. code-block:: toml
+
+   # Before
+   [project]
+   dependencies = ["pkg @ git+https://github.com/user/repo.git@main; python_version>='3.10'"]
+
+   # After
+   [project]
+   dependencies = [ "pkg @ git+https://github.com/user/repo.git@main ; python_version>='3.10'" ]
 
 **Optional-dependency extra names** are normalized to lowercase with hyphens:
 

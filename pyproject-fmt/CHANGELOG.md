@@ -1,4 +1,9 @@
-<a id="2.25.2"></a>
+<a id="2.25.3"></a>
+
+## 2.25.3 - 2026-07-13
+
+- 🐛 fix(common): space before marker after URL by [@gaborbernat](https://github.com/gaborbernat) in
+  [#410](https://github.com/tox-dev/toml-fmt/pull/410) <a id="2.25.2"></a>
 
 ## 2.25.2 - 2026-07-08
 
