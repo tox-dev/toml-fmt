@@ -339,6 +339,15 @@ Keys follow the canonical metadata order; name, dependencies, classifiers, and k
         [project]
         dependencies = ["requests >= 2.0.0", "click~=8.0"]
 
+    A direct-reference dependency keeps a space before its marker separator, because :pep:`508` only ends the URL
+    at whitespace; without it, installers read the ``;`` and the marker as part of the URL and reject the entry:
+
+    .. fmt-example::
+        :config: generate_python_version_classifiers=false
+
+        [project]
+        dependencies = ["pkg @ git+https://github.com/user/repo.git@main; python_version>='3.10'"]
+
     **Optional-dependency extra names** are normalized to lowercase with hyphens:
 
     .. fmt-example::

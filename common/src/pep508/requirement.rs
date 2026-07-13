@@ -168,11 +168,17 @@ impl std::fmt::Display for Requirement {
                 }
             }
         }
+        // PEP 508 requires whitespace after a URL, otherwise the `;` is parsed as part of the URI.
+        let separator = if matches!(self.version_or_url, Some(VersionOrUrl::Url(_))) {
+            " ;"
+        } else {
+            ";"
+        };
         if let Some(marker) = &self.marker {
-            write!(&mut result, "; {marker}")?;
+            write!(&mut result, "{separator} {marker}")?;
         }
         if self.private {
-            write!(&mut result, "; private")?;
+            write!(&mut result, "{separator} private")?;
         }
         write!(f, "{}", result)
     }

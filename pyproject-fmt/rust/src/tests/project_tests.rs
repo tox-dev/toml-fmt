@@ -711,6 +711,25 @@ fn test_project_dependencies_git_urls() {
 }
 
 #[test]
+fn test_project_dependencies_git_urls_with_marker() {
+    let start = indoc! {r#"
+        [project]
+        dependencies = ["pkg @ git+https://github.com/user/repo.git@main; python_version>='3.10'"]
+    "#};
+    let result = evaluate_project(start, false, (3, 11), true);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    classifiers = [
+      "Programming Language :: Python :: 3 :: Only",
+      "Programming Language :: Python :: 3.9",
+      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
+    ]
+    dependencies = [ "pkg @ git+https://github.com/user/repo.git@main ; python_version>='3.10'" ]
+    "#);
+}
+
+#[test]
 fn test_project_dependencies_local_paths() {
     let start = indoc! {r#"
         [project]
