@@ -67,6 +67,24 @@ fn test_format_requirement_url() {
 }
 
 #[test]
+fn test_format_requirement_url_with_marker() {
+    let start = "pytest-notebook @ git+https://github.com/x/pytest-notebook.git@master; python_version>='3.10'";
+    let got = format_requirement_helper(start, true);
+    insta::assert_snapshot!(got.clone(), @"pytest-notebook @ git+https://github.com/x/pytest-notebook.git@master ; python_version>='3.10'");
+    let stable = format_requirement_helper(&got, true);
+    assert_eq!(stable, got, "formatting should remain stable");
+}
+
+#[test]
+fn test_format_requirement_url_private() {
+    let start = "pkg @ https://example.com/pkg-1.0.tar.gz; private";
+    let got = format_requirement_helper(start, true);
+    insta::assert_snapshot!(got.clone(), @"pkg @ https://example.com/pkg-1.0.tar.gz ; private");
+    let stable = format_requirement_helper(&got, true);
+    assert_eq!(stable, got, "formatting should remain stable");
+}
+
+#[test]
 fn test_format_requirement_keep_rc_version() {
     let start = "a==5.2rc1";
     let got = format_requirement_helper(start, true);
