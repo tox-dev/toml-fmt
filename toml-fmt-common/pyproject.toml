@@ -50,13 +50,13 @@ test = [
   "pytest-mock>=3.15.1",
 ]
 type = [
-  "mypy==2.1",
+  "mypy==2.3",
   { include-group = "test" },
 ]
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=6.2",
-  "uv>=0.11.26",
+  "uv>=0.11.28",
 ]
 
 [tool.uv]
