@@ -1913,7 +1913,7 @@ fn test_collapse_sub_table_with_literal_quoted_key() {
     insta::assert_snapshot!(result, @r#"
     [project]
     name = "test"
-    scripts.'literal-key' = "value"
+    scripts."literal-key" = "value"
     "#);
 }
 
@@ -2111,7 +2111,7 @@ fn test_reorder_table_keys_mixed_quote_styles() {
     assert_eq!(res1, res2, "formatting should be idempotent");
     insta::assert_snapshot!(res1, @r#"
     [tool.ruff]
-    lint.per-file-ignores.'tests/*' = [ "T20" ]
+    lint.per-file-ignores."tests/*" = [ "T20" ]
     lint.per-file-ignores."flexget/*" = [ "PTH" ]
     "#);
 }
@@ -2143,7 +2143,7 @@ fn test_reorder_table_keys_mixed_quote_styles_reverse() {
     insta::assert_snapshot!(res1, @r#"
     [tool.ruff]
     lint.per-file-ignores."flexget/*" = [ "PTH" ]
-    lint.per-file-ignores.'tests/*' = [ "T20" ]
+    lint.per-file-ignores."tests/*" = [ "T20" ]
     "#);
 }
 
