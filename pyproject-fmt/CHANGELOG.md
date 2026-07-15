@@ -88,7 +88,7 @@
   [#343](https://github.com/tox-dev/toml-fmt/pull/343)
 - ✨ feat(pyproject-fmt): add [tool.djlint] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#342](https://github.com/tox-dev/toml-fmt/pull/342)
-- ✨ feat(pyproject-fmt): add [tool.pylint.*] handler by [@gaborbernat](https://github.com/gaborbernat) in
+- ✨ feat(pyproject-fmt): add [tool.pylint.\*] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#341](https://github.com/tox-dev/toml-fmt/pull/341)
 - ✨ feat(pyproject-fmt): add [tool.towncrier] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#340](https://github.com/tox-dev/toml-fmt/pull/340)
@@ -102,13 +102,13 @@
   [@gaborbernat](https://github.com/gaborbernat) in [#335](https://github.com/tox-dev/toml-fmt/pull/335)
 - ✨ feat(pyproject-fmt): add [tool.cibuildwheel] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#334](https://github.com/tox-dev/toml-fmt/pull/334)
-- ✨ feat(pyproject-fmt): add [tool.pdm.*] handler by [@gaborbernat](https://github.com/gaborbernat) in
+- ✨ feat(pyproject-fmt): add [tool.pdm.\*] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#333](https://github.com/tox-dev/toml-fmt/pull/333)
 - ✨ feat(pyproject-fmt): add [tool.pyright] + [tool.basedpyright] handler by
   [@gaborbernat](https://github.com/gaborbernat) in [#332](https://github.com/tox-dev/toml-fmt/pull/332)
 - ✨ feat(pyproject-fmt): add [tool.isort] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#331](https://github.com/tox-dev/toml-fmt/pull/331)
-- ✨ feat(pyproject-fmt): add [tool.hatch.*] handler by [@gaborbernat](https://github.com/gaborbernat) in
+- ✨ feat(pyproject-fmt): add [tool.hatch.\*] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#329](https://github.com/tox-dev/toml-fmt/pull/329)
 - ✨ feat(pyproject-fmt): add [tool.black] handler by [@gaborbernat](https://github.com/gaborbernat) in
   [#328](https://github.com/tox-dev/toml-fmt/pull/328)
@@ -350,7 +350,7 @@
   [#140](https://github.com/tox-dev/toml-fmt/pull/140)
 - Sort subtables alphabetically within the same tool by [@gaborbernat](https://github.com/gaborbernat) in
   [#139](https://github.com/tox-dev/toml-fmt/pull/139)
-- Collapse [[project.authors]] array of tables to inline format by [@gaborbernat](https://github.com/gaborbernat) in
+- Collapse \[[project.authors]\] array of tables to inline format by [@gaborbernat](https://github.com/gaborbernat) in
   [#137](https://github.com/tox-dev/toml-fmt/pull/137)
 - Bump toml-fmt-common to 1.2 by [@gaborbernat](https://github.com/gaborbernat) in
   [#138](https://github.com/tox-dev/toml-fmt/pull/138)
@@ -468,13 +468,13 @@
   [#16](https://github.com/tox-dev/toml-fmt/pull/16)
 - Extract common Python code to toml-fmt-common by [@gaborbernat](https://github.com/gaborbernat) in
   [#12](https://github.com/tox-dev/toml-fmt/pull/12)
-- Fix stray ] in changelog for PR numbers by [@gaborbernat](https://github.com/gaborbernat)
+- Fix stray \] in changelog for PR numbers by [@gaborbernat](https://github.com/gaborbernat)
 
 <a id="2.4.3"></a>
 
 ## 2.4.3 - 2024-10-17
 
-- Fix tomli not present for Python<3.11 by [@gaborbernat](https://github.com/gaborbernat) in
+- Fix tomli not present for Python\<3.11 by [@gaborbernat](https://github.com/gaborbernat) in
   [#9](https://github.com/tox-dev/toml-fmt/pull/9)
 
 <a id="2.4.2"></a>

@@ -7,7 +7,6 @@ body:
       value: |
         Thank you for taking the time to report a bug in tox-toml-fmt.
         Please fill out the sections below to help us understand and reproduce the issue.
-
   - type: textarea
     id: description
     attributes:
@@ -16,7 +15,6 @@ body:
       placeholder: Describe the issue you encountered...
     validations:
       required: true
-
   - type: textarea
     id: input
     attributes:
@@ -26,21 +24,18 @@ body:
       render: toml
     validations:
       required: true
-
   - type: textarea
     id: expected
     attributes:
       label: ✅ Expected output
       description: What you expected the formatted output to look like.
       render: toml
-
   - type: textarea
     id: actual
     attributes:
       label: ❌ Actual output
       description: What actually happened (formatted output or error message).
       render: toml
-
   - type: input
     id: version
     attributes:
@@ -49,7 +44,6 @@ body:
       placeholder: "tox-toml-fmt 1.x.x"
     validations:
       required: true
-
   - type: textarea
     id: additional
     attributes:

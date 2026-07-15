@@ -5,14 +5,11 @@ on:
   pull_request:
   schedule:
     - cron: "0 8 * * *"
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
   changes:
     name: 🔍 changes
@@ -32,7 +29,6 @@ jobs:
             run:
               - 'toml-fmt-common/**'
               - '.github/workflows/toml_fmt_common_build.yaml'
-
   build:
     name: 🔨 build
     needs: changes
@@ -53,7 +49,6 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: 🔨 Build package
         run: uv build --python 3.14 --python-preference only-managed --sdist --wheel . --out-dir dist
-
   all-pass:
     name: ✅ toml-fmt-common-build
     if: always()

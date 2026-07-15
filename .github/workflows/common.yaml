@@ -4,14 +4,11 @@ on:
   push:
     branches: ["main"]
   pull_request:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
   changes:
     name: 🔍 changes
@@ -31,7 +28,6 @@ jobs:
             run:
               - 'common/**'
               - '.github/workflows/common.yaml'
-
   clippy:
     name: 📎 clippy
     needs: changes
@@ -49,7 +45,6 @@ jobs:
           components: clippy
       - name: 📎 Run Clippy
         run: cargo clippy -p common --locked --all-targets -- -D warnings
-
   fmt:
     name: 🎨 fmt
     needs: changes
@@ -67,7 +62,6 @@ jobs:
           components: rustfmt
       - name: 🎨 Check formatting
         run: cargo fmt -p common --check
-
   build:
     name: 🔨 build
     needs: changes
@@ -83,7 +77,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
       - name: 🔨 Build
         run: cargo build -p common --locked
-
   test:
     name: ✅ test
     needs: changes
@@ -112,7 +105,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
           flags: rust
-
   all-pass:
     name: ✅ common
     if: always()
