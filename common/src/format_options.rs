@@ -1,6 +1,6 @@
 use tombi_config::{
     ArrayBracketSpaceWidth, ArrayCommaSpaceWidth, FormatOptions, IndentStyle, IndentWidth, LineEnding, LineWidth,
-    format::FormatRules,
+    StringQuoteStyle, format::FormatRules,
 };
 
 pub fn create_format_options(column_width: usize, indent: usize) -> FormatOptions {
@@ -12,6 +12,7 @@ pub fn create_format_options(column_width: usize, indent: usize) -> FormatOption
             line_ending: Some(LineEnding::Lf),
             array_bracket_space_width: Some(ArrayBracketSpaceWidth::from(1)),
             array_comma_space_width: Some(ArrayCommaSpaceWidth::from(1)),
+            string_quote_style: Some(StringQuoteStyle::Double),
             ..Default::default()
         }),
     }
