@@ -19,11 +19,9 @@ on:
   pull_request:
   schedule:
     - cron: "0 8 * * *"
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.inputs.release && github.event.inputs.release != 'no' && '-release' || '' }}
   cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
-
 jobs:
   changes:
     name: 🔍 changes
@@ -48,7 +46,6 @@ jobs:
               - 'pyproject-fmt/**'
               - '.github/workflows/pyproject_fmt_build.yaml'
               - '.github/workflows/_build.yaml'
-
   build:
     needs: changes
     uses: ./.github/workflows/_build.yaml
@@ -61,7 +58,6 @@ jobs:
       contents: write
       id-token: write
       pull-requests: read
-
   release:
     name: 🚀 release
     runs-on: ubuntu-24.04

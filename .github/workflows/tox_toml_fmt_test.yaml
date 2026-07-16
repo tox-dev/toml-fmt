@@ -4,14 +4,11 @@ on:
   push:
     branches: ["main"]
   pull_request:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 jobs:
   changes:
     name: 🔍 changes
@@ -33,7 +30,6 @@ jobs:
               - 'toml-fmt-common/**'
               - 'tox-toml-fmt/**'
               - '.github/workflows/tox_toml_fmt_test.yaml'
-
   clippy:
     name: 📎 clippy
     needs: changes
@@ -51,7 +47,6 @@ jobs:
           components: clippy
       - name: 📎 Run Clippy
         run: cargo clippy -p tox-toml-fmt --locked --all-targets -- -D warnings
-
   fmt:
     name: 🎨 fmt
     needs: changes
@@ -69,7 +64,6 @@ jobs:
           components: rustfmt
       - name: 🎨 Check formatting
         run: cargo fmt -p tox-toml-fmt --check
-
   build:
     name: 🔨 build
     needs: changes
@@ -85,7 +79,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
       - name: 🔨 Build
         run: cargo build -p tox-toml-fmt --locked
-
   test:
     name: ✅ test
     needs: changes
@@ -114,7 +107,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
           flags: rust
-
   py:
     name: 🐍 ${{ matrix.py }} @ ${{ matrix.os }}
     needs: changes
@@ -162,7 +154,6 @@ jobs:
         run: tox run --skip-pkg-install -e ${{ matrix.py }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
-
   check:
     name: 🔎 ${{ matrix.env }}
     needs: changes
@@ -203,7 +194,6 @@ jobs:
         run: tox run --skip-pkg-install -e ${{ matrix.env }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
-
   all-pass:
     name: ✅ tox-toml-fmt
     if: always()
