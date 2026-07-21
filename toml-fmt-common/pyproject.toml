@@ -25,6 +25,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Internet",
   "Topic :: Software Development :: Libraries",
   "Topic :: System",
@@ -63,7 +64,7 @@ pkg-meta = [
 build-backend.source-include = [ "tests/**", "tox.toml" ]
 
 [tool.pyproject-fmt]
-max_supported_python = "3.14"
+max_supported_python = "3.15"
 
 [tool.mypy]
 strict = true
