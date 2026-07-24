@@ -110,8 +110,11 @@ def vendor_into_wheel(wheel: Path) -> None:
 
     out[f"{_MODULE}/_vendor/__init__.py"] = b""
     for file in common_src.rglob("*"):
-        if file.is_file():
-            out[f"{_MODULE}/_vendor/{file.relative_to(common_src.parent).as_posix()}"] = file.read_bytes()
+        if not file.is_file():
+            continue
+        if "__pycache__" in file.parts or file.suffix in {".pyc", ".pyo"}:
+            continue
+        out[f"{_MODULE}/_vendor/{file.relative_to(common_src.parent).as_posix()}"] = file.read_bytes()
 
     record = []
     for name, data in out.items():
