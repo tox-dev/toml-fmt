@@ -109,8 +109,9 @@ def vendor_into_wheel(wheel: Path) -> None:
     out[meta] = (stripped + requires).encode()
 
     out[f"{_MODULE}/_vendor/__init__.py"] = b""
+    # vendor only the package's Python sources; local build artifacts (bytecode, caches, ext modules) never leak
     for file in common_src.rglob("*"):
-        if file.is_file():
+        if file.is_file() and (file.suffix in {".py", ".pyi"} or file.name == "py.typed"):
             out[f"{_MODULE}/_vendor/{file.relative_to(common_src.parent).as_posix()}"] = file.read_bytes()
 
     record = []
