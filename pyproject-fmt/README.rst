@@ -8,8 +8,18 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- 🐛 fix(common): space before marker after URL by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#410 <https://github.com/tox-dev/toml-fmt/pull/410>`_ <a id="2.25.2"></a>
+- 🐛 fix(build): vendor only git-tracked common sources by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#419 <https://github.com/tox-dev/toml-fmt/pull/419>`_
+- 🧪 test: run 3.15t everywhere by default by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#416 <https://github.com/tox-dev/toml-fmt/pull/416>`_
+- 👷 ci: run the test suite on Python 3.15 by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#415 <https://github.com/tox-dev/toml-fmt/pull/415>`_
+- Replace prettier with mdformat and yamlfmt by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#413 <https://github.com/tox-dev/toml-fmt/pull/413>`_
+- Update Rust dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#411 <https://github.com/tox-dev/toml-fmt/pull/411>`_
+- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#412 <https://github.com/tox-dev/toml-fmt/pull/412>`_ <a id="2.25.3"></a>
 
 Philosophy
 ----------

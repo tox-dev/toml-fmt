@@ -1,4 +1,19 @@
-<a id="2.25.3"></a>
+<a id="2.25.4"></a>
+
+## 2.25.4 - 2026-07-26
+
+- 🐛 fix(build): vendor only git-tracked common sources by [@gaborbernat](https://github.com/gaborbernat) in
+  [#419](https://github.com/tox-dev/toml-fmt/pull/419)
+- 🧪 test: run 3.15t everywhere by default by [@gaborbernat](https://github.com/gaborbernat) in
+  [#416](https://github.com/tox-dev/toml-fmt/pull/416)
+- 👷 ci: run the test suite on Python 3.15 by [@gaborbernat](https://github.com/gaborbernat) in
+  [#415](https://github.com/tox-dev/toml-fmt/pull/415)
+- Replace prettier with mdformat and yamlfmt by [@gaborbernat](https://github.com/gaborbernat) in
+  [#413](https://github.com/tox-dev/toml-fmt/pull/413)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#411](https://github.com/tox-dev/toml-fmt/pull/411)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#412](https://github.com/tox-dev/toml-fmt/pull/412) <a id="2.25.3"></a>
 
 ## 2.25.3 - 2026-07-13
 
