@@ -1,4 +1,9 @@
-<a id="2.25.4"></a>
+<a id="2.26.0"></a>
+
+## 2.26.0 - 2026-07-27
+
+- ✨ feat(pyproject-fmt): order tool.pyproject-fmt config keys by [@gaborbernat](https://github.com/gaborbernat) in
+  [#421](https://github.com/tox-dev/toml-fmt/pull/421) <a id="2.25.4"></a>
 
 ## 2.25.4 - 2026-07-26
 
