@@ -1874,6 +1874,41 @@ of tables, last).
 
 **Sorted arrays:** ``ignore`` (file globs to skip).
 
+``[tool.pyproject-fmt]``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The formatter's own configuration table.
+
+
+Keys are ordered to match the documented configuration sequence; the ``expand_tables``, ``collapse_tables``, and
+``skip_wrap_for_keys`` lists are sorted and deduplicated.
+
+
+**Key ordering:** ``column_width`` → ``indent`` → ``keep_full_version`` →
+``generate_python_version_classifiers`` → ``max_supported_python`` → ``table_format`` → ``sub_table_spacing`` →
+``separate_root_table`` → ``expand_tables`` → ``collapse_tables`` → ``skip_wrap_for_keys``. Unrecognized keys are
+appended alphabetically.
+
+**Sorted arrays:** ``expand_tables``, ``collapse_tables``, ``skip_wrap_for_keys``. Each is matched as a set, so
+sorting and dropping byte-identical duplicates leaves behavior unchanged. Duplicate removal keeps case variants
+distinct, matching the case-sensitive lookups these lists feed.
+
+.. code-block:: toml
+
+   # Before
+   [tool.pyproject-fmt]
+   keep_full_version = true
+   column_width = 120
+   skip_wrap_for_keys = ["b", "a", "a"]
+   indent = 4
+
+   # After
+   [tool.pyproject-fmt]
+   column_width = 120
+   indent = 4
+   keep_full_version = true
+   skip_wrap_for_keys = [ "a", "b" ]
+
 Other Tables
 ~~~~~~~~~~~~
 

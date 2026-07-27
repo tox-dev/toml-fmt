@@ -1417,7 +1417,9 @@ glob list is sorted, while changelog display order is preserved.
 ``[tool.pyproject-fmt]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The formatter's own configuration table. See :doc:`configuration` for what each key controls.
+The formatter's own configuration table.
+
+See :doc:`configuration` for what each key controls.
 
 Keys are ordered to match the documented configuration sequence; the ``expand_tables``, ``collapse_tables``, and
 ``skip_wrap_for_keys`` lists are sorted and deduplicated.
