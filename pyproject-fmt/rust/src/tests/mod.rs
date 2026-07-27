@@ -29,6 +29,7 @@ mod pixi_tests;
 mod poetry_tests;
 mod project_tests;
 mod pylint_tests;
+mod pyproject_fmt_tests;
 mod pyrefly_tests;
 mod pyright_tests;
 mod pytest_tests;

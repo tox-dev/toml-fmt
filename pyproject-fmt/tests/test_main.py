@@ -411,3 +411,36 @@ def test_collapse_tables_override(tmp_path: Path) -> None:
     # Verify sub-tables are collapsed due to collapse override
     assert "urls.homepage =" in got
     assert "[project.urls]" not in got
+
+
+def test_pyproject_fmt_self_config_normalized(tmp_path: Path) -> None:
+    """The tool.pyproject-fmt table is key-ordered and its list values sorted and deduplicated."""
+    txt = """\
+    [project]
+    name = "myproject"
+
+    [tool.pyproject-fmt]
+    skip_wrap_for_keys = ["z.parse", "a.parse", "a.parse"]
+    indent = 2
+    column_width = 120
+    expand_tables = ["tool.ruff", "tool.black", "tool.ruff"]
+    keep_full_version = true
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+    res = run([str(filename), "--no-generate-python-version-classifiers"])
+
+    assert res == 1
+
+    expected = """\
+    [project]
+    name = "myproject"
+
+    [tool.pyproject-fmt]
+    column_width = 120
+    indent = 2
+    keep_full_version = true
+    expand_tables = [ "tool.black", "tool.ruff" ]
+    skip_wrap_for_keys = [ "a.parse", "z.parse" ]
+    """
+    assert filename.read_text() == dedent(expected)
