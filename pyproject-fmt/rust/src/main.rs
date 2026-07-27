@@ -35,6 +35,7 @@ mod pdm;
 mod pixi;
 mod poetry;
 mod pylint;
+mod pyproject_fmt;
 mod pyrefly;
 mod pyright;
 mod pytest;
@@ -226,6 +227,7 @@ fn format_core(content: &str, opt: &Settings) -> String {
     deptry::fix(&mut tables);
     ty::fix(&mut tables);
     coverage::fix(&mut tables);
+    pyproject_fmt::fix(&mut tables);
     reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
     // Must follow reorder_tables: only then have AoT entries collapsed to inline arrays of inline tables
     // (e.g. [[tool.poetry.source]] → source = [{...}]) and become INLINE_TABLE descendants of root_ast.
