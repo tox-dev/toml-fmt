@@ -56,8 +56,8 @@ type = [
 ]
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
-  "twine>=6.2",
-  "uv>=0.11.28",
+  "twine>=7",
+  "uv>=0.12.1",
 ]
 
 [tool.uv]
