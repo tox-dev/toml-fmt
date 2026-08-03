@@ -96,7 +96,7 @@ jobs:
         with:
           components: llvm-tools-preview
       - name: 📦 Install cargo-llvm-cov
-        uses: taiki-e/install-action@a6b2e2dcd845ddd7f509ce4f3ed3d922b80cc5d9 # v2.84.0
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
         with:
           tool: cargo-llvm-cov
       - name: ✅ Run tests with coverage
@@ -127,7 +127,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
@@ -173,7 +173,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
