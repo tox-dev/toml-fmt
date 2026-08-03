@@ -1,4 +1,6 @@
-use crate::disabled::{MARKER, enable_disabled_keys, restore_disabled_keys, with_disabled_keys};
+use crate::disabled::{
+    MARKER, enable_disabled_keys, restore_disabled_keys, try_with_disabled_keys, with_disabled_keys,
+};
 
 #[test]
 fn test_with_disabled_keys_brackets_the_format_pass() {
@@ -258,4 +260,19 @@ fn test_commented_table_section_stays_commented() {
         out, source,
         "a commented table header and its keys stay verbatim comments"
     );
+}
+
+#[test]
+fn test_try_with_disabled_keys_restores_on_success() {
+    let out = try_with_disabled_keys::<()>("# x = 1\n", |enabled| {
+        assert!(enabled.contains(MARKER), "the format pass sees the enabled key");
+        Ok(enabled.to_string())
+    });
+    assert_eq!(out.unwrap(), "# x = 1\n");
+}
+
+#[test]
+fn test_try_with_disabled_keys_propagates_rejection() {
+    let out = try_with_disabled_keys::<&str>("# x = 1\n", |_| Err("rejected"));
+    assert_eq!(out.unwrap_err(), "rejected");
 }

@@ -579,3 +579,23 @@ fn test_normalize_version_rejects_release_overflow() {
 fn test_normalize_version_rejects_pre_release_number_overflow() {
     assert!(normalize_version("1.0a99999999999999999999").is_none());
 }
+
+#[test]
+fn test_normalize_version_rejects_epoch_overflow() {
+    assert!(normalize_version("99999999999999999999!1.0").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_implicit_post_release_overflow() {
+    assert!(normalize_version("1.0-99999999999999999999").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_post_release_number_overflow() {
+    assert!(normalize_version("1.0.post99999999999999999999").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_dev_release_number_overflow() {
+    assert!(normalize_version("1.0.dev99999999999999999999").is_none());
+}
