@@ -1128,3 +1128,49 @@ fn test_format_toml_rejects_invalid_project_version() {
     let error = format_toml(start, &default_settings()).unwrap_err();
     assert_snapshot!(error, @"project.version `1.9.xyz` is not a valid PEP 440 version");
 }
+
+#[test]
+fn test_lib_format_toml_returns_formatted_content() {
+    use pyo3::types::PyAnyMethods;
+
+    pyo3::Python::initialize();
+    pyo3::Python::attach(|py| {
+        let module = pyo3::types::PyModule::new(py, "_lib").unwrap();
+        crate::_lib(&module.as_borrowed()).unwrap();
+        let settings = pyo3::Py::new(py, default_settings()).unwrap();
+
+        let got = module
+            .getattr("format_toml")
+            .unwrap()
+            .call1(("[project]\nname=\"My_Package\"\n", settings))
+            .unwrap()
+            .extract::<String>()
+            .unwrap();
+
+        assert_snapshot!(got, @r#"
+        [project]
+        name = "my-package"
+        "#);
+    });
+}
+
+#[test]
+fn test_lib_format_toml_raises_on_invalid_version() {
+    use pyo3::types::PyAnyMethods;
+
+    pyo3::Python::initialize();
+    pyo3::Python::attach(|py| {
+        let module = pyo3::types::PyModule::new(py, "_lib").unwrap();
+        crate::_lib(&module.as_borrowed()).unwrap();
+        let settings = pyo3::Py::new(py, default_settings()).unwrap();
+
+        let error = module
+            .getattr("format_toml")
+            .unwrap()
+            .call1(("[project]\nversion=\"1.9.xyz\"\n", settings))
+            .unwrap_err();
+
+        assert!(error.is_instance_of::<pyo3::exceptions::PyValueError>(py));
+        assert_snapshot!(error.value(py).to_string(), @"project.version `1.9.xyz` is not a valid PEP 440 version");
+    });
+}
