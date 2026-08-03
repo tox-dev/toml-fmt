@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import re
-import subprocess  # noqa: S404
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
 from argparse import ArgumentParser, Namespace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -79,7 +79,7 @@ def run() -> None:
         print(new)
         logs_text = "\n".join(logs)
         changelog_file.write_text(new + changelog, encoding="utf-8")
-        subprocess.run(["prek", "run", "--files", str(changelog_file)], check=False)  # noqa: S603, S607
+        subprocess.run(["prek", "run", "--files", str(changelog_file)], check=False)  # ruff: ignore[subprocess-without-shell-equals-true, start-process-with-partial-path]
     else:
         logs_text = ""
 
@@ -144,11 +144,11 @@ def regenerate_changelog(
     else:
         content += "\n"
     changelog_file.write_text(content, encoding="utf-8")
-    subprocess.run(["prek", "run", "--files", str(changelog_file)], check=False)  # noqa: S603, S607
+    subprocess.run(["prek", "run", "--files", str(changelog_file)], check=False)  # ruff: ignore[subprocess-without-shell-equals-true, start-process-with-partial-path]
     print(f"Regenerated changelog for {project} with {len(sections)} releases")
 
 
-def entries_between(  # noqa: PLR0913, PLR0917
+def entries_between(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
     gh_repo: GitHubRepository, git_repo: Repo, start: str | None, end: str, at: str, project: str
 ) -> Iterator[str]:
     pr_re = re.compile(r"(?P<title>.*)[(]#(?P<pr>\d+)[)]")

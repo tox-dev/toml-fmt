@@ -47,7 +47,7 @@ class Dumb(TOMLFormatter[DumpNamespace]):
     def override_cli_from_section(self) -> tuple[str, ...]:
         return "start", "sub"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # noqa: PLR6301
+    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
         parser.add_argument("extra", help="this is something extra")
         parser.add_argument("-t", "--tuple-magic", default=(), type=lambda t: tuple(t.split(".")))
 
