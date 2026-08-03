@@ -290,7 +290,8 @@ redundant ``wheel`` requirement is removed when the build backend is setuptools.
 The :pep:`621` core metadata table. See the
 `packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#pyproject-project-table>`_.
 
-Keys follow the canonical metadata order; name, dependencies, classifiers, and keywords are normalized and sorted.
+Keys follow the canonical metadata order; name, version, dependencies, classifiers, and keywords are normalized and
+sorted.
 
 .. dropdown:: Formatting details
 
@@ -303,6 +304,11 @@ Keys follow the canonical metadata order; name, dependencies, classifiers, and k
 
     ``name``
         Converted to canonical format (lowercase with hyphens): ``My_Package`` → ``my-package``
+
+    ``version``
+        Converted to the canonical :pep:`440` form: ``V1.0-Alpha.2`` → ``1.0a2``. A value that is not a valid
+        :pep:`440` version is rejected: the formatter reports it on standard error, leaves the file untouched, and
+        exits with a non-zero status.
 
     ``description``
         Whitespace normalized: multiple spaces collapsed, consistent spacing after periods.

@@ -42,7 +42,7 @@ fn format_toml_helper(
         generate_python_version_classifiers,
         ..default_settings()
     };
-    let result = format_toml(start, &settings);
+    let result = format_toml(start, &settings).unwrap();
     assert_valid_toml(&result);
     result
 }
@@ -123,7 +123,7 @@ fn test_expand_tables_with_project() {
         expand_tables: vec![String::from("project")],
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -149,7 +149,7 @@ fn test_collapse_project_authors() {
         collapse_tables: vec![String::from("project.authors")],
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -170,7 +170,7 @@ fn test_collapse_project_maintainers() {
         collapse_tables: vec![String::from("project.maintainers")],
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -186,7 +186,7 @@ fn test_table_format_long_with_entry_points() {
         entry-points."console_scripts".mycli = "pkg:main"
         entry-points."console_scripts".othercli = "pkg:other"
         "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -210,7 +210,7 @@ fn test_expand_project_authors() {
         expand_tables: vec![String::from("project.authors")],
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -239,7 +239,7 @@ fn test_expand_project_maintainers() {
         expand_tables: vec![String::from("project.maintainers")],
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -267,7 +267,7 @@ fn test_expand_single_author() {
         expand_tables: vec![String::from("project.authors")],
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "example"
@@ -290,7 +290,7 @@ fn test_collapse_authors_with_url_field() {
         name = "Alice"
         email = "alice@example.com"
         "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -308,7 +308,7 @@ fn test_collapse_empty_authors() {
         [[project.authors]]
         [[project.authors]]
         "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -322,7 +322,7 @@ fn test_collapse_empty_authors() {
 #[test]
 fn test_collapse_authors_without_trailing_newline() {
     let start = "[project]\nname = \"test\"\n[[project.authors]]\nname = \"Alice\"\nemail = \"alice@example.com\"";
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert!(got.contains("authors = ["));
     assert!(got.contains("{ name = \"Alice\", email = \"alice@example.com\" }"));
 }
@@ -331,7 +331,7 @@ fn test_collapse_authors_without_trailing_newline() {
 fn test_collapse_authors_compact_parent() {
     let start =
         "[project]\nname=\"test\"\nversion=\"1.0\"\n[[project.authors]]\nname=\"Alice\"\nemail=\"alice@example.com\"";
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert!(got.contains("authors = ["));
 }
 
@@ -348,7 +348,7 @@ fn test_expand_authors_already_expanded() {
         expand_tables: vec![String::from("project.authors")],
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert!(got.contains("[[project.authors]]"));
     assert!(got.contains("name = \"John Doe\""));
 }
@@ -372,7 +372,7 @@ fn test_issue_146_expand_specific_subtable() {
         expand_tables: vec![String::from("project.optional-dependencies")],
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert!(
         got.contains("[project.optional-dependencies]"),
         "optional-dependencies should stay expanded"
@@ -397,7 +397,7 @@ fn test_css_specificity_more_specific_wins() {
         collapse_tables: vec![String::from("project")],
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert!(
         got.contains("[project.urls]"),
         "project.urls should be expanded (specific)"
@@ -495,7 +495,7 @@ fn test_issue_146_deeply_nested_ruff_table() {
         expand_tables: vec![String::from("tool.ruff.lint.flake8-tidy-imports.banned-api")],
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert!(
         got.contains("[tool.ruff.lint.flake8-tidy-imports.banned-api]"),
         "deeply nested ruff table should stay expanded. Got:\n{got}"
@@ -509,7 +509,7 @@ fn test_no_duplicate_requires() {
         build-backend = "backend"
         requires = ["c", "d"]
     "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     let count = got.matches("requires").count();
     assert_eq!(count, 1, "requires should appear exactly once, but got:\n{}", got);
 }
@@ -526,7 +526,7 @@ fn test_table_format_long_removes_blank_lines_between_same_group() {
         [project.optional-dependencies]
         dev = ["pytest"]
         "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -549,7 +549,7 @@ fn test_table_format_long_with_tool_tables() {
         [tool.mypy]
         strict = true
         "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [tool.ruff]
     line-length = 120
@@ -570,7 +570,7 @@ fn test_table_format_long_preserves_blank_lines_between_different_groups() {
         [project]
         name = "test"
         "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [build-system]
     requires = [ "setuptools" ]
@@ -593,7 +593,7 @@ fn test_extract_table_names_from_array_tables() {
         expand_tables: vec![String::from("project.authors")],
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -605,7 +605,7 @@ fn test_extract_table_names_from_array_tables() {
 #[test]
 fn test_format_with_trailing_newline_preserved() {
     let start = "[project]\nname = \"test\"\n";
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -621,7 +621,7 @@ fn test_tool_prefix_extraction_with_dotted_keys() {
         [tool.coverage.report]
         precision = 2
         "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @"
     [tool.coverage.report]
     precision = 2
@@ -655,7 +655,7 @@ fn test_format_with_non_table_lines_between_headers() {
         [project.urls]
         homepage = "https://example.com"
         "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -740,9 +740,9 @@ fn test_idempotent_formatting() {
         description = "This is a long description string that needs to exceed the default column width of one hundred and twenty characters to trigger wrapping."
     "#};
     let settings = default_settings();
-    let first = format_toml(start, &settings);
-    let second = format_toml(&first, &settings);
-    let third = format_toml(&second, &settings);
+    let first = format_toml(start, &settings).unwrap();
+    let second = format_toml(&first, &settings).unwrap();
+    let third = format_toml(&second, &settings).unwrap();
     assert_eq!(first, second, "formatting should be idempotent (first->second)");
     assert_eq!(second, third, "formatting should be idempotent (second->third)");
 }
@@ -757,7 +757,7 @@ fn test_issue_186_single_quote_with_comments() {
         'second',
     ]
     "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [tool.something]
     items = [
@@ -780,7 +780,7 @@ fn test_remove_blank_lines_between_same_group_tables_long_format() {
     [tool.ruff.format]
     quote-style = "double"
     "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [tool.ruff]
     line-length = 100
@@ -800,7 +800,7 @@ fn test_table_key_without_prefix_match_long_format() {
     [custom.nested]
     other = "data"
     "#};
-    let got = format_toml(start, &long_format_settings());
+    let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [custom]
     key = "value"
@@ -825,7 +825,7 @@ fn test_sub_table_spacing_blank_line() {
         sub_table_spacing: String::from("\n"),
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [tool.ruff]
     line-length = 120
@@ -854,7 +854,7 @@ fn test_sub_table_spacing_with_project_tables() {
         sub_table_spacing: String::from("\n"),
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [project]
     name = "test"
@@ -883,7 +883,7 @@ fn test_issue_402_sub_table_spacing_two_blank_lines() {
         sub_table_spacing: String::from("\n\n"),
         ..long_format_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [tool.uv.sources]
     pkg = { workspace = true }
@@ -910,7 +910,7 @@ fn test_issue_402_separate_root_table_two_blank_lines() {
         separate_root_table: String::from("\n\n"),
         ..default_settings()
     };
-    let got = format_toml(start, &settings);
+    let got = format_toml(start, &settings).unwrap();
     assert_snapshot!(got, @r#"
     [build-system]
     requires = [ "hatchling" ]
@@ -943,9 +943,9 @@ fn test_issue_217_mixed_quotes_idempotent() {
         min_supported_python: (3, 14),
         ..default_settings()
     };
-    let first = format_toml(start, &settings);
+    let first = format_toml(start, &settings).unwrap();
     assert_valid_toml(&first);
-    let second = format_toml(&first, &settings);
+    let second = format_toml(&first, &settings).unwrap();
     assert_eq!(first, second, "formatting should be idempotent");
     assert_snapshot!(first, @r#"
     [project]
@@ -975,9 +975,9 @@ fn test_issue_217_full_pyproject_idempotent() {
         min_supported_python: (3, 10),
         ..default_settings()
     };
-    let first = format_toml(&start, &settings);
+    let first = format_toml(&start, &settings).unwrap();
     assert_valid_toml(&first);
-    let second = format_toml(&first, &settings);
+    let second = format_toml(&first, &settings).unwrap();
     assert_eq!(first, second, "formatting should be idempotent");
     assert_snapshot!(first);
 }
@@ -992,7 +992,7 @@ fn test_issue_299_pixi_workspace_collapse_with_keys() {
     [tool.pixi.workspace]
     name = "my-project"
     "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_valid_toml(&got);
     assert_snapshot!(got, @r#"
     [project]
@@ -1013,7 +1013,7 @@ fn test_issue_299_pixi_workspace_collapse_empty() {
 
     [tool.pixi.workspace]
     "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_valid_toml(&got);
     assert_snapshot!(got, @r#"
     [project]
@@ -1031,7 +1031,7 @@ fn test_issue_202_preserve_inline_comment_after_array() {
     [tool.uv]
     lint.per-file-ignores."docs/**/*.py" = [ "INP001" ] # No __init__.py in docs
     "#};
-    let got = format_toml(start, &default_settings());
+    let got = format_toml(start, &default_settings()).unwrap();
     assert_snapshot!(got, @r#"
     [tool.uv]
     lint.per-file-ignores."docs/**/*.py" = [ "INP001" ]  # No __init__.py in docs
@@ -1056,7 +1056,7 @@ fn test_issue_376_collapse_with_comments_stays_valid() {
     "#};
     let mut settings = default_settings();
     settings.collapse_tables = vec![String::from("tool.uv.index")];
-    let result = format_toml(start, &settings);
+    let result = format_toml(start, &settings).unwrap();
     assert_valid_toml(&result);
     insta::assert_snapshot!(result, @r#"
     [[tool.uv.index]]
@@ -1080,7 +1080,7 @@ fn test_wide_array_of_tables_under_implicit_parent() {
         [[tool.demo.labels.file-rules]]
         any-glob-to-any-file = ["src/managers/apt*", "src/managers/dpkg*", "src/managers/opkg*", "tests/*apt*", "tests/*dpkg*", "tests/*opkg*"]
     "#};
-    let result = format_toml(start, &default_settings());
+    let result = format_toml(start, &default_settings()).unwrap();
     assert_valid_toml(&result);
     insta::assert_snapshot!(result, @r#"
     [[tool.demo.labels.file-rules]]
@@ -1102,7 +1102,7 @@ fn test_wide_array_of_tables_under_explicit_empty_parent() {
         [[tool.demo.labels.file-rules]]
         any-glob-to-any-file = ["src/managers/apt*", "src/managers/dpkg*", "src/managers/opkg*", "tests/*apt*", "tests/*dpkg*", "tests/*opkg*"]
     "#};
-    let result = format_toml(start, &default_settings());
+    let result = format_toml(start, &default_settings()).unwrap();
     assert_valid_toml(&result);
     insta::assert_snapshot!(result, @r#"
     [tool.demo.labels]
@@ -1116,4 +1116,15 @@ fn test_wide_array_of_tables_under_explicit_empty_parent() {
       "tests/*opkg*"
     ]
     "#);
+}
+
+#[test]
+fn test_format_toml_rejects_invalid_project_version() {
+    let start = indoc! {r#"
+    [project]
+    name = "alpha"
+    version = "1.9.xyz"
+    "#};
+    let error = format_toml(start, &default_settings()).unwrap_err();
+    assert_snapshot!(error, @"project.version `1.9.xyz` is not a valid PEP 440 version");
 }

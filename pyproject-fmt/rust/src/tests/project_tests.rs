@@ -14,6 +14,25 @@ fn evaluate_project(
     max_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
 ) -> String {
+    run_project_fix(
+        start,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+    )
+    .unwrap()
+}
+
+fn evaluate_project_error(start: &str) -> String {
+    run_project_fix(start, false, (3, 12), false).unwrap_err()
+}
+
+fn run_project_fix(
+    start: &str,
+    keep_full_version: bool,
+    max_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
+) -> Result<String, String> {
     let root_ast = parse(start);
     let count = root_ast.children_with_tokens().count();
     let mut tables = Tables::from_ast(&root_ast);
@@ -35,14 +54,14 @@ fn evaluate_project(
         (3, 9),
         generate_python_version_classifiers,
         &table_config,
-    );
+    )?;
 
     let entries = collect_entries(&tables);
     root_ast.splice_children(0..count, entries);
     ensure_all_arrays_multiline(&root_ast, 120);
     let result = format_syntax(root_ast, 120);
     assert_valid_toml(&result);
-    result
+    Ok(result)
 }
 
 #[test]
@@ -1032,7 +1051,7 @@ fn test_project_with_table_format_expand() {
         &["project"],
         120,
     );
-    fix(&mut tables, false, (3, 12), (3, 9), true, &table_config);
+    fix(&mut tables, false, (3, 12), (3, 9), true, &table_config).unwrap();
     let intermediate = root_ast.to_string();
     let result = format_toml_str(&intermediate, 120);
     insta::assert_snapshot!(result, @r#"
@@ -1071,7 +1090,7 @@ fn test_project_with_collapse_specific_table() {
         &["project"],
         120,
     );
-    fix(&mut tables, false, (3, 11), (3, 9), true, &table_config);
+    fix(&mut tables, false, (3, 11), (3, 9), true, &table_config).unwrap();
     let intermediate = root_ast.to_string();
     let result = format_toml_str(&intermediate, 120);
     insta::assert_snapshot!(result, @r#"
@@ -1107,7 +1126,7 @@ fn test_project_with_expand_specific_table() {
         &["project"],
         120,
     );
-    fix(&mut tables, false, (3, 11), (3, 9), true, &table_config);
+    fix(&mut tables, false, (3, 11), (3, 9), true, &table_config).unwrap();
     let intermediate = root_ast.to_string();
     let result = format_toml_str(&intermediate, 120);
     insta::assert_snapshot!(result, @r#"
@@ -1854,6 +1873,42 @@ fn test_project_version_field() {
 }
 
 #[test]
+fn test_project_version_normalization() {
+    let start = indoc! {r#"
+        [project]
+        version = "V1.0-Alpha.2-1.DEV+Ubuntu_01"
+    "#};
+    let result = evaluate_project(start, false, (3, 12), false);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    version = "1.0a2.post1.dev0+ubuntu.1"
+    "#);
+}
+
+#[test]
+fn test_project_version_invalid() {
+    let start = indoc! {r#"
+        [project]
+        version = "1.9.xyz"
+    "#};
+    let error = evaluate_project_error(start);
+    insta::assert_snapshot!(error, @"project.version `1.9.xyz` is not a valid PEP 440 version");
+}
+
+#[test]
+fn test_project_version_not_a_string() {
+    let start = indoc! {r#"
+        [project]
+        version = 19
+    "#};
+    let result = evaluate_project(start, false, (3, 12), false);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    version = 19
+    "#);
+}
+
+#[test]
 fn test_project_dependencies_empty_markers() {
     let start = indoc! {r#"
         [project]
@@ -2078,7 +2133,7 @@ fn test_project_expand_authors_to_array_of_tables() {
         &["project"],
         120,
     );
-    fix(&mut tables, false, (3, 12), (3, 9), false, &table_config);
+    fix(&mut tables, false, (3, 12), (3, 9), false, &table_config).unwrap();
     let intermediate = root_ast.to_string();
     let result = format_toml_str(&intermediate, 120);
     insta::assert_snapshot!(result, @r#"
@@ -2110,7 +2165,7 @@ fn test_project_expand_maintainers_to_array_of_tables() {
         &["project"],
         120,
     );
-    fix(&mut tables, false, (3, 12), (3, 9), false, &table_config);
+    fix(&mut tables, false, (3, 12), (3, 9), false, &table_config).unwrap();
     let intermediate = root_ast.to_string();
     let result = format_toml_str(&intermediate, 120);
     insta::assert_snapshot!(result, @r#"

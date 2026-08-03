@@ -34,7 +34,7 @@ fn evaluate_full(start: &str) -> String {
         collapse_tables: vec![],
         skip_wrap_for_keys: vec![],
     };
-    let r = format_toml(start, &s);
+    let r = format_toml(start, &s).unwrap();
     assert_valid_toml(&r);
     r
 }
@@ -219,7 +219,7 @@ fn evaluate_long(start: &str) -> String {
         collapse_tables: vec![],
         skip_wrap_for_keys: vec![],
     };
-    let r = format_toml(start, &s);
+    let r = format_toml(start, &s).unwrap();
     assert_valid_toml(&r);
     r
 }

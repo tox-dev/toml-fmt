@@ -1,5 +1,6 @@
 pub(crate) use crate::pep508::version_op::operator::Operator;
 pub(crate) use crate::pep508::version_op::version::Version;
+pub use crate::pep508::version_op::version::normalize_version;
 
 mod operator;
 mod version;

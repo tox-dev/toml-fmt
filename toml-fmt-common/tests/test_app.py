@@ -520,3 +520,34 @@ def test_legacy_consumer_reregistering_flags_does_not_crash(tmp_path: Path) -> N
     dumb.write_text("")
     # Must not raise argparse.ArgumentError on the duplicate --table-format/--expand-tables.
     assert run(LegacyDumb(), ["E", str(dumb), "--table-format", "long"]) == 1
+
+
+def test_format_rejection_reported(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "dumb.toml").write_text("ok = 1")
+    mocker.patch.object(Dumb, "format", side_effect=ValueError("bad version"))
+
+    assert run(Dumb(), ["E", "dumb.toml"]) == 1
+
+    out, err = capsys.readouterr()
+    assert not out
+    assert err == "dumb.toml: bad version\n"
+
+
+def test_format_rejection_reported_for_stdin(
+    capsys: pytest.CaptureFixture[str],
+    mocker: MockerFixture,
+) -> None:
+    mocker.patch("sys.stdin", StringIO("ok = 1"))
+    mocker.patch.object(Dumb, "format", side_effect=ValueError("bad version"))
+
+    assert run(Dumb(), ["E", "-"]) == 1
+
+    out, err = capsys.readouterr()
+    assert not out
+    assert err == "<stdin>: bad version\n"

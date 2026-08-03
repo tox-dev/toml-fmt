@@ -118,7 +118,7 @@ def run(info: TOMLFormatter[T], args: Sequence[str] | None = None) -> int:
     """
     configs = _cli_args(info, sys.argv[1:] if args is None else args)
     results = [_handle_one(info, config) for config in configs]
-    return 1 if any(results) else 0  # exit with non success on change
+    return 1 if any(results) else 0  # exit with non success on change or rejection
 
 
 @dataclass(frozen=True)
@@ -356,8 +356,21 @@ def _toml_path_creator(filename: str, argument: str) -> Path | None:
     return path
 
 
+def _display_name(path: Path | None) -> str:
+    if path is None:
+        return "<stdin>"
+    try:
+        return str(path.relative_to(Path.cwd()))
+    except ValueError:
+        return str(path)
+
+
 def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
-    formatted = info.format(config.toml, config.opt)
+    try:
+        formatted = info.format(config.toml, config.opt)
+    except ValueError as exc:  # the formatter rejected the content, e.g. an invalid project.version
+        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)  # noqa: T201
+        return True
     before = config.toml
     changed = before != formatted
     if config.toml_filename is None or config.stdout:  # when reading from stdin or writing to stdout, print new format
@@ -368,10 +381,7 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
         config.toml_filename.write_text(formatted, encoding="utf-8", newline="\n")
     if config.no_print_diff:
         return changed
-    try:
-        name = str(config.toml_filename.relative_to(Path.cwd()))
-    except ValueError:
-        name = str(config.toml_filename)
+    name = _display_name(config.toml_filename)
     diff: Iterable[str] = []
     if changed:
         diff = difflib.unified_diff(before.splitlines(), formatted.splitlines(), fromfile=name, tofile=name)

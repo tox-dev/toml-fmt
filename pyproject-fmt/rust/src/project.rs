@@ -16,8 +16,8 @@ use common::create::{
     make_array, make_array_entry, make_comma, make_entry_of_string, make_key, make_newline,
     make_table_array_with_entries, make_whitespace_n,
 };
-use common::pep508::Requirement;
-use common::string::{get_string_token, load_text, update_content};
+use common::pep508::{normalize_version, Requirement};
+use common::string::{get_string_token, get_string_value, load_text, update_content};
 use common::table::{for_entries, reorder_table_keys, Tables};
 
 use crate::TableFormatConfig;
@@ -45,6 +45,9 @@ fn normalize_and_sort_requirements(entry: &SyntaxNode, keep_full_version: bool) 
     );
 }
 
+/// # Errors
+///
+/// Will return the offending value if `project.version` is not a valid PEP 440 version.
 pub fn fix(
     tables: &mut Tables,
     keep_full_version: bool,
@@ -52,7 +55,7 @@ pub fn fix(
     min_supported_python: (u8, u8),
     generate_python_version_classifiers: bool,
     table_config: &TableFormatConfig,
-) {
+) -> Result<(), String> {
     let key_order = &["name", "email"];
 
     if !table_config.should_collapse("project.authors") {
@@ -64,16 +67,25 @@ pub fn fix(
 
     let table_element = tables.get("project");
     if table_element.is_none() {
-        return;
+        return Ok(());
     }
     let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
 
     static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r" \.(\W)").unwrap());
     expand_entry_points_inline_tables(table);
 
+    let mut invalid_version = None;
     for_entries(table, &mut |key, entry| match key.split('.').next().unwrap() {
         "name" => {
             update_content(entry, |s| Requirement::new(s).unwrap().canonical_name());
+        }
+        "version" => {
+            if let Some(raw) = get_string_value(entry) {
+                match normalize_version(&raw) {
+                    Some(canonical) => update_content(entry, |_| canonical.clone()),
+                    None => invalid_version = Some(raw),
+                }
+            }
         }
         "license" => {
             static LICENSE_RE: LazyLock<Regex> =
@@ -131,6 +143,9 @@ pub fn fix(
         "authors" | "maintainers" => {}
         _ => {}
     });
+    if let Some(raw) = invalid_version {
+        return Err(format!("project.version `{raw}` is not a valid PEP 440 version"));
+    }
 
     generate_classifiers(
         table,
@@ -184,6 +199,7 @@ pub fn fix(
             });
         }
     }
+    Ok(())
 }
 
 fn expand_entry_points_inline_tables(table: &mut RefMut<Vec<SyntaxElement>>) {

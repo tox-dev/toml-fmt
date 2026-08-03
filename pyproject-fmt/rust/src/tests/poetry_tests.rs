@@ -40,7 +40,7 @@ fn default_poetry_settings() -> Settings {
 }
 
 fn evaluate_full(start: &str) -> String {
-    let result = format_toml(start, &default_poetry_settings());
+    let result = format_toml(start, &default_poetry_settings()).unwrap();
     assert_valid_toml(&result);
     result
 }
@@ -53,7 +53,7 @@ fn long_format_settings() -> Settings {
 }
 
 fn evaluate_long(start: &str) -> String {
-    let result = format_toml(start, &long_format_settings());
+    let result = format_toml(start, &long_format_settings()).unwrap();
     assert_valid_toml(&result);
     result
 }

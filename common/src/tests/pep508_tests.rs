@@ -1,4 +1,4 @@
-use crate::pep508::{MarkerExpr, Requirement};
+use crate::pep508::{MarkerExpr, Requirement, normalize_version};
 
 fn format_requirement_helper(start: &str, keep_full_version: bool) -> String {
     Requirement::new(start)
@@ -479,4 +479,103 @@ fn test_is_name_only_url() {
 #[test]
 fn test_is_name_only_private() {
     assert!(!Requirement::new("wheel; private").unwrap().is_name_only());
+}
+
+fn normalize_version_helper(raw: &str) -> String {
+    normalize_version(raw).unwrap()
+}
+
+#[test]
+fn test_normalize_version_already_canonical() {
+    insta::assert_snapshot!(normalize_version_helper("1.9.0"), @"1.9.0");
+}
+
+#[test]
+fn test_normalize_version_strips_surrounding_whitespace() {
+    insta::assert_snapshot!(normalize_version_helper(" 1.9.0 "), @"1.9.0");
+}
+
+#[test]
+fn test_normalize_version_strips_v_prefix() {
+    insta::assert_snapshot!(normalize_version_helper("v1.9"), @"1.9");
+}
+
+#[test]
+fn test_normalize_version_strips_release_leading_zeros() {
+    insta::assert_snapshot!(normalize_version_helper("1.09.007"), @"1.9.7");
+}
+
+#[test]
+fn test_normalize_version_drops_zero_epoch() {
+    insta::assert_snapshot!(normalize_version_helper("0!1.0"), @"1.0");
+}
+
+#[test]
+fn test_normalize_version_keeps_non_zero_epoch() {
+    insta::assert_snapshot!(normalize_version_helper("2!1.0"), @"2!1.0");
+}
+
+#[test]
+fn test_normalize_version_pre_release_spelling() {
+    insta::assert_snapshot!(normalize_version_helper("1.0-ALPHA.1"), @"1.0a1");
+}
+
+#[test]
+fn test_normalize_version_pre_release_implicit_number() {
+    insta::assert_snapshot!(normalize_version_helper("1.0preview"), @"1.0rc0");
+}
+
+#[test]
+fn test_normalize_version_implicit_post_release() {
+    insta::assert_snapshot!(normalize_version_helper("1.0-1"), @"1.0.post1");
+}
+
+#[test]
+fn test_normalize_version_post_release_alias() {
+    insta::assert_snapshot!(normalize_version_helper("1.0_rev_3"), @"1.0.post3");
+}
+
+#[test]
+fn test_normalize_version_dev_release_implicit_number() {
+    insta::assert_snapshot!(normalize_version_helper("1.0dev"), @"1.0.dev0");
+}
+
+#[test]
+fn test_normalize_version_local_segment() {
+    insta::assert_snapshot!(normalize_version_helper("1.0+Ubuntu_007-x"), @"1.0+ubuntu.7.x");
+}
+
+#[test]
+fn test_normalize_version_local_zero_segment() {
+    insta::assert_snapshot!(normalize_version_helper("1.0+000"), @"1.0+0");
+}
+
+#[test]
+fn test_normalize_version_all_segments() {
+    insta::assert_snapshot!(normalize_version_helper("v1.0.c1.post.dev+A"), @"1.0rc1.post0.dev0+a");
+}
+
+#[test]
+fn test_normalize_version_rejects_non_numeric_release() {
+    assert!(normalize_version("1.9.xyz").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_empty() {
+    assert!(normalize_version("").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_trailing_separator() {
+    assert!(normalize_version("1.0.0-").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_release_overflow() {
+    assert!(normalize_version("99999999999999999999.0").is_none());
+}
+
+#[test]
+fn test_normalize_version_rejects_pre_release_number_overflow() {
+    assert!(normalize_version("1.0a99999999999999999999").is_none());
 }

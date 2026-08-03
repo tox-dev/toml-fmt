@@ -22,7 +22,7 @@ fn settings() -> Settings {
 }
 
 fn evaluate(start: &str) -> String {
-    let result = format_toml(start, &settings());
+    let result = format_toml(start, &settings()).unwrap();
     assert_valid_toml(&result);
     assert!(
         !result.contains(MARKER),

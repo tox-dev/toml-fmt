@@ -38,7 +38,7 @@ fn default_settings() -> Settings {
 }
 
 fn evaluate_full(start: &str) -> String {
-    let r = format_toml(start, &default_settings());
+    let r = format_toml(start, &default_settings()).unwrap();
     assert_valid_toml(&r);
     r
 }
@@ -308,7 +308,7 @@ fn long_settings() -> Settings {
 }
 
 fn evaluate_long(start: &str) -> String {
-    let r = format_toml(start, &long_settings());
+    let r = format_toml(start, &long_settings()).unwrap();
     assert_valid_toml(&r);
     r
 }
