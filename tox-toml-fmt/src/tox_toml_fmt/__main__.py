@@ -36,7 +36,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Filename operating on."""
         return "tox.toml"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # noqa: PLR6301
+    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
         """
         Additional formatter  config.
 
@@ -55,7 +55,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Path where config overrides live."""
         return ("tox-toml-fmt",)
 
-    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # noqa: PLR6301
+    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]
         """
         Perform the formatting.
 

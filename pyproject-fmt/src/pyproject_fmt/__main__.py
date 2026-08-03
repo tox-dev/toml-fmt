@@ -37,7 +37,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Filename operating on."""
         return "pyproject.toml"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # noqa: PLR6301
+    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
         """
         Additional formatter  config.
 
@@ -55,7 +55,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
         def _version_argument(got: str) -> tuple[int, int]:
             parts = got.split(".")
-            if len(parts) != 2:  # noqa: PLR2004
+            if len(parts) != 2:  # ruff: ignore[magic-value-comparison]
                 err = f"invalid version: {got}, must be e.g. 3.14"
                 raise ArgumentTypeError(err)
             try:
@@ -77,7 +77,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Path where config overrides live."""
         return "tool", "pyproject-fmt"
 
-    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # noqa: PLR6301
+    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]
         """
         Perform the formatting.
 

@@ -79,7 +79,7 @@ def _dedent(text: str) -> str:
 
 def strip_main_title(content: str) -> str:
     lines = content.splitlines()
-    if len(lines) >= 2 and lines[1] and all(c == "=" for c in lines[1]):  # noqa: PLR2004
+    if len(lines) >= 2 and lines[1] and all(c == "=" for c in lines[1]):  # ruff: ignore[magic-value-comparison]
         return "\n".join(lines[2:]).lstrip()
     return content
 
@@ -191,7 +191,7 @@ def convert_md_to_rst_inline(line: str) -> str:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:  # noqa: PLR2004
+    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison]
         print("Usage: generate_readme.py <package>")
         sys.exit(1)
     main(sys.argv[1])

@@ -1,4 +1,4 @@
-"""Configuration for documentation build."""  # noqa: INP001
+"""Configuration for documentation build."""  # ruff: ignore[implicit-namespace-package]
 
 from __future__ import annotations
 

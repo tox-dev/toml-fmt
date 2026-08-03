@@ -11,7 +11,7 @@ from argparse import (
     ArgumentParser,
     ArgumentTypeError,
     Namespace,
-    _ArgumentGroup,  # noqa: PLC2701
+    _ArgumentGroup,  # ruff: ignore[import-private-name]
 )
 from collections import deque
 from copy import deepcopy
@@ -305,7 +305,7 @@ def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callab
     of.add_format_flags(format_group)
     type_conversion: Mapping[str, Callable[[Any], Any]] = {
         a.dest: cast("Callable[[Any], Any]", a.type)
-        for a in format_group._actions  # noqa: SLF001
+        for a in format_group._actions  # ruff: ignore[private-member-access]
         if a.type and a.dest
     }
     msg = "pyproject.toml file(s) to format, use '-' to read from stdin"
@@ -361,7 +361,7 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
     before = config.toml
     changed = before != formatted
     if config.toml_filename is None or config.stdout:  # when reading from stdin or writing to stdout, print new format
-        print(formatted, end="")  # noqa: T201
+        print(formatted, end="")  # ruff: ignore[print]
         return changed
 
     if before != formatted and not config.check:
@@ -378,9 +378,9 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
 
     if diff:
         diff = _color_diff(diff)
-        print("\n".join(diff))  # print diff on change  # noqa: T201
+        print("\n".join(diff))  # print diff on change  # ruff: ignore[print]
     else:
-        print(f"no change for {name}")  # noqa: T201
+        print(f"no change for {name}")  # ruff: ignore[print]
     return changed
 
 
