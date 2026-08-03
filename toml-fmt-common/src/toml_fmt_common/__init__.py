@@ -369,7 +369,7 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
     try:
         formatted = info.format(config.toml, config.opt)
     except ValueError as exc:  # the formatter rejected the content, e.g. an invalid project.version
-        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)  # noqa: T201
+        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)  # ruff: ignore[print]
         return True
     before = config.toml
     changed = before != formatted
