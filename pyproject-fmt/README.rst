@@ -8,8 +8,12 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- ✨ feat(pyproject-fmt): order tool.pyproject-fmt config keys by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#421 <https://github.com/tox-dev/toml-fmt/pull/421>`_ <a id="2.25.4"></a>
+- ✨ feat(pyproject-fmt): normalize and validate project.version by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#428 <https://github.com/tox-dev/toml-fmt/pull/428>`_
+- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#424 <https://github.com/tox-dev/toml-fmt/pull/424>`_
+- Update Rust dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#423 <https://github.com/tox-dev/toml-fmt/pull/423>`_ <a id="2.26.0"></a>
 
 Philosophy
 ----------

@@ -1,4 +1,13 @@
-<a id="2.26.0"></a>
+<a id="2.27.0"></a>
+
+## 2.27.0 - 2026-08-03
+
+- ✨ feat(pyproject-fmt): normalize and validate project.version by [@gaborbernat](https://github.com/gaborbernat) in
+  [#428](https://github.com/tox-dev/toml-fmt/pull/428)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#424](https://github.com/tox-dev/toml-fmt/pull/424)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#423](https://github.com/tox-dev/toml-fmt/pull/423) <a id="2.26.0"></a>
 
 ## 2.26.0 - 2026-07-27
 
