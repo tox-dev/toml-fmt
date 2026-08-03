@@ -1,10 +1,11 @@
 use tombi_syntax::SyntaxKind::{
-    BARE_KEY, BASIC_STRING, KEY_VALUE, KEY_VALUE_GROUP, LITERAL_STRING, MULTI_LINE_BASIC_STRING,
+    BARE_KEY, BASIC_STRING, KEY_VALUE, KEY_VALUE_GROUP, KEYS, LITERAL_STRING, MULTI_LINE_BASIC_STRING,
     MULTI_LINE_LITERAL_STRING,
 };
 
 use crate::string::{
-    load_text, normalize_key_quotes, strip_quotes, update_content, update_content_wrapped, wrap_all_long_strings,
+    get_string_value, load_text, normalize_key_quotes, strip_quotes, update_content, update_content_wrapped,
+    wrap_all_long_strings,
 };
 
 fn parse(source: &str) -> tombi_syntax::SyntaxNode {
@@ -1166,4 +1167,27 @@ value = "This is a very long string that should be wrapped because it does not m
         wrapped because it does not match pattern\
         """
     "#);
+}
+
+fn first_value_node(toml: &str) -> tombi_syntax::SyntaxNode {
+    parse(toml)
+        .descendants()
+        .find(|node| node.kind() == KEY_VALUE)
+        .and_then(|entry| entry.children().find(|node| node.kind() != KEYS))
+        .unwrap()
+}
+
+#[test]
+fn test_get_string_value_basic_string() {
+    assert_eq!(get_string_value(&first_value_node("a = \"b\"\n")).unwrap(), "b");
+}
+
+#[test]
+fn test_get_string_value_literal_string() {
+    assert_eq!(get_string_value(&first_value_node("a = 'b'\n")).unwrap(), "b");
+}
+
+#[test]
+fn test_get_string_value_non_string() {
+    assert!(get_string_value(&first_value_node("a = 1\n")).is_none());
 }

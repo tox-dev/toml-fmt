@@ -44,7 +44,7 @@ fn long_settings() -> Settings {
 }
 
 fn evaluate_long(start: &str) -> String {
-    let result = format_toml(start, &long_settings());
+    let result = format_toml(start, &long_settings()).unwrap();
     assert_valid_toml(&result);
     result
 }

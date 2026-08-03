@@ -1,3 +1,52 @@
+use std::sync::LazyLock;
+
+use regex::{Captures, Regex};
+
+/// Canonical [PEP 440](https://peps.python.org/pep-0440/) form of `raw`, or `None` when `raw` is not a valid version.
+pub fn normalize_version(raw: &str) -> Option<String> {
+    Version::parse(raw).map(|version| version.to_string())
+}
+
+static PEP440: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?xi)
+        ^
+        v?
+        (?:(?P<epoch>[0-9]+)!)?
+        (?P<release>[0-9]+(?:\.[0-9]+)*)
+        (?:[-_.]?(?P<pre_l>alpha|a|beta|b|preview|pre|c|rc)[-_.]?(?P<pre_n>[0-9]+)?)?
+        (?:-(?P<post_n1>[0-9]+)|[-_.]?(?P<post_l>post|rev|r)[-_.]?(?P<post_n2>[0-9]+)?)?
+        (?P<dev>[-_.]?dev[-_.]?(?P<dev_n>[0-9]+)?)?
+        (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?
+        $",
+    )
+    .unwrap()
+});
+
+/// Outer `None` rejects the whole version when the captured digits overflow, inner `None` means the group was absent.
+fn optional_number(caps: &Captures, name: &str) -> Option<Option<u64>> {
+    caps.name(name)
+        .map_or(Some(None), |number| number.as_str().parse().ok().map(Some))
+}
+
+fn normalize_local(raw: &str) -> String {
+    let lowered = raw.to_ascii_lowercase();
+    lowered
+        .split(['-', '_', '.'])
+        .map(|part| {
+            if part.chars().all(|c| c.is_ascii_digit()) {
+                match part.trim_start_matches('0') {
+                    "" => "0",
+                    trimmed => trimmed,
+                }
+            } else {
+                part
+            }
+        })
+        .collect::<Vec<&str>>()
+        .join(".")
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Version {
     pub epoch: Option<u64>,
@@ -10,6 +59,42 @@ pub struct Version {
 }
 
 impl Version {
+    /// Strict counterpart of [`Version::new`]: rejects what PEP 440 does not accept instead of salvaging it.
+    pub fn parse(raw: &str) -> Option<Self> {
+        let caps = PEP440.captures(raw.trim())?;
+        let release = caps["release"]
+            .split('.')
+            .map(str::parse::<u64>)
+            .collect::<Result<Vec<u64>, _>>()
+            .ok()?;
+        let pre = match caps.name("pre_l") {
+            Some(label) => Some((label.as_str().to_ascii_lowercase(), optional_number(&caps, "pre_n")?)),
+            None => None,
+        };
+        let post = if let Some(implicit) = caps.name("post_n1") {
+            Some((Some("post".to_string()), Some(implicit.as_str().parse().ok()?)))
+        } else if caps.name("post_l").is_some() {
+            Some((Some("post".to_string()), optional_number(&caps, "post_n2")?))
+        } else {
+            None
+        };
+        let dev = if caps.name("dev").is_some() {
+            Some(("dev".to_string(), optional_number(&caps, "dev_n")?))
+        } else {
+            None
+        };
+        Some(Self {
+            // A zero epoch is dropped in the canonical form.
+            epoch: optional_number(&caps, "epoch")?.filter(|epoch| *epoch != 0),
+            release,
+            pre,
+            post,
+            dev,
+            local: caps.name("local").map(|local| normalize_local(local.as_str())),
+            has_wildcard: false,
+        })
+    }
+
     pub fn new(raw: &str) -> Self {
         let mut input = raw.trim();
         let mut has_wildcard = false;

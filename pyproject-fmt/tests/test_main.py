@@ -444,3 +444,36 @@ def test_pyproject_fmt_self_config_normalized(tmp_path: Path) -> None:
     skip_wrap_for_keys = [ "a.parse", "z.parse" ]
     """
     assert filename.read_text() == dedent(expected)
+
+
+def test_invalid_project_version(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    txt = """\
+    [project]
+    version = "1.9.xyz"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+
+    assert run([str(filename)]) == 1
+
+    assert filename.read_text() == dedent(txt)
+    out, err = capsys.readouterr()
+    assert not out
+    assert err == f"{filename}: project.version `1.9.xyz` is not a valid PEP 440 version\n"
+
+
+def test_project_version_normalized(tmp_path: Path) -> None:
+    txt = """\
+    [project]
+    version = "V1.0-Alpha.2"
+    """
+    filename = tmp_path / "pyproject.toml"
+    filename.write_text(dedent(txt))
+
+    assert run([str(filename), "--no-print-diff", "--no-generate-python-version-classifiers"]) == 1
+
+    expected = """\
+    [project]
+    version = "1.0a2"
+    """
+    assert filename.read_text() == dedent(expected)

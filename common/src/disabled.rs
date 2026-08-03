@@ -53,6 +53,16 @@ pub fn with_disabled_keys(content: &str, format: impl FnOnce(&str) -> String) ->
     restore_disabled_keys(&format(&enabled))
 }
 
+/// [`with_disabled_keys`] for a formatter that may reject its input; a rejected pass restores nothing.
+///
+/// # Errors
+///
+/// Propagates whatever `format` rejected the content with.
+pub fn try_with_disabled_keys<E>(content: &str, format: impl FnOnce(&str) -> Result<String, E>) -> Result<String, E> {
+    let enabled = enable_disabled_keys(content);
+    Ok(restore_disabled_keys(&format(&enabled)?))
+}
+
 /// Drops one space after `#` to mirror how [`comment_disabled_line`] writes it back, keeping the round-trip stable.
 fn split_comment(line: &str) -> Option<(&str, &str)> {
     let trimmed = line.trim_start();

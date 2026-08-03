@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::string::String;
 
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
 
@@ -150,16 +151,18 @@ async fn format_with_tombi(content: &str, column_width: usize, indent: usize) ->
 
 #[pyfunction]
 #[pyo3(name = "format_toml")]
-fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
-    py.detach(|| format_toml(content, opt))
+fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> PyResult<String> {
+    py.detach(|| format_toml(content, opt)).map_err(PyValueError::new_err)
 }
 
-#[must_use]
-pub fn format_toml(content: &str, opt: &Settings) -> String {
-    common::disabled::with_disabled_keys(content, |content| format_core(content, opt))
+/// # Errors
+///
+/// Will return a message describing why the content was rejected, e.g. an invalid `project.version`.
+pub fn format_toml(content: &str, opt: &Settings) -> Result<String, String> {
+    common::disabled::try_with_disabled_keys(content, |content| format_core(content, opt))
 }
 
-fn format_core(content: &str, opt: &Settings) -> String {
+fn format_core(content: &str, opt: &Settings) -> Result<String, String> {
     let root_ast = parse(content);
     common::string::normalize_key_quotes(&root_ast);
     let mut tables = Tables::from_ast(&root_ast);
@@ -191,7 +194,7 @@ fn format_core(content: &str, opt: &Settings) -> String {
         opt.min_supported_python,
         opt.generate_python_version_classifiers,
         &table_config,
-    );
+    )?;
     dependency_groups::fix(&mut tables, opt.keep_full_version);
     ruff::fix(&mut tables);
     uv::fix(&mut tables);
@@ -252,7 +255,7 @@ fn format_core(content: &str, opt: &Settings) -> String {
 
     let sub_spacing = (opt.table_format == "long").then_some(opt.sub_table_spacing.as_str());
     let result = common::table::normalize_table_spacing(&formatted, &["tool"], &opt.separate_root_table, sub_spacing);
-    common::util::limit_blank_lines(&result, 2)
+    Ok(common::util::limit_blank_lines(&result, 2))
 }
 
 /// # Errors

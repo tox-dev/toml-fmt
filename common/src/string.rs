@@ -197,6 +197,14 @@ pub fn get_string_token(node: &SyntaxNode) -> Option<tombi_syntax::SyntaxToken> 
         .find(|token| token.kind() == kind)
 }
 
+/// Decoded content of a scalar value node, or `None` when that value is not a string.
+pub fn get_string_value(node: &SyntaxNode) -> Option<String> {
+    if !is_string_kind(node.kind()) {
+        return None;
+    }
+    get_string_token(node).map(|token| load_text(token.text(), node.kind()))
+}
+
 pub fn load_text(value: &str, kind: SyntaxKind) -> String {
     let offset = if [BASIC_STRING, LITERAL_STRING].contains(&kind) {
         1
