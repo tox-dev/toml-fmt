@@ -1,4 +1,9 @@
-<a id="2.27.0"></a>
+<a id="2.27.1"></a>
+
+## 2.27.1 - 2026-08-12
+
+- 🐛 fix(pyproject-fmt): stop normalizing project.version by [@gaborbernat](https://github.com/gaborbernat) in
+  [#431](https://github.com/tox-dev/toml-fmt/pull/431) <a id="2.27.0"></a>
 
 ## 2.27.0 - 2026-08-03
 
