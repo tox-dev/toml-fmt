@@ -462,18 +462,14 @@ def test_invalid_project_version(tmp_path: Path, capsys: pytest.CaptureFixture[s
     assert err == f"{filename}: project.version `1.9.xyz` is not a valid PEP 440 version\n"
 
 
-def test_project_version_normalized(tmp_path: Path) -> None:
+def test_project_version_kept_verbatim(tmp_path: Path) -> None:
     txt = """\
     [project]
-    version = "V1.0-Alpha.2"
+    version = "2026.08.10"
     """
     filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
 
-    assert run([str(filename), "--no-print-diff", "--no-generate-python-version-classifiers"]) == 1
+    assert run([str(filename), "--no-print-diff", "--no-generate-python-version-classifiers"]) == 0
 
-    expected = """\
-    [project]
-    version = "1.0a2"
-    """
-    assert filename.read_text() == dedent(expected)
+    assert filename.read_text() == dedent(txt)

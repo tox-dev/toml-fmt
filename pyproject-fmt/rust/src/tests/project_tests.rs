@@ -1873,7 +1873,20 @@ fn test_project_version_field() {
 }
 
 #[test]
-fn test_project_version_normalization() {
+fn test_project_version_calver_kept_verbatim() {
+    let start = indoc! {r#"
+        [project]
+        version = "2026.08.10"
+    "#};
+    let result = evaluate_project(start, false, (3, 12), false);
+    insta::assert_snapshot!(result, @r#"
+    [project]
+    version = "2026.08.10"
+    "#);
+}
+
+#[test]
+fn test_project_version_non_canonical_kept_verbatim() {
     let start = indoc! {r#"
         [project]
         version = "V1.0-Alpha.2-1.DEV+Ubuntu_01"
@@ -1881,7 +1894,7 @@ fn test_project_version_normalization() {
     let result = evaluate_project(start, false, (3, 12), false);
     insta::assert_snapshot!(result, @r#"
     [project]
-    version = "1.0a2.post1.dev0+ubuntu.1"
+    version = "V1.0-Alpha.2-1.DEV+Ubuntu_01"
     "#);
 }
 

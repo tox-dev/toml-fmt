@@ -689,8 +689,8 @@ directly), or when ``setuptools`` itself is missing from ``requires``.
 The :pep:`621` core metadata table. See the
 `packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#pyproject-project-table>`_.
 
-Keys follow the canonical metadata order; name, version, dependencies, classifiers, and keywords are normalized and
-sorted.
+Keys follow the canonical metadata order; name, dependencies, classifiers, and keywords are normalized and sorted;
+version is validated.
 
 
 **Key ordering:** ``name`` → ``version`` → ``import-names`` → ``import-namespaces`` → ``description`` →
@@ -704,9 +704,9 @@ sorted.
     Converted to canonical format (lowercase with hyphens): ``My_Package`` → ``my-package``
 
 ``version``
-    Converted to the canonical :pep:`440` form: ``V1.0-Alpha.2`` → ``1.0a2``. A value that is not a valid
-    :pep:`440` version is rejected: the formatter reports it on standard error, leaves the file untouched, and
-    exits with a non-zero status.
+    Kept verbatim, because it is the exact version published in the package metadata — normalizing would rewrite
+    e.g. CalVer ``2026.08.10`` to ``2026.8.10``. A value that is not a valid :pep:`440` version is rejected: the
+    formatter reports it on standard error, leaves the file untouched, and exits with a non-zero status.
 
 ``description``
     Whitespace normalized: multiple spaces collapsed, consistent spacing after periods.
