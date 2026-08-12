@@ -16,7 +16,7 @@ use common::create::{
     make_array, make_array_entry, make_comma, make_entry_of_string, make_key, make_newline,
     make_table_array_with_entries, make_whitespace_n,
 };
-use common::pep508::{normalize_version, Requirement};
+use common::pep508::{is_valid_version, Requirement};
 use common::string::{get_string_token, get_string_value, load_text, update_content};
 use common::table::{for_entries, reorder_table_keys, Tables};
 
@@ -81,9 +81,8 @@ pub fn fix(
         }
         "version" => {
             if let Some(raw) = get_string_value(entry) {
-                match normalize_version(&raw) {
-                    Some(canonical) => update_content(entry, |_| canonical.clone()),
-                    None => invalid_version = Some(raw),
+                if !is_valid_version(&raw) {
+                    invalid_version = Some(raw);
                 }
             }
         }
