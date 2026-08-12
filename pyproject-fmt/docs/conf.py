@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from datetime import datetime, timezone
 from importlib.metadata import version as metadata_version
@@ -21,6 +22,7 @@ html_title, html_last_updated_fmt = name, now.isoformat()
 pygments_style, pygments_dark_style = "sphinx", "monokai"
 
 extensions = [
+    "sphinx_llm.txt",
     "sphinx.ext.autodoc",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
@@ -54,3 +56,5 @@ linkcheck_anchors_ignore_for_url = [
     r"https://github\.com/.*",
     r"https://microsoft\.github\.io/pyright/.*",
 ]
+
+markdown_http_base = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
