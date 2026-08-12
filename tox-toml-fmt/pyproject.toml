@@ -68,6 +68,7 @@ docs = [
   "sphinx-autodoc-typehints>=3.13; python_version>='3.14'",
   "sphinx-copybutton>=0.5.2; python_version>='3.14'",
   "sphinx-inline-tabs>=2025.12.21.14; python_version>='3.14'",
+  "sphinx-llm>=0.4.1",
 ]
 fix = [
   "pre-commit-uv>=4.3",
