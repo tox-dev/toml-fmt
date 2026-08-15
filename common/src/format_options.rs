@@ -6,7 +6,7 @@ use tombi_config::{
 pub fn create_format_options(column_width: usize, indent: usize) -> FormatOptions {
     FormatOptions {
         rules: Some(FormatRules {
-            line_width: Some(LineWidth::try_from(column_width as u8).unwrap_or_default()),
+            line_width: LineWidth::try_from(column_width as u8).ok(),
             indent_style: Some(IndentStyle::Space),
             indent_width: Some(IndentWidth::from(indent as u8)),
             line_ending: Some(LineEnding::Lf),
