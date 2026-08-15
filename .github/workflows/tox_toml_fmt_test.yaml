@@ -137,11 +137,7 @@ jobs:
         if: matrix.py != '3.14'
         run: uv python install --python-preference only-managed ${{ matrix.py }}
       - name: 🦀 Setup Rust
-        uses: moonrepo/setup-rust@abb2d32350334249b178c401e5ec5836e0cd88d3 # v1
-        with:
-          cache-base: main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
       - name: 📝 Generate README.rst
         run: tox run -e readme
         working-directory: tox-toml-fmt
