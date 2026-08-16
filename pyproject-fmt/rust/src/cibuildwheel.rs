@@ -97,13 +97,12 @@ fn sort_array(entry: &SyntaxNode) {
 fn fix_overrides_inline(array: &SyntaxNode) {
     for inline in array.descendants().filter(|n| n.kind() == INLINE_TABLE) {
         for kv in inline.descendants().filter(|n| n.kind() == KEY_VALUE) {
-            let Some(keys) = kv.children().find(|c| c.kind() == KEYS) else {
-                continue;
-            };
+            let keys = kv.children().find(|c| c.kind() == KEYS).expect("a key-value has a key");
             if !SORT_ARRAYS.contains(&keys.text().to_string().trim()) {
                 continue;
             }
-            if let Some(inner) = kv.children().find(|c| c.kind() == ARRAY) {
+            // A sortable key holds a scalar when the config is wrong for cibuildwheel; leave such a value alone.
+            for inner in kv.children().filter(|c| c.kind() == ARRAY) {
                 sort_array(&inner);
             }
         }

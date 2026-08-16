@@ -149,6 +149,19 @@ fn test_cibw_overrides_inline_select_first() {
 }
 
 #[test]
+fn test_cibw_overrides_inline_scalar_sort_key_kept() {
+    let start = indoc::indoc! {r#"
+    [tool.cibuildwheel]
+    overrides = [ { test-extras = "test", select = "cp310-*" } ]
+    "#};
+    let result = evaluate(start);
+    insta::assert_snapshot!(result, @r#"
+    [tool.cibuildwheel]
+    overrides = [ { select = "cp310-*", test-extras = "test" } ]
+    "#);
+}
+
+#[test]
 fn test_cibw_overrides_inline_without_select_untouched() {
     let start = indoc::indoc! {r#"
     [tool.cibuildwheel]
