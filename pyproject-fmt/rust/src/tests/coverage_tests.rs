@@ -89,12 +89,12 @@ fn test_coverage_grouped_options() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]
-    run.branch = true
+    run.source = [ "src" ]
     run.include = [ "**/*.py" ]
     run.omit = [ "tests/*" ]
-    run.source = [ "src" ]
-    report.exclude_also = [ "if TYPE_CHECKING:" ]
+    run.branch = true
     report.exclude_lines = [ "pragma: no cover" ]
+    report.exclude_also = [ "if TYPE_CHECKING:" ]
     report.skip_covered = true
     report.skip_empty = true
     "#);
@@ -113,11 +113,11 @@ fn test_coverage_comments_preserved() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]
-    # Run configuration
-    run.branch = true
     run.omit = [
       "tests/*",  # Don't measure tests
     ]
+    # Run configuration
+    run.branch = true
     "#);
 }
 
@@ -134,11 +134,11 @@ fn test_coverage_run_arrays_sorted() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]
-    run.concurrency = [ "gevent", "multiprocessing", "thread" ]
-    run.debug = [ "config", "sys", "trace" ]
-    run.omit = [ "a_fixtures/*", "m_mocks/*", "z_tests/*" ]
-    run.plugins = [ "another_plugin", "coverage_plugin" ]
     run.source = [ "alpha", "bravo", "zulu" ]
+    run.omit = [ "a_fixtures/*", "m_mocks/*", "z_tests/*" ]
+    run.concurrency = [ "gevent", "multiprocessing", "thread" ]
+    run.plugins = [ "another_plugin", "coverage_plugin" ]
+    run.debug = [ "config", "sys", "trace" ]
     "#);
 }
 
@@ -153,8 +153,8 @@ fn test_coverage_report_arrays_sorted() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]
-    report.exclude_lines = [ "if TYPE_CHECKING:", "pragma: no cover", "raise NotImplementedError" ]
     report.omit = [ "conftest.py", "fixtures/*", "tests/*" ]
+    report.exclude_lines = [ "if TYPE_CHECKING:", "pragma: no cover", "raise NotImplementedError" ]
     report.partial_branches = [ "if DEBUG:", "pragma: no branch" ]
     "#);
 }
@@ -180,12 +180,12 @@ fn test_coverage_trailing_comment_on_single_line_array() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]
-    run.core = "sysmon"  # default for 3.14+, available for 3.12+
-    run.disable_warnings = [ "no-sysmon" ]  # 3.11 and earlier
     run.omit = [
       "**/__main__.py",
       "**/cli.py",
     ]
+    run.disable_warnings = [ "no-sysmon" ]  # 3.11 and earlier
+    run.core = "sysmon"  # default for 3.14+, available for 3.12+
     # Regexes for lines to exclude from consideration
     report.exclude_also = [
       # Don't complain if non-runnable code isn't run:
@@ -204,8 +204,8 @@ fn test_coverage_string_include_not_array() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.coverage]
-    run.branch = true
     run.include = "src"
+    run.branch = true
     "#);
 }
 
