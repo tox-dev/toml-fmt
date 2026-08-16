@@ -1777,10 +1777,10 @@ Report phase
 
    # After
    [tool.coverage]
-   run.branch = true
    run.omit = [ "tests/*" ]
-   report.exclude_also = [ "if TYPE_CHECKING:" ]
+   run.branch = true
    report.omit = [ "tests/*" ]
+   report.exclude_also = [ "if TYPE_CHECKING:" ]
 
 ``[tool.tox]``
 ~~~~~~~~~~~~~~
