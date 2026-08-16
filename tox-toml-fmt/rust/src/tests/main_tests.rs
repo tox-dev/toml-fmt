@@ -571,6 +571,8 @@ fn test_expanded_sub_tables_follow_env_key_order() {
         description = "run tests"
         custom.a = 1
         set_env.A = "1"
+        [labels.sub]
+        b = 2
         "#};
     let settings = Settings {
         table_format: String::from("long"),
@@ -587,6 +589,9 @@ fn test_expanded_sub_tables_follow_env_key_order() {
     A = "1"
     [env.py313.custom]
     a = 1
+
+    [labels.sub]
+    b = 2
     "#);
 }
 

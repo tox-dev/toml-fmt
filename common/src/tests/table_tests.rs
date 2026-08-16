@@ -2729,6 +2729,8 @@ fn test_reorder_with_key_order_ranks_sub_tables_by_list() {
         b = 2
         [tool.x.run.extra]
         c = 3
+        [tool.x.runner]
+        h = 8
         [tool.x.run]
         d = 4
         [tool.x]
@@ -2755,6 +2757,9 @@ fn test_reorder_with_key_order_ranks_sub_tables_by_list() {
 
     [tool.x.report]
     a = 1
+
+    [tool.x.runner]
+    h = 8
 
     [tool.x.zzz]
     b = 2

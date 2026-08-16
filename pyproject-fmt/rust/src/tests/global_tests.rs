@@ -146,6 +146,29 @@ fn test_reorder_sub_tables_follow_key_order() {
 }
 
 #[test]
+fn test_reorder_poetry_sub_tables_follow_key_order() {
+    let start = indoc! {r#"
+    [tool.poetry.urls]
+    a = "b"
+    [tool.poetry.group.dev.dependencies]
+    pytest = "*"
+    [tool.poetry.dependencies]
+    python = "^3.9"
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    [tool.poetry.dependencies]
+    python = "^3.9"
+
+    [tool.poetry.group.dev.dependencies]
+    pytest = "*"
+
+    [tool.poetry.urls]
+    a = "b"
+    "#);
+}
+
+#[test]
 fn test_reorder_sub_tables_of_unknown_tool_stay_alphabetical() {
     let start = indoc! {r#"
     [tool.unknown.zzz]
