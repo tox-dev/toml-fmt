@@ -125,7 +125,39 @@ fn test_cibw_overrides_aot_select_first() {
     let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.cibuildwheel]
-    overrides = [ { test-command = "pytest {project}/tests/cpython", select = "cp3{10,11}-*" } ]
+    overrides = [ { select = "cp3{10,11}-*", test-command = "pytest {project}/tests/cpython" } ]
+    "#);
+}
+
+#[test]
+fn test_cibw_overrides_inline_select_first() {
+    let start = indoc::indoc! {r#"
+    [tool.cibuildwheel]
+    overrides = [
+      { test-extras = ["z", "a"], test-command = "pytest", select = "cp310-*" },
+      { before-all = "make", select = "cp311-*" },
+    ]
+    "#};
+    let result = evaluate(start);
+    insta::assert_snapshot!(result, @r#"
+    [tool.cibuildwheel]
+    overrides = [
+      { select = "cp310-*", test-command = "pytest", test-extras = [ "a", "z" ] },
+      { select = "cp311-*", before-all = "make" },
+    ]
+    "#);
+}
+
+#[test]
+fn test_cibw_overrides_inline_without_select_untouched() {
+    let start = indoc::indoc! {r#"
+    [tool.cibuildwheel]
+    overrides = [ { test-command = "pytest", before-all = "make" } ]
+    "#};
+    let result = evaluate(start);
+    insta::assert_snapshot!(result, @r#"
+    [tool.cibuildwheel]
+    overrides = [ { test-command = "pytest", before-all = "make" } ]
     "#);
 }
 

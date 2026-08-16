@@ -793,9 +793,9 @@ Keys are ordered selection → build config → build phases → test phases →
     (``manylinux-*-image``, ``musllinux-*-image``) → ``container-engine`` → per-platform sub-tables (``linux``,
     ``macos``, ``windows``, ``android``, ``ios``, ``pyodide``) → ``overrides`` last.
 
-    Per-platform sub-tables follow the same inner ordering. ``[[tool.cibuildwheel.overrides]]`` entries place
-    ``select`` first (required), then the regular cibuildwheel keys; the array order itself is preserved (later
-    overrides win).
+    Per-platform sub-tables follow the same inner ordering. ``overrides`` entries, whether written as
+    ``[[tool.cibuildwheel.overrides]]`` or as inline tables in ``overrides = [...]``, place ``select`` first
+    (required), then the regular cibuildwheel keys; the array order itself is preserved (later overrides win).
 
     **Sorted arrays:** ``enable``, ``test-extras``, ``test-groups``.
 
