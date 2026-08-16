@@ -1,4 +1,21 @@
-<a id="2.27.1"></a>
+<a id="2.28.0"></a>
+
+## 2.28.0 - 2026-08-16
+
+- 🧪 test(pyproject-fmt): cover scalar cibuildwheel sort keys by [@gaborbernat](https://github.com/gaborbernat) in
+  [#439](https://github.com/tox-dev/toml-fmt/pull/439)
+- 🐛 fix(common): order expanded sub-tables by their key order by [@gaborbernat](https://github.com/gaborbernat) in
+  [#438](https://github.com/tox-dev/toml-fmt/pull/438)
+- 🐛 fix(pyproject-fmt): order collapsed cibuildwheel overrides by [@gaborbernat](https://github.com/gaborbernat) in
+  [#437](https://github.com/tox-dev/toml-fmt/pull/437)
+- 🐛 fix(pyproject-fmt): apply the coverage key order as listed by [@gaborbernat](https://github.com/gaborbernat) in
+  [#436](https://github.com/tox-dev/toml-fmt/pull/436)
+- Update Rust dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#434](https://github.com/tox-dev/toml-fmt/pull/434)
+- Update Python dependencies by [@gaborbernat](https://github.com/gaborbernat) in
+  [#435](https://github.com/tox-dev/toml-fmt/pull/435)
+- 📄 docs: publish llms.txt from the docs build by [@gaborbernat](https://github.com/gaborbernat) in
+  [#432](https://github.com/tox-dev/toml-fmt/pull/432) <a id="2.27.1"></a>
 
 ## 2.27.1 - 2026-08-12
 

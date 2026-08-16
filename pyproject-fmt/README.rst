@@ -8,8 +8,20 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- 🐛 fix(pyproject-fmt): stop normalizing project.version by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#431 <https://github.com/tox-dev/toml-fmt/pull/431>`_ <a id="2.27.0"></a>
+- 🧪 test(pyproject-fmt): cover scalar cibuildwheel sort keys by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#439 <https://github.com/tox-dev/toml-fmt/pull/439>`_
+- 🐛 fix(common): order expanded sub-tables by their key order by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#438 <https://github.com/tox-dev/toml-fmt/pull/438>`_
+- 🐛 fix(pyproject-fmt): order collapsed cibuildwheel overrides by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#437 <https://github.com/tox-dev/toml-fmt/pull/437>`_
+- 🐛 fix(pyproject-fmt): apply the coverage key order as listed by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#436 <https://github.com/tox-dev/toml-fmt/pull/436>`_
+- Update Rust dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#434 <https://github.com/tox-dev/toml-fmt/pull/434>`_
+- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#435 <https://github.com/tox-dev/toml-fmt/pull/435>`_
+- 📄 docs: publish llms.txt from the docs build by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#432 <https://github.com/tox-dev/toml-fmt/pull/432>`_ <a id="2.27.1"></a>
 
 Philosophy
 ----------
