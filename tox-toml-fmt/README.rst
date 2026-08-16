@@ -315,7 +315,9 @@ Each environment always gets its own ``[env.NAME]`` table section:
     # fix.description = "fix"    →    [env.fix]
     #                                  description = "fix"
 
-Sub-tables within an environment (e.g. ``[env.test.sub]``) still follow the ``table_format`` setting.
+Sub-tables within an environment (e.g. ``[env.test.sub]``) still follow the ``table_format`` setting, and are
+ordered by the same environment key order as dotted keys: ones the order lists (such as ``set_env``) come first,
+the rest follow alphabetically.
 
 Comment Preservation
 ~~~~~~~~~~~~~~~~~~~~

@@ -2721,6 +2721,53 @@ fn test_reorder_sections_group_markers_block_cross_group() {
 }
 
 #[test]
+fn test_reorder_with_key_order_ranks_sub_tables_by_list() {
+    let start = indoc! {r#"
+        [tool.x.report]
+        a = 1
+        [tool.x.zzz]
+        b = 2
+        [tool.x.run.extra]
+        c = 3
+        [tool.x.run]
+        d = 4
+        [tool.x]
+        e = 5
+        [tool.y.b]
+        f = 6
+        [tool.y.a]
+        g = 7
+    "#};
+    let root_ast = parse(start);
+    let tables = Tables::from_ast(&root_ast);
+    let key_order =
+        |table: &str| (table == "tool.x").then(|| vec![String::new(), String::from("run"), String::from("report")]);
+    tables.reorder_with_key_order(&root_ast, &["tool.x", "tool.y"], &["tool"], "\n", "", &key_order);
+    insta::assert_snapshot!(format_toml(&root_ast, 120), @r#"
+    [tool.x]
+    e = 5
+
+    [tool.x.run]
+    d = 4
+
+    [tool.x.run.extra]
+    c = 3
+
+    [tool.x.report]
+    a = 1
+
+    [tool.x.zzz]
+    b = 2
+
+    [tool.y.a]
+    g = 7
+
+    [tool.y.b]
+    f = 6
+    "#);
+}
+
+#[test]
 fn test_collapse_array_of_tables_skips_multi_position_parent() {
     let toml = indoc! {r#"
         [[project]]

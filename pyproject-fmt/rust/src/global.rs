@@ -1,8 +1,58 @@
 use common::table::Tables;
 use tombi_syntax::SyntaxNode;
 
+use crate::{
+    autopep8, bandit, black, bumpversion, check_manifest, cibuildwheel, codespell, commitizen, coverage, deptry,
+    djlint, docformatter, hatch, interrogate, isort, maturin, mypy, pdm, pixi, poetry, project, pylint, pyproject_fmt,
+    pyrefly, pyright, pytest, ruff, scikit_build, semantic_release, setuptools, towncrier, ty, uv, vulture, yapf,
+};
+
+/// The key order each tool applies to its table, so expanded sub-tables line up with the dotted-key form.
+fn key_order(table: &str) -> Option<Vec<String>> {
+    let order: &[&str] = match table {
+        "project" => project::KEY_ORDER,
+        "tool.autopep8" => autopep8::KEY_ORDER,
+        "tool.bandit" => bandit::KEY_ORDER,
+        "tool.black" => black::KEY_ORDER,
+        "tool.bumpversion" => bumpversion::KEY_ORDER,
+        "tool.check-manifest" => check_manifest::KEY_ORDER,
+        "tool.cibuildwheel" => cibuildwheel::KEY_ORDER,
+        "tool.codespell" => codespell::KEY_ORDER,
+        "tool.commitizen" => commitizen::KEY_ORDER,
+        "tool.coverage" => coverage::KEY_ORDER,
+        "tool.deptry" => deptry::KEY_ORDER,
+        "tool.djlint" => djlint::KEY_ORDER,
+        "tool.docformatter" => docformatter::KEY_ORDER,
+        "tool.hatch" => hatch::KEY_ORDER,
+        "tool.interrogate" => interrogate::KEY_ORDER,
+        "tool.isort" => isort::KEY_ORDER,
+        "tool.maturin" => maturin::KEY_ORDER,
+        "tool.mypy" => mypy::KEY_ORDER,
+        "tool.pdm" => pdm::KEY_ORDER,
+        "tool.pixi" => pixi::KEY_ORDER,
+        "tool.poetry" => return Some(poetry::root_key_order(&[])),
+        "tool.pylint" => pylint::KEY_ORDER,
+        "tool.pyproject-fmt" => pyproject_fmt::KEY_ORDER,
+        "tool.pyrefly" => pyrefly::KEY_ORDER,
+        "tool.pyright" | "tool.basedpyright" => pyright::KEY_ORDER_PRE_REPORTS,
+        "tool.pytest" => pytest::KEY_ORDER,
+        "tool.ruff" => ruff::KEY_ORDER,
+        "tool.scikit-build" => scikit_build::KEY_ORDER,
+        "tool.semantic_release" => semantic_release::KEY_ORDER,
+        "tool.setuptools" => setuptools::KEY_ORDER,
+        "tool.setuptools_scm" => setuptools::SCM_KEY_ORDER,
+        "tool.towncrier" => towncrier::KEY_ORDER,
+        "tool.ty" => ty::KEY_ORDER,
+        "tool.uv" => uv::KEY_ORDER,
+        "tool.vulture" => vulture::KEY_ORDER,
+        "tool.yapf" => yapf::KEY_ORDER,
+        _ => return None,
+    };
+    Some(order.iter().map(|s| (*s).to_string()).collect())
+}
+
 pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing: &str, sub_table_spacing: &str) {
-    tables.reorder(
+    tables.reorder_with_key_order(
         root_ast,
         &[
             "",
@@ -74,5 +124,6 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing
         &["tool"], // Treat tool.* as distinct base keys (e.g., tool.black != tool.ruff)
         root_table_spacing,
         sub_table_spacing,
+        &key_order,
     );
 }

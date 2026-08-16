@@ -87,14 +87,14 @@ fn test_reorder_table_reorder() {
     [tool.coverage]
     aa = "bb"
 
+    [tool.coverage.run]
+    ef = "fg"
+
     [tool.coverage.paths]
     ab = "bc"
 
     [tool.coverage.report]
     cd = "de"
-
-    [tool.coverage.run]
-    ef = "fg"
 
     [tool.undefined]
     mu = "mu"
@@ -104,6 +104,62 @@ fn test_reorder_table_reorder() {
 
     [demo]
     ed = "ed"
+    "#);
+}
+
+#[test]
+fn test_reorder_sub_tables_follow_key_order() {
+    let start = indoc! {r#"
+    [tool.hatch.build]
+    a = 1
+    [tool.hatch.metadata]
+    b = 2
+    [tool.hatch.zzz]
+    c = 3
+    [tool.hatch.version]
+    d = 4
+    [tool.hatch.aaa]
+    e = 5
+    [tool.hatch]
+    f = 6
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    [tool.hatch]
+    f = 6
+
+    [tool.hatch.version]
+    d = 4
+
+    [tool.hatch.metadata]
+    b = 2
+
+    [tool.hatch.build]
+    a = 1
+
+    [tool.hatch.aaa]
+    e = 5
+
+    [tool.hatch.zzz]
+    c = 3
+    "#);
+}
+
+#[test]
+fn test_reorder_sub_tables_of_unknown_tool_stay_alphabetical() {
+    let start = indoc! {r#"
+    [tool.unknown.zzz]
+    a = 1
+    [tool.unknown.aaa]
+    b = 2
+    "#};
+    let res = reorder_table_helper(start);
+    insta::assert_snapshot!(res, @r#"
+    [tool.unknown.aaa]
+    b = 2
+
+    [tool.unknown.zzz]
+    a = 1
     "#);
 }
 

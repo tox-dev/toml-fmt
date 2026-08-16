@@ -154,6 +154,19 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
     homepage = "https://example.com"
     repository = "https://github.com/example/project"
 
+Expanded sub-tables keep the order their dotted keys would have: a table's key order (see the per-table sections
+below) ranks its sub-tables, and sub-tables it does not list follow alphabetically. So ``[tool.coverage.run]`` comes
+before ``[tool.coverage.report]`` in the long format just as ``run.*`` keys precede ``report.*`` keys in the short one:
+
+.. fmt-example::
+    :config: table_format=long
+
+    [tool.coverage.report]
+    skip_covered = true
+
+    [tool.coverage.run]
+    branch = true
+
 **Table spacing:**
 
 By default, different table groups (e.g. ``[project]`` and ``[tool.ruff]``) are separated by a blank line, while

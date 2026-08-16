@@ -623,10 +623,10 @@ fn test_tool_prefix_extraction_with_dotted_keys() {
         "#};
     let got = format_toml(start, &long_format_settings()).unwrap();
     assert_snapshot!(got, @"
-    [tool.coverage.report]
-    precision = 2
     [tool.coverage.run]
     branch = true
+    [tool.coverage.report]
+    precision = 2
     ");
 }
 

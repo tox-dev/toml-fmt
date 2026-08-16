@@ -2,7 +2,7 @@ use common::array::sort_strings;
 use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "exclude_dirs",
     "targets",

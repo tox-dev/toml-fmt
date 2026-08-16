@@ -1,6 +1,6 @@
 use common::table::{reorder_table_keys, Tables};
 
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "in-place",
     "recursive",

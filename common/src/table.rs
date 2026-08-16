@@ -262,10 +262,39 @@ impl Tables {
         root_table_spacing: &str,
         sub_table_spacing: &str,
     ) {
+        self.reorder_with_key_order(
+            root_ast,
+            order,
+            multi_level_prefixes,
+            root_table_spacing,
+            sub_table_spacing,
+            &|_| None,
+        );
+    }
+
+    /// Like [`Tables::reorder`], but sub-tables of a table listed in `order` follow that table's key order, the
+    /// same list [`reorder_table_keys`] applies to its dotted keys: `key_order` maps a listed table name to its
+    /// key list, and a sub-table ranks by the first entry matching its remaining path. Sub-tables without a match
+    /// come after the matched ones, alphabetically.
+    pub fn reorder_with_key_order(
+        &self,
+        root_ast: &SyntaxNode,
+        order: &[&str],
+        multi_level_prefixes: &[&str],
+        root_table_spacing: &str,
+        sub_table_spacing: &str,
+        key_order: &dyn Fn(&str) -> Option<Vec<String>>,
+    ) {
         let root_breaks = root_table_spacing.chars().filter(|&c| c == '\n').count() + 1;
         let sub_breaks = sub_table_spacing.chars().filter(|&c| c == '\n').count() + 1;
         let mut to_insert = Vec::<SyntaxElement>::new();
-        let order = calculate_order(&self.header_to_pos, &self.table_set, order, multi_level_prefixes);
+        let order = calculate_order(
+            &self.header_to_pos,
+            &self.table_set,
+            order,
+            multi_level_prefixes,
+            key_order,
+        );
 
         let pos_group = compute_pos_groups(&self.table_set);
         let mut group_marker: HashMap<usize, Vec<SyntaxElement>> = HashMap::new();
@@ -342,6 +371,7 @@ fn calculate_order(
     table_set: &[RefCell<Vec<SyntaxElement>>],
     ordering: &[&str],
     multi_level_prefixes: &[&str],
+    key_order: &dyn Fn(&str) -> Option<Vec<String>>,
 ) -> Vec<String> {
     let key_to_pos = ordering
         .iter()
@@ -359,8 +389,25 @@ fn calculate_order(
         .collect();
 
     let mut base_key_first_pos: HashMap<String, usize> = HashMap::new();
+    let mut base_key_orders: HashMap<String, Option<Vec<String>>> = HashMap::new();
+    let mut sub_table_rank: HashMap<String, usize> = HashMap::new();
     for (k, file_pos) in &header_pos {
         let base = get_key(k, multi_level_prefixes);
+        if let Some(rest) = k.strip_prefix(base.as_str()).and_then(|rest| rest.strip_prefix('.')) {
+            let rank = base_key_orders
+                .entry(base.clone())
+                .or_insert_with(|| key_order(&base))
+                .as_ref()
+                .and_then(|entries| {
+                    entries.iter().filter(|entry| !entry.is_empty()).position(|entry| {
+                        rest == entry
+                            || rest
+                                .strip_prefix(entry.as_str())
+                                .is_some_and(|tail| tail.starts_with('.'))
+                    })
+                });
+            sub_table_rank.insert(k.clone(), rank.unwrap_or(usize::MAX));
+        }
         base_key_first_pos
             .entry(base)
             .and_modify(|p| *p = (*p).min(*file_pos))
@@ -380,6 +427,7 @@ fn calculate_order(
                     let offset2 = usize::from(key2 != *k2);
                     (p1 + offset1)
                         .cmp(&(p2 + offset2))
+                        .then_with(|| sub_table_rank.get(k1).cmp(&sub_table_rank.get(k2)))
                         .then_with(|| k1.to_lowercase().cmp(&k2.to_lowercase()))
                 }
                 (Some(_), None) => std::cmp::Ordering::Less,

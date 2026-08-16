@@ -4,7 +4,7 @@ use lexical_sort::natural_lexical_cmp;
 
 // Sub-table order follows the pylint docs (main → messages_control → category checks); keys within each sub-table
 // alphabetize, since a hand-curated full order would rot.
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "main",
     "master", // legacy alias of `main`

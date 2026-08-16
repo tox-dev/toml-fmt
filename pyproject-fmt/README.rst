@@ -184,11 +184,11 @@ readability when tables have many keys or complex values:
    # After
    [project]
    name = "myproject"
-   [project.scripts]
-   mycli = "mypackage:main"
    [project.urls]
    homepage = "https://example.com"
    repository = "https://github.com/example/myproject"
+   [project.scripts]
+   mycli = "mypackage:main"
 
 Table spacing
 ~~~~~~~~~~~~~
@@ -510,6 +510,25 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
    [project.urls]
    homepage = "https://example.com"
    repository = "https://github.com/example/project"
+
+Expanded sub-tables keep the order their dotted keys would have: a table's key order (see the per-table sections
+below) ranks its sub-tables, and sub-tables it does not list follow alphabetically. So ``[tool.coverage.run]`` comes
+before ``[tool.coverage.report]`` in the long format just as ``run.*`` keys precede ``report.*`` keys in the short one:
+
+.. code-block:: toml
+
+   # Before
+   [tool.coverage.report]
+   skip_covered = true
+
+   [tool.coverage.run]
+   branch = true
+
+   # After
+   [tool.coverage.run]
+   branch = true
+   [tool.coverage.report]
+   skip_covered = true
 
 **Table spacing:**
 

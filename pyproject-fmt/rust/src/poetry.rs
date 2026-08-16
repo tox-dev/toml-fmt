@@ -202,6 +202,11 @@ fn split_first_segment(s: &str) -> Option<(&str, &str)> {
 }
 
 fn build_root_key_order(table: &[tombi_syntax::SyntaxElement]) -> Vec<String> {
+    root_key_order(&collect_dotted_segment(table, "group"))
+}
+
+/// The `[tool.poetry]` key order; `group_names` are the dependency groups whose keys get their own slots.
+pub fn root_key_order(group_names: &[String]) -> Vec<String> {
     let mut order: Vec<String> = TOP_LEVEL_ORDER.iter().map(|s| (*s).to_string()).collect();
 
     // `build` may appear as a scalar (build = "build.py"), an inline-table key, or via dotted sub-keys
@@ -214,8 +219,7 @@ fn build_root_key_order(table: &[tombi_syntax::SyntaxElement]) -> Vec<String> {
     order.push(String::from("dependencies"));
     order.push(String::from("dev-dependencies"));
 
-    let group_names = collect_dotted_segment(table, "group");
-    for group in &group_names {
+    for group in group_names {
         order.push(format!("group.{group}.optional"));
         order.push(format!("group.{group}.include-groups"));
         order.push(format!("group.{group}.dependencies.python"));

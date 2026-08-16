@@ -22,6 +22,31 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 
 use crate::TableFormatConfig;
 
+pub const KEY_ORDER: &[&str] = &[
+    "",
+    "name",
+    "version",
+    "import-names",
+    "import-namespaces",
+    "description",
+    "readme",
+    "keywords",
+    "license",
+    "license-files",
+    "maintainers",
+    "authors",
+    "requires-python",
+    "classifiers",
+    "dynamic",
+    "dependencies",
+    // these go at the end as they may be inline or exploded
+    "optional-dependencies",
+    "urls",
+    "scripts",
+    "gui-scripts",
+    "entry-points",
+];
+
 fn normalize_and_sort_requirements(entry: &SyntaxNode, keep_full_version: bool) {
     transform(entry, &|s| {
         Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
@@ -162,33 +187,7 @@ pub fn fix(
 
     normalize_extra_names(table);
 
-    reorder_table_keys(
-        table,
-        &[
-            "",
-            "name",
-            "version",
-            "import-names",
-            "import-namespaces",
-            "description",
-            "readme",
-            "keywords",
-            "license",
-            "license-files",
-            "maintainers",
-            "authors",
-            "requires-python",
-            "classifiers",
-            "dynamic",
-            "dependencies",
-            // these go at the end as they may be inline or exploded
-            "optional-dependencies",
-            "urls",
-            "scripts",
-            "gui-scripts",
-            "entry-points",
-        ],
-    );
+    reorder_table_keys(table, KEY_ORDER);
 
     if let Some(opt_deps_tables) = tables.get("project.optional-dependencies") {
         for table_ref in opt_deps_tables {

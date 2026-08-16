@@ -3,7 +3,7 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
 // Arrays are file-glob lists with set semantics, so they sort.
-const KEY_ORDER: &[&str] = &["", "ignore", "ignore-bad-ideas", "ignore-default-rules"];
+pub const KEY_ORDER: &[&str] = &["", "ignore", "ignore-bad-ideas", "ignore-default-rules"];
 const SORT_ARRAYS: &[&str] = &["ignore", "ignore-bad-ideas"];
 
 pub fn fix(tables: &mut Tables) {

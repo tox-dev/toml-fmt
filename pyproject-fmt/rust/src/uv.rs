@@ -3,7 +3,7 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 use tombi_syntax::SyntaxKind::KEY_VALUE;
 
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "required-version",
     "python-preference",

@@ -3,7 +3,7 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
 // Order mirrors coverage.py's configuration sections (run, paths, report, html, json, lcov, xml).
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "run.source",
     "run.source_pkgs",

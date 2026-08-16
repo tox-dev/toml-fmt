@@ -6,7 +6,7 @@ use lexical_sort::natural_lexical_cmp;
 use tombi_syntax::SyntaxKind::{ARRAY, INLINE_TABLE, KEYS, KEY_VALUE};
 use tombi_syntax::SyntaxNode;
 
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "build",
     "skip",
