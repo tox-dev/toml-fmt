@@ -3,7 +3,7 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
 // Sub-tables collapse to dotted keys (version.source, build.includes, etc.).
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "distribution",
     "package-type",

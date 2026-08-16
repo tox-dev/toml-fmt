@@ -565,6 +565,37 @@ fn test_table_expand_long_format() {
 }
 
 #[test]
+fn test_expanded_sub_tables_follow_env_key_order() {
+    let start = indoc! {r#"
+        [env.py313]
+        description = "run tests"
+        custom.a = 1
+        set_env.A = "1"
+        [labels.sub]
+        b = 2
+        "#};
+    let settings = Settings {
+        table_format: String::from("long"),
+        ..default_settings()
+    };
+    let got = format_toml(start, &settings);
+    assert_valid_toml(&got);
+    let second = format_toml(got.as_str(), &settings);
+    assert_eq!(second, got, "formatting should be idempotent");
+    assert_snapshot!(got, @r#"
+    [env.py313]
+    description = "run tests"
+    [env.py313.set_env]
+    A = "1"
+    [env.py313.custom]
+    a = 1
+
+    [labels.sub]
+    b = 2
+    "#);
+}
+
+#[test]
 fn test_skip_wrap_for_keys() {
     let start = indoc! {r#"
         [env_run_base]

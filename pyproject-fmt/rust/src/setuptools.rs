@@ -5,7 +5,7 @@ use tombi_syntax::SyntaxNode;
 
 // Sub-tables collapse to dotted keys (packages.find.where, package-data."*", etc.); the "packages" prefix catches
 // them all, with finer entries added for inner ordering.
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "py-modules",
     "packages.find.where",
@@ -52,7 +52,7 @@ const TOP_LEVEL_SORT_ARRAYS: &[&str] = &[
     "packages.find-namespace.exclude",
 ];
 
-const SCM_KEY_ORDER: &[&str] = &[
+pub const SCM_KEY_ORDER: &[&str] = &[
     "",
     "version_file",
     "version_file_template",

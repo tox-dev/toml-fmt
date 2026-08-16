@@ -4,7 +4,7 @@ use lexical_sort::natural_lexical_cmp;
 
 // Keys carry the ini_options. prefix: after collapse every key appears as ini_options.<name> under tool.pytest, its
 // only standardized child.
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "ini_options.minversion",
     "ini_options.required_plugins",

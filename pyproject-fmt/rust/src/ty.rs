@@ -3,7 +3,7 @@ use common::table::{for_entries, reorder_table_keys, Tables};
 use lexical_sort::natural_lexical_cmp;
 
 // Pre-1.0 schema: keep the canonical set small, let unknown keys alphabetize.
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "src",
     "respect-ignore-files",

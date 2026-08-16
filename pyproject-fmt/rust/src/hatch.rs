@@ -5,7 +5,7 @@ use tombi_syntax::SyntaxElement;
 
 // Config lives in sub-tables, so KEY_ORDER targets the collapsed parent's dotted keys (version.source,
 // build.exclude, envs.default.dependencies); group order follows the hatch reference (https://hatch.pypa.io).
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "version.source",
     "version.path",

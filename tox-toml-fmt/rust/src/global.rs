@@ -459,13 +459,20 @@ pub fn reorder_tables(root_ast: &SyntaxNode, tables: &Tables, root_table_spacing
 
     order.push("env");
 
-    tables.reorder(
+    tables.reorder_with_key_order(
         root_ast,
         &order,
         &["env_base", "env"],
         root_table_spacing,
         sub_table_spacing,
+        &env_key_order,
     );
+}
+
+/// Every env table shares one key order, so its expanded sub-tables (`[env.py313.set_env]`) sit where the dotted
+/// key (`set_env.A`) would.
+fn env_key_order(table: &str) -> Option<Vec<String>> {
+    is_env_table(table, "").then(|| ENV_KEY_ORDER.iter().map(|key| (*key).to_string()).collect())
 }
 
 const TOX_INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[

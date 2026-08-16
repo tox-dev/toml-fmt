@@ -4,7 +4,7 @@ use lexical_sort::natural_lexical_cmp;
 
 // profile leads since it sets defaults everything else overrides; sections, force_to_top, and import_heading_* keep
 // their input order, which drives output section sequencing.
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "profile",
     "py_version",

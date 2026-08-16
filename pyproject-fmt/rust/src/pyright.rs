@@ -4,7 +4,7 @@ use lexical_sort::natural_lexical_cmp;
 use tombi_syntax::SyntaxElement;
 
 // Shared schema for [tool.pyright] and [tool.basedpyright].
-const KEY_ORDER_PRE_REPORTS: &[&str] = &[
+pub const KEY_ORDER_PRE_REPORTS: &[&str] = &[
     "",
     "pythonVersion",
     "pythonPlatform",

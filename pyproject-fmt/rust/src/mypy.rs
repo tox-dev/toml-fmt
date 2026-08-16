@@ -5,7 +5,7 @@ use tombi_syntax::SyntaxKind::{ARRAY, INLINE_TABLE, KEYS, KEY_VALUE};
 use tombi_syntax::SyntaxNode;
 
 // Grouped to match the section structure of the official mypy config reference.
-const KEY_ORDER: &[&str] = &[
+pub const KEY_ORDER: &[&str] = &[
     "",
     "mypy_path",
     "files",
