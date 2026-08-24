@@ -1,4 +1,9 @@
-<a id="2.28.0"></a>
+<a id="2.28.1"></a>
+
+## 2.28.1 - 2026-08-24
+
+- 🐛 fix(build): write Requires-Dist into the METADATA header by [@gaborbernat](https://github.com/gaborbernat) in
+  [#444](https://github.com/tox-dev/toml-fmt/pull/444) <a id="2.28.0"></a>
 
 ## 2.28.0 - 2026-08-16
 
