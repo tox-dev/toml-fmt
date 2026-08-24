@@ -102,11 +102,12 @@ def vendor_into_wheel(wheel: Path) -> None:
         out[entry] = sub(rf"\b{_VENDOR}\b", f"{_MODULE}._vendor.{_VENDOR}", out[entry].decode()).encode()
     meta = f"{dist_info}/METADATA"
     deps_block = search(r"(?ms)^dependencies = \[(.*?)\]", (_COMMON / "pyproject.toml").read_text())
-    requires = (
-        "".join(f"Requires-Dist: {d}\n" for d in findall(r'"([^"]*)"', deps_block.group(1))) if deps_block else ""
-    )
+    deps = findall(r'"([^"]*)"', deps_block.group(1)) if deps_block else []
     stripped = sub(r"(?m)^Requires-Dist: toml-fmt-common.*\n", "", out[meta].decode())
-    out[meta] = (stripped + requires).encode()
+    # Requires-Dist belongs in the header block; everything past the first blank line is the description
+    headers, sep, description = stripped.partition("\n\n")
+    parts = [headers.rstrip("\n"), *(f"\nRequires-Dist: {d}" for d in deps), sep, description]
+    out[meta] = "".join(parts).encode()
 
     out[f"{_MODULE}/_vendor/__init__.py"] = b""
     # vendor only the package's Python sources; local build artifacts (bytecode, caches, ext modules) never leak
