@@ -8,8 +8,8 @@ Apply a consistent format to your ``pyproject.toml`` file with comment support. 
 Recent Changes
 ~~~~~~~~~~~~~~~~
 
-- 🐛 fix(build): write Requires-Dist into the METADATA header by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#444 <https://github.com/tox-dev/toml-fmt/pull/444>`_ <a id="2.28.0"></a>
+- ✨ feat(common): keep the file's own line endings by `@gaborbernat <https://github.com/gaborbernat>`_ in
+  `#447 <https://github.com/tox-dev/toml-fmt/pull/447>`_ <a id="2.28.1"></a>
 
 Philosophy
 ----------

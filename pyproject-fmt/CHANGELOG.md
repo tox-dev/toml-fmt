@@ -1,4 +1,9 @@
-<a id="2.28.1"></a>
+<a id="2.28.2"></a>
+
+## 2.28.2 - 2026-08-28
+
+- ✨ feat(common): keep the file's own line endings by [@gaborbernat](https://github.com/gaborbernat) in
+  [#447](https://github.com/tox-dev/toml-fmt/pull/447) <a id="2.28.1"></a>
 
 ## 2.28.1 - 2026-08-24
 
