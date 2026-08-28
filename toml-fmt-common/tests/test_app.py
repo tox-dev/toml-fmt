@@ -551,3 +551,32 @@ def test_format_rejection_reported_for_stdin(
     out, err = capsys.readouterr()
     assert not out
     assert err == "<stdin>: bad version\n"
+
+
+@pytest.mark.parametrize("eol", [pytest.param("\r\n", id="crlf"), pytest.param("\n", id="lf")])
+def test_dumb_format_keeps_line_ending(tmp_path: Path, eol: str) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_bytes(f"[start.sub]{eol}extra = 'B'".encode())
+
+    assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 1
+
+    assert dumb.read_bytes() == f"[start.sub]{eol}extra = 'B'{eol}extras = 'B'".encode()
+
+
+def test_dumb_format_mixed_line_endings_take_the_majority(tmp_path: Path) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_bytes(b"[start.sub]\r\nextra = 'B'\r\nother = 1\nmore = 2")
+
+    assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 1
+
+    assert dumb.read_bytes() == b"[start.sub]\r\nextra = 'B'\r\nother = 1\r\nmore = 2\r\nextras = 'B'"
+
+
+def test_dumb_format_crlf_alone_is_not_a_change(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NO_FMT", "1")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_bytes(b"[start.sub]\r\nextra = 'B'")
+
+    assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 0
+
+    assert dumb.read_bytes() == b"[start.sub]\r\nextra = 'B'"

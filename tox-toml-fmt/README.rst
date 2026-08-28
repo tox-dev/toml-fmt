@@ -410,6 +410,14 @@ Files without a ``# Group:`` marker format the same as before, so the feature st
      "pytest-cov",
    ]
 
+Line Endings
+~~~~~~~~~~~~
+
+The formatter writes a file back with the line ending it already used, so a ``\r\n`` file stays ``\r\n`` and Git on
+Windows does not flag it as modified. A file mixing both endings gets whichever one it uses more, with a tie going to
+``\n``. Line endings alone never count as a change, so a file that is already formatted is left alone whichever ending
+it uses. Output written to stdout always uses ``\n``.
+
 Table-Specific Handling
 -----------------------
 
