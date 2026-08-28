@@ -131,6 +131,7 @@ class _Config(Generic[T]):
     check: bool  # check only
     no_print_diff: bool  # don't print diff
     opt: T
+    eol: str  # line ending to write the file back with
 
 
 def _check_write_permission(parser: ArgumentParser, opt: FmtNamespace) -> None:
@@ -156,7 +157,7 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
     _check_write_permission(parser, info.opt)
     res = []
     for pyproject_toml in info.opt.inputs:
-        raw_pyproject_toml = sys.stdin.read() if pyproject_toml is None else pyproject_toml.read_text(encoding="utf-8")
+        raw_pyproject_toml, eol = _read_input(pyproject_toml)
         config: dict[str, Any] | None = tomllib.loads(raw_pyproject_toml)
 
         parts = deque(info.override_cli_from_section)
@@ -182,10 +183,21 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
                 check=info.opt.check,
                 no_print_diff=info.opt.no_print_diff,
                 opt=override_opt,
+                eol=eol,
             )
         )
 
     return res
+
+
+def _read_input(path: Path | None) -> tuple[str, str]:
+    if path is None:
+        return sys.stdin.read(), "\n"
+    with path.open(encoding="utf-8", newline="") as file_handler:
+        raw = file_handler.read()
+    crlf = raw.count("\r\n")
+    # a mixed file gets the ending it uses most, ties go to LF
+    return raw.replace("\r\n", "\n").replace("\r", "\n"), "\r\n" if crlf > raw.count("\n") - crlf else "\n"
 
 
 _NON_FORMAT_KEYS = frozenset({"inputs", "stdout", "check", "no_print_diff", "config"})
@@ -378,7 +390,7 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
         return changed
 
     if before != formatted and not config.check:
-        config.toml_filename.write_text(formatted, encoding="utf-8", newline="\n")
+        config.toml_filename.write_text(formatted, encoding="utf-8", newline=config.eol)
     if config.no_print_diff:
         return changed
     name = _display_name(config.toml_filename)
