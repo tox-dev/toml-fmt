@@ -2,11 +2,13 @@
 
 ## Project Layout
 
-This Cargo workspace shares low-level TOML manipulation code across several formatter tools, so a fix in one place
-benefits all of them. Four packages make up the workspace:
+This repository shares low-level TOML manipulation code across several formatter tools, so a fix in one place benefits
+all of them. Four Rust packages make up the Cargo workspace, beside one Python distribution:
 
-- `common/`: pure Rust library with the TOML parsing, syntax tree manipulation, and formatting utilities. No Python
-  bindings; every formatter here builds on it.
+- `toml-doc/`: pure Rust library holding the TOML document model: a format-preserving parse tree with a mutation API. It
+  depends on nothing in this workspace and is meant to be extractable.
+- `common/`: pure Rust library with the formatting passes built on `toml-doc`. No Python bindings; every formatter here
+  builds on it.
 - `toml-fmt-common/`: pure Python library with the CLI utilities, argument parsing, and diff output shared by the Python
   formatters.
 - `pyproject-fmt/`: Python package with Rust internals (via PyO3) that formats `pyproject.toml` per PEP 621 and
@@ -17,15 +19,31 @@ benefits all of them. Four packages make up the workspace:
 toml-fmt/                       # Workspace root
 ├── tasks/                      # Development scripts
 │   └── generate_readme.py     # Generates README.rst from docs
+├── toml-doc/                   # TOML document model
+│   ├── src/
+│   │   ├── lib.rs             # parse() and the error type
+│   │   ├── build.rs           # events to document
+│   │   ├── document.rs        # entries, headers, sections
+│   │   ├── value.rs           # keys, values, members
+│   │   ├── text.rs            # decoding and encoding
+│   │   ├── validate.rs        # what a parsed document has to say to be one
+│   │   └── trivia.rs          # whitespace, comments, line breaks
+│   ├── tests/                 # round-trip and toml-test compliance
+│   └── Cargo.toml
 ├── common/                     # Shared Rust library
 │   ├── src/
 │   │   ├── lib.rs             # Module exports
-│   │   ├── create.rs          # Syntax node creation
-│   │   ├── string.rs          # String handling
-│   │   ├── table.rs           # Table manipulation
-│   │   ├── array.rs           # Array operations
+│   │   ├── layout.rs          # whitespace and line breaking
+│   │   ├── sections.rs        # finding tables, ordering keys
+│   │   ├── arrays.rs          # ordering and rewriting members
+│   │   ├── strings.rs         # rewriting values, wrapping
+│   │   ├── nesting.rs         # collapsing and expanding tables
+│   │   ├── spacing.rs         # empty lines between tables
+│   │   ├── build.rs           # making entries and sections
+│   │   ├── disabled.rs        # commented-out keys
 │   │   ├── pep508.rs          # PEP 508 dependency parsing
-│   │   └── tests/             # Unit tests
+│   │   └── group.rs           # `# Group:` markers
+│   ├── tests/                 # Unit tests, one file per pass
 │   └── Cargo.toml
 ├── toml-fmt-common/            # Shared Python library
 │   ├── src/toml_fmt_common/   # CLI utilities, arg parsing, diff output
@@ -144,7 +162,7 @@ allows tests to link against Python. Always use this flag when running workspace
 behavior.
 
 ```bash
-# Run all tests in workspace (common, pyproject-fmt, tox-toml-fmt)
+# Run all tests in workspace (toml-doc, common, pyproject-fmt, tox-toml-fmt)
 cargo test --workspace --no-default-features
 
 # Check workspace-wide coverage
@@ -159,112 +177,84 @@ cargo clippy --workspace
 
 ## Architecture Overview
 
-This project parses and manipulates TOML with tombi, which builds on rg_tree, a lossless syntax tree built for
-incremental parsing and in-place tree edits.
+Formatting runs in two layers. `toml-doc` parses a file into a document that writes back byte for byte, and `common`
+walks that document setting the fields that decide how it reads.
 
-## Understanding Tombi/rg_tree
+## Understanding toml-doc
 
-### Syntax Tree Architecture
+### The document model
 
-Parsing TOML with tombi gives you an immutable syntax tree. To modify it, call `clone_for_update()` for a mutable
-version that supports structural changes.
+`toml_doc::parse` returns a `Document`: root entries written before the first header, then a `Section` per header, then
+whatever trailing lines no item can claim. A `Section` owns its `Header` and the entries under it, which makes it the
+unit that moves when tables are reordered.
+
+Every unchanged run of text borrows from the source as a `Cow`, so parsing allocates for structure alone and a value
+only becomes owned once something rewrites it.
 
 ```mermaid
 graph TD
-    A[Parse TOML] --> B[Immutable SyntaxNode]
-    B --> C[clone_for_update]
-    C --> D[Mutable SyntaxNode]
-    D --> E[splice_children / insert / detach]
+    A[source] --> B[toml_parser events]
+    B --> C[Builder]
+    C --> D[Document]
+    D --> E[fields set in place]
+    E --> F[Display writes it back]
 ```
 
-### Mutation Model
+### Where trivia lives
 
-On the mutable tree, use `splice_children()` for batch updates, `insert_child()` to add nodes, or edit the structure
-directly. The tree keeps parent-child relationships in sync as you go.
+Comments and blank lines lead the item below them. Reordering carries them along, so no pass has to work out which entry
+a comment belonged to:
 
 ```rust
-let syntax = tombi_parser::parse(toml_str)
-    .syntax_node()
-    .clone_for_update();
-
-node.splice_children(range, new_children);  // Batch update
-parent.insert_child(index, new_node);       // Insert at position
+let mut document = toml_doc::parse(source).unwrap();
+// a section carries the comments written above its header
+common::sections::reorder_within(&mut document, &["build-system", "project"], &[], &|_| None);
 ```
 
-### Node Types and Comment Handling
+A section is not always a unit that can be moved on its own: a `[fruit.physical]` header written after `[[fruit]]`
+belongs to the array element above it. `reorder_within` moves whole blocks for that reason, so reach for it rather than
+reordering `document.sections` yourself.
 
-The syntax tree consists of tokens (leaf nodes) and composite nodes. Tokens include BASIC_STRING (`"hello"`),
-LITERAL_STRING (`'hello'`), LINE_BREAK (`\n`), COMMA (`,`), and WHITESPACE. Composite nodes include KEY_VALUE (a
-key-value pair), VALUE (the right side of an assignment), ARRAY (an array of values), TABLE (a `[section]` header), and
-ARRAY_TABLE (`[[section]]` header).
+A `Trivia` is a sequence of `Piece::Blank` and `Piece::Comment` lines, which is what `limit_blank_runs` needs. Inside an
+array or inline table the container rather than the line start decides the layout, so those runs are a `Padding` of
+`Pad::Space`, `Pad::Comment` and `Pad::Newline` instead.
 
-Tombi represents comments differently from most parsers: an inline comment attached to an array element is a child of
-the COMMA node. A COMMA node can hold three children: a COMMA token, a WHITESPACE token, and a COMMENT token. Watch for
-this when manipulating arrays with comments.
+### The container writes the commas
 
-The structure of a simple TOML entry:
+A `Member` holds the spacing on either side of the comma that follows it, and so the comment that closes its line, but
+not the comma itself:
 
-```toml
-name = "value"
+```rust
+pub struct Member<'a, T> {
+    pub lead: Padding<'a>,   // what leads the member
+    pub item: T,
+    pub trail: Padding<'a>,  // between the member and the comma that follows it
+    pub after: Padding<'a>,  // what follows that comma on the same line
+}
 ```
 
-This parses into:
-
-```
-ROOT
-└─ KEY_VALUE
-   ├─ KEY
-   │  └─ IDENT (token): "name"
-   ├─ WHITESPACE (token): " "
-   ├─ EQ (token): "="
-   ├─ WHITESPACE (token): " "
-   └─ VALUE
-      └─ BASIC_STRING (node)
-```
-
-An array with inline comments nests deeper:
-
-```toml
-deps = [
-  "pkg", # comment
-]
-```
-
-This parses into:
-
-```
-ROOT
-└─ KEY_VALUE
-   ├─ KEY
-   │  └─ IDENT: "deps"
-   └─ VALUE
-      └─ ARRAY
-         ├─ BRACKET_START: "["
-         ├─ LINE_BREAK: "\n"
-         ├─ WHITESPACE: "  "
-         ├─ BASIC_STRING: "\"pkg\""
-         ├─ COMMA (node)
-         │  ├─ COMMA (token): ","
-         │  ├─ WHITESPACE (token): "  "
-         │  └─ COMMENT (token): "# comment"
-         ├─ LINE_BREAK: "\n"
-         └─ BRACKET_END: "]"
-```
+A comma sits between members wherever they end up, so the array or inline table is what writes one out, and a single
+`trailing_comma` on the container says whether one closes the last member, which is how a file says it means to stay
+open. Sorting an array is therefore an ordinary `Vec` sort, and a comment closing a member's line travels with that
+member rather than landing on whoever ends up above it. Removing the last member leaves that trailing comma where the
+file put it, so an array written open stays open.
 
 ## Design Decisions
 
-### Why Parse-and-Extract for Node Creation
+### Why a document model of our own
 
-`common/src/create.rs` uses a "parse-and-extract" pattern. To create a BASIC_STRING node, it formats a complete TOML
-expression like `a = "text"`, parses it, navigates to the KEY_VALUE node, finds the VALUE child, and extracts the
-BASIC_STRING node from within. Three reasons justify the parsing overhead:
+The formatter needs to reorder tables, keys and array members while keeping every byte it did not change, which asks for
+a mutable tree. tombi 1.5 dropped the mutable half of its tree, and `toml_edit` models a TOML value rather than the
+lines a formatter edits. `toml-doc` sits on `toml_parser`'s event stream, which tracks TOML 1.1.0 and covers every byte,
+and owns the model above it.
 
-- Building nodes by hand means reimplementing every TOML escaping rule (quote, backslash, and newline escaping, the
-  unicode sequences `\uXXXX` and `\UXXXXXXXX`, line continuations) that tombi's parser already gets right.
-- Going through the real parser guarantees the output is valid TOML.
-- Node creation is a tiny fraction of total formatting time, so the extra parse costs nothing that matters.
+### Why keys read back without a `Result`
 
-The trade is slightly slower node creation for guaranteed correctness and simpler code.
+`Key::path` and `Key::segments` decode a key's segments and return them, without a `Result` to unwrap at 57 call sites.
+Parsing validates every key it accepts and `Key::new` quotes what needs quoting, so only a hand-built `Repr` can carry
+text that is not a valid key; that case panics.
+
+Use `segments` wherever a dot matters. `path` joins with `.`, so a quoted segment holding a dot reads back as two.
 
 ## Formatting Style
 
@@ -289,39 +279,46 @@ lint.per-file-ignores."tests/**/*.py" = [
 ```
 
 aligns each array on its own. `lint.ignore` aligns to "ISC001" (its longest value), `per-file-ignores` to "S101".
-Alignment runs after tombi's primary formatter, editing the WHITESPACE children of COMMA nodes that contain a COMMENT
-child.
+`common::layout::align_array_comments` runs after the layout pass and widens the spacing each comment opens with. The
+column comes from what the values stand for rather than from how many escapes they are written with, so an escaped value
+does not push the column out.
 
-### Comment Preservation During Sorting
+### Comments and Sorting
 
-When an array contains comments (inline or standalone), sorting is skipped so the comments keep their positions and stay
-with the values they explain. `common/src/array.rs::sort()` checks for comments first and returns early if it finds any.
+Sorting reorders arrays that hold comments. A comment above a member leads that member and moves with it; a comment
+closing a member's line sits in that member's `after` and moves with it too. A `# Group:` marker splits an array or a
+table into blocks that sort on their own, so a file can hold a boundary that sorting must not cross.
+
+A member the key function cannot read has nothing to sort by, so it travels with the member written under it, and a run
+of them at the end of a block stays where it is.
 
 ## Testing Guidelines
 
-### Unit Tests and Parameterization
+### Where the tests live
 
-Each module has matching tests in `src/tests/` under a consistent naming pattern. The `rstest` crate drives
-parameterized tests, so one test function covers many input cases and adding a case is a single line.
+`toml-doc` and `common` are libraries, so their tests sit in `tests/` and reach them through the public API alone, one
+file per module. The two formatters keep theirs in `rust/src/tests/`, one file per tool, because a tool module is
+internal to its crate.
 
-```rust
-#[rstest]
-#[case::basic_string("\"hello\"", STRING, "hello")]
-#[case::escaped_quote("\"hello \\\"world\\\"\"", STRING, "hello \"world\"")]
-fn test_load_text(#[case] input: &str, #[case] kind: SyntaxKind, #[case] expected: &str) {
-    assert_eq!(load_text(input, kind), expected);
-}
-```
+Name a test after the behavior it pins rather than after the function it calls, so a failure reads as a sentence:
+`a_trailing_comma_holds_the_array_open_across_a_sort` beats `test_sort_2`.
 
 ### Coverage Goals and Measurement
 
-We require **98% line coverage for Rust code** and **100% coverage for Python code**. Diff coverage must also be **100%
-per test suite**: changes to `common/src/` must be fully covered by the common test suite alone, and changes to
-`tox-toml-fmt/rust/src/` by the tox-toml-fmt test suite alone. Verify with a per-package check:
-`cargo llvm-cov -p common --summary-only` or `cargo llvm-cov -p tox-toml-fmt --summary-only`.
+We require **100% line coverage for Rust code** and **100% coverage for Python code**, per package rather than across
+the workspace. The common test suite alone has to cover a change to `common/src/`, and the tox-toml-fmt suite alone a
+change to `tox-toml-fmt/rust/src/`. That is how each CI job measures it. Verify with
+`cargo llvm-cov -p common --summary-only` or `cargo llvm-cov -p tox-toml-fmt --no-default-features --summary-only`.
 
-For an HTML coverage report, run `tox r -e coverage` from the repository root; it writes lcov output and opens the
-report in your browser. For a quick summary, use `cargo llvm-cov --workspace --no-default-features --summary-only`.
+Coverage data carries over between runs, so after editing a file run `cargo llvm-cov clean --workspace` before measuring
+or the line numbers will not line up with the source.
+
+For an HTML report, run `tox r -e coverage` from the repository root; it writes lcov output and opens the report in your
+browser.
+
+A branch that cannot run is dead code. Delete it rather than covering it: if the callers, the types or an invariant
+already rule out a state, the guard against it is noise. Where the compiler cannot see an invariant that holds,
+`.expect()` with a sentence saying why the case cannot happen documents it and stays covered.
 
 #### Testing PyO3 Code from Rust
 
@@ -349,27 +346,6 @@ fn test_lib_module_registration() {
 
 Run these tests with: `cargo test --no-default-features`
 
-#### LLVM Coverage Artifacts
-
-LLVM reports the closing brace of a multi-branch conditional as its own line, often flagged uncovered even when every
-path is tested. For example:
-
-```rust
-if condition {
-    return Some(value);  // covered
-}                        // reported as uncovered by LLVM
-```
-
-This is a known limitation of LLVM's coverage instrumentation. These closing-brace lines need not be covered and should
-not block merging code that otherwise meets the 98% threshold.
-
-#### Acceptable Coverage Gaps
-
-Some code may not reach 100% coverage, and this is acceptable:
-
-- **Closing braces** in multi-branch conditionals (LLVM coverage artifacts as described above)
-- **`.expect()` calls** on guaranteed-valid input (like "parsed TOML has a child" after parsing valid TOML)
-
 ### Writing Good Assertions
 
 Assert the complete expected output instead of checking for a substring. A full assertion catches subtle structural bugs
@@ -395,22 +371,18 @@ than inline expected strings, so a behavior change updates expectations in one c
 Traditional approach (avoid):
 
 ```rust
-#[rstest]
-#[case::simple("input", "expected output")]
-fn test_format(#[case] input: &str, #[case] expected: &str) {
-    let result = format_toml(input);
-    assert_eq!(result, expected);
+#[test]
+fn test_format() {
+    assert_eq!(format_toml("input"), "expected output");
 }
 ```
 
 Snapshot testing approach (preferred, using inline snapshots):
 
 ```rust
-#[rstest]
-#[case::simple("input")]
-fn test_format(#[case] input: &str) {
-    let result = format_toml(input);
-    insta::assert_snapshot!(result, @"");
+#[test]
+fn test_format() {
+    insta::assert_snapshot!(format_toml("input"), @"");
 }
 ```
 
@@ -431,63 +403,86 @@ When formatter behavior changes (like switching parsers), you can update all tes
 
 ### Iterating Over Table Entries
 
-To process entries in a TOML table, use the `Tables` abstraction from `common::table`. It navigates the syntax tree and
-finds the entries within a given table section for you.
+`common::sections` finds a table by name and hands you its entries.
 
 ```rust
-use common::table::Tables;
+use common::sections;
 
-let tables = Tables::from_ast(&syntax);
-for entry in tables.get("project") {
-    if let Some(key) = get_key_name(entry) {
-        // Process entry based on key
+let Some(section) = sections::first(document, "tool.demo") else { return };
+sections::for_entries(section, |key, value| {
+    if key == "packages" {
+        // act on the value
     }
-}
-```
-
-### Modifying String Values
-
-To transform string values in TOML (normalizing dependency versions, fixing URLs), use `update_content` from
-`common::string`. It finds the string node, applies your transformation, and updates the tree.
-
-```rust
-use common::string::update_content;
-
-update_content(value_node, |text| {
-    text.to_lowercase()  // Your transformation function
 });
 ```
 
-### Reordering Inline Table Keys
+`sections::named` returns every section under a name, which is what `[[tool.demo]]` needs.
 
-To enforce a consistent key order within inline tables, use `InlineTableSchema` and `reorder_inline_table_keys` from
-`common::table`. Each schema names a discriminator key (which selects the schema) and the desired key order; keys not
-listed are appended at the end.
+### Modifying String Values
 
-```rust
-use common::table::{reorder_inline_table_keys, InlineTableSchema};
-
-const SCHEMAS: &[InlineTableSchema] = &[
-    InlineTableSchema {
-        discriminator: "replace",
-        key_order: &["replace", "default", "extend"],
-    },
-];
-
-reorder_inline_table_keys(&root_ast, SCHEMAS);
-```
-
-### Creating New Nodes
-
-To create new syntax nodes, use the functions in `common::create`. They use the parse-and-extract pattern to guarantee
-valid TOML syntax.
+`common::strings::update` rewrites the characters a string holds and picks the form to write it in, so a value that
+gains a quote comes back as a literal string rather than as an escape.
 
 ```rust
-use common::create::{make_string_node, make_entry_of_string};
+use common::strings;
 
-let new_string = make_string_node("value");
-let new_entry = make_entry_of_string(&"key".to_string(), &"value".to_string());
+strings::update(value, |text| text.to_lowercase());
 ```
+
+`update_wrapped` does the same and breaks the result across lines when it outgrows the column.
+
+### Ordering Keys and Members
+
+`sections::reorder_keys` puts a table's entries in a named order and sorts the rest alphabetically; a name in the order
+also claims the dotted keys beneath it, so `lint` pulls `lint.select` along.
+
+```rust
+use common::{arrays, sections};
+
+sections::reorder_keys(&mut section.entries, &["", "name", "version"]);
+arrays::sort_strings(array, &str::to_lowercase, &str::cmp);
+```
+
+For inline tables, `sections::reorder_inline_tables` takes a schema per shape: a discriminator key that only that shape
+carries, and the order its keys go in.
+
+The path it takes first is the table the schemas belong to, so one tool's shape never rewrites another's:
+
+```rust
+use common::sections::{InlineSchema, reorder_inline_tables};
+
+let path = ["tool", "tox"].map(str::to_owned);
+reorder_inline_tables(document, &path, &[InlineSchema {
+    discriminator: "replace",
+    key_order: &["replace", "default", "extend"],
+}]);
+```
+
+### Creating New Entries
+
+`common::build` makes entries, arrays and sections that were never in the source. Everything it builds comes out
+unspaced, because the layout pass decides the whitespace.
+
+```rust
+use common::build;
+
+section.entries.push(build::string_entry("name", "example"));
+section.entries.push(build::entry("tags", build::array([build::string("one")])));
+```
+
+### Moving Entries Between Levels
+
+`[tool.x] a.b = 1` and `[tool.x.a] b = 1` say the same thing, so `common::nesting` picks between them.
+
+```rust
+use common::nesting;
+
+nesting::collapse(document, "tool.x");  // fold [tool.x.a] into a.b = 1
+nesting::expand(document, "tool.x");    // write a.b = 1 back out as [tool.x.a]
+```
+
+`collapse_where` holds one sub-table out while the rest of its siblings fold in, which is what the `expand_tables` and
+`collapse_tables` settings need.
 
 ## Development Workflow
 

@@ -1,9 +1,4 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "workspace.name",
     "workspace.version",
     "workspace.description",
@@ -42,8 +37,7 @@ pub const KEY_ORDER: &[&str] = &[
     "package",
 ];
 
-const WORKSPACE_KEY_ORDER: &[&str] = &[
-    "",
+pub const WORKSPACE_KEY_ORDER: &[&str] = &[
     "name",
     "version",
     "description",
@@ -66,26 +60,16 @@ const WORKSPACE_KEY_ORDER: &[&str] = &[
     "build-variants-files",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    if let Some(table_elements) = tables.get("tool.pixi") {
-        let table = &mut table_elements.first().unwrap().borrow_mut();
-        for_entries(table, &mut |key, entry| match key.as_str() {
-            "workspace.channels" | "workspace.platforms" | "workspace.preview" | "workspace.build-variants-files" => {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-            }
-            _ => {}
-        });
-        reorder_table_keys(table, KEY_ORDER);
-    }
+/// Whether what the name holds is a list of names, which sorts.
+///
+/// Channels and variant files are read in the order they are listed, the first one winning, so what
+/// they say depends on where each one sits. A platform written as a table names none this can sort
+/// by, and pixi runs the first entry a host satisfies, so a list holding one is left as written.
+pub fn sorts(key: &str) -> bool {
+    matches!(key, "workspace.platforms" | "workspace.preview")
+}
 
-    if let Some(workspace_elements) = tables.get("tool.pixi.workspace") {
-        let workspace_table = &mut workspace_elements.first().unwrap().borrow_mut();
-        for_entries(workspace_table, &mut |key, entry| match key.as_str() {
-            "channels" | "platforms" | "preview" | "build-variants-files" => {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-            }
-            _ => {}
-        });
-        reorder_table_keys(workspace_table, WORKSPACE_KEY_ORDER);
-    }
+/// The same, for the names written under `workspace`.
+pub fn sorts_in_workspace(key: &str) -> bool {
+    matches!(key, "platforms" | "preview")
 }

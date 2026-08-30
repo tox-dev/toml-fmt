@@ -9,21 +9,22 @@ edition = "2021"
 [lib]
 name = "_tox_toml_fmt"
 path = "rust/src/main.rs"
-# `rlib` lets sibling crates (pyproject-fmt) import the global rules module so the tox
-# handler for [tool.tox] in pyproject.toml shares one source of truth with tox.toml.
+# `rlib` beside the `cdylib` the wheel needs, so the tests can link against the crate and run
+# through the same entry point a user calls
 crate-type = ["cdylib", "rlib"]
 
+[[test]]
+# the tests link against the crate and go through the entry point a user calls, so they live beside
+# `src` rather than inside it
+name = "rules"
+path = "rust/tests/mod.rs"
+
 [dependencies]
-common = { path = "../common" }
-lexical-sort = { version = "0.3.1" }
+common = { path = "../common", features = ["python"] }
+toml-doc = { path = "../toml-doc" }
+tox-rules = { path = "../tox-rules" }
 pyo3 = { version = "0.29.2", features = ["generate-import-lib"] }
 regex = { version = "1.13.1" }
-tombi-parser = { workspace = true }
-tombi-syntax = { workspace = true }
-tombi-formatter = { workspace = true }
-tombi-config = { workspace = true }
-tombi-schema-store = { workspace = true }
-tokio = { version = "1", features = ["rt"] }
 
 [features]
 extension-module = ["pyo3/extension-module"]
@@ -33,8 +34,8 @@ abi3 = ["pyo3/abi3-py310"]
 default = ["extension-module", "abi3"]
 
 [dev-dependencies]
-common = { path = "../common", features = ["test-util"] }
+common = { path = "../common", features = ["python"] }
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 insta = { version = "1.48.0", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.29.2", features = ["auto-initialize"] }
+toml = "1.1.4"                  # an independent parser, to read back what the formatter wrote

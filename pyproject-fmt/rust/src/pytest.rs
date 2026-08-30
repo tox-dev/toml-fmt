@@ -1,11 +1,6 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 // Keys carry the ini_options. prefix: after collapse every key appears as ini_options.<name> under tool.pytest, its
 // only standardized child.
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "ini_options.minversion",
     "ini_options.required_plugins",
     "ini_options.testpaths",
@@ -59,9 +54,10 @@ pub const KEY_ORDER: &[&str] = &[
     "ini_options",
 ];
 
-// Set-semantics arrays only; addopts (CLI argv) and pythonpath (search order) excluded.
+// Set-semantics arrays only. `addopts` is the command line, `pythonpath` is a search order,
+// `testpaths` is the collection order, and pytest applies the last matching `filterwarnings`, so
+// each of those says what it says by the order it is written in.
 const SORT_ARRAYS: &[&str] = &[
-    "ini_options.testpaths",
     "ini_options.norecursedirs",
     "ini_options.collect_ignore",
     "ini_options.collect_ignore_glob",
@@ -69,21 +65,12 @@ const SORT_ARRAYS: &[&str] = &[
     "ini_options.python_classes",
     "ini_options.python_functions",
     "ini_options.markers",
-    "ini_options.filterwarnings",
     "ini_options.doctest_optionflags",
     "ini_options.usefixtures",
     "ini_options.required_plugins",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.pytest") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if SORT_ARRAYS.contains(&key.as_str()) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS.contains(&key)
 }

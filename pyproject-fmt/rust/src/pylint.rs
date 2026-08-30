@@ -1,11 +1,6 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 // Sub-table order follows the pylint docs (main → messages_control → category checks); keys within each sub-table
 // alphabetize, since a hand-curated full order would rot.
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "main",
     "master", // legacy alias of `main`
     "messages_control",
@@ -28,17 +23,9 @@ pub const KEY_ORDER: &[&str] = &[
     "miscellaneous",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.pylint") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if is_sortable_array(key.as_str()) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    is_sortable_array(key)
 }
 
 fn is_sortable_array(key: &str) -> bool {
@@ -48,7 +35,6 @@ fn is_sortable_array(key: &str) -> bool {
         leaf,
         "enable"
             | "disable"
-            | "load-plugins"
             | "extension-pkg-allow-list"
             | "extension-pkg-whitelist"
             | "ignore"
@@ -68,7 +54,6 @@ fn is_sortable_array(key: &str) -> bool {
             | "allowed-redefined-builtins"
             | "dummy-variables-rgx"
             | "exclude-too-few-public-methods"
-            | "preferred-modules"
             | "deprecated-modules"
             | "known-third-party"
             | "known-standard-library"

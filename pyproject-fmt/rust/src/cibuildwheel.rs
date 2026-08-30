@@ -1,13 +1,10 @@
 use std::sync::LazyLock;
 
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_inline_table_keys, reorder_table_keys, InlineTableSchema, Tables};
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxKind::{ARRAY, INLINE_TABLE, KEYS, KEY_VALUE};
-use tombi_syntax::SyntaxNode;
+use common::arrays::sort_names_in;
+use common::sections;
+use toml_doc::{Document, Value};
 
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "build",
     "skip",
     "test-skip",
@@ -60,73 +57,76 @@ const SORT_ARRAYS: &[&str] = &["enable", "test-extras", "test-groups"];
 // `select` leads because cibuildwheel requires it on every override entry.
 static OVERRIDES_KEY_ORDER: LazyLock<Vec<&str>> = LazyLock::new(|| {
     let mut order = vec!["", "select"];
-    order.extend(KEY_ORDER.iter().filter(|k| !k.is_empty() && **k != "overrides"));
+    order.extend(
+        KEY_ORDER
+            .iter()
+            .filter(|name| !name.is_empty() && **name != "overrides"),
+    );
     order
 });
 
-pub fn fix(tables: &mut Tables) {
-    fix_one(tables, "tool.cibuildwheel");
+pub fn fix(document: &mut Document<'_>) {
+    fix_one(document, "tool.cibuildwheel");
     // Per-platform tables reuse KEY_ORDER for when they stay expanded instead of collapsing into the parent.
     for plat in ["linux", "macos", "windows", "android", "ios", "pyodide"] {
-        fix_one(tables, &format!("tool.cibuildwheel.{plat}"));
+        fix_one(document, &format!("tool.cibuildwheel.{plat}"));
     }
-    fix_overrides_aot(tables);
+    fix_overrides_aot(document);
 }
 
-fn fix_one(tables: &mut Tables, table_name: &str) {
-    let Some(elements) = tables.get(table_name) else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if SORT_ARRAYS.contains(&key.as_str()) {
-            sort_array(entry);
-        } else if key == "overrides" && entry.kind() == ARRAY {
-            fix_overrides_inline(entry);
+fn fix_one(document: &mut Document<'_>, table_name: &str) {
+    let path = sections::parse_name(table_name);
+    sections::for_keys_under(document, &path, |key, value| {
+        if SORT_ARRAYS.contains(&key) {
+            sort_array(value);
+        } else if key == "overrides" {
+            fix_overrides_inline(value);
         }
     });
-    reorder_table_keys(table, KEY_ORDER);
+    sections::reorder_under(document, &path, KEY_ORDER);
 }
 
-fn sort_array(entry: &SyntaxNode) {
-    sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+fn sort_array(value: &mut Value<'_>) {
+    sort_names_in(value);
 }
 
 /// `[[tool.cibuildwheel.overrides]]` collapses to `overrides = [{ ... }]` before `fix` runs in the short table format,
 /// so the inline entries need the same treatment as the array-of-tables form.
-fn fix_overrides_inline(array: &SyntaxNode) {
-    for inline in array.descendants().filter(|n| n.kind() == INLINE_TABLE) {
-        for kv in inline.descendants().filter(|n| n.kind() == KEY_VALUE) {
-            let keys = kv.children().find(|c| c.kind() == KEYS).expect("a key-value has a key");
-            if !SORT_ARRAYS.contains(&keys.text().to_string().trim()) {
-                continue;
-            }
-            // A sortable key holds a scalar when the config is wrong for cibuildwheel; leave such a value alone.
-            for inner in kv.children().filter(|c| c.kind() == ARRAY) {
-                sort_array(&inner);
+fn fix_overrides_inline(value: &mut Value<'_>) {
+    let Value::Array(array) = value else { return };
+    for member in &mut array.members {
+        let Value::InlineTable(table) = &mut member.item else {
+            continue;
+        };
+        // the discriminator is what says this inline table is an override rather than something else
+        if !table.members.iter().any(|entry| entry.item.key.is_path("select")) {
+            continue;
+        }
+        for entry in &mut table.members {
+            if SORT_ARRAYS.contains(&common::sections::dispatch_name(&entry.item.key).as_str()) {
+                sort_array(&mut entry.item.value);
             }
         }
+        common::sections::sort_members(&mut table.members, |item| {
+            let key = common::sections::dispatch_name(&item.key);
+            (
+                OVERRIDES_KEY_ORDER
+                    .iter()
+                    .position(|name| *name == key)
+                    .unwrap_or(OVERRIDES_KEY_ORDER.len()),
+                key,
+            )
+        });
     }
-    reorder_inline_table_keys(
-        array,
-        &[InlineTableSchema {
-            discriminator: "select",
-            key_order: &OVERRIDES_KEY_ORDER,
-        }],
-    );
 }
 
-fn fix_overrides_aot(tables: &mut Tables) {
-    let Some(entries) = tables.get("tool.cibuildwheel.overrides") else {
-        return;
-    };
-    for entry_ref in entries {
-        let table = &mut entry_ref.borrow_mut();
-        for_entries(table, &mut |key, entry| {
-            if SORT_ARRAYS.contains(&key.as_str()) {
-                sort_array(entry);
+fn fix_overrides_aot(document: &mut Document<'_>) {
+    for section in sections::named(document, "tool.cibuildwheel.overrides") {
+        sections::for_entries(section, |key, value| {
+            if SORT_ARRAYS.contains(&key) {
+                sort_array(value);
             }
         });
-        reorder_table_keys(table, &OVERRIDES_KEY_ORDER);
+        sections::reorder_keys(&mut section.entries, &OVERRIDES_KEY_ORDER);
     }
 }

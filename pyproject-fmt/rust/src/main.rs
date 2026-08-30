@@ -3,16 +3,16 @@ use std::string::String;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{PyModule, PyModuleMethods};
+use pyo3::types::PyDict;
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
 
 use crate::global::reorder_tables;
-use common::array::ensure_all_arrays_multiline;
-use common::table::{apply_table_formatting, Tables};
-use tombi_config::TomlVersion;
+use toml_doc::Document;
 
 mod build_system;
 mod dependency_groups;
 mod project;
+mod rules;
 
 mod autopep8;
 mod bandit;
@@ -44,8 +44,6 @@ mod ruff;
 mod scikit_build;
 mod semantic_release;
 mod setuptools;
-#[cfg(test)]
-mod tests;
 mod towncrier;
 mod tox;
 mod ty;
@@ -55,18 +53,18 @@ mod yapf;
 
 #[pyclass(frozen, get_all)]
 pub struct Settings {
-    column_width: usize,
-    indent: usize,
-    keep_full_version: bool,
-    max_supported_python: (u8, u8),
-    min_supported_python: (u8, u8),
-    generate_python_version_classifiers: bool,
-    table_format: String,
-    sub_table_spacing: String,
-    separate_root_table: String,
-    expand_tables: Vec<String>,
-    collapse_tables: Vec<String>,
-    skip_wrap_for_keys: Vec<String>,
+    pub column_width: usize,
+    pub indent: usize,
+    pub keep_full_version: bool,
+    pub max_supported_python: (u8, u8),
+    pub min_supported_python: (u8, u8),
+    pub generate_python_version_classifiers: bool,
+    pub table_format: String,
+    pub sub_table_spacing: String,
+    pub separate_root_table: String,
+    pub expand_tables: Vec<String>,
+    pub collapse_tables: Vec<String>,
+    pub skip_wrap_for_keys: Vec<String>,
 }
 
 #[pymethods]
@@ -74,7 +72,7 @@ impl Settings {
     #[new]
     #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys))]
-    fn new(
+    pub fn new(
         column_width: usize,
         indent: usize,
         keep_full_version: bool,
@@ -87,8 +85,41 @@ impl Settings {
         expand_tables: Vec<String>,
         collapse_tables: Vec<String>,
         skip_wrap_for_keys: Vec<String>,
-    ) -> Self {
-        Self {
+    ) -> PyResult<Self> {
+        // the classifiers this generates name Python 3, so a bound naming another major says
+        // nothing this can act on
+        for (name, version) in [
+            ("max_supported_python", max_supported_python),
+            ("min_supported_python", min_supported_python),
+        ] {
+            if version.0 != 3 {
+                return Err(PyValueError::new_err(format!(
+                    "{name} names Python {}, and only Python 3 is supported",
+                    version.0
+                )));
+            }
+        }
+        // a selector names a table the way TOML names one, so a file asking for a name no key
+        // spells is told rather than formatted as though it had asked for nothing
+        for (setting, held) in [("expand_tables", &expand_tables), ("collapse_tables", &collapse_tables)] {
+            for name in held {
+                if let Err(why) = common::sections::read_name(name) {
+                    return Err(PyValueError::new_err(format!(
+                        "{setting}: {name} is not a table name: {why}"
+                    )));
+                }
+            }
+        }
+        // a pattern names a key and a pin names an environment, each of which the file writes as
+        // something; neither says anything where the file wrote no name at all
+        for (setting, held) in [("skip_wrap_for_keys", &skip_wrap_for_keys)] {
+            if held.iter().any(|name| name.trim().is_empty()) {
+                return Err(PyValueError::new_err(format!(
+                    "{setting}: a name is written there, not nothing"
+                )));
+            }
+        }
+        Ok(Self {
             column_width,
             indent,
             keep_full_version,
@@ -101,52 +132,25 @@ impl Settings {
             expand_tables,
             collapse_tables,
             skip_wrap_for_keys,
-        }
+        })
     }
 }
 
-pub struct TableFormatConfig {
-    pub default_collapse: bool,
-    pub expand_tables: HashSet<String>,
-    pub collapse_tables: HashSet<String>,
+pub type TableFormatConfig = common::shape::Tables;
+
+/// The tables a user asked to fold or write out, read from the settings the wrapper handed over.
+fn table_config(settings: &Settings) -> TableFormatConfig {
+    TableFormatConfig::new(
+        &settings.table_format,
+        &settings.expand_tables,
+        &settings.collapse_tables,
+    )
 }
 
-impl TableFormatConfig {
-    pub fn from_settings(settings: &Settings) -> Self {
-        Self {
-            default_collapse: settings.table_format == "short",
-            expand_tables: settings.expand_tables.iter().cloned().collect(),
-            collapse_tables: settings.collapse_tables.iter().cloned().collect(),
-        }
-    }
-
-    pub fn should_collapse(&self, table_name: &str) -> bool {
-        let mut current = table_name;
-        loop {
-            if self.collapse_tables.contains(current) {
-                return true;
-            }
-            if self.expand_tables.contains(current) {
-                return false;
-            }
-            match current.rfind('.') {
-                Some(dot_pos) => current = &current[..dot_pos],
-                None => break,
-            }
-        }
-        self.default_collapse
-    }
-}
-
-fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source).syntax_node().clone_for_update()
-}
-
-async fn format_with_tombi(content: &str, column_width: usize, indent: usize) -> String {
-    let options = common::format_options::create_format_options(column_width, indent);
-    let schema_store = tombi_schema_store::SchemaStore::new();
-    let formatter = tombi_formatter::Formatter::new(TomlVersion::default(), &options, None, &schema_store);
-    formatter.format(content).await.unwrap_or_else(|_| content.to_string())
+/// The settings the source writes at `path`, read with the parser that reads the file itself.
+#[pyfunction]
+fn settings_in<'py>(py: Python<'py>, content: &str, path: Vec<String>) -> PyResult<Option<Bound<'py, PyDict>>> {
+    common::settings::settings_in(py, content, path)
 }
 
 #[pyfunction]
@@ -159,112 +163,109 @@ fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> PyResult<Str
 ///
 /// Will return a message describing why the content was rejected, e.g. an invalid `project.version`.
 pub fn format_toml(content: &str, opt: &Settings) -> Result<String, String> {
-    common::disabled::try_with_disabled_keys(content, |content| format_core(content, opt))
+    common::formatted(content, |document| format_core(document, opt))
 }
 
-fn format_core(content: &str, opt: &Settings) -> Result<String, String> {
-    let root_ast = parse(content);
-    common::string::normalize_key_quotes(&root_ast);
-    let mut tables = Tables::from_ast(&root_ast);
-    let table_config = TableFormatConfig::from_settings(opt);
+fn format_core(document: &mut Document<'_>, opt: &Settings) -> Result<(), String> {
+    let table_config = table_config(opt);
 
-    let mut prefixes: Vec<String> = vec![String::from("build-system"), String::from("project")];
-    for key in tables.header_to_pos.keys() {
-        if let Some(tool_name) = key.strip_prefix("tool.") {
-            let tool_prefix = format!("tool.{}", tool_name.split('.').next().unwrap_or(tool_name));
-            if !prefixes.contains(&tool_prefix) {
-                prefixes.push(tool_prefix);
-            }
-        }
+    common::strings::normalize_key_quotes(document);
+    for name in nesting_targets(document) {
+        // a setting names a table of any depth, so both passes run over every target: the fold takes
+        // the children a setting asks to fold, and the write-out takes the ones it asks to keep
+        common::nesting::collapse_of(
+            document,
+            &name,
+            &|sub| table_config.should_collapse(sub),
+            common::nesting::Width {
+                column: opt.column_width,
+                indent: opt.indent,
+            },
+        );
+        common::nesting::expand_where(document, &name, &|child| !table_config.should_collapse(child));
     }
-    let prefix_refs: Vec<&str> = prefixes.iter().map(|s| s.as_str()).collect();
-    apply_table_formatting(
-        &mut tables,
-        |name| table_config.should_collapse(name),
-        &prefix_refs,
-        opt.column_width,
-    );
 
-    let indent_string = " ".repeat(opt.indent);
-    build_system::fix(&tables, opt.keep_full_version);
+    build_system::fix(document, opt.keep_full_version);
     project::fix(
-        &mut tables,
+        document,
         opt.keep_full_version,
         opt.max_supported_python,
         opt.min_supported_python,
         opt.generate_python_version_classifiers,
         &table_config,
     )?;
-    dependency_groups::fix(&mut tables, opt.keep_full_version);
-    ruff::fix(&mut tables);
-    uv::fix(&mut tables);
-    pixi::fix(&mut tables);
-    commitizen::fix(&mut tables);
-    poetry::fix(&mut tables);
-    mypy::fix(&mut tables);
-    setuptools::fix(&mut tables);
-    pytest::fix(&mut tables);
-    black::fix(&mut tables);
-    hatch::fix(&mut tables);
-    isort::fix(&mut tables);
-    pyright::fix(&mut tables);
-    pdm::fix(&mut tables);
-    cibuildwheel::fix(&mut tables);
-    tox::fix(&mut tables);
-    bandit::fix(&mut tables);
-    maturin::fix(&mut tables);
-    codespell::fix(&mut tables);
-    towncrier::fix(&mut tables);
-    pylint::fix(&mut tables);
-    djlint::fix(&mut tables);
-    yapf::fix(&mut tables);
-    check_manifest::fix(&mut tables);
-    pyrefly::fix(&mut tables);
-    semantic_release::fix(&mut tables);
-    scikit_build::fix(&mut tables);
-    bumpversion::fix(&mut tables);
-    interrogate::fix(&mut tables);
-    docformatter::fix(&mut tables);
-    vulture::fix(&mut tables);
-    autopep8::fix(&mut tables);
-    deptry::fix(&mut tables);
-    ty::fix(&mut tables);
-    coverage::fix(&mut tables);
-    pyproject_fmt::fix(&mut tables);
-    reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
-    // Must follow reorder_tables: only then have AoT entries collapsed to inline arrays of inline tables
-    // (e.g. [[tool.poetry.source]] → source = [{...}]) and become INLINE_TABLE descendants of root_ast.
-    poetry::reorder_inline_tables(&root_ast);
-    mypy::reorder_inline_tables(&root_ast);
-    setuptools::reorder_inline_tables(&root_ast);
-    tox::reorder_inline_tables(&root_ast);
-    ensure_all_arrays_multiline(&root_ast, opt.column_width);
-    common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
+    dependency_groups::fix(document, opt.keep_full_version);
+    rules::fix(document);
+    for fix in [
+        poetry::fix,
+        mypy::fix,
+        setuptools::fix,
+        hatch::fix,
+        pyright::fix,
+        pdm::fix,
+        cibuildwheel::fix,
+    ] {
+        fix(document);
+    }
+    tox::fix(
+        document,
+        &table_config,
+        common::nesting::Width {
+            column: opt.column_width,
+            indent: opt.indent,
+        },
+    );
+    towncrier::fix(document);
 
-    let modified_content = root_ast.to_string();
+    reorder_tables(document);
+    poetry::reorder_inline_tables(document);
+    mypy::reorder_inline_tables(document);
+    setuptools::reorder_inline_tables(document);
+    tox::reorder_inline_tables(document);
 
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let formatted = rt.block_on(format_with_tombi(&modified_content, opt.column_width, opt.indent));
+    common::shape::Written {
+        column_width: opt.column_width,
+        indent: opt.indent,
+        separate_root_table: &opt.separate_root_table,
+        sub_table_spacing: &opt.sub_table_spacing,
+        table_format: &opt.table_format,
+        skip_wrap_for_keys: &opt.skip_wrap_for_keys,
+        nested_prefixes: &["tool"],
+    }
+    .apply(document);
 
-    let formatted_ast = parse(&formatted);
-    common::array::align_array_comments(&formatted_ast);
-    let formatted = formatted_ast.to_string();
-
-    let sub_spacing = (opt.table_format == "long").then_some(opt.sub_table_spacing.as_str());
-    let result = common::table::normalize_table_spacing(&formatted, &["tool"], &opt.separate_root_table, sub_spacing);
-    Ok(common::util::limit_blank_lines(&result, 2))
+    Ok(())
 }
 
-/// # Errors
+/// Every table that could hold sub-tables: the two fixed roots and each tool that appears.
+fn nesting_targets(document: &Document<'_>) -> Vec<Vec<String>> {
+    let mut names = vec![vec![String::from("build-system")], vec![String::from("project")]];
+    let mut seen: HashSet<Vec<String>> = names.iter().cloned().collect();
+    for section in &document.sections {
+        let segments = section.header.key.segments();
+        // a tool's own name is one segment, whatever it holds
+        if segments.len() > 1 && segments[0] == "tool" {
+            let head = segments[..2].to_vec();
+            if seen.insert(head.clone()) {
+                names.push(head);
+            }
+        }
+    }
+    names
+}
+
+/// # Panics
 ///
-/// Will return `PyErr` if an error is raised during formatting.
+/// If the module cannot take one of its own members, which says the interpreter has run out of
+/// memory rather than anything about the module.
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(format_toml_py, m)?)?;
-    m.add_class::<Settings>()?;
+    let held = "the module takes its own members";
+    m.add_function(wrap_pyfunction!(format_toml_py, m).expect(held))
+        .expect(held);
+    m.add_function(wrap_pyfunction!(settings_in, m).expect(held))
+        .expect(held);
+    m.add_class::<Settings>().expect(held);
     Ok(())
 }

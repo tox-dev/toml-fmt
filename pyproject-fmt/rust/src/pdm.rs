@@ -1,10 +1,9 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
+use common::arrays::sort_names_in;
+use common::sections;
+use toml_doc::Document;
 
 // Sub-tables collapse to dotted keys (version.source, build.includes, etc.).
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "distribution",
     "package-type",
     "plugins",
@@ -60,25 +59,15 @@ const SORT_ARRAYS_EXACT: &[&str] = &[
     "resolution.excludes",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    fix_root(tables);
-    fix_expanded_scripts(tables);
-    fix_expanded_dev_dependencies(tables);
-    fix_source_aot(tables);
+pub fn fix(document: &mut Document<'_>) {
+    fix_expanded_scripts(document);
+    sections::sort_names_under(document, "tool.pdm.dev-dependencies");
+    fix_source_aot(document);
 }
 
-fn fix_root(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.pdm") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        let k = key.as_str();
-        if SORT_ARRAYS_EXACT.contains(&k) || is_dev_deps_value(k) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS_EXACT.contains(&key) || is_dev_deps_value(key)
 }
 
 fn is_dev_deps_value(key: &str) -> bool {
@@ -88,47 +77,29 @@ fn is_dev_deps_value(key: &str) -> bool {
     false
 }
 
-fn fix_expanded_scripts(tables: &mut Tables) {
-    if let Some(elements) = tables.get("tool.pdm.scripts") {
-        let table = &mut elements.first().unwrap().borrow_mut();
-        reorder_table_keys(table, &[""]);
+fn fix_expanded_scripts(document: &mut Document<'_>) {
+    if let Some(section) = sections::first(document, "tool.pdm.scripts") {
+        sections::reorder_keys(&mut section.entries, &[]);
     }
 }
 
-fn fix_expanded_dev_dependencies(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.pdm.dev-dependencies") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |_key, entry| {
-        sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+const SOURCE_KEY_ORDER: &[&str] = &[
+    "name",
+    "url",
+    "type",
+    "verify_ssl",
+    "include_packages",
+    "exclude_packages",
+];
+
+fn fix_source_aot(document: &mut Document<'_>) {
+    sections::for_array_elements(document, &source_name(), SOURCE_KEY_ORDER, &mut |key, value| {
+        if matches!(key, "include_packages" | "exclude_packages") {
+            sort_names_in(value);
+        }
     });
-    reorder_table_keys(table, &[""]);
 }
 
-fn fix_source_aot(tables: &mut Tables) {
-    let Some(entries) = tables.get("tool.pdm.source") else {
-        return;
-    };
-    for entry_ref in entries {
-        let table = &mut entry_ref.borrow_mut();
-        for_entries(table, &mut |key, entry| match key.as_str() {
-            "include_packages" | "exclude_packages" => {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-            }
-            _ => {}
-        });
-        reorder_table_keys(
-            table,
-            &[
-                "",
-                "name",
-                "url",
-                "type",
-                "verify_ssl",
-                "include_packages",
-                "exclude_packages",
-            ],
-        );
-    }
+fn source_name() -> Vec<String> {
+    ["tool", "pdm", "source"].map(str::to_owned).to_vec()
 }

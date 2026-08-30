@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Any
 
 class Settings:
     def __init__(
@@ -34,3 +35,4 @@ class Settings:
     def pin_envs(self) -> Sequence[str]: ...
 
 def format_toml(content: str, settings: Settings) -> str: ...
+def settings_in(content: str, path: Sequence[str]) -> dict[str, Any] | None: ...

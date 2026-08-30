@@ -1,9 +1,4 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "exclude_dirs",
     "targets",
     "tests",
@@ -21,18 +16,9 @@ pub const KEY_ORDER: &[&str] = &[
 // All array values are set semantics (rule IDs, paths, names), so they sort.
 const SORT_ARRAYS_EXACT: &[&str] = &["exclude_dirs", "targets", "tests", "skips"];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.bandit") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        let k = key.as_str();
-        if SORT_ARRAYS_EXACT.contains(&k) || is_inner_array(k) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS_EXACT.contains(&key) || is_inner_array(key)
 }
 
 fn is_inner_array(key: &str) -> bool {

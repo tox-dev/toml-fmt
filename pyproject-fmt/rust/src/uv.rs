@@ -1,10 +1,4 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxKind::KEY_VALUE;
-
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "required-version",
     "python-preference",
     "python-downloads",
@@ -76,8 +70,7 @@ pub const KEY_ORDER: &[&str] = &[
     "torch-backend",
 ];
 
-const PIP_KEY_ORDER: &[&str] = &[
-    "",
+pub const PIP_KEY_ORDER: &[&str] = &[
     "python",
     "system",
     "break-system-packages",
@@ -138,16 +131,12 @@ const PIP_KEY_ORDER: &[&str] = &[
     "universal",
 ];
 
-fn has_key_value_entries(table: &[tombi_syntax::SyntaxElement]) -> bool {
-    table.iter().any(|e| e.kind() == KEY_VALUE)
-}
-
 #[allow(clippy::too_many_lines)]
-pub fn fix(tables: &mut Tables) {
-    if let Some(table_elements) = tables.get("tool.uv") {
-        let table = &mut table_elements.first().unwrap().borrow_mut();
-        for_entries(table, &mut |key, entry| match key.as_str() {
-            "allow-insecure-host"
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    matches!(
+        key,
+        "allow-insecure-host"
             | "build-constraint-dependencies"
             | "constraint-dependencies"
             | "dev-dependencies"
@@ -172,43 +161,22 @@ pub fn fix(tables: &mut Tables) {
             | "pip.no-emit-package"
             | "pip.only-binary-package"
             | "pip.reinstall-package"
-            | "pip.upgrade-package" => {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-            }
-            _ => {}
-        });
-        reorder_table_keys(table, KEY_ORDER);
-    }
+            | "pip.upgrade-package"
+    )
+}
 
-    if let Some(sources_tables) = tables.get("tool.uv.sources") {
-        for sources_ref in sources_tables {
-            let sources_table = &mut sources_ref.borrow_mut();
-            if has_key_value_entries(sources_table) {
-                reorder_table_keys(sources_table, &[""]);
-            }
-        }
-    }
-
-    if let Some(pip_elements) = tables.get("tool.uv.pip") {
-        let pip_table = &mut pip_elements.first().unwrap().borrow_mut();
-        if has_key_value_entries(pip_table) {
-            for_entries(pip_table, &mut |key, entry| match key.as_str() {
-                "allow-insecure-host"
-                | "extra"
-                | "no-binary-package"
-                | "no-build-isolation-package"
-                | "no-build-package"
-                | "no-emit-package"
-                | "only-binary-package"
-                | "reinstall-package"
-                | "upgrade-package" => {
-                    sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| {
-                        natural_lexical_cmp(lhs, rhs)
-                    });
-                }
-                _ => {}
-            });
-            reorder_table_keys(pip_table, PIP_KEY_ORDER);
-        }
-    }
+/// The same, for the names written under `pip`.
+pub fn sorts_in_pip(key: &str) -> bool {
+    matches!(
+        key,
+        "allow-insecure-host"
+            | "extra"
+            | "no-binary-package"
+            | "no-build-isolation-package"
+            | "no-build-package"
+            | "no-emit-package"
+            | "only-binary-package"
+            | "reinstall-package"
+            | "upgrade-package"
+    )
 }

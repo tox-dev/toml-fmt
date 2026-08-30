@@ -1,7 +1,4 @@
-use common::table::{reorder_table_keys, Tables};
-
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "in-place",
     "recursive",
     "check",
@@ -27,10 +24,7 @@ pub const KEY_ORDER: &[&str] = &[
     "config",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.docformatter") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(_key: &str) -> bool {
+    false
 }

@@ -30,9 +30,6 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
   "Topic :: System",
 ]
-dependencies = [
-  "tomli>=2.4.1; python_version<'3.11'",
-]
 urls.Changelog = "https://github.com/tox-dev/toml-fmt/releases"
 urls.Documentation = "https://github.com/tox-dev/toml-fmt/tree/main/toml-fmt-common#toml-fmt-common"
 urls.Homepage = "https://github.com/tox-dev/toml-fmt"
@@ -49,6 +46,7 @@ test = [
   "pytest>=9.1.1",
   "pytest-cov>=7.1",
   "pytest-mock>=3.15.1",
+  "tomli>=2.4.1; python_version<'3.11'",
 ]
 type = [
   "mypy==2.3.1",
@@ -67,6 +65,8 @@ build-backend.source-include = [ "tests/**", "tox.toml" ]
 max_supported_python = "3.15"
 
 [tool.mypy]
+# the workflow filters the tests read live beside the workflows themselves, a directory up
+mypy_path = "../tasks"
 strict = true
 show_error_codes = true
 

@@ -1,12 +1,9 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_inline_table_keys, reorder_table_keys, InlineTableSchema, Tables};
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxKind::{ARRAY, INLINE_TABLE, KEYS, KEY_VALUE};
-use tombi_syntax::SyntaxNode;
+use common::arrays::sort_names_in;
+use common::sections::{self, InlineSchema};
+use toml_doc::{Document, Value};
 
 // Grouped to match the section structure of the official mypy config reference.
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "mypy_path",
     "files",
     "modules",
@@ -106,7 +103,6 @@ pub const KEY_ORDER: &[&str] = &[
 // module is required, so it leads; the rest mirror the parent groupings, restricted to the per-module-overridable
 // subset.
 const OVERRIDES_KEY_ORDER: &[&str] = &[
-    "",
     "module",
     "ignore_missing_imports",
     "follow_untyped_imports",
@@ -169,120 +165,95 @@ const OVERRIDES_SORT_ARRAYS: &[&str] = &[
     "enable_error_code",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    fix_root(tables);
-    fix_expanded_overrides(tables);
+pub fn fix(document: &mut Document<'_>) {
+    fix_expanded_overrides(document);
 }
 
-fn fix_root(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.mypy") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-
-    for_entries(table, &mut |key, entry| {
-        let k = key.as_str();
-        if TOP_LEVEL_SORT_ARRAYS.contains(&k) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    TOP_LEVEL_SORT_ARRAYS.contains(&key)
 }
 
-fn fix_expanded_overrides(tables: &mut Tables) {
-    let Some(entries) = tables.get("tool.mypy.overrides") else {
-        return;
-    };
-    for entry_ref in entries {
-        let table = &mut entry_ref.borrow_mut();
-        for_entries(table, &mut |key, entry| {
-            if OVERRIDES_SORT_ARRAYS.contains(&key.as_str()) {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+fn fix_expanded_overrides(document: &mut Document<'_>) {
+    for section in sections::named(document, "tool.mypy.overrides") {
+        sections::for_entries(section, |key, value| {
+            if OVERRIDES_SORT_ARRAYS.contains(&key) {
+                sort_names_in(value);
             }
         });
-        reorder_table_keys(table, OVERRIDES_KEY_ORDER);
+        sections::reorder_keys(&mut section.entries, OVERRIDES_KEY_ORDER);
     }
+    // an override folded into its parent is written as a table inside an array, and it is one
+    // override whichever way the file holds it
+    sections::reorder_array_tables_at(
+        document,
+        &sections::parse_name("tool.mypy.overrides"),
+        OVERRIDES_KEY_ORDER,
+    );
 }
 
 // Discriminators avoid collisions: `disable_error_code` and `enable_error_code` are mypy-specific in pyproject.toml,
 // while `module` alone could match unrelated inline tables. Several discriminators map to the same OVERRIDES_KEY_ORDER,
 // so an entry with only `module` + `ignore_missing_imports` is still recognized.
-pub const INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[
-    InlineTableSchema {
+pub const INLINE_TABLE_SCHEMAS: &[InlineSchema<'static>] = &[
+    InlineSchema {
         discriminator: "disable_error_code",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "enable_error_code",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "ignore_missing_imports",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "follow_untyped_imports",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "ignore_errors",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "warn_unused_ignores",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "disallow_untyped_defs",
         key_order: OVERRIDES_KEY_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "check_untyped_defs",
         key_order: OVERRIDES_KEY_ORDER,
     },
 ];
 
-pub fn reorder_inline_tables(root_ast: &SyntaxNode) {
-    reorder_inline_table_keys(root_ast, INLINE_TABLE_SCHEMAS);
-    sort_arrays_inside_overrides(root_ast);
+pub fn reorder_inline_tables(document: &mut Document<'_>) {
+    let name = ["tool", "mypy"].map(str::to_owned);
+    sections::reorder_inline_tables(document, &name, INLINE_TABLE_SCHEMAS);
+    sort_arrays_inside_overrides(document);
 }
 
-/// When `[[tool.mypy.overrides]]` collapses into `overrides = [ {...}, {...} ]`, the arrays inside each inline entry
-/// (e.g. `disable_error_code = ["x", "y"]`) live inside values, so `for_entries` on the parent table misses them.
-/// Walk the AST under the `overrides` key and sort the known array-of-string fields in place.
-fn sort_arrays_inside_overrides(root_ast: &SyntaxNode) {
-    for kv in root_ast.descendants().filter(|n| n.kind() == KEY_VALUE) {
-        let Some(keys) = kv.children().find(|c| c.kind() == KEYS) else {
-            continue;
+/// A collapsed `[[tool.mypy.overrides]]` becomes `overrides = [ {...}, {...} ]`, which puts its
+/// arrays inside a value rather than under a table, out of reach of the entry walk above.
+fn sort_arrays_inside_overrides(document: &mut Document<'_>) {
+    let path = ["tool", "mypy", "overrides"].map(str::to_owned);
+    common::sections::for_value_at(document, &path, |value| {
+        let Value::Array(array) = value else {
+            return;
         };
-        let key_text = keys.text().to_string();
-        let key_trim = key_text.trim();
-        // Match `overrides = [...]` (within `[tool.mypy]`) or `mypy.overrides = [...]` (when collapsed under tool).
-        if !(key_trim == "overrides" || key_trim.ends_with(".overrides")) {
-            continue;
-        }
-        let Some(array) = kv.children().find(|c| c.kind() == ARRAY) else {
-            continue;
-        };
-        for inline in array.descendants().filter(|n| n.kind() == INLINE_TABLE) {
-            // INLINE_TABLE children sit inside KEY_VALUE_WITH_COMMA_GROUP, so descendants() reaches KEY_VALUE nodes
-            // at any nesting depth.
-            for inner_kv in inline.descendants().filter(|n| n.kind() == KEY_VALUE) {
-                let Some(inner_keys) = inner_kv.children().find(|c| c.kind() == KEYS) else {
-                    continue;
-                };
-                let inner_key = inner_keys.text().to_string().trim().to_string();
-                if !OVERRIDES_SORT_ARRAYS.contains(&inner_key.as_str()) {
-                    continue;
-                }
-                if let Some(inner_array) = inner_kv.children().find(|c| c.kind() == ARRAY) {
-                    sort_string_array_in_place(&inner_array);
+        for member in &mut array.members {
+            let Value::InlineTable(table) = &mut member.item else {
+                continue;
+            };
+            for inner in &mut table.members {
+                let name = common::sections::dispatch_name(&inner.item.key);
+                if OVERRIDES_SORT_ARRAYS.contains(&name.as_str()) {
+                    sort_names_in(&mut inner.item.value);
                 }
             }
         }
-    }
-}
-
-fn sort_string_array_in_place(array: &SyntaxNode) {
-    sort_strings::<String, _, _>(array, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+    });
 }

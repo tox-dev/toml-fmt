@@ -122,6 +122,10 @@ The shared config file uses the same keys as the ``[tox-toml-fmt]`` table, but w
 When both a shared config file and a ``[tox-toml-fmt]`` table exist, per-file settings from the ``[tox-toml-fmt]``
 table take precedence over the shared config file.
 
+Settings are read with the same parser that reads the file, so a value only TOML 1.1 spells does not hide the table
+they are written in. Every key there has to be one the formatter knows, written as the type its command-line flag
+takes; anything else is reported against the file and the key, and nothing is formatted.
+
 ``tox-toml-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code. It
 keeps configuration minimal so every ``tox.toml`` lands on one standard format. That buys you:
 
@@ -239,8 +243,9 @@ An array becomes multiline when any of these conditions are met:
 String Wrapping
 ~~~~~~~~~~~~~~~
 
-Long strings that exceed ``column_width`` are wrapped using TOML multiline basic strings with line-ending backslashes
-(shown here with a small ``column_width``):
+Strings whose line runs past ``column_width`` are wrapped using TOML multiline basic strings with line-ending
+backslashes (shown here with a small ``column_width``). The line is measured from the start of its key, so a long key
+can be what pushes a value into wrapping; a key already wider than the column keeps its value on one line:
 
 .. code-block:: toml
 
@@ -550,6 +555,9 @@ settings:
 ``allowlist_externals`` → ``labels`` → ``suicide_timeout`` → ``interrupt_timeout`` →
 ``terminate_timeout`` → ``depends`` → ``env_dir`` → ``env_tmp_dir`` → ``env_log_dir``
 
+The keys of a ``set_env`` table keep the order the file gave them: tox reads that table in order, so a key written
+after ``file`` overrides what the file said while one written before it does not.
+
 .. code-block:: toml
 
    # Before
@@ -578,20 +586,17 @@ consistent spacing around specifiers) and sorted alphabetically by package name:
    # After
    requires = [ "tox>=4.2", "tox-uv" ]
 
-``env_list`` Sorting
-~~~~~~~~~~~~~~~~~~~~
+``env_list`` Order
+~~~~~~~~~~~~~~~~~~
 
-The ``env_list`` array is sorted with a specific ordering:
+The ``env_list`` array is written in a fixed order:
 
-1. **Pinned environments** come first, in the order specified by ``--pin-env``
-2. **CPython versions** (matching ``py3.12``, ``py312``, ``3.12``, etc.) sorted descending (newest first)
-3. **PyPy versions** (matching ``pypy3.10``, ``pypy310``, etc.) sorted descending
-4. **Named environments** (``lint``, ``type``, ``docs``, etc.) sorted alphabetically
+1. **Pinned environments**, in the order ``--pin-env`` names them
+2. **CPython versions** (``py3.12``, ``py312``, ``3.12``), newest first
+3. **PyPy versions** (``pypy3.10``, ``pypy310``), newest first
+4. **Everything else** (``lint``, ``type``, ``docs``), by name
 
-Inline table entries (such as ``{ product = ... }``) in ``env_list`` are excluded from sorting and remain
-in their original positions.
-
-Compound environment names separated by ``-`` are classified by their first recognized part:
+A compound name separated by ``-`` is placed by the first part of it that reads as one of those.
 
 .. code-block:: toml
 
@@ -601,23 +606,46 @@ Compound environment names separated by ``-`` are classified by their first reco
    # After
    env_list = [ "py312", "py310-django", "py38", "docs", "lint" ]
 
-Use ``--pin-env`` (here ``fix,type``) to pin specific environments to the start:
+An entry that generates environments rather than naming one, such as ``{ product = ... }``, names none of them, and
+what it generates is read where it sits, so it holds the place the file gave it while the names around it move.
+
+That order is also where each ``[env.NAME]`` table is written, so the file reads the way tox runs it. ``--pin-env``
+(here ``fix,type``) moves both:
 
 .. code-block:: toml
 
    # Before
-   env_list = ["lint", "py312", "py313", "docs", "fix", "type"]
+   env_list = ["lint", "fix", "type"]
+
+   [env.lint]
+   description = "lint"
+
+   [env.fix]
+   description = "fix"
+
+   [env.type]
+   description = "type"
 
    # After
-   env_list = [ "fix", "type", "py313", "py312", "docs", "lint" ]
+   env_list = [ "fix", "type", "lint" ]
+
+   [env.fix]
+   description = "fix"
+
+   [env.type]
+   description = "type"
+
+   [env.lint]
+   description = "lint"
 
 
 ``use_develop`` Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The legacy ``use_develop = true`` setting is automatically converted to the modern ``package = "editable"``
-equivalent. If ``use_develop = false``, the key is left as-is. If a ``package`` key already exists,
-only the ``use_develop`` key is removed:
+equivalent. If ``use_develop = false``, the key is left as-is. tox reads ``use_develop`` before ``package`` and
+installs an editable package whatever ``package`` says, so a ``package`` key already there is given the mode the
+environment ran with:
 
 .. code-block:: toml
 
@@ -636,11 +664,15 @@ Certain arrays within environment tables are sorted automatically:
 
 **Sorted by canonical PEP 508 package name:**
 
-- ``deps``, ``constraints``: dependencies normalized and sorted by package name
+- ``deps``: dependencies normalized and sorted by package name. ``constraints`` names the files tox hands to pip, so
+  it is left as written.
 
-Pip file references (``-r``, ``-c``), editable installs (``-e``), local paths (``./``, ``../``,
-``/``), and entries containing tox substitution variables (``{tox_root}``, etc.) are preserved as-is
-without PEP 508 normalization, but still participate in sorting by their lowercased value:
+pip reads this list the way it reads a requirements file, where a later ``--index-url`` replaces the one before it, so
+a list holding anything but plain requirements keeps the order it names them in. Pip options and file references
+(``-r``, ``-c``, ``-e``, ``--index-url``), local paths (``./``, ``../``, ``/``), URLs, artifact filenames (``.whl``,
+``.zip``, ``.tar.gz`` and the other archive suffixes pip installs by name), and entries containing tox substitution
+variables (``{tox_root}``, etc.) are each such an entry: they are left as written, and the list they sit in
+is left in its order while every requirement beside them is still normalized:
 
 .. code-block:: toml
 
@@ -650,7 +682,7 @@ without PEP 508 normalization, but still participate in sorting by their lowerca
 
    # After
    [env_run_base]
-   deps = [ "-e ./my-pkg[test]", "-r requirements.txt", "coverage", "pytest>=7" ]
+   deps = [ "pytest>=7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]" ]
 
 **Sorted alphabetically:**
 

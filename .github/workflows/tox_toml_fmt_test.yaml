@@ -26,9 +26,14 @@ jobs:
         with:
           filters: |
             run:
+              - 'toml-doc/**'
               - 'common/**'
               - 'toml-fmt-common/**'
+              - 'tox-rules/**'
               - 'tox-toml-fmt/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
               - '.github/workflows/tox_toml_fmt_test.yaml'
   clippy:
     name: 📎 clippy
@@ -46,7 +51,7 @@ jobs:
         with:
           components: clippy
       - name: 📎 Run Clippy
-        run: cargo clippy -p tox-toml-fmt --locked --all-targets -- -D warnings
+        run: cargo clippy -p tox-toml-fmt -p tox-rules --locked --all-targets -- -D warnings
   fmt:
     name: 🎨 fmt
     needs: changes
@@ -63,7 +68,7 @@ jobs:
         with:
           components: rustfmt
       - name: 🎨 Check formatting
-        run: cargo fmt -p tox-toml-fmt --check
+        run: cargo fmt -p tox-toml-fmt -p tox-rules --check
   build:
     name: 🔨 build
     needs: changes
@@ -95,18 +100,28 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
         with:
           components: llvm-tools-preview
-      - name: 📦 Install cargo-llvm-cov
+      - name: 📦 Install cargo-llvm-cov and cargo-nextest
         uses: taiki-e/install-action@5b4d68e2e660441203ab128a23676f1e4faf1532 # v2.86.3
         with:
-          tool: cargo-llvm-cov
+          tool: cargo-llvm-cov,cargo-nextest
       - name: ✅ Run tests with coverage
-        run: cargo llvm-cov -p tox-toml-fmt --no-default-features --locked --codecov --output-path coverage.json --ignore-filename-regex 'main\.rs'
+        run: cargo llvm-cov nextest -p tox-toml-fmt --no-default-features --locked --fail-under-lines 100 --codecov --output-path coverage.json
       - name: 📤 Upload coverage
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
-          flags: rust
+          flags: tox-toml-fmt
+      # the tox rules are a crate of their own, so they prove their own coverage rather than leaning
+      # on the formatter that ships them
+      - name: ✅ Run the tox rule tests with coverage
+        run: cargo llvm-cov nextest -p tox-rules --no-default-features --locked --fail-under-lines 100 --codecov --output-path tox-rules.json
+      - name: 📤 Upload the tox rule coverage
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: tox-rules.json
+          flags: tox-rules
   py:
     name: 🐍 ${{ matrix.py }} @ ${{ matrix.os }}
     needs: changes

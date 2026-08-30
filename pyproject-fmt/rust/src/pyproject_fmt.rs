@@ -1,9 +1,4 @@
-use common::array::{dedupe_strings, sort_strings};
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "column_width",
     "indent",
     "keep_full_version",
@@ -22,16 +17,7 @@ pub const KEY_ORDER: &[&str] = &[
 // duplicate is inert. Dedup stays case-sensitive because those lookups are case-sensitive.
 const SORT_ARRAYS: &[&str] = &["expand_tables", "collapse_tables", "skip_wrap_for_keys"];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.pyproject-fmt") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if SORT_ARRAYS.contains(&key.as_str()) {
-            dedupe_strings(entry, str::to_string);
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS.contains(&key)
 }

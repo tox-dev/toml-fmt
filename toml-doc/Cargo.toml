@@ -1,0 +1,17 @@
+[package]
+name = "toml-doc"
+version = "0.1.0"
+description = "Mutable, format-preserving TOML document model built for formatters"
+repository = "https://github.com/tox-dev/toml-fmt"
+license = "MIT"
+edition = "2024"
+rust-version = "1.85"
+
+[dependencies]
+toml_parser = { workspace = true }
+
+[dev-dependencies]
+toml-test-data = "2.14.0"
+
+[lints]
+workspace = true

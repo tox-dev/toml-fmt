@@ -1,9 +1,7 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
+use common::sections;
+use toml_doc::Document;
 
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "name",
     "version",
     "package",
@@ -26,41 +24,22 @@ pub const KEY_ORDER: &[&str] = &[
     "section",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    fix_root(tables);
-    fix_type_aot(tables);
-    fix_section_aot(tables);
+pub fn fix(document: &mut Document<'_>) {
+    fix_type_aot(document);
+    fix_section_aot(document);
 }
 
-fn fix_root(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.towncrier") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if key.as_str() == "ignore" {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    key == "ignore"
 }
 
-fn fix_type_aot(tables: &mut Tables) {
-    let Some(entries) = tables.get("tool.towncrier.type") else {
-        return;
-    };
-    for entry_ref in entries {
-        let table = &mut entry_ref.borrow_mut();
-        reorder_table_keys(table, &["", "directory", "name", "showcontent"]);
-    }
+fn fix_type_aot(document: &mut Document<'_>) {
+    let name = ["tool", "towncrier", "type"].map(str::to_owned);
+    sections::for_array_elements(document, &name, &["directory", "name", "showcontent"], &mut |_, _| {});
 }
 
-fn fix_section_aot(tables: &mut Tables) {
-    let Some(entries) = tables.get("tool.towncrier.section") else {
-        return;
-    };
-    for entry_ref in entries {
-        let table = &mut entry_ref.borrow_mut();
-        reorder_table_keys(table, &["", "path", "name", "showcontent"]);
-    }
+fn fix_section_aot(document: &mut Document<'_>) {
+    let name = ["tool", "towncrier", "section"].map(str::to_owned);
+    sections::for_array_elements(document, &name, &["path", "name", "showcontent"], &mut |_, _| {});
 }

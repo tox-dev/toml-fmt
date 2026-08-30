@@ -66,12 +66,6 @@ jobs:
           persist-credentials: false
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
-      - name: ⬆️ Update git dependencies
-        run: |
-          TOMBI_TAG=$(gh api repos/tombi-toml/tombi/releases/latest --jq .tag_name)
-          sed -i "s/tombi-toml\/tombi\", tag = \"v[^\"]*\"/tombi-toml\/tombi\", tag = \"$TOMBI_TAG\"/" Cargo.toml
-        env:
-          GH_TOKEN: ${{ github.token }}
       - name: ⬆️ Update Cargo.toml dependencies
         run: |
           cargo install cargo-edit

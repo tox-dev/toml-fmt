@@ -22,6 +22,7 @@ import urllib3
 from git import Repo
 from github import Github, Repository
 from github.Auth import Token
+from local_inputs import LOCAL_INPUTS, affects
 from tomllib import load
 
 if TYPE_CHECKING:
@@ -92,7 +93,7 @@ def run() -> None:
 
 def parse_cli() -> Options:
     parser = ArgumentParser()
-    parser.add_argument("project", choices=["pyproject-fmt", "tox-toml-fmt", "toml-fmt-common"])
+    parser.add_argument("project", choices=sorted(LOCAL_INPUTS))
     parser.add_argument("pr", type=lambda s: int(s) if s else None, nargs="?", default=None)
     parser.add_argument("base", type=str, nargs="?", default="")
     parser.add_argument("--regenerate", action="store_true", help="Regenerate entire changelog from all releases")
@@ -206,9 +207,7 @@ def entries(
 
 
 def commit_affects_project(commit: object, project: str) -> bool:
-    changed_files = list(commit.stats.files.keys())
-    prefixes = ("common/", f"{project}/")
-    return any(file_path.startswith(prefixes) for file_path in changed_files)
+    return affects(project, commit.stats.files)
 
 
 if __name__ == "__main__":

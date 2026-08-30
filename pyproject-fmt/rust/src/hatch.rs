@@ -1,12 +1,10 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxElement;
+use common::arrays::sort_names_in;
+use common::sections;
+use toml_doc::Document;
 
 // Config lives in sub-tables, so KEY_ORDER targets the collapsed parent's dotted keys (version.source,
 // build.exclude, envs.default.dependencies); group order follows the hatch reference (https://hatch.pypa.io).
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "version.source",
     "version.path",
     "version.pattern",
@@ -66,56 +64,90 @@ pub const KEY_ORDER: &[&str] = &[
     // list still lands in the envs block.
 ];
 
+// hatch reads `include`, `exclude` and `artifacts` the way a gitignore is read, where a `!pattern`
+// after a broader one takes back what it matched, so each of those keeps the order it was written
+// in. What is left here selects files by name alone.
 const SORT_ARRAYS_EXACT: &[&str] = &[
-    "build.include",
-    "build.exclude",
-    "build.force-include",
-    "build.artifacts",
     "build.packages",
     "build.sources",
     "build.dev-mode-dirs",
-    "build.targets.wheel.include",
-    "build.targets.wheel.exclude",
-    "build.targets.wheel.force-include",
-    "build.targets.wheel.artifacts",
     "build.targets.wheel.packages",
-    "build.targets.sdist.include",
-    "build.targets.sdist.exclude",
-    "build.targets.sdist.force-include",
     "workspace.members",
-    "workspace.exclude",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    fix_root(tables);
-    fix_env_tables(tables);
-    fix_overrides_aot(tables);
+pub fn fix(document: &mut Document<'_>) {
+    fix_root(document);
+    fix_env_tables(document);
 }
 
-fn fix_root(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.hatch") else {
-        return;
-    };
-    let order = {
-        let table_elements: &Vec<SyntaxElement> = &elements.first().unwrap().borrow();
-        build_key_order(table_elements)
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        let k = key.as_str();
-        if SORT_ARRAYS_EXACT.contains(&k) || is_dynamic_sort_array(k) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+fn fix_root(document: &mut Document<'_>) {
+    let path = sections::parse_name("tool.hatch");
+    let mut names: Vec<Vec<String>> = Vec::new();
+    sections::for_names_under(document, &path, |tail, _| names.push(tail.to_vec()));
+    let order = key_order_of(&names);
+    // the name a rule reads here is the key's own segments, so an environment the file quoted
+    // because it holds a dot is the one name it wrote
+    for segments in &names {
+        if SORT_ARRAYS_EXACT.contains(&segments.join(".").as_str()) || is_dynamic_sort_array(segments) {
+            let named: Vec<String> = path.iter().chain(segments).cloned().collect();
+            sections::for_value_at(document, &named, sort_names_in);
         }
-    });
+    }
     let refs: Vec<&str> = order.iter().map(String::as_str).collect();
-    reorder_table_keys(table, &refs);
+    let keep = keep_order_of(&names);
+    let keep_refs: Vec<&str> = keep.iter().map(String::as_str).collect();
+    sections::reorder_under_keeping(document, &path, &refs, &keep_refs);
 }
 
-fn build_key_order(table: &[SyntaxElement]) -> Vec<String> {
-    let mut order: Vec<String> = KEY_ORDER.iter().map(|s| (*s).to_string()).collect();
-    for env in collect_dynamic_segments(table, "envs") {
-        let p = format!("envs.{env}");
-        for k in [
+/// hatch runs its hooks and applies its overrides in the order they are written, and reads a matrix
+/// element in that order to build the names it generates, so the keys under each of those names
+/// keep the order the file gave them.
+pub fn keep_order(entries: &[toml_doc::Entry<'_>]) -> Vec<String> {
+    keep_order_of(&segments_of(entries))
+}
+
+/// The same, read from the names the table holds however the file wrote them.
+fn keep_order_of(names: &[Vec<String>]) -> Vec<String> {
+    let mut held = vec![String::from("build.hooks"), String::from("metadata.hooks")];
+    for target in below(names, &["build", "targets"]) {
+        held.push(format!("build.targets.{}.hooks", sections::quoted_segment(&target)));
+    }
+    for env in below(names, &["envs"]) {
+        let env = sections::quoted_segment(&env);
+        held.push(format!("envs.{env}.overrides"));
+        held.push(format!("envs.{env}.matrix"));
+    }
+    held
+}
+
+/// The names a table holds, each spelled the way the file wrote its segments.
+fn segments_of(entries: &[toml_doc::Entry<'_>]) -> Vec<Vec<String>> {
+    entries.iter().map(|entry| entry.key_value.key.segments()).collect()
+}
+
+/// The one segment each name writes below `prefix`, in the order they read.
+fn below(names: &[Vec<String>], prefix: &[&str]) -> Vec<String> {
+    let mut held: Vec<String> = names
+        .iter()
+        .filter(|name| name.len() > prefix.len() && name.iter().zip(prefix).all(|(held, want)| held == want))
+        .map(|name| name[prefix.len()].clone())
+        .collect();
+    held.sort();
+    held.dedup();
+    held
+}
+
+pub fn build_key_order(entries: &[toml_doc::Entry<'_>]) -> Vec<String> {
+    key_order_of(&segments_of(entries))
+}
+
+/// The same, read from the names the table holds however the file wrote them.
+fn key_order_of(names: &[Vec<String>]) -> Vec<String> {
+    let mut order: Vec<String> = KEY_ORDER.iter().map(|name| (*name).to_string()).collect();
+    for env in below(names, &["envs"]) {
+        // the name is spelled the way a dispatch name spells it, so both sides match
+        let prefix = format!("envs.{}", sections::quoted_segment(&env));
+        for name in [
             "type",
             "template",
             "detached",
@@ -141,84 +173,49 @@ fn build_key_order(table: &[SyntaxElement]) -> Vec<String> {
             "matrix-name-format",
             "overrides",
         ] {
-            order.push(format!("{p}.{k}"));
+            order.push(format!("{prefix}.{name}"));
         }
-        order.push(p);
+        order.push(prefix);
     }
     order.push(String::from("envs"));
     order
 }
 
-fn collect_dynamic_segments(table: &[SyntaxElement], prefix: &str) -> Vec<String> {
-    use tombi_syntax::SyntaxKind::{KEYS, KEY_VALUE};
-    let prefix_dot = format!("{prefix}.");
-    let mut names: Vec<String> = Vec::new();
-    let raw_keys = table
-        .iter()
-        .filter(|e| e.kind() == KEY_VALUE)
-        .filter_map(|element| element.as_node())
-        .filter_map(|kv| kv.children().find(|c| c.kind() == KEYS))
-        .map(|keys| keys.text().to_string().trim().to_string());
-    for raw in raw_keys {
-        if let Some(rest) = raw.strip_prefix(&prefix_dot) {
-            let seg = rest.split('.').next().unwrap_or(rest);
-            let name = seg.trim_matches('"').trim_matches('\'').to_string();
-            if !names.contains(&name) && !name.is_empty() {
-                names.push(name);
-            }
-        }
-    }
-    names
-}
-
-fn is_dynamic_sort_array(key: &str) -> bool {
-    // These per-env arrays carry set semantics in hatch, so they sort.
-    let Some(rest) = key.strip_prefix("envs.") else {
-        return false;
-    };
-    let Some((_env, tail)) = rest.split_once('.') else {
-        return false;
-    };
+/// These per-env arrays carry set semantics in hatch, so they sort. The environment's name is the
+/// one segment after `envs`, whatever it holds.
+fn is_dynamic_sort_array(key: &[String]) -> bool {
     matches!(
-        tail,
-        "dependencies"
-            | "extra-dependencies"
-            | "features"
-            | "platforms"
-            | "env-include"
-            | "env-exclude"
-            | "pre-install-commands"
-            | "post-install-commands"
-    )
-}
-
-fn fix_env_tables(tables: &mut Tables) {
-    let env_names = collect_header_segments(tables, "tool.hatch.envs.");
-    for env in env_names {
-        let key = format!("tool.hatch.envs.{env}");
-        if let Some(elements) = tables.get(&key) {
-            let table = &mut elements.first().unwrap().borrow_mut();
-            for_entries(table, &mut |k, entry| {
-                if matches!(
-                    k.as_str(),
+        key,
+        [head, _, tail]
+            if head == "envs"
+                && matches!(
+                    tail.as_str(),
                     "dependencies"
                         | "extra-dependencies"
                         | "features"
                         | "platforms"
                         | "env-include"
                         | "env-exclude"
-                        | "pre-install-commands"
-                        | "post-install-commands"
+                )
+    )
+}
+
+fn fix_env_tables(document: &mut Document<'_>) {
+    let env_names = collect_header_segments(document, "tool.hatch.envs.");
+    for env in env_names {
+        let key = ["tool", "hatch", "envs", &env].map(str::to_owned);
+        if let Some(section) = sections::first_of(document, &key) {
+            sections::for_entries(section, |key, value| {
+                if matches!(
+                    key,
+                    "dependencies" | "extra-dependencies" | "features" | "platforms" | "env-include" | "env-exclude"
                 ) {
-                    sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| {
-                        natural_lexical_cmp(lhs, rhs)
-                    });
+                    sort_names_in(value);
                 }
             });
-            reorder_table_keys(
-                table,
+            sections::reorder_keys(
+                &mut section.entries,
                 &[
-                    "",
                     "type",
                     "template",
                     "detached",
@@ -247,36 +244,17 @@ fn fix_env_tables(tables: &mut Tables) {
             );
         }
         for sub in ["scripts", "env-vars"] {
-            let k = format!("tool.hatch.envs.{env}.{sub}");
-            if let Some(elements) = tables.get(&k) {
-                let table = &mut elements.first().unwrap().borrow_mut();
-                reorder_table_keys(table, &[""]);
+            let key = ["tool", "hatch", "envs", &env, sub].map(str::to_owned);
+            if let Some(section) = sections::first_of(document, &key) {
+                sections::reorder_keys(&mut section.entries, &[]);
             }
         }
     }
 }
 
-fn fix_overrides_aot(tables: &mut Tables) {
-    // matrix and overrides.* are AoT, so keep entry order and only reorder inner keys.
-    for env in collect_header_segments(tables, "tool.hatch.envs.") {
-        let matrix_key = format!("tool.hatch.envs.{env}.matrix");
-        if let Some(entries) = tables.get(&matrix_key) {
-            for entry_ref in entries {
-                let table = &mut entry_ref.borrow_mut();
-                reorder_table_keys(table, &[""]);
-            }
-        }
-    }
-}
-
-fn collect_header_segments(tables: &Tables, prefix: &str) -> Vec<String> {
-    let mut names: Vec<String> = tables
-        .header_to_pos
-        .keys()
-        .filter_map(|h| h.strip_prefix(prefix))
-        .map(|rest| rest.split('.').next().unwrap_or(rest).trim_matches('"').to_string())
-        .collect();
-    names.sort();
-    names.dedup();
-    names
+fn collect_header_segments(document: &Document<'_>, prefix: &str) -> Vec<String> {
+    sections::headers_below(
+        document,
+        &prefix.trim_end_matches('.').split('.').collect::<Vec<&str>>(),
+    )
 }

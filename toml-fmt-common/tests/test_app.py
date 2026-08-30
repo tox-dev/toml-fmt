@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 import os
+import sys
+from argparse import ArgumentTypeError
 from io import StringIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    import tomllib
+else:  # pragma: <3.11 cover
+    import tomli as tomllib
 
 import pytest
 
@@ -16,10 +23,15 @@ from toml_fmt_common import (
     _build_cli,
     _color_diff,
     build_cli,
+    count_argument,
+    list_argument,
+    name_list_argument,
     run,
+    spacing_argument,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator, Sequence
     from pathlib import Path
 
     from pytest_mock import MockerFixture
@@ -28,6 +40,7 @@ if TYPE_CHECKING:
 class DumpNamespace(FmtNamespace):
     extra: str
     tuple_magic: tuple[str, ...]
+    loud: bool
 
 
 class Dumb(TOMLFormatter[DumpNamespace]):
@@ -50,6 +63,25 @@ class Dumb(TOMLFormatter[DumpNamespace]):
     def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
         parser.add_argument("extra", help="this is something extra")
         parser.add_argument("-t", "--tuple-magic", default=(), type=lambda t: tuple(t.split(".")))
+        parser.add_argument("--loud", action="store_true", help="say more about what was done")
+
+    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:  # ruff: ignore[no-self-use]
+        try:
+            held: Any = tomllib.loads(text)
+        except tomllib.TOMLDecodeError as exc:
+            raise SyntaxError(str(exc)) from exc
+        for part in path:
+            if not isinstance(held, dict) or part not in held:
+                return None
+            held = held[part]
+        if not isinstance(held, dict):
+            return None
+        for name, value in held.items():
+            if not isinstance(value, str | int | bool | list):
+                # the loader reads a malformed setting as a value error, whatever went wrong in it
+                msg = f"{name}: {value} is not a setting"
+                raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
+        return held
 
     def format(self, text: str, opt: DumpNamespace) -> str:
         self.last_format_opt = opt
@@ -73,15 +105,30 @@ def test_dumb_help(capsys: pytest.CaptureFixture[str]) -> None:
     assert "this is something extra" in out
 
 
-def test_dumb_format_with_override(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("start", "added", "hunk"),
+    [
+        pytest.param("[start.sub]\nextra = 'B'", ["extras = 'B'"], "@@ -1,2 +1,3 @@", id="override-reaches-the-key"),
+        pytest.param(
+            "[start.sub]\ntuple_magic = '1.2.3'",
+            ["extras = 'E'", "magic = '1,2,3'"],
+            "@@ -1,2 +1,4 @@",
+            id="a-setting-of-its-own-type",
+        ),
+        pytest.param("[start]\nsub = 'B'", ["extras = 'E'"], "@@ -1,2 +1,3 @@", id="the-table-holds-a-value"),
+        pytest.param("start = 'B'", ["extras = 'E'"], "@@ -1 +1,2 @@", id="the-root-holds-a-value"),
+    ],
+)
+def test_a_formatted_file_is_written_back_and_the_change_printed(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, start: str, added: list[str], hunk: str
+) -> None:
     dumb = tmp_path / "dumb.toml"
-    dumb.write_text("[start.sub]\nextra = 'B'")
+    dumb.write_text(start)
 
     exit_code = run(Dumb(), ["E", str(dumb)])
+
     assert exit_code == 1
-
-    assert dumb.read_text() == "[start.sub]\nextra = 'B'\nextras = 'B'"
-
+    assert dumb.read_text() == start + "\n" + "\n".join(added)
     out, err = capsys.readouterr()
     assert not err
     assert out.splitlines() == [
@@ -89,42 +136,16 @@ def test_dumb_format_with_override(capsys: pytest.CaptureFixture[str], tmp_path:
         f"{RESET}",
         f"{GREEN}+++ {dumb}",
         f"{RESET}",
-        "@@ -1,2 +1,3 @@",
+        hunk,
         "",
-        " [start.sub]",
-        " extra = 'B'",
-        f"{GREEN}+extras = 'B'{RESET}",
+        *(f" {line}" for line in start.splitlines()),
+        *(f"{GREEN}+{line}{RESET}" for line in added),
     ]
 
 
 def test_color_diff_disabled_by_no_color(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("NO_COLOR", "1")
     assert list(_color_diff(["+added", "-removed", " context"])) == ["+added", "-removed", " context"]
-
-
-def test_dumb_format_with_override_custom_type(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    dumb = tmp_path / "dumb.toml"
-    dumb.write_text("[start.sub]\ntuple_magic = '1.2.3'")
-
-    exit_code = run(Dumb(), ["E", str(dumb)])
-    assert exit_code == 1
-
-    assert dumb.read_text() == "[start.sub]\ntuple_magic = '1.2.3'\nextras = 'E'\nmagic = '1,2,3'"
-
-    out, err = capsys.readouterr()
-    assert not err
-    assert out.splitlines() == [
-        f"{RED}--- {dumb}",
-        f"{RESET}",
-        f"{GREEN}+++ {dumb}",
-        f"{RESET}",
-        "@@ -1,2 +1,4 @@",
-        "",
-        " [start.sub]",
-        " tuple_magic = '1.2.3'",
-        f"{GREEN}+extras = 'E'{RESET}",
-        f"{GREEN}+magic = '1,2,3'{RESET}",
-    ]
 
 
 def test_dumb_format_no_print_diff(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
@@ -184,53 +205,6 @@ def test_dumb_format_via_folder(
     ]
 
 
-def test_dumb_format_override_non_dict_result(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    dumb = tmp_path / "dumb.toml"
-    dumb.write_text("[start]\nsub = 'B'")
-
-    exit_code = run(Dumb(), ["E", str(dumb)])
-    assert exit_code == 1
-
-    assert dumb.read_text() == "[start]\nsub = 'B'\nextras = 'E'"
-
-    out, err = capsys.readouterr()
-    assert not err
-    assert out.splitlines() == [
-        f"{RED}--- {dumb}",
-        f"{RESET}",
-        f"{GREEN}+++ {dumb}",
-        f"{RESET}",
-        "@@ -1,2 +1,3 @@",
-        "",
-        " [start]",
-        " sub = 'B'",
-        f"{GREEN}+extras = 'E'{RESET}",
-    ]
-
-
-def test_dumb_format_override_non_dict_part(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    dumb = tmp_path / "dumb.toml"
-    dumb.write_text("start = 'B'")
-
-    exit_code = run(Dumb(), ["E", str(dumb)])
-    assert exit_code == 1
-
-    assert dumb.read_text() == "start = 'B'\nextras = 'E'"
-
-    out, err = capsys.readouterr()
-    assert not err
-    assert out.splitlines() == [
-        f"{RED}--- {dumb}",
-        f"{RESET}",
-        f"{GREEN}+++ {dumb}",
-        f"{RESET}",
-        "@@ -1 +1,2 @@",
-        "",
-        " start = 'B'",
-        f"{GREEN}+extras = 'E'{RESET}",
-    ]
-
-
 def test_dumb_stdin(capsys: pytest.CaptureFixture[str], mocker: MockerFixture) -> None:
     mocker.patch("sys.stdin", StringIO("ok = 1"))
 
@@ -242,95 +216,62 @@ def test_dumb_stdin(capsys: pytest.CaptureFixture[str], mocker: MockerFixture) -
     assert out.splitlines() == ["ok = 1", "extras = 'E'"]
 
 
-def test_dumb_path_missing(capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.chdir(tmp_path)
+def _leave_missing(_path: Path) -> None:
+    """The path the argument names was never written."""
+
+
+def _write_unreadable(path: Path) -> None:
+    path.write_text("", encoding="utf-8")
+    path.chmod(0o000)
+
+
+def _write_read_only(path: Path) -> None:
+    path.write_text("", encoding="utf-8")
+    path.chmod(0o400)
+
+
+@pytest.fixture
+def target(tmp_path: Path) -> Iterator[Path]:
+    """A path the run is pointed at, restored to a mode the fixture can clean up."""
+    path = tmp_path / "dumb.toml"
+    yield path
+    if path.exists():
+        path.chmod(0o600)
+
+
+@pytest.mark.parametrize(
+    ("prepare", "message"),
+    [
+        pytest.param(_leave_missing, "argument inputs: path does not exist\n", id="missing"),
+        pytest.param(os.mkfifo, "argument inputs: path is not a file\n", id="not-a-file"),
+        pytest.param(_write_unreadable, "argument inputs: cannot read path\n", id="unreadable"),
+        pytest.param(_write_read_only, "cannot write path", id="read-only"),
+    ],
+)
+def test_a_path_the_run_cannot_use_is_named_in_the_error(
+    capsys: pytest.CaptureFixture[str],
+    target: Path,
+    prepare: Callable[[Path], None],
+    message: str,
+) -> None:
+    prepare(target)
 
     with pytest.raises(SystemExit):
-        run(Dumb(), ["E", "dumb.toml"])
+        run(Dumb(), ["E", str(target)])
 
     out, err = capsys.readouterr()
-    assert "\ntoml-fmt-common: error: argument inputs: path does not exist\n" in err
+    assert message in err
     assert not out
 
 
-def test_dumb_path_is_folder(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    toml = tmp_path / "dumb.toml"
-    os.mkfifo(toml)
-
-    with pytest.raises(SystemExit):
-        run(Dumb(), ["E", str(toml)])
-
-    out, err = capsys.readouterr()
-    assert "\ntoml-fmt-common: error: argument inputs: path is not a file\n" in err
-    assert not out
-
-
-def test_dumb_path_no_read(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    toml = tmp_path / "dumb.toml"
-    toml.write_text("")
-    start = toml.stat().st_mode
-    toml.chmod(0o000)
-
-    try:
-        with pytest.raises(SystemExit):
-            run(Dumb(), ["E", str(toml)])
-    finally:
-        toml.chmod(start)
-
-    out, err = capsys.readouterr()
-    assert "\ntoml-fmt-common: error: argument inputs: cannot read path\n" in err
-    assert not out
-
-
-def test_dumb_path_no_write(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
-    toml = tmp_path / "dumb.toml"
-    toml.write_text("")
-    start = toml.stat().st_mode
-    toml.chmod(0o400)
-
-    try:
-        with pytest.raises(SystemExit):
-            run(Dumb(), ["E", str(toml)])
-    finally:
-        toml.chmod(start)
-
-    out, err = capsys.readouterr()
-    assert "cannot write path" in err
-    assert not out
-
-
-def test_dumb_path_no_write_check_mode(
-    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("mode", ["--check", "--stdout"])
+def test_a_read_only_path_is_fine_for_a_run_that_writes_nothing(
+    capsys: pytest.CaptureFixture[str], target: Path, monkeypatch: pytest.MonkeyPatch, mode: str
 ) -> None:
     monkeypatch.setenv("NO_FMT", "1")
-    toml = tmp_path / "dumb.toml"
-    toml.write_text("")
-    start = toml.stat().st_mode
-    toml.chmod(0o400)
+    _write_read_only(target)
 
-    try:
-        exit_code = run(Dumb(), ["E", "--check", str(toml)])
-    finally:
-        toml.chmod(start)
-
-    assert exit_code == 0
-    _out, err = capsys.readouterr()
-    assert not err
-
-
-def test_dumb_path_no_write_stdout_mode(
-    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("NO_FMT", "1")
-    toml = tmp_path / "dumb.toml"
-    toml.write_text("")
-    start = toml.stat().st_mode
-    toml.chmod(0o400)
-
-    try:
-        exit_code = run(Dumb(), ["E", "--stdout", str(toml)])
-    finally:
-        toml.chmod(start)
+    exit_code = run(Dumb(), ["E", mode, str(target)])
 
     assert exit_code == 0
     _out, err = capsys.readouterr()
@@ -565,11 +506,11 @@ def test_dumb_format_keeps_line_ending(tmp_path: Path, eol: str) -> None:
 
 def test_dumb_format_mixed_line_endings_take_the_majority(tmp_path: Path) -> None:
     dumb = tmp_path / "dumb.toml"
-    dumb.write_bytes(b"[start.sub]\r\nextra = 'B'\r\nother = 1\nmore = 2")
+    dumb.write_bytes(b"other = 1\r\nmore = 2\r\nkeep = 3\n[start.sub]\r\nextra = 'B'")
 
     assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 1
 
-    assert dumb.read_bytes() == b"[start.sub]\r\nextra = 'B'\r\nother = 1\r\nmore = 2\r\nextras = 'B'"
+    assert dumb.read_bytes() == b"other = 1\r\nmore = 2\r\nkeep = 3\r\n[start.sub]\r\nextra = 'B'\r\nextras = 'B'"
 
 
 def test_dumb_format_crlf_alone_is_not_a_change(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -580,3 +521,180 @@ def test_dumb_format_crlf_alone_is_not_a_change(tmp_path: Path, monkeypatch: pyt
     assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 0
 
     assert dumb.read_bytes() == b"[start.sub]\r\nextra = 'B'"
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        pytest.param("-1", id="negative"),
+        pytest.param("two", id="not-a-number"),
+        # `True` is an integer to Python, and a file that writes one there names no count
+        pytest.param(True, id="boolean"),
+    ],
+)
+def test_a_count_the_formatter_cannot_hold(written: str | int) -> None:
+    with pytest.raises(ArgumentTypeError):
+        count_argument(written)
+
+
+def test_a_count_reads_what_it_is_given() -> None:
+    assert count_argument("4") == 4
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        # no reader accepts this, so the formatter is the one that says so
+        pytest.param("key =\n", id="not-a-document"),
+        # TOML 1.1, which the formatter reads and this reader may not
+        pytest.param("value = 12:30\n", id="a-time-without-seconds"),
+    ],
+)
+def test_a_target_the_settings_reader_cannot_read(tmp_path: Path, written: str) -> None:
+    """The formatter is the one that reports on a file this reader cannot get the settings out of."""
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text(written)
+
+    assert run(Dumb(), ["E", str(dumb)]) == 1
+    assert dumb.read_text() == f"{written}\nextras = 'E'"
+
+
+def test_a_setting_written_in_a_form_no_setting_takes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    dumb = tmp_path / "dumb.toml"
+    start = "[start.sub]\nextra = 1979-05-27\n"
+    dumb.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["E", str(dumb)])
+
+    assert "extra: 1979-05-27 is not a setting" in capsys.readouterr().err
+    assert dumb.read_text() == start
+
+
+@pytest.mark.parametrize(
+    ("setting", "message"),
+    [
+        pytest.param("loud = true", None, id="a-flag-the-file-turns-on"),
+        pytest.param('loud = "yes"', "is not written as bool", id="a-flag-written-as-text"),
+        pytest.param("indent = true", "is not written as int", id="a-count-written-as-a-flag"),
+        pytest.param("louder = true", "unknown setting", id="a-setting-of-no-name"),
+        pytest.param("check = true", "unknown setting", id="a-run-mode-key"),
+    ],
+)
+def test_a_setting_read_against_the_type_its_flag_takes(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    setting: str,
+    message: str | None,
+) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text(f"[start.sub]\nextra = 'B'\n{setting}\n")
+
+    if message is None:
+        assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 1
+        return
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["E", str(dumb)])
+    assert message in capsys.readouterr().err
+
+
+def test_a_count_wider_than_any_line() -> None:
+    with pytest.raises(ArgumentTypeError, match="must be at most"):
+        count_argument(10_001)
+
+
+def test_spacing_reads_only_what_a_spacing_is_written_as() -> None:
+    assert spacing_argument(r"\n") == "\n"
+    with pytest.raises(ArgumentTypeError, match="invalid spacing"):
+        spacing_argument(1)  # type: ignore[arg-type]  # a file may write a number where a spacing belongs
+
+
+def test_a_list_reads_only_the_names_in_it() -> None:
+    assert list_argument("a, b") == ["a", "b"]
+    assert list_argument(["a"]) == ["a"]
+    # a name TOML quotes may hold a comma of its own, which separates nothing
+    assert list_argument('tool."a,b"') == ['tool."a,b"']
+    assert list_argument("tool.'a,b', other") == ["tool.'a,b'", "other"]
+    with pytest.raises(ArgumentTypeError, match="every entry names one thing"):
+        list_argument([1])  # type: ignore[list-item]  # a file may write a number where a name belongs
+
+
+@pytest.mark.parametrize(
+    ("written", "expected"),
+    [
+        pytest.param("fix, type", ["fix", "type"], id="plain-names"),
+        pytest.param('"a,b"', ["a,b"], id="a-comma-inside-a-name"),
+        pytest.param("'a,b', c", ["a,b", "c"], id="a-literal-name"),
+        pytest.param(r'"a\",b"', ['a",b'], id="an-escaped-quote"),
+        pytest.param(r'"a\\", b', ["a\\", "b"], id="an-escaped-backslash"),
+        pytest.param(r'"\t\n\r\f\b\e"', ["\t\n\r\f\b\x1b"], id="the-named-escapes"),
+        pytest.param(r'"\u0041\U00000042\x43"', ["ABC"], id="the-numbered-escapes"),
+        pytest.param(["already", "read"], ["already", "read"], id="a-list-the-file-wrote"),
+    ],
+)
+def test_a_name_list_reads_one_name_per_entry(written: str | list[str], expected: list[str]) -> None:
+    assert name_list_argument(written) == expected
+
+
+@pytest.mark.parametrize(
+    "written",
+    [
+        pytest.param(b"indent =\n", id="not-a-document"),
+        pytest.param(b"indent = '\xff'\n", id="not-utf-8"),
+    ],
+)
+def test_a_shared_config_the_reader_cannot_read_is_named(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], written: bytes
+) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("[start.sub]\nextra = 'B'\n")
+    shared = tmp_path / "toml-fmt-common.toml"
+    shared.write_bytes(written)
+
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["E", "--config", str(shared), str(dumb)])
+
+    assert str(shared) in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("setting", "message"),
+    [
+        pytest.param("indent = -1", "must not be negative", id="a-count-it-cannot-hold"),
+        pytest.param('table_format = "wide"', "invalid choice", id="a-format-it-does-not-know"),
+    ],
+)
+def test_a_configured_setting_the_formatter_cannot_hold(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    setting: str,
+    message: str,
+) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text(f"[start.sub]\nextra = 'B'\n{setting}\n")
+
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["E", str(dumb)])
+
+    assert message in capsys.readouterr().err
+
+
+def test_a_target_that_is_not_utf_8(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_bytes(b"extra = '\xff'\n")
+
+    with pytest.raises(SystemExit):
+        run(Dumb(), ["E", str(dumb)])
+
+    assert str(dumb) in capsys.readouterr().err
+    assert dumb.read_bytes() == b"extra = '\xff'\n"
+
+
+def test_a_carriage_return_toml_does_not_read(tmp_path: Path) -> None:
+    """A `\r` not followed by `\n` is a syntax error, which normalizing it away would hide."""
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_bytes(b"[start.sub]\rextra = 'B'\n")
+
+    assert run(Dumb(), ["E", str(dumb)]) == 1
+
+    assert dumb.read_bytes() == b"[start.sub]\rextra = 'B'\n\nextras = 'E'"
