@@ -1,29 +1,28 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 // Pre-1.0 schema: keep the canonical set small, let unknown keys alphabetize.
 pub const KEY_ORDER: &[&str] = &[
-    "",
+    "src.respect-ignore-files",
+    "src.include",
+    "src.exclude",
+    "src.exclude-scripts",
     "src",
-    "respect-ignore-files",
     "environment",
     "rules",
     "terminal",
     "overrides",
 ];
 
-const SORT_ARRAYS: &[&str] = &["src", "src.include", "src.exclude"];
+pub const SRC_KEY_ORDER: &[&str] = &["respect-ignore-files", "include", "exclude", "exclude-scripts"];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.ty") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if SORT_ARRAYS.contains(&key.as_str()) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+// `src.exclude` is read the way a gitignore is, where a later `!pattern` takes back what an earlier
+// one excluded, so its order is what it says.
+const SORT_ARRAYS: &[&str] = &["src.include"];
+
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS.contains(&key)
+}
+
+/// Whether the name under `src` holds a list of names.
+pub fn sorts_in_src(key: &str) -> bool {
+    key == "include"
 }

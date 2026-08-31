@@ -1,36 +1,32 @@
 use std::collections::HashSet;
 use std::string::String;
 
+use pyo3::exceptions::PyValueError;
 #[cfg(feature = "extension-module")]
 use pyo3::prelude::{PyModule, PyModuleMethods};
-use pyo3::{pyclass, pymethods};
 #[cfg(feature = "extension-module")]
-use pyo3::{pyfunction, pymodule, wrap_pyfunction, Bound, PyResult, Python};
+use pyo3::types::PyDict;
+use pyo3::{pyclass, pymethods, PyResult};
+#[cfg(feature = "extension-module")]
+use pyo3::{pyfunction, pymodule, wrap_pyfunction, Bound, Python};
 
-use tombi_config::TomlVersion;
-use tombi_syntax::SyntaxKind::KEY_VALUE;
+use toml_doc::Document;
 
-use crate::global::{
-    fix_envs, fix_root, normalize_aliases, normalize_strings, reorder_inline_tables, reorder_tables, sort_env_list,
+use tox_rules::{
+    fix_envs, fix_root, normalize_aliases, reorder_inline_tables, reorder_tables_with_pins, sort_env_list,
 };
-use common::array::ensure_all_arrays_multiline;
-use common::table::{apply_table_formatting, count_unquoted_dots, first_unquoted_dot, split_table_name, Tables};
-
-pub mod global;
-#[cfg(test)]
-mod tests;
 
 #[pyclass(frozen, get_all)]
 pub struct Settings {
-    column_width: usize,
-    indent: usize,
-    table_format: String,
-    sub_table_spacing: String,
-    separate_root_table: String,
-    expand_tables: Vec<String>,
-    collapse_tables: Vec<String>,
-    skip_wrap_for_keys: Vec<String>,
-    pin_envs: Vec<String>,
+    pub column_width: usize,
+    pub indent: usize,
+    pub table_format: String,
+    pub sub_table_spacing: String,
+    pub separate_root_table: String,
+    pub expand_tables: Vec<String>,
+    pub collapse_tables: Vec<String>,
+    pub skip_wrap_for_keys: Vec<String>,
+    pub pin_envs: Vec<String>,
 }
 
 #[pymethods]
@@ -38,7 +34,7 @@ impl Settings {
     #[new]
     #[allow(clippy::too_many_arguments)]
     #[pyo3(signature = (*, column_width, indent, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys, pin_envs))]
-    fn new(
+    pub fn new(
         column_width: usize,
         indent: usize,
         table_format: String,
@@ -48,8 +44,28 @@ impl Settings {
         collapse_tables: Vec<String>,
         skip_wrap_for_keys: Vec<String>,
         pin_envs: Vec<String>,
-    ) -> Self {
-        Self {
+    ) -> PyResult<Self> {
+        // a selector names a table the way TOML names one, so a file asking for a name no key
+        // spells is told rather than formatted as though it had asked for nothing
+        for (setting, held) in [("expand_tables", &expand_tables), ("collapse_tables", &collapse_tables)] {
+            for name in held {
+                if let Err(why) = common::sections::read_name(name) {
+                    return Err(PyValueError::new_err(format!(
+                        "{setting}: {name} is not a table name: {why}"
+                    )));
+                }
+            }
+        }
+        // a pattern names a key and a pin names an environment, each of which the file writes as
+        // something; neither says anything where the file wrote no name at all
+        for (setting, held) in [("skip_wrap_for_keys", &skip_wrap_for_keys), ("pin_envs", &pin_envs)] {
+            if held.iter().any(|name| name.trim().is_empty()) {
+                return Err(PyValueError::new_err(format!(
+                    "{setting}: a name is written there, not nothing"
+                )));
+            }
+        }
+        Ok(Self {
             column_width,
             indent,
             table_format,
@@ -59,154 +75,154 @@ impl Settings {
             collapse_tables,
             skip_wrap_for_keys,
             pin_envs,
-        }
+        })
     }
 }
 
-pub struct TableFormatConfig {
-    pub default_collapse: bool,
-    pub expand_tables: HashSet<String>,
-    pub collapse_tables: HashSet<String>,
+pub type TableFormatConfig = common::shape::Tables;
+
+/// The tables a user asked to fold or write out, read from the settings the wrapper handed over.
+fn table_config(settings: &Settings) -> TableFormatConfig {
+    TableFormatConfig::new(
+        &settings.table_format,
+        &settings.expand_tables,
+        &settings.collapse_tables,
+    )
 }
 
-impl TableFormatConfig {
-    pub fn from_settings(settings: &Settings) -> Self {
-        Self {
-            default_collapse: settings.table_format == "short",
-            expand_tables: settings.expand_tables.iter().cloned().collect(),
-            collapse_tables: settings.collapse_tables.iter().cloned().collect(),
-        }
-    }
-
-    pub fn should_collapse(&self, table_name: &str) -> bool {
-        let mut current = table_name;
-        loop {
-            if self.collapse_tables.contains(current) {
-                return true;
-            }
-            if self.expand_tables.contains(current) {
-                return false;
-            }
-            if count_unquoted_dots(current) == 0 {
-                break;
-            }
-            let (parent, _) = split_table_name(current);
-            current = parent;
-        }
-        self.default_collapse
-    }
-}
-
-fn parse(source: &str) -> tombi_syntax::SyntaxNode {
-    tombi_parser::parse(source).syntax_node().clone_for_update()
-}
-
-async fn format_with_tombi(content: &str, column_width: usize, indent: usize) -> String {
-    let options = common::format_options::create_format_options(column_width, indent);
-    let schema_store = tombi_schema_store::SchemaStore::new();
-    let formatter = tombi_formatter::Formatter::new(TomlVersion::default(), &options, None, &schema_store);
-    formatter.format(content).await.unwrap_or_else(|_| content.to_string())
+/// The settings the source writes at `path`, read with the parser that reads the file itself.
+#[cfg(feature = "extension-module")]
+#[pyfunction]
+fn settings_in<'py>(py: Python<'py>, content: &str, path: Vec<String>) -> PyResult<Option<Bound<'py, PyDict>>> {
+    common::settings::settings_in(py, content, path)
 }
 
 #[cfg(feature = "extension-module")]
 #[pyfunction]
 #[pyo3(name = "format_toml")]
-fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> String {
-    py.detach(|| format_toml(content, opt))
-}
-
-#[must_use]
-pub fn format_toml(content: &str, opt: &Settings) -> String {
-    common::disabled::with_disabled_keys(content, |content| format_core(content, opt))
-}
-
-fn format_core(content: &str, opt: &Settings) -> String {
-    let root_ast = parse(content);
-    common::string::normalize_key_quotes(&root_ast);
-    let mut tables = Tables::from_ast(&root_ast);
-    let table_config = TableFormatConfig::from_settings(opt);
-
-    let mut prefixes: Vec<String> = vec![
-        String::from("env"),
-        String::from("env_run_base"),
-        String::from("env_pkg_base"),
-    ];
-    for key in tables.header_to_pos.keys() {
-        if let Some(env_name) = key.strip_prefix("env.") {
-            let first_seg = match count_unquoted_dots(env_name) {
-                0 => env_name,
-                _ => &env_name[..first_unquoted_dot(env_name)],
-            };
-            let env_prefix = format!("env.{first_seg}");
-            if !prefixes.contains(&env_prefix) {
-                prefixes.push(env_prefix);
-            }
-        }
-    }
-    let prefix_refs: Vec<&str> = prefixes.iter().map(|s| s.as_str()).collect();
-    apply_table_formatting(
-        &mut tables,
-        |name| {
-            if let Some(rest) = name.strip_prefix("env.") {
-                if count_unquoted_dots(rest) == 0 {
-                    return false;
-                }
-            }
-            table_config.should_collapse(name)
-        },
-        &prefix_refs,
-        opt.column_width,
-    );
-
-    tables.header_to_pos.retain(|name, positions| {
-        if !prefixes.contains(name) {
-            return true;
-        }
-        positions
-            .iter()
-            .all(|&pos| tables.table_set[pos].borrow().iter().any(|e| e.kind() == KEY_VALUE))
-    });
-
-    normalize_aliases(&tables);
-    fix_root(&tables);
-    fix_envs(&tables);
-    sort_env_list(&tables, &opt.pin_envs);
-    normalize_strings(&tables);
-    reorder_inline_tables(&root_ast);
-    reorder_tables(&root_ast, &tables, &opt.separate_root_table, &opt.sub_table_spacing);
-    ensure_all_arrays_multiline(&root_ast, opt.column_width);
-
-    let indent_string = " ".repeat(opt.indent);
-    common::string::wrap_all_long_strings(&root_ast, opt.column_width, &indent_string, &opt.skip_wrap_for_keys);
-
-    let modified_content = root_ast.to_string();
-
-    let rt = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    let formatted = rt.block_on(format_with_tombi(&modified_content, opt.column_width, opt.indent));
-
-    let formatted_ast = parse(&formatted);
-    common::array::align_array_comments(&formatted_ast);
-    let aligned = formatted_ast.to_string();
-
-    let sub_spacing = (opt.table_format == "long").then_some(opt.sub_table_spacing.as_str());
-    let result =
-        common::table::normalize_table_spacing(&aligned, &["env_base", "env"], &opt.separate_root_table, sub_spacing);
-    common::util::limit_blank_lines(&result, 2)
+fn format_toml_py(py: Python<'_>, content: &str, opt: &Settings) -> PyResult<String> {
+    py.detach(|| format_toml(content, opt)).map_err(PyValueError::new_err)
 }
 
 /// # Errors
 ///
-/// Will return `PyErr` if an error is raised during formatting.
+/// Will return a message describing why the content was rejected, or why what the formatter wrote
+/// is not a document.
+pub fn format_toml(content: &str, opt: &Settings) -> Result<String, String> {
+    common::formatted(content, |document| {
+        format_core(document, opt);
+        Ok(())
+    })
+}
+
+/// Whether the file wrote a comment above the header or beside it.
+fn carries_a_comment(section: &toml_doc::Section<'_>) -> bool {
+    section.header.trail.comment.is_some()
+        || section
+            .header
+            .lead
+            .pieces()
+            .iter()
+            .any(|piece| matches!(piece, toml_doc::Piece::Comment { .. }))
+}
+
+fn format_core(document: &mut Document<'_>, opt: &Settings) {
+    let table_config = table_config(opt);
+
+    common::strings::normalize_key_quotes(document);
+    // a table the file wrote with nothing under it says that it is there, so it is not one of the
+    // tables the write-out below empties
+    let written_empty: HashSet<Vec<String>> = document
+        .sections
+        .iter()
+        .filter(|section| section.entries.is_empty())
+        .map(|section| section.header.key.segments())
+        .collect();
+    // `[env]` holding `name.key` entries says the same thing as `[env.name]`, and the latter is the
+    // form every other rule here is written against
+    common::nesting::expand(document, "env");
+    for name in nesting_targets(document) {
+        // a setting names a table of any depth, so both passes run over every target: the fold takes
+        // the children a setting asks to fold, and the write-out takes the ones it asks to keep
+        common::nesting::collapse_of(
+            document,
+            &name,
+            &|sub| table_config.should_collapse(sub),
+            common::nesting::Width {
+                column: opt.column_width,
+                indent: opt.indent,
+            },
+        );
+        common::nesting::expand_where(document, &name, &|child| !table_config.should_collapse(child));
+    }
+
+    // writing a table out empties the one its dotted keys were written under, and a header left with
+    // nothing under it says nothing the file did not already say. One the file wrote a comment on
+    // says what that comment says, so it stays to carry it
+    let targets: HashSet<Vec<String>> = nesting_targets(document).into_iter().collect();
+    document.sections.retain(|section| {
+        let segments = section.header.key.segments();
+        !section.entries.is_empty()
+            || written_empty.contains(&segments)
+            || carries_a_comment(section)
+            || (segments != ["env"] && !targets.contains(&segments))
+    });
+
+    normalize_aliases(document);
+    fix_root(document);
+    fix_envs(document);
+    sort_env_list(document, &opt.pin_envs);
+    reorder_inline_tables(document);
+    reorder_tables_with_pins(document, &opt.pin_envs);
+
+    common::shape::Written {
+        column_width: opt.column_width,
+        indent: opt.indent,
+        separate_root_table: &opt.separate_root_table,
+        sub_table_spacing: &opt.sub_table_spacing,
+        table_format: &opt.table_format,
+        skip_wrap_for_keys: &opt.skip_wrap_for_keys,
+        nested_prefixes: &["env_base", "env"],
+    }
+    .apply(document);
+}
+
+/// The tables that fold their own sub-tables in: the two fixed bases and each environment.
+///
+/// `env` itself is not one of them, since `[env.name]` holds one environment and folding it into
+/// `env` would flatten away the grouping the file is written around.
+fn nesting_targets(document: &toml_doc::Document<'_>) -> Vec<Vec<String>> {
+    let mut names: Vec<Vec<String>> = vec![vec![String::from("env_run_base")], vec![String::from("env_pkg_base")]];
+    let mut seen: HashSet<Vec<String>> = names.iter().cloned().collect();
+    for section in &document.sections {
+        let segments = section.header.key.segments();
+        // an environment's name is the one segment the file gave it, whatever it holds, and a
+        // reusable base is one of them under whichever of the two names it was written
+        if segments.len() > 1 && (segments[0] == "env" || segments[0] == "env_base") {
+            let head = segments[..2].to_vec();
+            if seen.insert(head.clone()) {
+                names.push(head);
+            }
+        }
+    }
+    names
+}
+
+/// # Panics
+///
+/// If the module cannot take one of its own members, which says the interpreter has run out of
+/// memory rather than anything about the module.
 // Gated so sibling crates (pyproject-fmt) that pull this in as an rlib don't get a duplicate `PyInit__lib` symbol from
 // pyo3 at link time.
 #[cfg(feature = "extension-module")]
 #[pymodule(gil_used = false)]
 #[pyo3(name = "_lib")]
 pub fn _lib(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(format_toml_py, m)?)?;
-    m.add_class::<Settings>()?;
+    let held = "the module takes its own members";
+    m.add_function(wrap_pyfunction!(format_toml_py, m).expect(held))
+        .expect(held);
+    m.add_function(wrap_pyfunction!(settings_in, m).expect(held))
+        .expect(held);
+    m.add_class::<Settings>().expect(held);
     Ok(())
 }

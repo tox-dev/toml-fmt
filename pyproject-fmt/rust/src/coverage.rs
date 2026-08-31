@@ -1,10 +1,5 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 // Order mirrors coverage.py's configuration sections (run, paths, report, html, json, lcov, xml).
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "run.source",
     "run.source_pkgs",
     "run.source_dirs",
@@ -20,10 +15,10 @@ pub const KEY_ORDER: &[&str] = &[
     "run.data_file",
     "run.parallel",
     "run.relative_files",
-    "run.plugins",
     "run.debug",
     "run.debug_file",
     "run.disable_warnings",
+    "run.plugins",
     "run.core",
     "run.patch",
     "run.sigterm",
@@ -64,30 +59,23 @@ pub const KEY_ORDER: &[&str] = &[
     "xml",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(table_elements) = tables.get("tool.coverage") else {
-        return;
-    };
-    let table = &mut table_elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| match key.as_str() {
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    matches!(
+        key,
         "run.source"
-        | "run.source_pkgs"
-        | "run.source_dirs"
-        | "run.include"
-        | "run.omit"
-        | "run.concurrency"
-        | "run.plugins"
-        | "run.debug"
-        | "run.disable_warnings"
-        | "report.include"
-        | "report.omit"
-        | "report.exclude_lines"
-        | "report.exclude_also"
-        | "report.partial_branches"
-        | "report.partial_also" => {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-        _ => {}
-    });
-    reorder_table_keys(table, KEY_ORDER);
+            | "run.source_pkgs"
+            | "run.source_dirs"
+            | "run.include"
+            | "run.omit"
+            | "run.concurrency"
+            | "run.debug"
+            | "run.disable_warnings"
+            | "report.include"
+            | "report.omit"
+            | "report.exclude_lines"
+            | "report.exclude_also"
+            | "report.partial_branches"
+            | "report.partial_also"
+    )
 }

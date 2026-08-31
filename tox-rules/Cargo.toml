@@ -1,0 +1,16 @@
+[package]
+name = "tox-rules"
+version = "1.9.3"
+description = "How a tox configuration is formatted, wherever it is written"
+repository = "https://github.com/tox-dev/toml-fmt"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+common = { path = "../common" }
+toml-doc = { path = "../toml-doc" }
+lexical-sort = { version = "0.3.1" } # the natural order names sort in
+
+[dev-dependencies]
+indoc = { version = "2.0.7" }   # dedented test cases for literal strings
+insta = { version = "1.48.0" }  # snapshot testing

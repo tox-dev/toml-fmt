@@ -78,6 +78,11 @@ The shared config file uses the same keys as the ``[tool.pyproject-fmt]`` table,
 When both a shared config file and a ``[tool.pyproject-fmt]`` table exist, per-file settings from the
 ``[tool.pyproject-fmt]`` table take precedence over the shared config file.
 
+Settings are read with the same parser that reads the file, so a value only TOML 1.1 spells does not
+hide the table they are written in. Every key there has to be one the formatter knows, written as the
+type its command-line flag takes; anything else is reported against the file and the key, and nothing
+is formatted.
+
 Command line interface
 ----------------------
 
@@ -98,6 +103,11 @@ needs to know the range of Python interpreter versions you support:
 - The upper bound, by default, will assume the latest stable release of CPython at the time of the release, but can be
   changed via CLI flag or the config file.
 
+Within that window a minor version gets its classifier when some release of that series satisfies every clause of
+``requires-python``, the way :pep:`440` reads one. ``~=3.10`` therefore covers 3.10 and everything after it up to the
+upper bound, ``~=3.10.0`` covers only the 3.10 series, ``!=3.10`` rules out that one release rather than the series,
+and a constraint no Python 3 release satisfies, such as ``>=4``, generates no classifiers at all.
+
 Table formatting
 ----------------
 
@@ -105,30 +115,8 @@ Table formatting
 
     Table formatting options are available in version 2.12.0 and later.
 
-Control how sub-tables are formatted with two styles:
-
-**Short format (collapsed)** - The default, where sub-tables collapse into dotted keys. Use it for a compact layout:
-
-.. fmt-example::
-    :config: generate_python_version_classifiers=false
-
-    [project]
-    name = "myproject"
-    urls.homepage = "https://example.com"
-    urls.repository = "https://github.com/example/myproject"
-    scripts.mycli = "mypackage:main"
-
-**Long format (expanded)** - Sub-tables are expanded into separate ``[table.subtable]`` sections. Use this for
-readability when tables have many keys or complex values:
-
-.. fmt-example::
-    :config: table_format=long generate_python_version_classifiers=false
-
-    [project]
-    name = "myproject"
-    urls.homepage = "https://example.com"
-    urls.repository = "https://github.com/example/myproject"
-    scripts.mycli = "mypackage:main"
+``table_format`` picks between the two styles: ``short``, the default, collapses a sub-table into dotted keys, and
+``long`` writes it out under its own ``[table.subtable]`` header. The formatting guide shows what each one produces.
 
 Table spacing
 ~~~~~~~~~~~~~
@@ -217,24 +205,8 @@ The following sub-tables can be formatted with this configuration:
 - ``project.maintainers`` - Can be inline tables or ``[[project.maintainers]]``
 - Any ``[[table]]`` entries throughout the file
 
-Array of tables (``[[table]]``) are automatically collapsed to inline arrays when each inline table fits within the
-configured ``column_width``. For example:
-
-.. code-block:: toml
-
-    # Before
-    [[tool.commitizen.customize.questions]]
-    type = "list"
-
-    [[tool.commitizen.customize.questions]]
-    type = "input"
-
-    # After (with table_format = "short")
-    [tool.commitizen]
-    customize.questions = [{ type = "list" }, { type = "input" }]
-
-If any inline table exceeds ``column_width``, the array of tables remains in ``[[...]]`` format to maintain
-readability and TOML 1.0.0 compatibility (inline tables cannot span multiple lines).
+An array of tables collapses into inline tables where each one fits the configured ``column_width``; the formatting
+guide shows what that looks like and when it stays written out.
 
 String wrapping
 ---------------
@@ -255,7 +227,11 @@ The ``skip_wrap_for_keys`` option supports glob-like patterns:
 - **Exact match**: ``tool.bumpversion.parse`` matches only that specific key
 - **Wildcard suffix**: ``*.parse`` matches any key ending with ``.parse`` (e.g., ``tool.bumpversion.parse``, ``project.parse``)
 - **Wildcard prefix**: ``tool.bumpversion.*`` matches any key under ``tool.bumpversion`` (e.g., ``tool.bumpversion.parse``, ``tool.bumpversion.serialize``)
+- **Wildcard between names**: ``tool.*.parse`` stands for one segment, so it matches ``tool.bumpversion.parse`` but not
+  a key written below it
 - **Global wildcard**: ``*`` skips wrapping for all strings
+
+A quoted ``"*"`` names the key spelled that way rather than standing for any segment.
 
 Examples: ``["*.parse", "*.regex"]`` to preserve regex fields, ``["tool.bumpversion.*"]`` for a specific tool section,
 or ``["*"]`` to skip all string wrapping.

@@ -1,61 +1,57 @@
-pub mod array;
-pub mod create;
+//! The pieces a TOML formatter is built from: laying out a document, ordering its tables and
+//! arrays, rewriting the strings inside it, and moving entries between nesting levels.
+
+pub mod arrays;
+pub mod build;
 pub mod disabled;
-pub mod format_options;
+pub mod group;
+pub mod layout;
+pub mod nesting;
 pub mod pep508;
-pub mod string;
-pub mod table;
-pub mod util;
+pub mod sections;
+pub mod settings;
+pub mod shape;
+pub mod spacing;
+pub mod strings;
+pub mod width;
 
-pub use tombi_config as config;
-pub use tombi_formatter as formatter;
-pub use tombi_parser as parser;
-pub use tombi_schema_store as schema_store;
-pub use tombi_syntax as syntax;
-pub use tombi_toml_text as toml_text;
+/// Read the source, run `format` over it, and hand back what that wrote.
+///
+/// This is the whole of what a formatter's entry point does either side of its own rules: the file
+/// is read once, its disabled keys reach the rules as the keys they spell, and what comes out is
+/// checked before the caller sees it.
+///
+/// # Errors
+///
+/// Returns where the source stops being a document, whatever `format` rejected it with, or where
+/// the written text stops being a document.
+pub fn formatted(
+    content: &str,
+    format: impl FnOnce(&mut toml_doc::Document<'_>) -> Result<(), String>,
+) -> Result<String, String> {
+    // what the file says is read here, where the file is still the one the caller wrote; the pass
+    // below hands the formatter a document with its disabled keys turned back on, which may say the
+    // same name twice
+    let mut document = toml_doc::parse(content).map_err(|errors| errors[0].to_string())?;
+    let written = disabled::try_with_disabled_keys(&mut document, content, format)?;
+    written_document(&written)
+}
 
-#[cfg(test)]
-mod tests;
+/// Hand back what the formatter wrote, once it reads back as the document it is meant to be.
+///
+/// The file the caller holds is the last valid one until this returns, so text no parser accepts
+/// never reaches it.
+///
+/// # Errors
+///
+/// Returns where the written text stops being a document.
+pub fn written_document(written: &str) -> Result<String, String> {
+    toml_doc::parse(written)
+        .map(|_| written.to_owned())
+        .map_err(|errors| rejected(&errors))
+}
 
-#[cfg(any(test, feature = "test-util"))]
-pub mod test_util {
-    use std::sync::OnceLock;
-
-    use tombi_config::TomlVersion;
-    use tombi_formatter::Formatter;
-    use tombi_schema_store::SchemaStore;
-    use tombi_syntax::SyntaxNode;
-
-    use crate::format_options::create_format_options;
-
-    static TOKIO_RT: OnceLock<tokio::runtime::Runtime> = OnceLock::new();
-
-    pub fn get_runtime() -> &'static tokio::runtime::Runtime {
-        TOKIO_RT.get_or_init(|| tokio::runtime::Runtime::new().expect("Failed to create tokio runtime"))
-    }
-
-    pub fn parse(source: &str) -> SyntaxNode {
-        tombi_parser::parse(source).syntax_node().clone_for_update()
-    }
-
-    pub fn format_toml_str(source: &str, column_width: usize) -> String {
-        let rt = get_runtime();
-        let formatted = rt.block_on(async {
-            let schema_store = SchemaStore::new();
-            let options = create_format_options(column_width, 2);
-            let formatter = Formatter::new(TomlVersion::default(), &options, None, &schema_store);
-            formatter.format(source).await.unwrap_or_else(|_| source.to_string())
-        });
-        crate::util::limit_blank_lines(&formatted, 2)
-    }
-
-    pub fn format_syntax(node: SyntaxNode, column_width: usize) -> String {
-        format_toml_str(&node.to_string(), column_width)
-    }
-
-    pub fn assert_valid_toml(s: &str) {
-        if let Err(e) = s.parse::<toml::Table>() {
-            panic!("Invalid TOML output:\n{s}\n\nError: {e}");
-        }
-    }
+/// What to say about text the formatter wrote that no reader accepts.
+pub(crate) fn rejected(errors: &[toml_doc::Error]) -> String {
+    format!("the formatter wrote something no reader accepts: {}", errors[0])
 }

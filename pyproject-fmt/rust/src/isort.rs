@@ -1,11 +1,6 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 // profile leads since it sets defaults everything else overrides; sections, force_to_top, and import_heading_* keep
 // their input order, which drives output section sequencing.
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "profile",
     "py_version",
     "atomic",
@@ -60,7 +55,6 @@ pub const KEY_ORDER: &[&str] = &[
     "known_other",
     "namespace_packages",
     "known_pattern",
-    "forced_separate",
     "treat_comments_as_code",
     "treat_all_comments_as_code",
     "src_paths",
@@ -114,22 +108,13 @@ const SORT_ARRAYS: &[&str] = &[
     "supported_extensions",
     "blocked_extensions",
     "single_line_exclusions",
-    "forced_separate",
     "treat_comments_as_code",
     "treat_all_comments_as_code",
     "constants",
     "variables",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.isort") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if SORT_ARRAYS.contains(&key.as_str()) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS.contains(&key)
 }

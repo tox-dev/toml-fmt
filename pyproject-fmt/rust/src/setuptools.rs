@@ -1,12 +1,10 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_inline_table_keys, reorder_table_keys, InlineTableSchema, Tables};
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxNode;
+use common::arrays::sort_names_in;
+use common::sections::{self, InlineSchema};
+use toml_doc::Document;
 
 // Sub-tables collapse to dotted keys (packages.find.where, package-data."*", etc.); the "packages" prefix catches
 // them all, with finer entries added for inner ordering.
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "py-modules",
     "packages.find.where",
     "packages.find.include",
@@ -36,14 +34,14 @@ pub const KEY_ORDER: &[&str] = &[
     "dependency-links",
 ];
 
-// Safe-to-sort arrays only; packages, license-files, and ext-module paths/argv are left out because order affects
-// build, link, or PEP-639 concatenation.
+// Safe-to-sort arrays only; packages, license-files, ext-module paths/argv, `script-files` and the
+// `data-files` lists are left out because order affects build, link, PEP-639 concatenation, or which
+// of two files sharing a name is the one installed.
 const TOP_LEVEL_SORT_ARRAYS: &[&str] = &[
     "py-modules",
     "platforms",
     "provides",
     "obsoletes",
-    "script-files",
     "namespace-packages",
     "eager-resources",
     "packages.find.include",
@@ -53,7 +51,6 @@ const TOP_LEVEL_SORT_ARRAYS: &[&str] = &[
 ];
 
 pub const SCM_KEY_ORDER: &[&str] = &[
-    "",
     "version_file",
     "version_file_template",
     "version_scheme",
@@ -80,125 +77,118 @@ pub const SCM_KEY_ORDER: &[&str] = &[
     "template",
 ];
 
-pub fn fix(tables: &mut Tables) {
-    fix_setuptools(tables);
-    fix_setuptools_scm(tables);
-    fix_expanded_packages_find(tables);
-    fix_expanded_dynamic_table(tables);
-    fix_expanded_data_tables(tables, "tool.setuptools.package-data");
-    fix_expanded_data_tables(tables, "tool.setuptools.exclude-package-data");
-    fix_expanded_data_tables(tables, "tool.setuptools.data-files");
-    fix_expanded_alpha_table(tables, "tool.setuptools.cmdclass");
+pub fn fix(document: &mut Document<'_>) {
+    fix_setuptools_scm(document);
+    fix_expanded_packages_find(document);
+    fix_expanded_dynamic_table(document);
+    fix_expanded_data_tables(document, "tool.setuptools.package-data", Patterns::AreASet);
+    fix_expanded_data_tables(document, "tool.setuptools.exclude-package-data", Patterns::AreASet);
+    fix_expanded_data_tables(document, "tool.setuptools.data-files", Patterns::AreInOrder);
+    fix_expanded_alpha_table(document, "tool.setuptools.cmdclass");
 }
 
-fn fix_setuptools(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.setuptools") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        let k = key.as_str();
-        if TOP_LEVEL_SORT_ARRAYS.contains(&k) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        } else if is_inner_package_data_array(k) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    TOP_LEVEL_SORT_ARRAYS.contains(&key) || is_inner_package_data_array(key)
 }
 
 fn is_inner_package_data_array(key: &str) -> bool {
-    for prefix in ["package-data.", "exclude-package-data.", "data-files."] {
-        if let Some(rest) = key.strip_prefix(prefix) {
-            if !rest.is_empty() {
-                return true;
-            }
+    for prefix in ["package-data.", "exclude-package-data."] {
+        if key.strip_prefix(prefix).is_some_and(|rest| !rest.is_empty()) {
+            return true;
         }
     }
     false
 }
 
-fn fix_setuptools_scm(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.setuptools_scm") else {
+fn fix_setuptools_scm(document: &mut Document<'_>) {
+    let Some(section) = sections::first(document, "tool.setuptools_scm") else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    reorder_table_keys(table, SCM_KEY_ORDER);
+    sections::reorder_keys(&mut section.entries, SCM_KEY_ORDER);
 }
 
-fn fix_expanded_packages_find(tables: &mut Tables) {
+fn fix_expanded_packages_find(document: &mut Document<'_>) {
     for key in [
         "tool.setuptools.packages.find",
         "tool.setuptools.packages.find-namespace",
     ] {
-        let Some(elements) = tables.get(key) else {
+        let Some(section) = sections::first(document, key) else {
             continue;
         };
-        let table = &mut elements.first().unwrap().borrow_mut();
-        for_entries(table, &mut |inner, entry| {
-            if matches!(inner.as_str(), "include" | "exclude") {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
+        sections::for_entries(section, |inner, value| {
+            if matches!(inner, "include" | "exclude") {
+                sort_names_in(value);
             }
         });
-        reorder_table_keys(table, &["", "where", "include", "exclude", "namespaces"]);
+        sections::reorder_keys(&mut section.entries, &["where", "include", "exclude", "namespaces"]);
     }
 }
 
-fn fix_expanded_dynamic_table(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.setuptools.dynamic") else {
+fn fix_expanded_dynamic_table(document: &mut Document<'_>) {
+    let Some(section) = sections::first(document, "tool.setuptools.dynamic") else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
     // [""] sorts every key alphabetically.
-    reorder_table_keys(table, &[""]);
+    sections::reorder_keys(&mut section.entries, &[]);
 }
 
-fn fix_expanded_data_tables(tables: &mut Tables, table_key: &str) {
-    let Some(elements) = tables.get(table_key) else {
+/// Whether the patterns written under one destination name a set, or a list read in order.
+#[derive(Clone, Copy, PartialEq)]
+enum Patterns {
+    AreASet,
+    AreInOrder,
+}
+
+fn fix_expanded_data_tables(document: &mut Document<'_>, table_key: &str, patterns: Patterns) {
+    let Some(section) = sections::first(document, table_key) else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |_key, entry| {
-        sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-    });
-    // `*` catch-all first, then alphabetical.
-    let mut order: Vec<String> = vec![String::new(), String::from("*")];
+    // `*` is not a name TOML reads bare, so the file writes it in quotes and a rule matching it
+    // spells it the same way
+    let catch_all = sections::quoted_segment("*");
     let mut others: Vec<String> = Vec::new();
-    for_entries(table, &mut |key, _| {
-        let k = key.as_str();
-        if k != "*" && !others.contains(&k.to_string()) {
-            others.push(k.to_string());
+    sections::for_entries(section, |key, value| {
+        if patterns == Patterns::AreASet {
+            sort_names_in(value);
+        }
+        // a table names each of its keys once, so the catch-all is the only one that is not one of
+        // the names that sort
+        if key != catch_all {
+            others.push(key.to_owned());
         }
     });
+    // `*` catch-all first, then alphabetical.
+    let mut order: Vec<String> = vec![String::new(), catch_all];
     others.sort();
     order.extend(others);
     let refs: Vec<&str> = order.iter().map(String::as_str).collect();
-    reorder_table_keys(table, &refs);
+    sections::reorder_keys(&mut section.entries, &refs);
 }
 
-fn fix_expanded_alpha_table(tables: &mut Tables, table_key: &str) {
-    let Some(elements) = tables.get(table_key) else {
+fn fix_expanded_alpha_table(document: &mut Document<'_>, table_key: &str) {
+    let Some(section) = sections::first(document, table_key) else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    reorder_table_keys(table, &[""]);
+    sections::reorder_keys(&mut section.entries, &[]);
 }
 
 // Discriminators attr/content-type are unique to dynamic directives; file is too generic, so it is omitted from the
 // discriminator set.
 const DYNAMIC_DIRECTIVE_ORDER: &[&str] = &["attr", "file", "content-type"];
 
-pub const INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[
-    InlineTableSchema {
+pub const INLINE_TABLE_SCHEMAS: &[InlineSchema<'static>] = &[
+    InlineSchema {
         discriminator: "attr",
         key_order: DYNAMIC_DIRECTIVE_ORDER,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "content-type",
         key_order: DYNAMIC_DIRECTIVE_ORDER,
     },
 ];
 
-pub fn reorder_inline_tables(root_ast: &SyntaxNode) {
-    reorder_inline_table_keys(root_ast, INLINE_TABLE_SCHEMAS);
+pub fn reorder_inline_tables(document: &mut Document<'_>) {
+    let name = ["tool", "setuptools"].map(str::to_owned);
+    sections::reorder_inline_tables(document, &name, INLINE_TABLE_SCHEMAS);
 }

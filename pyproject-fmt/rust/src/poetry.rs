@@ -1,12 +1,10 @@
-use common::array::{dedupe_strings, sort_strings};
-use common::table::{for_entries, reorder_inline_table_keys, reorder_table_keys, InlineTableSchema, Tables};
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxNode;
+use common::arrays::{dedupe_strings_in, sort_names_in};
+use common::sections::{self, InlineSchema};
+use toml_doc::Document;
 
 // Sub-table prefixes are appended dynamically because some (group.<name>.*) need per-instance entries to control
 // inner key order.
 const TOP_LEVEL_ORDER: &[&str] = &[
-    "",
     "name",
     "version",
     "description",
@@ -26,29 +24,20 @@ const TOP_LEVEL_ORDER: &[&str] = &[
 ];
 
 // Deprecated source keys (default, secondary) sort last so reordering never promotes them above current keys.
-const SOURCE_KEY_ORDER: &[&str] = &[
-    "",
-    "name",
-    "url",
-    "priority",
-    "links",
-    "indexed",
-    "default",
-    "secondary",
-];
+const SOURCE_KEY_ORDER: &[&str] = &["name", "url", "priority", "links", "indexed", "default", "secondary"];
 
-const BUILD_KEY_ORDER: &[&str] = &["", "script", "generate-setup-file"];
+const BUILD_KEY_ORDER: &[&str] = &["script", "generate-setup-file"];
 
-const GROUP_KEY_ORDER: &[&str] = &["", "optional", "include-groups", "dependencies"];
+const GROUP_KEY_ORDER: &[&str] = &["optional", "include-groups", "dependencies"];
 
 // Within [tool.poetry.dependencies] (and the per-group equivalents), `python` is the interpreter constraint and
 // conventionally leads; everything else sorts.
-const DEPENDENCIES_KEY_ORDER: &[&str] = &["", "python"];
+const DEPENDENCIES_KEY_ORDER: &[&str] = &["python"];
 
-pub fn fix(tables: &mut Tables) {
-    fix_root(tables);
-    fix_expanded_sub_tables(tables);
-    fix_source(tables);
+pub fn fix(document: &mut Document<'_>) {
+    fix_root(document);
+    fix_expanded_sub_tables(document);
+    fix_source(document);
 }
 
 // Inline-table key order for specs collapsed to inline form. Discriminators are Poetry-specific
@@ -93,121 +82,126 @@ const FILE_DEP_INLINE_KEYS: &[&str] = &[
     "extras",
 ];
 
-pub const INLINE_TABLE_SCHEMAS: &[InlineTableSchema] = &[
-    InlineTableSchema {
+pub const INLINE_TABLE_SCHEMAS: &[InlineSchema<'static>] = &[
+    InlineSchema {
         discriminator: "priority",
         key_order: SOURCE_INLINE_KEYS,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "links",
         key_order: SOURCE_INLINE_KEYS,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "indexed",
         key_order: SOURCE_INLINE_KEYS,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "secondary",
         key_order: SOURCE_INLINE_KEYS,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "git",
         key_order: GIT_DEP_INLINE_KEYS,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "path",
         key_order: PATH_DEP_INLINE_KEYS,
     },
-    InlineTableSchema {
+    InlineSchema {
         discriminator: "file",
         key_order: FILE_DEP_INLINE_KEYS,
     },
 ];
 
-pub fn reorder_inline_tables(root_ast: &SyntaxNode) {
-    reorder_inline_table_keys(root_ast, INLINE_TABLE_SCHEMAS);
+pub fn reorder_inline_tables(document: &mut Document<'_>) {
+    let name = ["tool", "poetry"].map(str::to_owned);
+    sections::reorder_inline_tables(document, &name, INLINE_TABLE_SCHEMAS);
 }
 
-fn fix_root(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.poetry") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-
-    for_entries(table, &mut |key, entry| {
-        let k = key.as_str();
-        match k {
-            "keywords" | "classifiers" => {
-                dedupe_strings(entry, |s| s.to_lowercase());
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-            }
-            "exclude" => {
-                sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-            }
-            _ => {
-                if is_sort_value_array(k) {
-                    sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| {
-                        natural_lexical_cmp(lhs, rhs)
-                    });
-                }
-            }
+fn fix_root(document: &mut Document<'_>) {
+    let path = sections::parse_name("tool.poetry");
+    let mut held: Vec<Vec<String>> = Vec::new();
+    sections::for_keys_under(document, &path, |key, value| match key {
+        // a keyword is free text, while a classifier is one of a fixed set of strings: two that
+        // differ in case are an invalid spelling beside a valid one rather than one claim twice
+        "keywords" => {
+            dedupe_strings_in(value, &|text| text.to_lowercase());
+            sort_names_in(value);
         }
+        "classifiers" => {
+            dedupe_strings_in(value, &ToOwned::to_owned);
+            sort_names_in(value);
+        }
+        "exclude" => {
+            sort_names_in(value);
+        }
+        _ => {}
     });
+    // the name a rule reads here is the key's own segments, so a group the file quoted because it
+    // holds a dot is the one name it wrote rather than the two a dotted path would read
+    sections::for_names_under(document, &path, |tail, _| {
+        held.push(tail.to_vec());
+    });
+    for tail in &held {
+        if is_sort_value_array(tail) {
+            sections::for_value_at(document, &[path.clone(), tail.clone()].concat(), |value| {
+                sort_names_in(value);
+            });
+        }
+    }
 
-    let order = build_root_key_order(table);
+    let order = build_root_key_order_under(document, &path);
     let order_refs: Vec<&str> = order.iter().map(String::as_str).collect();
-    reorder_table_keys(table, &order_refs);
+    sections::reorder_under(document, &path, &order_refs);
 }
 
 /// Extras lists, include-groups, and per-dependency extras are name sets, so they sort.
-fn is_sort_value_array(key: &str) -> bool {
-    if let Some(rest) = key.strip_prefix("extras.") {
-        return !rest.contains('.');
+fn is_sort_value_array(key: &[String]) -> bool {
+    match key {
+        [head, _] if head == "extras" => true,
+        // the group's name is the one segment after `group`, whatever it holds
+        [head, _, tail @ ..] if head == "group" => match tail {
+            [one] if one == "include-groups" => true,
+            [one, rest @ ..] if one == "dependencies" => is_dep_extras(rest),
+            _ => false,
+        },
+        [head, rest @ ..]
+            if matches!(
+                head.as_str(),
+                "dependencies" | "dev-dependencies" | "requires-plugins" | "build-constraints"
+            ) =>
+        {
+            is_dep_extras(rest)
+        }
+        _ => false,
     }
-    if let Some(rest) = key.strip_prefix("group.") {
-        if let Some((_group, tail)) = split_first_segment(rest) {
-            if tail == "include-groups" {
-                return true;
-            }
-            if let Some(inner) = tail.strip_prefix("dependencies.") {
-                return is_dep_extras(inner);
+}
+
+/// `<package>.extras`, whatever the package is called.
+fn is_dep_extras(key: &[String]) -> bool {
+    matches!(key, [_, tail] if tail == "extras")
+}
+
+pub fn build_root_key_order(entries: &[toml_doc::Entry<'_>]) -> Vec<String> {
+    root_key_order(&collect_dotted_segment(entries, "group"))
+}
+
+/// The same, read from the whole table however the file split its path.
+fn build_root_key_order_under(document: &mut Document<'_>, path: &[String]) -> Vec<String> {
+    let mut groups: Vec<String> = Vec::new();
+    sections::for_names_under(document, path, |tail, _| {
+        if let [head, name, ..] = tail {
+            if head == "group" && !groups.contains(name) {
+                groups.push(name.clone());
             }
         }
-        return false;
-    }
-    for dep_table in [
-        "dependencies",
-        "dev-dependencies",
-        "requires-plugins",
-        "build-constraints",
-    ] {
-        if let Some(rest) = key.strip_prefix(dep_table) {
-            if let Some(inner) = rest.strip_prefix('.') {
-                return is_dep_extras(inner);
-            }
-        }
-    }
-    false
-}
-
-fn is_dep_extras(s: &str) -> bool {
-    let Some((_pkg, tail)) = split_first_segment(s) else {
-        return false;
-    };
-    tail == "extras"
-}
-
-fn split_first_segment(s: &str) -> Option<(&str, &str)> {
-    s.find('.').map(|i| (&s[..i], &s[i + 1..]))
-}
-
-fn build_root_key_order(table: &[tombi_syntax::SyntaxElement]) -> Vec<String> {
-    root_key_order(&collect_dotted_segment(table, "group"))
+    });
+    root_key_order(&groups)
 }
 
 /// The `[tool.poetry]` key order; `group_names` are the dependency groups whose keys get their own slots.
 pub fn root_key_order(group_names: &[String]) -> Vec<String> {
-    let mut order: Vec<String> = TOP_LEVEL_ORDER.iter().map(|s| (*s).to_string()).collect();
+    let mut order: Vec<String> = TOP_LEVEL_ORDER.iter().map(|name| (*name).to_string()).collect();
 
     // `build` may appear as a scalar (build = "build.py"), an inline-table key, or via dotted sub-keys
     // (build.script, build.generate-setup-file); the `build` prefix entry catches every form.
@@ -220,6 +214,8 @@ pub fn root_key_order(group_names: &[String]) -> Vec<String> {
     order.push(String::from("dev-dependencies"));
 
     for group in group_names {
+        // the name is spelled the way a dispatch name spells it, so both sides match
+        let group = sections::quoted_segment(group);
         order.push(format!("group.{group}.optional"));
         order.push(format!("group.{group}.include-groups"));
         order.push(format!("group.{group}.dependencies.python"));
@@ -239,133 +235,93 @@ pub fn root_key_order(group_names: &[String]) -> Vec<String> {
     order
 }
 
-fn collect_dotted_segment(table: &[tombi_syntax::SyntaxElement], prefix: &str) -> Vec<String> {
-    use tombi_syntax::SyntaxKind::{KEYS, KEY_VALUE};
-    let prefix_dot = format!("{prefix}.");
-    let mut names: Vec<String> = Vec::new();
-    for element in table.iter().filter(|e| e.kind() == KEY_VALUE) {
-        let Some(kv) = element.as_node() else { continue };
-        let Some(keys_node) = kv.children().find(|c| c.kind() == KEYS) else {
-            continue;
-        };
-        let raw = keys_node.text().to_string().trim().to_string();
-        if let Some(rest) = raw.strip_prefix(&prefix_dot) {
-            let next = rest.split('.').next().unwrap_or(rest);
-            let name = unquote(next).to_string();
-            if !names.contains(&name) {
-                names.push(name);
-            }
-        }
-    }
-    names
+/// The dependency groups a file happens to define, whose keys each get their own slot in the order.
+fn collect_dotted_segment(entries: &[toml_doc::Entry<'_>], prefix: &str) -> Vec<String> {
+    sections::keys_below(entries, &prefix.split('.').collect::<Vec<&str>>())
 }
 
-fn unquote(s: &str) -> &str {
-    s.strip_prefix('"')
-        .and_then(|x| x.strip_suffix('"'))
-        .or_else(|| s.strip_prefix('\'').and_then(|x| x.strip_suffix('\'')))
-        .unwrap_or(s)
-}
-
-fn fix_expanded_sub_tables(tables: &mut Tables) {
+fn fix_expanded_sub_tables(document: &mut Document<'_>) {
     // In `table_format = "long"` mode sub-tables stay as their own headers, so normalize each one here.
-    fix_expanded_dependencies(tables, "tool.poetry.dependencies");
-    fix_expanded_dependencies(tables, "tool.poetry.dev-dependencies");
-    fix_expanded_dependencies(tables, "tool.poetry.requires-plugins");
-    fix_expanded_dependencies(tables, "tool.poetry.build-constraints");
-    fix_expanded_extras(tables);
-    fix_expanded_alpha(tables, "tool.poetry.scripts");
-    fix_expanded_alpha(tables, "tool.poetry.urls");
-    fix_expanded_plugins(tables);
-    fix_expanded_groups(tables);
-    fix_expanded_build(tables);
+    fix_expanded_dependencies(document, &["tool", "poetry", "dependencies"].map(str::to_owned));
+    fix_expanded_dependencies(document, &["tool", "poetry", "dev-dependencies"].map(str::to_owned));
+    fix_expanded_dependencies(document, &["tool", "poetry", "requires-plugins"].map(str::to_owned));
+    fix_expanded_dependencies(document, &["tool", "poetry", "build-constraints"].map(str::to_owned));
+    sections::sort_names_under(document, "tool.poetry.extras");
+    fix_expanded_alpha(document, "tool.poetry.scripts");
+    fix_expanded_alpha(document, "tool.poetry.urls");
+    fix_expanded_plugins(document);
+    fix_expanded_groups(document);
+    fix_expanded_build(document);
 }
 
-fn fix_expanded_dependencies(tables: &mut Tables, table_key: &str) {
-    let Some(elements) = tables.get(table_key) else {
+fn fix_expanded_dependencies(document: &mut Document<'_>, table_key: &[String]) {
+    let Some(section) = sections::first_of(document, table_key) else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    reorder_table_keys(table, DEPENDENCIES_KEY_ORDER);
+    sections::reorder_keys(&mut section.entries, DEPENDENCIES_KEY_ORDER);
 }
 
-fn fix_expanded_extras(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.poetry.extras") else {
+fn fix_expanded_alpha(document: &mut Document<'_>, table_key: &str) {
+    let Some(section) = sections::first(document, table_key) else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |_key, entry| {
-        sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-    });
-    reorder_table_keys(table, &[""]);
+    sections::reorder_keys(&mut section.entries, &[]);
 }
 
-fn fix_expanded_alpha(tables: &mut Tables, table_key: &str) {
-    let Some(elements) = tables.get(table_key) else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    reorder_table_keys(table, &[""]);
-}
-
-fn fix_expanded_plugins(tables: &mut Tables) {
-    if let Some(elements) = tables.get("tool.poetry.plugins") {
-        let table = &mut elements.first().unwrap().borrow_mut();
-        reorder_table_keys(table, &[""]);
+fn fix_expanded_plugins(document: &mut Document<'_>) {
+    if let Some(section) = sections::first(document, "tool.poetry.plugins") {
+        sections::reorder_keys(&mut section.entries, &[]);
     }
-    for group in collect_header_segments(tables, "tool.poetry.plugins.") {
-        let key = format!("tool.poetry.plugins.{group}");
-        if let Some(elements) = tables.get(&key) {
-            let table = &mut elements.first().unwrap().borrow_mut();
-            reorder_table_keys(table, &[""]);
+    for section in &mut document.sections {
+        if is_below(&section.header.key.segments(), &["tool", "poetry", "plugins"]) {
+            sections::reorder_keys(&mut section.entries, &[]);
         }
     }
 }
 
-fn fix_expanded_groups(tables: &mut Tables) {
-    for group in collect_header_segments(tables, "tool.poetry.group.") {
-        let key = format!("tool.poetry.group.{group}");
-        if let Some(elements) = tables.get(&key) {
-            let table = &mut elements.first().unwrap().borrow_mut();
-            for_entries(table, &mut |key, entry| {
-                if key.as_str() == "include-groups" {
-                    sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| {
-                        natural_lexical_cmp(lhs, rhs)
-                    });
+fn fix_expanded_groups(document: &mut Document<'_>) {
+    for group in collect_header_segments(document, "tool.poetry.group.") {
+        let key = ["tool", "poetry", "group", &group].map(str::to_owned);
+        if let Some(section) = sections::first_of(document, &key) {
+            sections::for_entries(section, |key, value| {
+                if key == "include-groups" {
+                    sort_names_in(value);
                 }
             });
-            reorder_table_keys(table, GROUP_KEY_ORDER);
+            sections::reorder_keys(&mut section.entries, GROUP_KEY_ORDER);
         }
-        fix_expanded_dependencies(tables, &format!("tool.poetry.group.{group}.dependencies"));
+        fix_expanded_dependencies(
+            document,
+            &["tool", "poetry", "group", &group, "dependencies"].map(str::to_owned),
+        );
     }
 }
 
-fn fix_expanded_build(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.poetry.build") else {
+fn fix_expanded_build(document: &mut Document<'_>) {
+    let Some(section) = sections::first(document, "tool.poetry.build") else {
         return;
     };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    reorder_table_keys(table, BUILD_KEY_ORDER);
+    sections::reorder_keys(&mut section.entries, BUILD_KEY_ORDER);
 }
 
-fn fix_source(tables: &mut Tables) {
-    let Some(source_entries) = tables.get("tool.poetry.source") else {
-        return;
-    };
-    for entry_ref in source_entries {
-        let table = &mut entry_ref.borrow_mut();
-        reorder_table_keys(table, SOURCE_KEY_ORDER);
+fn fix_source(document: &mut Document<'_>) {
+    for section in sections::named(document, "tool.poetry.source") {
+        sections::reorder_keys(&mut section.entries, SOURCE_KEY_ORDER);
     }
+    // a source folded into its parent is written as a table inside an array, and it is one source
+    // whichever way the file holds it
+    sections::reorder_array_tables_at(document, &sections::parse_name("tool.poetry.source"), SOURCE_KEY_ORDER);
 }
 
-fn collect_header_segments(tables: &Tables, prefix: &str) -> Vec<String> {
-    let mut names: Vec<String> = tables
-        .header_to_pos
-        .keys()
-        .filter_map(|h| h.strip_prefix(prefix))
-        .map(|rest| rest.split('.').next().unwrap_or(rest).to_string())
-        .collect();
-    names.sort();
-    names.dedup();
-    names
+fn collect_header_segments(document: &Document<'_>, prefix: &str) -> Vec<String> {
+    sections::headers_below(
+        document,
+        &prefix.trim_end_matches('.').split('.').collect::<Vec<&str>>(),
+    )
+}
+
+/// Whether the header names a table under `wanted`, compared segment by segment so a quoted name
+/// holding a dot counts as the one segment it is.
+fn is_below(segments: &[String], wanted: &[&str]) -> bool {
+    segments.len() > wanted.len() && segments.iter().zip(wanted).all(|(held, want)| held == want)
 }

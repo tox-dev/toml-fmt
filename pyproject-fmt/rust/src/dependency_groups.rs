@@ -1,51 +1,46 @@
 use std::cmp::Ordering;
 
-use lexical_sort::natural_lexical_cmp;
-use tombi_syntax::SyntaxKind::{BASIC_STRING, INLINE_TABLE};
-
-use common::array::{sort, transform};
+use common::arrays::{map_strings, sort_runs, string_of};
 use common::pep508::Requirement;
-use common::string::{get_string_token, load_text};
-use common::table::{collapse_sub_tables, find_key, for_entries, reorder_table_keys, Tables};
+use common::sections;
+use lexical_sort::natural_lexical_cmp;
+use toml_doc::{Document, Value};
 
-pub fn fix(tables: &mut Tables, keep_full_version: bool) {
-    collapse_sub_tables(tables, "dependency-groups");
-    let table_element = tables.get("dependency-groups");
-    if table_element.is_none() {
-        return;
-    }
-
-    let table = &mut table_element.unwrap().first().unwrap().borrow_mut();
-    for_entries(table, &mut |_key, entry| {
-        transform(entry, &|s| {
-            Requirement::new(s).unwrap().normalize(keep_full_version).to_string()
-        });
-
-        sort::<(u8, String, String), _, _>(
-            entry,
-            |node| match node.kind() {
-                BASIC_STRING => get_string_token(node).map(|token| {
-                    let val = load_text(token.text(), BASIC_STRING);
-                    let package_name = Requirement::new(val.as_str()).unwrap().canonical_name();
-                    (0, package_name, val)
-                }),
-                INLINE_TABLE => find_key(node, "include-group").and_then(|n| {
-                    get_string_token(&n).map(|token| (1, load_text(token.text(), BASIC_STRING), String::new()))
-                }),
-                _ => None,
+pub fn fix(document: &mut Document<'_>, keep_full_version: bool) {
+    common::nesting::collapse(document, "dependency-groups");
+    let path = sections::parse_name("dependency-groups");
+    sections::for_keys_under(document, &path, |_key, value| {
+        let Value::Array(array) = value else { return };
+        // a requirement this parser cannot read is left as the file wrote it
+        map_strings(array, |text| normalized(text, keep_full_version));
+        // an `include-group` puts the group it names where it is written, so it stays there and only
+        // the requirements written between two of them sort
+        sort_runs(
+            array,
+            &|member| matches!(&member.item, Value::InlineTable(_)),
+            &|member| {
+                string_of(member).map(|text| {
+                    let name = Requirement::new(&text).map_or_else(|_| text.clone(), |found| found.canonical_name());
+                    (name, text)
+                })
             },
-            &|lhs, rhs| {
-                let mut res = lhs.0.cmp(&rhs.0);
-                if res == Ordering::Equal {
-                    res = natural_lexical_cmp(lhs.1.as_str(), rhs.1.as_str());
-                    if res == Ordering::Equal {
-                        res = natural_lexical_cmp(lhs.2.as_str(), rhs.2.as_str());
-                    }
-                }
-                res
-            },
+            &compare_parts,
         );
     });
 
-    reorder_table_keys(table, &["", "dev", "test", "type", "docs"]);
+    sections::reorder_under(document, &path, &["dev", "test", "type", "docs"]);
+}
+
+fn normalized(text: &str, keep_full_version: bool) -> String {
+    Requirement::new(text).map_or_else(
+        |_| text.to_owned(),
+        |found| found.normalize(keep_full_version).to_string(),
+    )
+}
+
+/// The name the requirement installs leads, and the whole line settles a tie.
+type GroupKey = (String, String);
+
+fn compare_parts(left: &GroupKey, right: &GroupKey) -> Ordering {
+    natural_lexical_cmp(&left.0, &right.0).then_with(|| natural_lexical_cmp(&left.1, &right.1))
 }

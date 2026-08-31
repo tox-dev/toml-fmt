@@ -23,151 +23,206 @@ static PEP440: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
+/// A number a version writes, held as the digits the file wrote rather than as a machine integer:
+/// PEP 440 puts no limit on how many of them a release names.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Number(String);
+
+impl Number {
+    /// Read the digits, with the leading zeros PEP 440 does not count dropped.
+    fn read(digits: &str) -> Self {
+        let held = digits.trim_start_matches('0');
+        Self(if held.is_empty() {
+            String::from("0")
+        } else {
+            held.to_owned()
+        })
+    }
+
+    /// The value as a machine integer, saturating where it names more than one can hold. A caller
+    /// comparing against a small number reads the same answer either way.
+    #[must_use]
+    pub fn saturating(&self) -> u64 {
+        self.0.parse().unwrap_or(u64::MAX)
+    }
+
+    /// Whether the number is zero, which is what a trailing `.0` says.
+    #[must_use]
+    pub fn is_zero(&self) -> bool {
+        self.0 == "0"
+    }
+
+    /// Zero, which is what a release leaves unwritten.
+    #[must_use]
+    pub fn zero() -> Self {
+        Self(String::from("0"))
+    }
+
+    /// The number the file wrote, where what it wrote is digits counted the way PEP 440 counts
+    /// them: a leading zero names no number of its own.
+    #[must_use]
+    pub fn written(digits: &str) -> Option<Self> {
+        if digits.is_empty() || !digits.bytes().all(|held| held.is_ascii_digit()) {
+            return None;
+        }
+        let held = Self::read(digits);
+        (held.0 == digits).then_some(held)
+    }
+
+    /// The next number up.
+    #[must_use]
+    pub fn succ(&self) -> Self {
+        let mut digits: Vec<u8> = self.0.bytes().rev().collect();
+        let mut carry = 1;
+        for digit in &mut digits {
+            let held = *digit - b'0' + carry;
+            *digit = b'0' + held % 10;
+            carry = held / 10;
+        }
+        if carry == 1 {
+            digits.push(b'1');
+        }
+        digits.reverse();
+        Self(String::from_utf8(digits).expect("digits are ASCII"))
+    }
+
+    /// The next number down, or `None` where there is none below it.
+    #[must_use]
+    pub fn pred(&self) -> Option<Self> {
+        if self.is_zero() {
+            return None;
+        }
+        let mut digits: Vec<u8> = self.0.bytes().rev().collect();
+        let mut borrow = 1;
+        for digit in &mut digits {
+            let held = *digit - b'0' + 10 - borrow;
+            *digit = b'0' + held % 10;
+            borrow = 1 - held / 10;
+        }
+        digits.reverse();
+        Some(Self::read(&String::from_utf8(digits).expect("digits are ASCII")))
+    }
+}
+
+impl Ord for Number {
+    /// Longer digits name a larger number, and the same count of them compares digit by digit.
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.0.len().cmp(&other.0.len()).then_with(|| self.0.cmp(&other.0))
+    }
+}
+
+impl PartialOrd for Number {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Version {
-    pub epoch: Option<u64>,
-    pub release: Vec<u64>,
-    pub pre: Option<(String, Option<u64>)>,
-    pub post: Option<(Option<String>, Option<u64>)>,
-    pub dev: Option<(String, Option<u64>)>,
+    pub epoch: Option<Number>,
+    pub release: Vec<Number>,
+    pub pre: Option<(String, Option<Number>)>,
+    pub post: Option<(Option<String>, Option<Number>)>,
+    pub dev: Option<(String, Option<Number>)>,
     pub local: Option<String>,
     pub has_wildcard: bool,
 }
 
 impl Version {
-    pub fn new(raw: &str) -> Self {
+    /// Read a version the way PEP 440 spells one.
+    ///
+    /// # Errors
+    ///
+    /// Returns why the text is not a version this can write back out unchanged: text PEP 440 does
+    /// not read as a version, or a release number too large to hold.
+    pub fn new(raw: &str) -> Result<Self, String> {
         let mut input = raw.trim();
-        let mut has_wildcard = false;
-        if input.ends_with(".*") {
-            has_wildcard = true;
+        let has_wildcard = input.ends_with(".*");
+        if has_wildcard {
             input = &input[..input.len() - 2];
         }
-
-        let epoch = if let Some(idx) = input.find('!') {
-            if let Ok(epoch) = input[..idx].parse() {
-                input = &input[idx + 1..];
-                Some(epoch)
-            } else {
-                None
-            }
-        } else {
-            None
+        let found = PEP440
+            .captures(input)
+            .ok_or_else(|| format!("Invalid version: {input}"))?;
+        let number = |name: &str| found.name(name).map(|held| Number::read(held.as_str()));
+        let release = found
+            .name("release")
+            .expect("the release is not optional")
+            .as_str()
+            .split('.')
+            .map(Number::read)
+            .collect();
+        // an implicit post release is written `1.0-1`, which names the number without the label
+        let post = match (found.name("post_n1"), found.name("post_l")) {
+            (Some(held), _) => Some((None, Some(Number::read(held.as_str())))),
+            (None, Some(_)) => Some((Some(String::from("post")), number("post_n2"))),
+            (None, None) => None,
         };
-
-        let local = if let Some(idx) = input.find('+') {
-            let local = Some(input[idx + 1..].to_ascii_lowercase());
-            input = &input[..idx];
-            local
-        } else {
-            None
-        };
-
-        let mut main = input;
-        let mut pre = None;
-        let mut post = None;
-        let mut dev = None;
-
-        if let Some(idx) = main.to_ascii_lowercase().rfind("dev") {
-            let (before, after) = main.split_at(idx);
-            let after = &after[3..];
-            let dev_num = Self::extract_number(after);
-            dev = Some(("dev".to_string(), dev_num));
-            main = Self::trim_separators_end(before);
-        }
-
-        if let Some(idx) = main.to_ascii_lowercase().rfind("post") {
-            let (before, after) = main.split_at(idx);
-            let after = &after[4..];
-            let post_num = Self::extract_number(after);
-            post = Some((Some("post".to_string()), post_num));
-            main = Self::trim_separators_end(before);
-        }
-
-        // Labels are checked longest first so a shorter one is not matched inside a longer one ("rc" before "c").
-        let pre_labels = ["preview", "alpha", "beta", "pre", "rc", "a", "b", "c"];
-        for label in &pre_labels {
-            if let Some(idx) = main.to_ascii_lowercase().rfind(label) {
-                let (before, after) = main.split_at(idx);
-                let after = &after[label.len()..];
-                let pre_num = Self::extract_number(after);
-                pre = Some((label.to_string(), pre_num));
-                main = Self::trim_separators_end(before);
-                break;
-            }
-        }
-
-        let release: Vec<u64> = main.split('.').filter_map(|x| x.parse().ok()).collect();
-
-        Self {
-            epoch,
+        Ok(Self {
+            epoch: number("epoch"),
             release,
-            pre,
+            pre: found
+                .name("pre_l")
+                .map(|held| (held.as_str().to_ascii_lowercase(), number("pre_n"))),
             post,
-            dev,
-            local,
+            dev: found.name("dev").map(|_| (String::from("dev"), number("dev_n"))),
+            local: found.name("local").map(|held| held.as_str().to_ascii_lowercase()),
             has_wildcard,
-        }
-    }
-
-    fn extract_number(s: &str) -> Option<u64> {
-        let trimmed = s.trim_start_matches(['-', '_', '.']);
-        let (num, _) = trimmed.split_at(trimmed.find(|c: char| !c.is_ascii_digit()).unwrap_or(trimmed.len()));
-        if num.is_empty() { None } else { num.parse().ok() }
-    }
-
-    fn trim_separators_end(s: &str) -> &str {
-        s.trim_end_matches(['-', '_', '.'])
+        })
     }
 }
 
-impl std::fmt::Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(epoch) = self.epoch {
-            write!(f, "{}!", epoch)?;
+impl Version {
+    /// The version as PEP 440 spells one: each label in its canonical form, and a segment the file
+    /// left without a number written with the zero the spec reads it as.
+    fn spelled(&self) -> String {
+        let mut written = String::new();
+        if let Some(epoch) = &self.epoch {
+            written.push_str(&epoch.0);
+            written.push('!');
         }
-        for (i, part) in self.release.iter().enumerate() {
-            if i > 0 {
-                write!(f, ".")?;
+        for (at, part) in self.release.iter().enumerate() {
+            if at > 0 {
+                written.push('.');
             }
-            write!(f, "{}", part)?;
+            written.push_str(&part.0);
         }
-        if let Some((ref pre_l, pre_n)) = self.pre {
-            f.write_str(match pre_l.as_str() {
+        if let Some((pre_l, pre_n)) = &self.pre {
+            written.push_str(match pre_l.as_str() {
                 "alpha" | "a" => "a",
                 "beta" | "b" => "b",
                 "rc" | "c" | "pre" | "preview" => "rc",
                 _ => pre_l,
-            })?;
-            if let Some(n) = pre_n {
-                write!(f, "{}", n)?;
-            } else {
-                f.write_str("0")?;
-            }
+            });
+            written.push_str(numbered(pre_n));
         }
-        if let Some((ref _post_l, post_n)) = self.post {
-            f.write_str(".post")?;
-            if let Some(n) = post_n {
-                write!(f, "{}", n)?;
-            } else {
-                f.write_str("0")?;
-            }
+        if let Some((_, post_n)) = &self.post {
+            written.push_str(".post");
+            written.push_str(numbered(post_n));
         }
-        if let Some((_, dev_n)) = self.dev {
-            f.write_str(".dev")?;
-            if let Some(n) = dev_n {
-                write!(f, "{}", n)?;
-            } else {
-                f.write_str("0")?;
-            }
+        if let Some((_, dev_n)) = &self.dev {
+            written.push_str(".dev");
+            written.push_str(numbered(dev_n));
         }
-        if let Some(ref local) = self.local {
-            f.write_str("+")?;
-            f.write_str(&local.replace(['-', '_'], "."))?;
+        if let Some(local) = &self.local {
+            written.push('+');
+            written.push_str(&local.replace(['-', '_'], "."));
         }
         if self.has_wildcard {
-            f.write_str(".*")?;
+            written.push_str(".*");
         }
-        Ok(())
+        written
+    }
+}
+
+/// The digits a segment holds, or the zero PEP 440 reads where the file wrote none.
+fn numbered(held: &Option<Number>) -> &str {
+    held.as_ref().map_or("0", |number| &number.0)
+}
+
+impl std::fmt::Display for Version {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.spelled())
     }
 }
 
@@ -179,8 +234,8 @@ mod tests {
     fn test_display_unknown_pre_release_label() {
         let version = Version {
             epoch: None,
-            release: vec![1, 2, 3],
-            pre: Some(("unknown".to_string(), Some(1))),
+            release: ["1", "2", "3"].map(Number::read).to_vec(),
+            pre: Some((String::from("unknown"), Some(Number::read("1")))),
             post: None,
             dev: None,
             local: None,
@@ -190,16 +245,30 @@ mod tests {
     }
 
     #[test]
-    fn test_display_unknown_pre_release_no_number() {
+    fn test_display_every_part_a_version_can_hold() {
+        let version = Version {
+            epoch: Some(Number::read("2")),
+            release: ["1", "2", "3"].map(Number::read).to_vec(),
+            pre: Some((String::from("xyz"), None)),
+            post: Some((Some(String::from("post")), Some(Number::read("4")))),
+            dev: Some((String::from("dev"), Some(Number::read("5")))),
+            local: Some(String::from("a-b_c")),
+            has_wildcard: true,
+        };
+        assert_eq!(version.to_string(), "2!1.2.3xyz0.post4.dev5+a.b.c.*");
+    }
+
+    #[test]
+    fn test_display_the_parts_that_carry_no_number() {
         let version = Version {
             epoch: None,
-            release: vec![1, 2, 3],
-            pre: Some(("xyz".to_string(), None)),
-            post: None,
-            dev: None,
+            release: vec![Number::read("1")],
+            pre: None,
+            post: Some((Some(String::from("post")), None)),
+            dev: Some((String::from("dev"), None)),
             local: None,
             has_wildcard: false,
         };
-        assert_eq!(version.to_string(), "1.2.3xyz0");
+        assert_eq!(version.to_string(), "1.post0.dev0");
     }
 }

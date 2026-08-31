@@ -9,6 +9,11 @@ pub enum MarkerExpr {
 impl MarkerExpr {
     pub fn new(input: &str) -> Result<Self, String> {
         let tokens = tokenize(input)?;
+        // the parser reads a group by calling itself, and the tree it builds is read and dropped
+        // the same way, so a marker nested past this says more than the machine can hold
+        if tokens.iter().filter(|token| **token == Token::LParen).count() > GROUPS {
+            return Err(format!("The marker groups more than {GROUPS} times"));
+        }
         let mut parser = Parser::new(tokens);
         let expr = parser.parse_marker()?;
         if parser.peek().is_some() {
@@ -17,6 +22,10 @@ impl MarkerExpr {
         Ok(expr)
     }
 }
+
+/// How many groups a marker may open. PEP 508 sets no limit, and a marker written by hand carries
+/// a handful; the bound is what a thread's stack holds for reading, writing and dropping the tree.
+const GROUPS: usize = 256;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Token<'a> {
@@ -30,58 +39,78 @@ enum Token<'a> {
 }
 
 fn tokenize(input: &str) -> Result<Vec<Token<'_>>, String> {
+    // the positions here are byte offsets, since that is what a slice of the input is written in
     let mut tokens = Vec::new();
-    let mut i = 0;
-    let chars: Vec<_> = input.chars().collect();
-    while i < chars.len() {
-        match chars[i] {
-            ' ' | '\t' | '\n' => i += 1,
+    let mut at = 0;
+    while let Some(held) = input[at..].chars().next() {
+        let width = held.len_utf8();
+        match held {
+            // a marker is written on one line, so a break in it is not spacing
+            ' ' | '\t' => at += width,
             '(' => {
                 tokens.push(Token::LParen);
-                i += 1;
+                at += width;
             }
             ')' => {
                 tokens.push(Token::RParen);
-                i += 1;
+                at += width;
             }
             '=' | '!' | '>' | '<' | '~' => {
-                let mut j = i + 1;
-                while j < chars.len() && "=<>!~".contains(chars[j]) {
-                    j += 1;
-                }
-                tokens.push(Token::Op(&input[i..j]));
-                i = j;
+                let end = run_end(input, at, |held| "=<>!~".contains(held));
+                tokens.push(Token::Op(&input[at..end]));
+                at = end;
             }
             '"' | '\'' => {
-                let quote = chars[i];
-                let mut j = i + 1;
-                while j < chars.len() && chars[j] != quote {
-                    j += 1;
-                }
-                if j == chars.len() {
+                let Some(close) = input[at + width..].find(held) else {
                     return Err("Unclosed string literal".to_string());
-                }
-                tokens.push(Token::String(&input[i..=j]));
-                i = j + 1;
+                };
+                let end = at + width + close + width;
+                tokens.push(Token::String(&input[at..end]));
+                at = end;
             }
-            c if c.is_ascii_alphabetic() || c == '_' => {
-                let mut j = i + 1;
-                while j < chars.len() && (chars[j].is_ascii_alphanumeric() || chars[j] == '_') {
-                    j += 1;
-                }
-                let word = &input[i..j];
+            held if held.is_ascii_alphabetic() || held == '_' => {
+                let end = run_end(input, at, |held| held.is_ascii_alphanumeric() || held == '_');
+                let word = &input[at..end];
                 match word {
                     "and" => tokens.push(Token::And),
                     "or" => tokens.push(Token::Or),
                     _ => tokens.push(Token::Ident(word)),
                 }
-                i = j;
+                at = end;
             }
-            _ => return Err(format!("Unexpected character: {}", chars[i])),
+            other => return Err(format!("Unexpected character: {other}")),
         }
     }
     Ok(tokens)
 }
+
+/// Where the run of characters `holds` accepts, starting at `from`, ends.
+fn run_end(input: &str, from: usize, holds: impl Fn(char) -> bool) -> usize {
+    input[from..]
+        .find(|held: char| !holds(held))
+        .map_or(input.len(), |width| from + width)
+}
+
+/// What a marker compares with, from the
+/// [dependency specifier grammar](https://packaging.python.org/en/latest/specifications/dependency-specifiers/).
+const MARKER_OPERATORS: &[&str] = &["==", "!=", "<", "<=", ">", ">=", "~=", "==="];
+
+/// The environment a marker may name. Anything else on that side is a value, which is quoted.
+const MARKER_VARIABLES: &[&str] = &[
+    "os_name",
+    "sys_platform",
+    "platform_machine",
+    "platform_python_implementation",
+    "platform_release",
+    "platform_system",
+    "platform_version",
+    "python_version",
+    "python_full_version",
+    "implementation_name",
+    "implementation_version",
+    "extra",
+    "dependency_groups",
+];
 
 struct Parser<'a> {
     tokens: Vec<Token<'a>>,
@@ -143,12 +172,11 @@ impl<'a> Parser<'a> {
         }
     }
     fn parse_comparison(&mut self) -> Result<MarkerExpr, String> {
-        let left = match self.next() {
-            Some(Token::Ident(s)) => s.to_string(),
-            _ => return Err("Expected identifier".to_string()),
-        };
+        let left = self.parse_operand()?;
         let op = match self.next() {
-            Some(Token::Op(op)) => op.to_string(),
+            // PEP 508 names the operators a marker compares with, and nothing else is one
+            Some(Token::Op(op)) if MARKER_OPERATORS.contains(op) => (*op).to_string(),
+            Some(Token::Op(op)) => return Err(format!("`{op}` is no marker operator")),
             Some(Token::Ident("in")) => "in".to_string(),
             Some(Token::Ident("not")) => match self.next() {
                 Some(Token::Ident("in")) => "not in".to_string(),
@@ -156,46 +184,47 @@ impl<'a> Parser<'a> {
             },
             _ => return Err("Expected operator".to_string()),
         };
-        let right = match self.next() {
-            Some(Token::String(s)) => s.to_string(),
-            Some(Token::Ident(s)) => s.to_string(),
-            _ => return Err("Expected string or identifier as right-hand side".to_string()),
-        };
+        let right = self.parse_operand()?;
         Ok(MarkerExpr::Comparison { left, op, right })
     }
+
+    /// One side of a comparison: a quoted value, or one of the variables PEP 508 names.
+    fn parse_operand(&mut self) -> Result<String, String> {
+        match self.next() {
+            Some(Token::String(held)) => Ok((*held).to_string()),
+            Some(Token::Ident(held)) if MARKER_VARIABLES.contains(held) => Ok((*held).to_string()),
+            Some(Token::Ident(held)) => Err(format!("`{held}` is no marker variable, and a value is quoted")),
+            _ => Err("Expected a quoted value or a marker variable".to_string()),
+        }
+    }
+}
+
+/// The expressions written out with `between` holding them together.
+fn joined(exprs: &[MarkerExpr], between: &str) -> String {
+    exprs
+        .iter()
+        .map(ToString::to_string)
+        .collect::<Vec<String>>()
+        .join(between)
 }
 
 impl std::fmt::Display for MarkerExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MarkerExpr::And(exprs) => {
-                let mut first = true;
-                for expr in exprs {
-                    if !first {
-                        write!(f, " and ")?;
-                    }
-                    write!(f, "{}", expr)?;
-                    first = false;
-                }
-                Ok(())
-            }
-            MarkerExpr::Or(exprs) => {
-                let mut first = true;
-                for expr in exprs {
-                    if !first {
-                        write!(f, " or ")?;
-                    }
-                    write!(f, "{}", expr)?;
-                    first = false;
-                }
-                Ok(())
-            }
+            MarkerExpr::And(exprs) => f.write_str(&joined(exprs, " and ")),
+            MarkerExpr::Or(exprs) => f.write_str(&joined(exprs, " or ")),
             MarkerExpr::Comparison { left, op, right } => {
                 let formatted = if (right.starts_with('"') && right.ends_with('"'))
                     || (right.starts_with('\'') && right.ends_with('\''))
                 {
+                    // the quote a value holds cannot be the one that closes it, and PEP 508 has no
+                    // escape for either, so the other one writes it
                     let inner = &right[1..right.len() - 1];
-                    format!("'{inner}'")
+                    if inner.contains('\'') {
+                        format!("\"{inner}\"")
+                    } else {
+                        format!("'{inner}'")
+                    }
                 } else {
                     right.to_string()
                 };

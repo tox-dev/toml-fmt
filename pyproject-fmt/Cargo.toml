@@ -9,23 +9,28 @@ edition = "2021"
 [lib]
 name = "_pyproject_fmt"
 path = "rust/src/main.rs"
-crate-type = ["cdylib"]
+# `rlib` beside the `cdylib` the wheel needs, so the tests can link against the crate and reach it
+# the way a user does
+crate-type = ["cdylib", "rlib"]
+
+[[test]]
+# the tests link against the crate and go through the entry point a user calls, so they live beside
+# `src` rather than inside it
+name = "rules"
+path = "rust/tests/mod.rs"
 
 [dependencies]
-common = {path = "../common" }
-# Sibling crate, pulled in as a library so the [tool.tox] handler shares one source of
-# truth with the standalone tox.toml formatter. Default features disabled so the linked
-# copy here doesn't pull in pyo3's `extension-module` and double-link Python symbols.
-tox-toml-fmt = { path = "../tox-toml-fmt", default-features = false }
+common = { path = "../common", features = ["python"] }
+toml-doc = { path = "../toml-doc" }
+# The tox formatting rules, so the [tool.tox] handler here and the standalone tox.toml
+# formatter share one source of truth without either package depending on the other.
+tox-rules = { path = "../tox-rules" }
 regex = { version = "1.13.1" }
+# The registered SPDX identifiers and expression grammar, so a license string is only
+# rewritten once it is known to be an expression rather than free-form prose.
+spdx = { version = "0.13.5", default-features = false }
 pyo3 = { version = "0.29.2", features = ["generate-import-lib"] } # integration with Python
 lexical-sort = { version = "0.3.1" }
-tombi-parser = { workspace = true }
-tombi-syntax = { workspace = true }
-tombi-formatter = { workspace = true }
-tombi-config = { workspace = true }
-tombi-schema-store = { workspace = true }
-tokio = { version = "1", features = ["rt"] }
 
 [features]
 extension-module = ["pyo3/extension-module"]
@@ -35,9 +40,8 @@ abi3 = ["pyo3/abi3-py310"]
 default = ["extension-module", "abi3"]
 
 [dev-dependencies]
-common = { path = "../common", features = ["test-util"] }
+common = { path = "../common", features = ["python"] }
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
-tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 insta = { version = "1.48.0", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.29.2", features = ["auto-initialize"] }
-toml = "1.1.4"
+toml = "1.1.4"                  # an independent parser, to read back what the formatter wrote

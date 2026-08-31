@@ -1,9 +1,4 @@
-use common::array::sort_strings;
-use common::table::{for_entries, reorder_table_keys, Tables};
-use lexical_sort::natural_lexical_cmp;
-
 pub const KEY_ORDER: &[&str] = &[
-    "",
     "tag_format",
     "major_on_zero",
     "allow_zero_version",
@@ -28,17 +23,11 @@ pub const KEY_ORDER: &[&str] = &[
     "remote",
 ];
 
-const SORT_ARRAYS: &[&str] = &["version_variables", "version_toml", "assets", "exclude_commit_patterns"];
+// each declaration writes in turn and the later one decides what the file ends up holding, and the
+// assets are published in order, so only the patterns matched with `any` are a set
+const SORT_ARRAYS: &[&str] = &["exclude_commit_patterns"];
 
-pub fn fix(tables: &mut Tables) {
-    let Some(elements) = tables.get("tool.semantic_release") else {
-        return;
-    };
-    let table = &mut elements.first().unwrap().borrow_mut();
-    for_entries(table, &mut |key, entry| {
-        if SORT_ARRAYS.contains(&key.as_str()) {
-            sort_strings::<String, _, _>(entry, |s| s.to_lowercase(), &|lhs, rhs| natural_lexical_cmp(lhs, rhs));
-        }
-    });
-    reorder_table_keys(table, KEY_ORDER);
+/// Whether what the name holds is a list of names, which sorts.
+pub fn sorts(key: &str) -> bool {
+    SORT_ARRAYS.contains(&key)
 }

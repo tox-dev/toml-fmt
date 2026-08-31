@@ -56,6 +56,10 @@ The shared config file uses the same keys as the ``[tox-toml-fmt]`` table, but w
 When both a shared config file and a ``[tox-toml-fmt]`` table exist, per-file settings from the ``[tox-toml-fmt]``
 table take precedence over the shared config file.
 
+Settings are read with the same parser that reads the file, so a value only TOML 1.1 spells does not hide the table
+they are written in. Every key there has to be one the formatter knows, written as the type its command-line flag
+takes; anything else is reported against the file and the key, and nothing is formatted.
+
 Command line interface
 ----------------------
 

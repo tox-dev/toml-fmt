@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    import tomllib
+else:  # pragma: <3.11 cover
+    import tomli as tomllib
 
 import pytest
 
 from pyproject_fmt.__main__ import runner as run
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 @pytest.mark.parametrize(
@@ -122,6 +125,75 @@ def test_indent(tmp_path: Path, indent: int) -> None:
     assert output == dedent(expected)
 
 
+@pytest.mark.parametrize(
+    ("flag", "message"),
+    [
+        pytest.param("--max-supported-python=4.0", "must name a Python 3 minor", id="another-major"),
+        pytest.param("--max-supported-python=3.256", "must name a Python 3 minor", id="minor-too-large"),
+        pytest.param("--indent=-1", "must not be negative", id="negative-indent"),
+        pytest.param("--column-width=-1", "must not be negative", id="negative-width"),
+    ],
+)
+def test_a_setting_the_formatter_cannot_hold(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    flag: str,
+    message: str,
+) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text('[project]\nname = "x"\n')
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml), flag])
+
+    assert message in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("setting", "message"),
+    [
+        pytest.param("indent = -1", "must not be negative", id="negative-count"),
+        pytest.param('table_format = "wide"', "invalid choice", id="unknown-table-format"),
+        pytest.param("column_width = true", "is not written as int", id="boolean-count"),
+        pytest.param('keep_full_version = "false"', "is not written as bool", id="text-flag"),
+        pytest.param("expand_tables = 1", "is not written as list", id="number-list"),
+        pytest.param("sub_table_spacing = 1", "is not written as str", id="number-spacing"),
+        pytest.param("skip_wrap_for_keys = [ 1 ]", "every entry names one thing", id="list-of-numbers"),
+        pytest.param("colm_width = 80", "unknown setting", id="misspelled"),
+        pytest.param("check = true", "unknown setting", id="run-mode"),
+        pytest.param("column_width = 100000", "must be at most", id="count-beyond-a-line"),
+        pytest.param('max_supported_python = "3.9"', "must not precede 3.10", id="maximum-below-the-minimum"),
+        pytest.param("[tool.pyproject-fmt.deeper]\nheld = 1", "unknown setting", id="table-below-the-settings"),
+    ],
+)
+def test_a_configured_setting_the_formatter_cannot_hold(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    setting: str,
+    message: str,
+) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = f'[project]\nname = "x"\n\n[tool.pyproject-fmt]\n{setting}\n'
+    pyproject_toml.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml)])
+
+    assert message in capsys.readouterr().err
+    assert pyproject_toml.read_text() == start
+
+
+def test_a_carriage_return_toml_does_not_read(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = b'[project]\rname = "x"\n'
+    pyproject_toml.write_bytes(start)
+
+    assert run([str(pyproject_toml)]) == 1
+
+    assert "carriage return" in capsys.readouterr().err
+    assert pyproject_toml.read_bytes() == start
+
+
 def test_keep_full_version_cli(tmp_path: Path) -> None:
     start = """\
     [build-system]
@@ -170,7 +242,6 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     indent = 4
     keep_full_version = true
     max_supported_python = "3.11"
-    ignore_extra = true
     """
     filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
@@ -198,7 +269,6 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     indent = 4
     keep_full_version = true
     max_supported_python = "3.11"
-    ignore_extra = true
     """
     got = filename.read_text()
     assert got == dedent(expected)
@@ -473,3 +543,166 @@ def test_project_version_kept_verbatim(tmp_path: Path) -> None:
     assert run([str(filename), "--no-print-diff", "--no-generate-python-version-classifiers"]) == 0
 
     assert filename.read_text() == dedent(txt)
+
+
+def test_settings_are_read_beside_a_value_only_toml_1_1_reads(tmp_path: Path) -> None:
+    """A file the formatter reads is one its own settings are read from, TOML 1.1 values included."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(
+        'when = 12:30\n\n[project]\nname = "demo"\ndescription = "one two three four five six seven"\n'
+        "\n[tool.pyproject-fmt]\ncolumn_width = 30\n"
+    )
+
+    run([str(pyproject_toml)])
+
+    assert '"""\\' in pyproject_toml.read_text()
+
+
+def test_a_setting_beside_a_value_only_toml_1_1_reads_is_still_checked(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = 'when = 12:30\n\n[project]\nname = "demo"\n\n[tool.pyproject-fmt]\ncolumn_width = "wide"\n'
+    pyproject_toml.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml)])
+
+    assert "is not written as int" in capsys.readouterr().err
+    assert pyproject_toml.read_text() == start
+
+
+def test_settings_are_read_from_a_file_that_opens_with_a_byte_order_mark(tmp_path: Path) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(
+        '﻿[project]\nname = "demo"\ndescription = "one two three four five six seven"\n'
+        "\n[tool.pyproject-fmt]\ncolumn_width = 30\n",
+        encoding="utf-8",
+    )
+
+    run([str(pyproject_toml)])
+
+    assert '"""\\' in pyproject_toml.read_text()
+
+
+def test_a_value_nested_deeper_than_a_python_reader_goes(tmp_path: Path) -> None:
+    """Reading the settings must reach as far into a document as the formatter does."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = f"a = {'[' * 200}1{']' * 200}\n"
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml)]) == 1
+    assert pyproject_toml.read_text().startswith("a = [\n  [\n")
+
+
+def test_a_value_nested_deeper_than_the_formatter_reads(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A value past what a stack holds is reported, and the file is left as its author wrote it."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = f"a = {'[' * 12_000}1{']' * 12_000}\n"
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml)]) == 1
+
+    assert "nested deeper" in capsys.readouterr().err
+    assert pyproject_toml.read_text() == start
+
+
+def test_every_python_environment_runs_the_tests() -> None:
+    """A Python environment that defines no command of its own passes without running a test."""
+    config = tomllib.loads((Path(__file__).parent.parent / "tox.toml").read_text(encoding="utf-8"))
+
+    assert config["env_run_base"]["commands"][0][0] == "pytest"
+    named = [name for name in config["env_list"] if name[0].isdigit()]
+    assert named
+    for name in named:
+        assert "commands" not in config.get("env", {}).get(name, {}), name
+
+
+@pytest.mark.parametrize(
+    "settings",
+    [
+        pytest.param("[tool.pyproject-fmt]\ncolumn_width = 30", id="a-header"),
+        pytest.param("tool.pyproject-fmt.column_width = 30", id="a-dotted-name"),
+        pytest.param("[tool]\npyproject-fmt = { column_width = 30 }", id="a-table-written-as-a-value"),
+        pytest.param('[tool]\npyproject-fmt = { "column_width" = 30 }', id="a-name-in-quotes"),
+        pytest.param("tool = { pyproject-fmt = { column_width = 30 } }", id="a-table-inside-a-value"),
+    ],
+)
+def test_a_setting_is_read_however_the_file_writes_its_table(tmp_path: Path, settings: str) -> None:
+    """TOML gives every spelling of a table the same name, so the settings are read out of each."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    # a dotted key writes its own table, so it stands before the first header rather than under it
+    pyproject_toml.write_text(
+        f'{settings}\n\n[project]\nname = "demo"\ndescription = "one two three four five six seven"\n'
+    )
+
+    run([str(pyproject_toml)])
+
+    assert '"""\\' in pyproject_toml.read_text()
+
+
+def test_settings_under_a_repeated_table_are_no_settings(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A table the file repeats is a list of them, and what its elements write is no one table."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = '[project]\nname = "x"\n\n[[tool]]\npyproject-fmt = { column_width = 30 }\n'
+    pyproject_toml.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml)])
+
+    assert "an array of tables holds no settings" in capsys.readouterr().err
+    assert pyproject_toml.read_text() == start
+
+
+def test_the_first_setting_the_formatter_cannot_hold_is_the_one_reported(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A file with more than one bad setting names the same one every run."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text('[project]\nname = "x"\n\n[tool.pyproject-fmt]\nz_bad = 1\na_bad = 2\n')
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml)])
+
+    assert "z_bad: unknown setting" in capsys.readouterr().err
+
+
+def test_a_selector_that_names_no_table(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """A setting that names a table TOML cannot read asks for nothing, and is told so."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    start = '[project]\nname = "x"\n\n[tool.pyproject-fmt]\nexpand_tables = [ "project.\\"urls" ]\n'
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml)]) == 1
+
+    assert 'expand_tables: project."urls is not a table name' in capsys.readouterr().err
+    assert pyproject_toml.read_text() == start
+
+
+@pytest.mark.parametrize("through", ["cli", "file", "neither"], ids=["command-line", "configuration", "control"])
+def test_a_quoted_selector_names_the_same_table_either_way(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    through: str,
+) -> None:
+    """A name TOML quotes may hold a comma of its own, which separates nothing."""
+    pyproject_toml = tmp_path / "pyproject.toml"
+    held = '[project]\nname = "My_Package"\n\n[tool."a,b".child]\nx = 1\n'
+    pyproject_toml.write_text(held)
+    if through == "cli":
+        assert run([str(pyproject_toml), "--no-print-diff", "--expand-tables", 'tool."a,b"']) == 1
+    elif through == "file":
+        pyproject_toml.write_text(f"{held}\n[tool.pyproject-fmt]\nexpand_tables = [ 'tool.\"a,b\"' ]\n")
+        assert run([str(pyproject_toml), "--no-print-diff"]) == 1
+    else:
+        assert run([str(pyproject_toml), "--no-print-diff"]) == 1
+
+    assert not capsys.readouterr().err
+    written = pyproject_toml.read_text()
+    # the formatter ran: the project name is written the way a distribution name is spelled
+    assert 'name = "my-package"' in written
+    # the selector is what holds the table open, so without one it folds into its parent
+    assert ('[tool."a,b".child]' in written) is (through != "neither")
+    assert ('[tool."a,b"]' in written) is (through == "neither")

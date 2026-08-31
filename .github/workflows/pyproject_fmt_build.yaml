@@ -11,9 +11,14 @@ on:
   push:
     branches: ["main"]
     paths:
+      - "toml-doc/**"
       - "common/**"
       - "toml-fmt-common/**"
+      - "tox-rules/**"
       - "pyproject-fmt/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain.toml"
       - ".github/workflows/pyproject_fmt_build.yaml"
       - ".github/workflows/_build.yaml"
   pull_request:
@@ -41,9 +46,14 @@ jobs:
         with:
           filters: |
             run:
+              - 'toml-doc/**'
               - 'common/**'
               - 'toml-fmt-common/**'
+              - 'tox-rules/**'
               - 'pyproject-fmt/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
               - '.github/workflows/pyproject_fmt_build.yaml'
               - '.github/workflows/_build.yaml'
   build:

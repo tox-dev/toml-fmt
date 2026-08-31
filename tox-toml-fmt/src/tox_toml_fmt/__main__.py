@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, list_argument, run
+from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, name_list_argument, run
 
-from ._lib import Settings, format_toml
+from ._lib import Settings, format_toml, settings_in
 
 if TYPE_CHECKING:
     from argparse import ArgumentParser
@@ -44,16 +44,26 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """
         parser.add_argument(
             "--pin-env",
-            type=list_argument,
+            type=name_list_argument,
             default=[],
             dest="pin_envs",
-            help="environments pinned to the start of env_list (comma separated)",
+            help="environments whose tables are written first (comma separated)",
         )
 
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
         """Path where config overrides live."""
         return ("tox-toml-fmt",)
+
+    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:  # ruff: ignore[no-self-use]
+        """
+        Read the settings the text writes under a table, with the parser that reads the file itself.
+
+        :param text: the TOML source to read
+        :param path: the table the settings are written under
+        :return: the settings, or ``None`` where the text writes no such table
+        """
+        return settings_in(text, list(path))
 
     def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]
         """
