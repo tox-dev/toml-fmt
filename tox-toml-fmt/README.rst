@@ -2,22 +2,8 @@ Overview
 ========
 
 Apply a consistent format to your ``tox.toml`` file with comment support. See
-`changelog here <https://github.com/tox-dev/toml-fmt/blob/main/tox-toml-fmt/CHANGELOG.md>`_.
+`the releases <https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt>`_ for what changed.
 
-
-Recent Changes
-~~~~~~~~~~~~~~~~
-
-- ✨ feat(build): support free-threaded Python wheels by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#307 <https://github.com/tox-dev/toml-fmt/pull/307>`_
-- 🐛 fix(common): skip empty tables in Tables::get by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#304 <https://github.com/tox-dev/toml-fmt/pull/304>`_
-- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#301 <https://github.com/tox-dev/toml-fmt/pull/301>`_
-- Update Python dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#295 <https://github.com/tox-dev/toml-fmt/pull/295>`_
-- Update Rust dependencies by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#296 <https://github.com/tox-dev/toml-fmt/pull/296>`_ <a id="1.9.2"></a>
 
 Philosophy
 ----------

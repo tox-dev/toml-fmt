@@ -6,17 +6,15 @@
 #   "pygithub>=2.8.1",
 # ]
 # ///
-"""Generate the changelog on release."""
+"""The notes a release goes out with."""
 
 from __future__ import annotations
 
 import os
 import re
-import subprocess  # ruff: ignore[suspicious-subprocess-import]
 from argparse import ArgumentParser, Namespace
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import urllib3
 from git import Repo
@@ -39,56 +37,60 @@ class Options(Namespace):
     project: str
     pr: int | None
     base: str
-    regenerate: bool
 
 
 def run() -> None:
     options = parse_cli()
     print(f">> {options}")
     project = ROOT / options.project
-    changelog_file = project / "CHANGELOG.md"
 
     git_repo = Repo(ROOT)
     at = "tox-dev/toml-fmt"
     github = Github(auth=Token(os.environ["GITHUB_TOKEN"]), verify=False)
     gh_repo = github.get_repo(at)
 
-    if options.regenerate:
-        regenerate_changelog(changelog_file, git_repo, gh_repo, at, options.project)
-        return
-
     version = get_version(project)
-    changelog = changelog_file.read_text(encoding="utf-8")
-    anchor = f'<a id="{version}"></a>'
-
-    logs = []
-    for title, pr, by in entries(gh_repo, git_repo, options.pr, options.base, options.project):
-        suffix = f" in [#{pr}](https://github.com/{at}/pull/{pr})" if pr else ""
-        logs.append(f"{title} by [@{by}](https://github.com/{by}){suffix}")
-
-    if logs:
-        logs = [f"- {i}" for i in logs]
-        new_lines = [
-            anchor,
-            "",
-            f"## {version} - {datetime.now(tz=UTC).date().isoformat()}",
-            "",
-            *logs,
-            "",
-        ]
-        new = "\n".join(new_lines)
-        print(new)
-        logs_text = "\n".join(logs)
-        changelog_file.write_text(new + changelog, encoding="utf-8")
-        subprocess.run(["prek", "run", "--files", str(changelog_file)], check=False)  # ruff: ignore[subprocess-without-shell-equals-true, start-process-with-partial-path]
-    else:
-        logs_text = ""
+    titles = [(title, pr) for title, pr, _ in entries(gh_repo, git_repo, options.pr, options.base, options.project)]
+    notes = release_notes(titles, at)
+    print(notes)
 
     if output := os.environ.get("GITHUB_OUTPUT"):
         print(f">> GitHub output set, populating: {output}")
         with Path(output).open("at+", encoding="utf-8") as file_handler:
             file_handler.write(f"version={version}\n")
-            file_handler.write(f"changelog<<EOF\n{logs_text}\nEOF\n")
+            file_handler.write(f"changelog<<EOF\n{notes}\nEOF\n")
+
+
+#: The heading a change goes under, read from the conventional-commit type its title opens with. A
+#: type nothing here names is internal churn, and notes a user reads leave it out.
+UNDER: Final[dict[str, str]] = {"feat": "Added", "fix": "Fixed", "perf": "Performance", "docs": "Documentation"}
+
+#: The order the headings read in, so every release says what it added before what it repaired.
+IN_ORDER: Final[tuple[str, ...]] = ("Added", "Changed", "Fixed", "Removed", "Performance", "Documentation", "Packaging")
+
+
+def release_notes(titles: list[tuple[str, str | None]], at: str) -> str:
+    """What the release says it changed, grouped under the heading each change belongs to."""
+    grouped: dict[str, list[str]] = {}
+    for title, pr in titles:
+        if (under := heading_of(title)) is None:
+            continue
+        said = f"- **{described(title)}**"
+        grouped.setdefault(under, []).append(f"{said} ([#{pr}](https://github.com/{at}/pull/{pr}))" if pr else said)
+    return "\n\n".join(f"### {under}\n\n" + "\n".join(grouped[under]) for under in IN_ORDER if under in grouped)
+
+
+def heading_of(title: str) -> str | None:
+    """The heading the title belongs under, or `None` where it says nothing a user reads."""
+    if (match := re.match(r"^\W*\s*(\w+)(\([^)]*\))?:", title)) is None:
+        return None
+    return UNDER.get(match.group(1).lower())
+
+
+def described(title: str) -> str:
+    """What the title says, without the emoji and the `type(scope):` the commit convention adds."""
+    said = re.sub(r"^\W*\s*\w+(\([^)]*\))?:\s*", "", title).strip()
+    return said[:1].upper() + said[1:] + ("" if said.endswith(".") else ".")
 
 
 def parse_cli() -> Options:
@@ -96,7 +98,6 @@ def parse_cli() -> Options:
     parser.add_argument("project", choices=sorted(LOCAL_INPUTS))
     parser.add_argument("pr", type=lambda s: int(s) if s else None, nargs="?", default=None)
     parser.add_argument("base", type=str, nargs="?", default="")
-    parser.add_argument("--regenerate", action="store_true", help="Regenerate entire changelog from all releases")
     options = Options()
     parser.parse_args(namespace=options)
     return options
@@ -108,69 +109,6 @@ def get_version(base: Path) -> str:
             return load(fh)["package"]["version"]
     with (base / "pyproject.toml").open("rb") as fh:
         return load(fh)["project"]["version"]
-
-
-def regenerate_changelog(
-    changelog_file: Path, git_repo: Repo, gh_repo: GitHubRepository, at: str, project: str
-) -> None:
-    project_tags = sorted(
-        ((tag, tag.name.split("/")[1]) for tag in git_repo.tags if tag.name.startswith(f"{project}/")),
-        key=lambda t: t[0].commit.committed_datetime,
-    )
-    if not project_tags:
-        print(f"No tags found for {project}")
-        return
-
-    sections: list[str] = []
-    for i, (tag, version) in enumerate(project_tags):
-        prev_commit = project_tags[i - 1][0].commit.hexsha if i > 0 else None
-        current_commit = tag.commit.hexsha
-        release_date = tag.commit.committed_datetime.date().isoformat()
-
-        logs = list(entries_between(gh_repo, git_repo, prev_commit, current_commit, at, project))
-        if logs:
-            log_lines = [f"- {entry}" for entry in logs]
-            section = f'<a id="{version}"></a>\n\n## {version} - {release_date}\n\n' + "\n".join(log_lines)
-            sections.append(section)
-        else:
-            sections.append(f'<a id="{version}"></a>\n\n## {version} - {release_date}\n\n- Initial release')
-
-    content = "\n\n".join(reversed(sections))
-    if project == "pyproject-fmt":
-        content += (
-            "\n\nFor versions before 2.4.0, see releases in the old repositories: "
-            "[pyproject-fmt](https://github.com/tox-dev/pyproject-fmt/releases) (Python) and "
-            "[pyproject-fmt-rust](https://github.com/tox-dev/pyproject-fmt-rust/releases) (Rust).\n"
-        )
-    else:
-        content += "\n"
-    changelog_file.write_text(content, encoding="utf-8")
-    subprocess.run(["prek", "run", "--files", str(changelog_file)], check=False)  # ruff: ignore[subprocess-without-shell-equals-true, start-process-with-partial-path]
-    print(f"Regenerated changelog for {project} with {len(sections)} releases")
-
-
-def entries_between(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
-    gh_repo: GitHubRepository, git_repo: Repo, start: str | None, end: str, at: str, project: str
-) -> Iterator[str]:
-    pr_re = re.compile(r"(?P<title>.*)[(]#(?P<pr>\d+)[)]")
-    release_re = re.compile(r"^Release \S+ \d+\.\d+\.\d+$")
-    rev_range = f"{start}..{end}" if start else end
-    for change in git_repo.iter_commits(rev_range):
-        if change.author.name in {"pre-commit-ci[bot]", "dependabot[bot]"}:
-            continue
-        if not commit_affects_project(change, project):
-            continue
-        title = change.message.split("\n")[0].strip()
-        if release_re.match(title):
-            continue
-        by = get_author_login(gh_repo, change)
-        if match := pr_re.match(title):
-            group = match.groupdict()
-            pr = group["pr"]
-            suffix = f" in [#{pr}](https://github.com/{at}/pull/{pr})"
-            yield f"{group['title'].strip()} by [@{by}](https://github.com/{by}){suffix}"
-        else:
-            yield f"{title} by [@{by}](https://github.com/{by})"
 
 
 def get_author_login(gh_repo: GitHubRepository, change: object) -> str:
