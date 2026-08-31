@@ -106,16 +106,12 @@ def main() -> None:
     if not common_is_present():
         print(f"no toml-fmt-common sources under {_COMMON}")
         raise SystemExit(1)
-    built = sorted(target.glob("*.whl")) + sorted(target.glob("*.tar.gz")) if target.is_dir() else [target]
-    if not built:
-        print(f"no wheel or sdist found in {target}")
+    if not (wheels := sorted(target.glob("*.whl")) if target.is_dir() else [target]):
+        print(f"no wheels found in {target}")
         raise SystemExit(1)
-    for path in built:
-        if path.suffix == ".whl":
-            vendor_into_wheel(path)
-        else:
-            vendor_into_sdist(path)
-        print(f"vendored toml-fmt-common into {path.name}")
+    for wheel in wheels:
+        vendor_into_wheel(wheel)
+        print(f"vendored toml-fmt-common into {wheel.name}")
 
 
 def vendor_into_wheel(wheel: Path) -> None:

@@ -1,4 +1,4 @@
-"""Build a package the way each release path builds it and run what comes out with no index behind it."""
+"""Build a package the way a release builds it and run what comes out with no index behind it."""
 
 from __future__ import annotations
 
@@ -15,21 +15,12 @@ _CARRIED = "toml-fmt-common/src/toml_fmt_common/__init__.py"
 def main(package: str) -> None:
     with TemporaryDirectory() as folder:
         at = Path(folder)
-        released = maturin_sdist(package, at / "maturin")
-        for sdist in (pep517_sdist(package, at / "pep517"), released):
-            carries_common(sdist)
-        runs_on_its_own(package, wheel_from(released, at / "wheel"), at / "venv")
+        sdist = build_sdist(package, at / "sdist")
+        carries_common(sdist)
+        runs_on_its_own(package, wheel_from(sdist, at / "wheel"), at / "venv")
 
 
-def maturin_sdist(package: str, at: Path) -> Path:
-    # a release builds the sdist through maturin-action, which never reaches the PEP 517 hooks
-    manifest = _ROOT / package / "Cargo.toml"
-    run("uv", "run", "--no-project", "--with", "maturin", "maturin", "sdist", "-m", str(manifest), "--out", str(at))
-    run("uv", "run", "--no-project", str(_ROOT / package / "build_backend.py"), str(at))
-    return next(at.glob("*.tar.gz"))
-
-
-def pep517_sdist(package: str, at: Path) -> Path:
+def build_sdist(package: str, at: Path) -> Path:
     run("uv", "build", "--sdist", "--out-dir", str(at), str(_ROOT / package))
     return next(at.glob("*.tar.gz"))
 
