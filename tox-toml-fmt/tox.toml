@@ -1,5 +1,5 @@
 requires = ["tox>=4.60", "tox-uv>=1.36"]
-env_list = ["fix", "3.15", "3.15t", "3.14", "3.13", "3.12", "3.11", "3.10", "type", "docs", "pkg_meta"]
+env_list = ["fix", "3.15", "3.15t", "3.14", "3.13", "3.12", "3.11", "3.10", "type", "docs", "pkg_meta", "pkg_sdist"]
 skip_missing_interpreters = true
 
 [env_run_base]
@@ -50,6 +50,7 @@ set_env.MATURIN_PEP517_ARGS = "--no-default-features --features extension-module
 [env.type]
 description = "run type check on code base"
 dependency_groups = ["type"]
+set_env.MYPYPATH = "{tox_root}{/}..{/}toml-fmt-common{/}src"
 commands = [["mypy", "src{/}tox_toml_fmt"], ["mypy", "tests"]]
 
 [env.docs]
@@ -118,4 +119,16 @@ commands = [["python", "tasks{/}generate_readme.py", "tox-toml-fmt"]]
 description = "dev environment with all deps at {envdir}"
 package = "editable"
 dependency_groups = ["dev"]
-commands = [["uv", "pip", "tree"], ["python", "-c", 'print(r"{env_python}")']]
+commands = [
+    ["uv", "pip", "tree"],
+    ["python", "-c", "import toml_fmt_common"],
+    ["python", "-c", 'print(r"{env_python}")'],
+]
+
+[env.pkg_sdist]
+description = "build a wheel from the sdist and check it carries toml-fmt-common"
+runner = "uv-venv-runner"
+skip_install = true
+dependency_groups = []
+change_dir = "{tox_root}{/}.."
+commands = [["python", "tasks{/}check_sdist.py", "tox-toml-fmt"]]
