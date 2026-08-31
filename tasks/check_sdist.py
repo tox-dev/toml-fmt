@@ -1,37 +1,62 @@
-"""Build a package from its own sdist and check the wheel that comes out carries toml-fmt-common."""
+"""Build a package the way each release path builds it and run what comes out with no index behind it."""
 
 from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
+from tarfile import open as tar_open
 from tempfile import TemporaryDirectory
-from zipfile import ZipFile
 
 _ROOT = Path(__file__).resolve().parents[1]
+_CARRIED = "toml-fmt-common/src/toml_fmt_common/__init__.py"
 
 
 def main(package: str) -> None:
     with TemporaryDirectory() as folder:
-        out = Path(folder)
-        subprocess.check_call(["uv", "build", "--sdist", "--out-dir", str(out), str(_ROOT / package)])
-        sdist = next(out.glob("*.tar.gz"))
-        subprocess.check_call(["uv", "build", "--wheel", "--out-dir", str(out), str(sdist)])
-        check(next(out.glob("*.whl")), package.replace("-", "_"))
+        at = Path(folder)
+        released = maturin_sdist(package, at / "maturin")
+        for sdist in (pep517_sdist(package, at / "pep517"), released):
+            carries_common(sdist)
+        runs_on_its_own(package, wheel_from(released, at / "wheel"), at / "venv")
 
 
-def check(wheel: Path, module: str) -> None:
-    with ZipFile(wheel) as zf:
-        names = zf.namelist()
-        metadata = zf.read(next(n for n in names if n.endswith(".dist-info/METADATA"))).decode()
+def maturin_sdist(package: str, at: Path) -> Path:
+    # a release builds the sdist through maturin-action, which never reaches the PEP 517 hooks
+    manifest = _ROOT / package / "Cargo.toml"
+    run("uv", "run", "--no-project", "--with", "maturin", "maturin", "sdist", "-m", str(manifest), "--out", str(at))
+    run("uv", "run", "--no-project", str(_ROOT / package / "build_backend.py"), str(at))
+    return next(at.glob("*.tar.gz"))
 
-    if (vendored := f"{module}/_vendor/toml_fmt_common/__init__.py") not in names:
-        print(f"{wheel.name} built from the sdist holds no {vendored}")
-        sys.exit(1)
-    if "Requires-Dist: toml-fmt-common" in metadata:
-        print(f"{wheel.name} built from the sdist still requires toml-fmt-common")
-        sys.exit(1)
-    print(f"{wheel.name} built from the sdist carries toml-fmt-common")
+
+def pep517_sdist(package: str, at: Path) -> Path:
+    run("uv", "build", "--sdist", "--out-dir", str(at), str(_ROOT / package))
+    return next(at.glob("*.tar.gz"))
+
+
+def carries_common(sdist: Path) -> None:
+    with tar_open(sdist) as tar:
+        if not [name for name in tar.getnames() if name.endswith(_CARRIED)]:
+            print(f"{sdist.name} holds no {_CARRIED}")
+            sys.exit(1)
+
+
+def wheel_from(sdist: Path, at: Path) -> Path:
+    run("uv", "build", "--wheel", "--out-dir", str(at), str(sdist))
+    return next(at.glob("*.whl"))
+
+
+def runs_on_its_own(package: str, wheel: Path, venv: Path) -> None:
+    run("uv", "venv", str(venv))
+    scripts = venv / ("Scripts" if sys.platform == "win32" else "bin")
+    # --no-index leaves nothing to fall back on, so an unvendored wheel cannot install or import
+    run("uv", "pip", "install", "--no-index", "--python", str(scripts / "python"), str(wheel))
+    run(str(scripts / package), "--version")
+    print(f"{wheel.name} built from the sdist runs with no index behind it")
+
+
+def run(*command: str) -> None:
+    subprocess.check_call(command)
 
 
 if __name__ == "__main__":
