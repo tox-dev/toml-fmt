@@ -57,7 +57,11 @@ def backend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Backend:
     (src / ".DS_Store").write_bytes(b"junk")
 
     monkeypatch.setitem(loaded["vendor_into_wheel"].__globals__, "_COMMON", common)
-    return Backend(loaded["vendor_into_wheel"], loaded["link_common_into_wheel"], loaded["vendor_into_sdist"])
+    return Backend(
+        loaded["vendor_into_wheel"],
+        loaded["link_common_into_wheel"],
+        loaded["vendor_into_sdist"],
+    )
 
 
 @pytest.fixture
@@ -83,7 +87,7 @@ def editable(backend: Backend, unvendored: Path) -> Path:
 
 
 @pytest.fixture
-def sdist(backend: Backend, tmp_path: Path) -> Path:
+def plain_sdist(tmp_path: Path) -> Path:
     path = tmp_path / "tox_toml_fmt-0.tar.gz"
     root = TarInfo("tox_toml_fmt-0")
     root.type = DIRTYPE
@@ -92,9 +96,13 @@ def sdist(backend: Backend, tmp_path: Path) -> Path:
     with tar_open(path, "w:gz") as tar:
         tar.addfile(root)
         tar.addfile(held, BytesIO(_SDIST_HELD))
-
-    backend.vendor_into_sdist(path)
     return path
+
+
+@pytest.fixture
+def sdist(backend: Backend, plain_sdist: Path) -> Path:
+    backend.vendor_into_sdist(plain_sdist)
+    return plain_sdist
 
 
 def test_vendor_into_wheel_ships_only_python_sources(wheel: Path) -> None:

@@ -220,6 +220,17 @@ jobs:
         with:
           command: sdist
           args: -m ${{ inputs.package-name }}/Cargo.toml --out dist
+      - name: 📦 Setup uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - name: 📦 Vendor toml-fmt-common into the sdist
+        # maturin sdist (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
+        run: uv run --no-project "$PACKAGE/build_backend.py" dist
+        shell: bash
+        env:
+          PACKAGE: ${{ inputs.package-name }}
+      - name: ✅ Check the sdist carries toml-fmt-common
+        run: tar tzf dist/*.tar.gz | grep -q "toml-fmt-common/src/toml_fmt_common/__init__.py"
+        shell: bash
       - name: 📤 Upload sdist
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
