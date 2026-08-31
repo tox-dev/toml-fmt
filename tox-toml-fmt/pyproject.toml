@@ -39,7 +39,7 @@ dependencies = [
 ]
 urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt/tree/main/tox-toml-fmt"
-urls.Changelog = "https://github.com/tox-dev/toml-fmt/blob/main/tox-toml-fmt/CHANGELOG.md"
+urls.Changelog = "https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt"
 urls.Documentation = "https://tox-toml-fmt.readthedocs.io/en/latest/"
 scripts.tox-toml-fmt = "tox_toml_fmt.__main__:runner"
 
@@ -90,7 +90,6 @@ include = [
   { path = "build_backend.py", format = "sdist" },
   { path = "rust-toolchain.toml", format = "sdist" },
   { path = "docs/", format = "sdist" },
-  { path = "CHANGELOG.md", format = "sdist" },
   { path = "README.rst", format = "sdist" },
 ]
 exclude = [

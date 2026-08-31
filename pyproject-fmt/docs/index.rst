@@ -2,7 +2,7 @@ Overview
 ========
 
 Apply a consistent format to your ``pyproject.toml`` file with comment support. See
-`changelog here <https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md>`_.
+`the releases <https://github.com/tox-dev/toml-fmt/releases?q=pyproject-fmt>`_ for what changed.
 
 
 Philosophy

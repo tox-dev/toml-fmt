@@ -2,7 +2,7 @@ Overview
 ========
 
 Apply a consistent format to your ``tox.toml`` file with comment support. See
-`changelog here <https://github.com/tox-dev/toml-fmt/blob/main/tox-toml-fmt/CHANGELOG.md>`_.
+`the releases <https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt>`_ for what changed.
 
 
 Philosophy

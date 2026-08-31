@@ -15,7 +15,7 @@ Apply a consistent format to your `pyproject.toml` file with comment support.
 - 📖 [Documentation](https://pyproject-fmt.readthedocs.io)
 - 🔧 [pre-commit hook](https://github.com/tox-dev/pyproject-fmt)
 - 💻 [Source](./pyproject-fmt)
-- 📝 [Changelog](./pyproject-fmt/CHANGELOG.md)
+- 📝 [Releases](https://github.com/tox-dev/toml-fmt/releases?q=pyproject-fmt)
 
 ## tox-toml-fmt
 
@@ -30,4 +30,4 @@ Apply a consistent format to your `tox.toml` file with comment support.
 - 📖 [Documentation](https://tox-toml-fmt.readthedocs.io)
 - 🔧 [pre-commit hook](https://github.com/tox-dev/tox-toml-fmt)
 - 💻 [Source](./tox-toml-fmt)
-- 📝 [Changelog](./tox-toml-fmt/CHANGELOG.md)
+- 📝 [Releases](https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt)

@@ -2,14 +2,8 @@ Overview
 ========
 
 Apply a consistent format to your ``pyproject.toml`` file with comment support. See
-`changelog here <https://github.com/tox-dev/toml-fmt/blob/main/pyproject-fmt/CHANGELOG.md>`_.
+`the releases <https://github.com/tox-dev/toml-fmt/releases?q=pyproject-fmt>`_ for what changed.
 
-
-Recent Changes
-~~~~~~~~~~~~~~~~
-
-- ✨ feat(common): keep the file's own line endings by `@gaborbernat <https://github.com/gaborbernat>`_ in
-  `#447 <https://github.com/tox-dev/toml-fmt/pull/447>`_ <a id="2.28.1"></a>
 
 Philosophy
 ----------

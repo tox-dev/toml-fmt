@@ -1,4 +1,4 @@
-"""Generate README.rst from docs/index.rst and CHANGELOG.md for PyPI."""
+"""Generate README.rst from the docs for PyPI."""
 
 from __future__ import annotations
 
@@ -20,17 +20,6 @@ def main(package: str) -> None:
         return expand_fmt_examples(path.read_text(encoding="utf-8"), module)
 
     processed = process_rst_for_pypi(read(index_path))
-
-    changelog_rst = ""
-    if (changelog_path := pkg / "CHANGELOG.md").exists() and (
-        extracted := extract_latest_changelog_as_rst(changelog_path.read_text(encoding="utf-8"))
-    ):
-        changelog_rst = extracted
-    if changelog_rst:
-        if (pos := processed.find("\nPhilosophy")) != -1:
-            processed = processed[:pos] + f"\n{changelog_rst}\n" + processed[pos:]
-        else:
-            processed = processed + "\n\n" + changelog_rst
 
     if (config_path := docs_dir / "configuration.rst").exists():
         processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(config_path)))
@@ -138,28 +127,6 @@ def process_rst_for_pypi(content: str) -> str:
                 continue
         result.append(line)
     return "\n".join(result).rstrip()
-
-
-def extract_latest_changelog_as_rst(content: str) -> str | None:
-    if (match := re.search(r"^## .+$", content, re.MULTILINE)) is None:
-        return None
-    rest = content[match.start() :]
-    version_end = rest.find("\n") if "\n" in rest else len(rest)
-    content_start = version_end + 1
-    content_end = (
-        content_start + next_match.start() if (next_match := re.search(r"\n## ", rest[content_start:])) else len(rest)
-    )
-    rst_result = "Recent Changes\n~~~~~~~~~~~~~~~~\n\n"
-    for line in rest[content_start:content_end].strip().splitlines():
-        if line.startswith("<a id="):
-            continue
-        if line.startswith("- "):
-            rst_result += f"- {convert_md_to_rst_inline(line[2:])}\n"
-        elif line:
-            rst_result += f"{convert_md_to_rst_inline(line)}\n"
-        else:
-            rst_result += "\n"
-    return rst_result.rstrip()
 
 
 def convert_md_to_rst_inline(line: str) -> str:
