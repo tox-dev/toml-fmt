@@ -34,9 +34,6 @@ classifiers = [
 dynamic = [
   "version",
 ]
-dependencies = [
-  "toml-fmt-common",
-]
 urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt/tree/main/tox-toml-fmt"
 urls.Changelog = "https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt"

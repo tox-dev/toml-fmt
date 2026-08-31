@@ -1,5 +1,4 @@
 [tool.uv]
-sources.toml-fmt-common = { workspace = true }
 workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
 
 [tool.ruff]
@@ -46,6 +45,9 @@ lint.per-file-ignores."**/toxfile.py" = [
 lint.per-file-ignores."tasks/**.py" = [
   "D",      # don't care about documentation in tests
   "INP001", # is not a namespace
+  "S404",   # subprocess is required to drive the build
+  "S603",   # the build commands are ours, not untrusted input
+  "S607",   # uv is resolved from PATH
   "T201",   # allow print
 ]
 lint.isort = { known-first-party = [

@@ -163,7 +163,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [type, dev, pkg_meta]
+        env: [type, dev, pkg_meta, pkg_sdist]
     defaults:
       run:
         working-directory: pyproject-fmt

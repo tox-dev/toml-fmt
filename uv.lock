@@ -1401,9 +1401,6 @@ wheels = [
 [[package]]
 name = "pyproject-fmt"
 source = { editable = "pyproject-fmt" }
-dependencies = [
-    { name = "toml-fmt-common" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -1454,7 +1451,6 @@ type = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "toml-fmt-common", editable = "toml-fmt-common" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2121,9 +2117,6 @@ wheels = [
 [[package]]
 name = "tox-toml-fmt"
 source = { editable = "tox-toml-fmt" }
-dependencies = [
-    { name = "toml-fmt-common" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -2173,7 +2166,6 @@ type = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "toml-fmt-common", editable = "toml-fmt-common" }]
 
 [package.metadata.requires-dev]
 dev = [
