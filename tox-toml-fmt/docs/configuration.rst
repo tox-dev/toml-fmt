@@ -1,66 +1,76 @@
 Configuration
 =============
 
-Configuration via file
-----------------------
+Project settings
+----------------
 
-The ``[tox-toml-fmt]`` table is used when present in the ``tox.toml`` file:
+Put per-file settings in ``[tox-toml-fmt]``:
 
 .. code-block:: toml
 
     [tox-toml-fmt]
-
-    # After how many columns split arrays/dicts into multiple lines and wrap long strings;
-    # use a trailing comma in arrays to force multiline format instead of lowering this value
     column_width = 120
-
-    # Number of spaces for indentation
     indent = 2
-
-    # Extra newlines between sub-tables in the same group (e.g. "\n" for one blank line
-    # between sub-tables)
+    table_format = "short"
     sub_table_spacing = ""
-
-    # Extra newlines between root table groups (e.g. "\n" for one blank line, "\n\n" for two)
     separate_root_table = "\n"
+    expand_tables = []
+    collapse_tables = []
+    skip_wrap_for_keys = []
+    pin_envs = []
 
-    # Environments pinned to the start of env_list
+These values match the command defaults. ``column_width`` controls array expansion and string wrapping. A trailing
+comma keeps an array multiline regardless of its width. ``indent`` controls continuation indentation.
+
+``table_format`` controls child tables below an environment. Environment tables retain their ``[env.NAME]`` headers.
+``expand_tables`` and ``collapse_tables`` override the default by table path, and ``collapse_tables`` wins a tie.
+
+``pin_envs`` writes named environments before the version-based order used for the rest of ``env_list`` and
+``[env.NAME]`` tables.
+
+Shared settings
+---------------
+
+A standalone ``tox-toml-fmt.toml`` can hold settings for several projects. The file uses the same keys without the
+``[tox-toml-fmt]`` header:
+
+.. code-block:: toml
+
+    column_width = 120
+    indent = 2
+    table_format = "short"
     pin_envs = ["fix", "type"]
 
-If not set they will default to values from the CLI. The example above shows the defaults (except ``pin_envs``
-which defaults to an empty list).
-
-Shared configuration file
--------------------------
-
-Place formatting settings in a standalone ``tox-toml-fmt.toml`` file instead of (or alongside) the ``[tox-toml-fmt]``
-table. In a monorepo this shares one configuration across projects without repeating it in every ``tox.toml``.
-
-The formatter searches for ``tox-toml-fmt.toml`` from the directory of the file being formatted up to the filesystem
-root, and the first match wins. Pass an explicit path via ``--config``:
+For each input, the formatter searches from the input's directory toward the filesystem root and uses the nearest
+``tox-toml-fmt.toml``. ``--config`` selects a file directly:
 
 .. code-block:: bash
 
     tox-toml-fmt --config /path/to/tox-toml-fmt.toml tox.toml
 
-The shared config file uses the same keys as the ``[tox-toml-fmt]`` table, but without the table header:
+Command-line values establish defaults, the shared file overrides them, and ``[tox-toml-fmt]`` has final precedence.
+The formatter validates file settings with the command-line converters. An unknown key or invalid value stops
+formatting and reports its source.
+
+Spacing
+-------
+
+``sub_table_spacing`` inserts text between child tables in one group. ``separate_root_table`` inserts text between root
+groups. Each ``\n`` adds one blank line.
+
+String wrapping
+---------------
+
+``skip_wrap_for_keys`` excludes matching keys from line-continuation wrapping:
 
 .. code-block:: toml
 
-    column_width = 120
-    indent = 2
-    sub_table_spacing = ""
-    separate_root_table = "\n"
-    pin_envs = ["fix", "type"]
+    [tox-toml-fmt]
+    skip_wrap_for_keys = ["*.commands", "env.*.description"]
 
-When both a shared config file and a ``[tox-toml-fmt]`` table exist, per-file settings from the ``[tox-toml-fmt]``
-table take precedence over the shared config file.
+``*`` matches one dotted key segment. A quoted ``"*"`` segment names a literal asterisk.
 
-Settings are read with the same parser that reads the file, so a value only TOML 1.1 spells does not hide the table
-they are written in. Every key there has to be one the formatter knows, written as the type its command-line flag
-takes; anything else is reported against the file and the key, and nothing is formatted.
-
-Command line interface
+Command-line interface
 ----------------------
 
 .. sphinx_argparse_cli::
