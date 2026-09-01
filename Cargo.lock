@@ -308,7 +308,7 @@ dependencies = [
 
 [[package]]
 name = "pyproject-fmt"
-version = "2.29.2"
+version = "2.29.3"
 dependencies = [
  "common",
  "indoc",
