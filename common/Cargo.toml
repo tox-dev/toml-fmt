@@ -11,7 +11,7 @@ edition = "2024"
 lexical-sort = { version = "0.3.1" } # the natural order names sort in
 regex = { version = "1.13.1" }
 toml-doc = { path = "../toml-doc" }
-unicode-segmentation = { version = "1.13.0" } # where a line may break, which is between graphemes
+unicode-segmentation = { version = "1.13.3" } # where a line may break, which is between graphemes
 unicode-width = { version = "0.2.2" }         # how many columns the text takes to write
 # handing the settings a file writes to the Python wrappers, which read them with this parser
 # rather than a second one of an older TOML
