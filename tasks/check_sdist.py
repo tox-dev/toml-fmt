@@ -1,4 +1,4 @@
-"""Build a package the way a release builds it and run what comes out with no index behind it."""
+"""Build a package the way a release builds it, then use it the way a packager does."""
 
 from __future__ import annotations
 
@@ -17,7 +17,8 @@ def main(package: str) -> None:
         at = Path(folder)
         sdist = build_sdist(package, at / "sdist")
         carries_common(sdist)
-        runs_on_its_own(package, wheel_from(sdist, at / "wheel"), at / "venv")
+        runs_on_its_own(package, wheel_from(sdist, at / "wheel"))
+        ships_a_suite_that_passes(package, sdist, at / "unpacked")
 
 
 def build_sdist(package: str, at: Path) -> Path:
@@ -37,17 +38,27 @@ def wheel_from(sdist: Path, at: Path) -> Path:
     return next(at.glob("*.whl"))
 
 
-def runs_on_its_own(package: str, wheel: Path, venv: Path) -> None:
-    run("uv", "venv", str(venv))
-    scripts = venv / ("Scripts" if sys.platform == "win32" else "bin")
+def runs_on_its_own(package: str, wheel: Path) -> None:
     # --no-index leaves nothing to fall back on, so an unvendored wheel cannot install or import
-    run("uv", "pip", "install", "--no-index", "--python", str(scripts / "python"), str(wheel))
-    run(str(scripts / package), "--version")
+    run("uv", "pip", "install", "--python", sys.executable, "--no-index", str(wheel))
+    run(str(Path(sys.executable).parent / package), "--version")
     print(f"{wheel.name} built from the sdist runs with no index behind it")
 
 
-def run(*command: str) -> None:
-    subprocess.check_call(command)
+def ships_a_suite_that_passes(package: str, sdist: Path, at: Path) -> None:
+    # what a packager runs: unpack the sdist, install it, run the suite it ships
+    at.mkdir()
+    with tar_open(sdist) as tar:
+        tar.extractall(at, filter="data")
+    root = next(at.iterdir())
+
+    run("uv", "pip", "install", "--python", sys.executable, "-e", ".", at=root)
+    run(sys.executable, "-m", "pytest", package, at=root)
+    print(f"{sdist.name} passes the suite it ships")
+
+
+def run(*command: str, at: Path | None = None) -> None:
+    subprocess.check_call(command, cwd=at)
 
 
 if __name__ == "__main__":

@@ -40,7 +40,9 @@ if TYPE_CHECKING:
 environ.setdefault("MATURIN_NO_MISSING_BUILD_BACKEND_WARNING", "1")
 
 _HERE = Path(__file__).resolve().parent
-_MODULE = findall(r'(?m)^name = "(.*)"', (_HERE / "pyproject.toml").read_text())[0].replace("-", "_")
+# the sdist keeps a copy of this file beside the tests, a directory below the pyproject.toml it belongs to
+_OWN = next(p for p in (_HERE / "pyproject.toml", _HERE.parent / "pyproject.toml") if p.is_file())
+_MODULE = findall(r'(?m)^name = "(.*)"', _OWN.read_text())[0].replace("-", "_")
 _VENDOR = "toml_fmt_common"
 # a checkout keeps toml-fmt-common beside the package; the sdist carries it within
 _COMMON = _HERE / "toml-fmt-common" if (_HERE / "toml-fmt-common").is_dir() else _HERE.parent / "toml-fmt-common"

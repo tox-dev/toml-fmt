@@ -126,9 +126,9 @@ commands = [
 ]
 
 [env.pkg_sdist]
-description = "build a wheel from the sdist and check it carries toml-fmt-common"
+description = "build the sdist, then install and test it the way a packager does"
 runner = "uv-venv-runner"
 skip_install = true
-dependency_groups = []
+dependency_groups = ["test"]
 change_dir = "{tox_root}{/}.."
 commands = [["python", "tasks{/}check_sdist.py", "tox-toml-fmt"]]
