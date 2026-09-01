@@ -502,7 +502,7 @@ SHARED_SETTINGS: Final[tuple[Setting, ...]] = (
     ),
     Setting(
         "--sub-table-spacing",
-        r"extra newlines between sub-tables in the same group (e.g. '' for compact, '\n' for one blank line)",
+        r"extra newlines between sub-tables in the same group (e.g. '\n' for one blank line, empty for compact)",
         str,
         "",
         spacing_argument,
