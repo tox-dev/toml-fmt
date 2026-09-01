@@ -1,8 +1,4 @@
-use super::evaluate_full;
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
+use super::evaluate_full as evaluate;
 
 #[test]
 fn test_semantic_release_order() {
@@ -21,7 +17,7 @@ fn test_semantic_release_order() {
     "#);
 }
 
-/// each declaration writes in turn and the later one decides what the file ends up holding.
+/// Later declarations override earlier ones, so their order carries behavior.
 #[test]
 fn test_semantic_release_declarations_keep_their_order() {
     let start = indoc::indoc! {r#"

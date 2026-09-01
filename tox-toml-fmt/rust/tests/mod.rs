@@ -1,5 +1,11 @@
 use _tox_toml_fmt::{format_toml, Settings};
 
+mod disabled_tests;
+mod doc_config_tests;
+mod doc_getting_started_tests;
+mod doc_usage_tests;
+mod main_tests;
+
 /// The settings a case runs under where it says nothing else about them.
 pub fn default_settings() -> Settings {
     Settings {
@@ -53,9 +59,3 @@ pub fn assert_valid_toml(written: &str) {
         "the formatter wrote something no TOML document can say:\n{written}"
     );
 }
-
-mod disabled_tests;
-mod doc_config_tests;
-mod doc_getting_started_tests;
-mod doc_usage_tests;
-mod main_tests;

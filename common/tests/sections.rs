@@ -4,22 +4,6 @@ use common::layout::Layout;
 use common::sections;
 use toml_doc::{Document, LineEnding};
 
-fn parse(source: &str) -> Document<'_> {
-    toml_doc::parse(source).expect("valid source")
-}
-
-/// Reordering leaves the separators where position put them, so the layout pass follows it just as
-/// it does in the formatter.
-fn written(document: &mut Document<'_>) -> String {
-    Layout {
-        column_width: 120,
-        indent: 2,
-        ending: LineEnding::Lf,
-    }
-    .apply(document);
-    document.to_string()
-}
-
 #[test]
 fn keys_follow_the_given_order_and_the_rest_go_alphabetically() {
     let mut document = parse("[tool.x]\nzebra = 1\nname = 2\nalpha = 3\nversion = 4\n");
@@ -935,11 +919,6 @@ fn a_name_an_alias_moves_is_renamed_wherever_it_is_written() {
     );
 }
 
-/// The name each key of an environment table names, which is what a per-table rule matches on.
-fn env_table(named: &[String]) -> Option<Vec<String>> {
-    (named.len() > 2 && named[0] == "env").then(|| named[..2].to_vec())
-}
-
 #[test]
 fn every_key_is_visited_with_the_whole_path_it_names() {
     let mut document = parse("env.a.deps = 1\n[env.b]\nset_env.X = 2\nrunner = { of = 3 }\n");
@@ -1069,4 +1048,22 @@ fn a_table_named_by_several_keys_is_read_once() {
         sections::keys_below(&document.sections[0].entries, &[]),
         ["x", "y", "plain"]
     );
+}
+
+fn env_table(named: &[String]) -> Option<Vec<String>> {
+    (named.len() > 2 && named[0] == "env").then(|| named[..2].to_vec())
+}
+
+fn parse(source: &str) -> Document<'_> {
+    toml_doc::parse(source).expect("valid source")
+}
+
+fn written(document: &mut Document<'_>) -> String {
+    Layout {
+        column_width: 120,
+        indent: 2,
+        ending: LineEnding::Lf,
+    }
+    .apply(document);
+    document.to_string()
 }

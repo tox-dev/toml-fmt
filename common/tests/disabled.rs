@@ -2,31 +2,6 @@
 
 use common::disabled::{MARKER, try_with_disabled_keys};
 
-/// The formatter the pass brackets, standing in for the real one: it only reports what it saw.
-fn round_trip(source: &str) -> (String, String) {
-    let mut seen = String::new();
-    let out = held(source, |document| seen = document.to_string());
-    (seen, out)
-}
-
-/// Run a formatter over the source the way the formatters do, from the document they already read.
-fn held(source: &str, format: impl FnOnce(&mut toml_doc::Document<'_>)) -> String {
-    tried(source, |document| {
-        format(document);
-        Ok(())
-    })
-    .expect("the pass wrote a document")
-}
-
-/// The same, for a pass that may reject what it was handed.
-fn tried(
-    source: &str,
-    format: impl FnOnce(&mut toml_doc::Document<'_>) -> Result<(), String>,
-) -> Result<String, String> {
-    let mut document = toml_doc::parse(source).expect("valid source");
-    try_with_disabled_keys(&mut document, source, format)
-}
-
 #[test]
 fn a_commented_key_reaches_the_formatter_uncommented() {
     let (seen, out) = round_trip("# default = true\n");
@@ -391,4 +366,26 @@ fn a_commented_multiline_string_a_key_cuts_short_stays_a_comment() {
 
     assert_eq!(seen, source);
     assert_eq!(out, source);
+}
+
+fn round_trip(source: &str) -> (String, String) {
+    let mut seen = String::new();
+    let out = held(source, |document| seen = document.to_string());
+    (seen, out)
+}
+
+fn held(source: &str, format: impl FnOnce(&mut toml_doc::Document<'_>)) -> String {
+    tried(source, |document| {
+        format(document);
+        Ok(())
+    })
+    .expect("the pass wrote a document")
+}
+
+fn tried(
+    source: &str,
+    format: impl FnOnce(&mut toml_doc::Document<'_>) -> Result<(), String>,
+) -> Result<String, String> {
+    let mut document = toml_doc::parse(source).expect("valid source");
+    try_with_disabled_keys(&mut document, source, format)
 }

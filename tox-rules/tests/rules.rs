@@ -5,37 +5,6 @@ use insta::assert_snapshot;
 use toml_doc::{Document, LineEnding};
 use tox_rules::reorder_tables;
 
-/// Run a rule over a document the way the formatter does, then lay the result out.
-fn evaluate(start: &str, apply: impl FnOnce(&mut Document<'_>)) -> String {
-    let mut document = toml_doc::parse(start).expect("the test input parses");
-    apply(&mut document);
-    common::layout::Layout {
-        column_width: 120,
-        indent: 2,
-        ending: LineEnding::Lf,
-    }
-    .apply(&mut document);
-    let written = document.to_string();
-    assert!(
-        toml_doc::parse(&written).is_ok(),
-        "the rules wrote something that does not parse:\n{written}"
-    );
-    written
-}
-
-fn reorder_table_helper(start: &str) -> String {
-    evaluate(start, |document| {
-        reorder_tables(document);
-        common::spacing::Spacing {
-            between_groups: 1,
-            within_group: None,
-            nested_prefixes: &["env_base", "env"],
-            ending: toml_doc::LineEnding::Lf,
-        }
-        .apply(document);
-    })
-}
-
 #[test]
 fn test_reorder_table_reorder_no_env_list() {
     let start = indoc! {r#"
@@ -311,35 +280,6 @@ fn a_value_that_is_not_a_list_is_left_as_written() {
     let source = "[env.test]\ndeps = \"not-an-array\"\npass_env = \"not-an-array\"\n";
 
     assert_eq!(evaluate(source, tox_rules::fix_envs), source);
-}
-
-/// Run every rule the formatters run, in the order they run them, which is what a formatter's own
-/// entry point does either side of its layout.
-fn formatted(start: &str) -> String {
-    with_pins(start, &[])
-}
-
-/// [`formatted`], with the environments a pin names written first.
-fn with_pins(start: &str, pins: &[String]) -> String {
-    evaluate(start, |document| {
-        tox_rules::normalize_aliases(document);
-        tox_rules::fix_root(document);
-        tox_rules::fix_envs(document);
-        tox_rules::sort_env_list(document, pins);
-        tox_rules::reorder_inline_tables(document);
-        tox_rules::reorder_tables_with_pins(document, pins);
-    })
-}
-
-/// The same rules under the `[tool.tox]` table a `pyproject.toml` writes them in.
-fn under_tool_tox(start: &str) -> String {
-    evaluate(start, |document| {
-        tox_rules::normalize_aliases_with_prefix(document, "tool.tox");
-        tox_rules::fix_root_with_prefix(document, "tool.tox");
-        tox_rules::fix_envs_with_prefix(document, "tool.tox");
-        tox_rules::sort_env_list_with_prefix(document, &[], "tool.tox");
-        tox_rules::reorder_inline_tables_with_prefix(document, "tool.tox");
-    })
 }
 
 /// The older spellings tox still reads are written the way it documents them, and a `{ replace =
@@ -681,4 +621,59 @@ fn test_a_use_develop_without_a_comment_leaves_the_package_comment_alone() {
     [env.a]
     package = "editable"  # was sdist
     "#);
+}
+
+fn reorder_table_helper(start: &str) -> String {
+    evaluate(start, |document| {
+        reorder_tables(document);
+        common::spacing::Spacing {
+            between_groups: 1,
+            within_group: None,
+            nested_prefixes: &["env_base", "env"],
+            ending: toml_doc::LineEnding::Lf,
+        }
+        .apply(document);
+    })
+}
+
+fn formatted(start: &str) -> String {
+    with_pins(start, &[])
+}
+
+fn with_pins(start: &str, pins: &[String]) -> String {
+    evaluate(start, |document| {
+        tox_rules::normalize_aliases(document);
+        tox_rules::fix_root(document);
+        tox_rules::fix_envs(document);
+        tox_rules::sort_env_list(document, pins);
+        tox_rules::reorder_inline_tables(document);
+        tox_rules::reorder_tables_with_pins(document, pins);
+    })
+}
+
+fn under_tool_tox(start: &str) -> String {
+    evaluate(start, |document| {
+        tox_rules::normalize_aliases_with_prefix(document, "tool.tox");
+        tox_rules::fix_root_with_prefix(document, "tool.tox");
+        tox_rules::fix_envs_with_prefix(document, "tool.tox");
+        tox_rules::sort_env_list_with_prefix(document, &[], "tool.tox");
+        tox_rules::reorder_inline_tables_with_prefix(document, "tool.tox");
+    })
+}
+
+fn evaluate(start: &str, apply: impl FnOnce(&mut Document<'_>)) -> String {
+    let mut document = toml_doc::parse(start).expect("the test input parses");
+    apply(&mut document);
+    common::layout::Layout {
+        column_width: 120,
+        indent: 2,
+        ending: LineEnding::Lf,
+    }
+    .apply(&mut document);
+    let written = document.to_string();
+    assert!(
+        toml_doc::parse(&written).is_ok(),
+        "the rules wrote something that does not parse:\n{written}"
+    );
+    written
 }

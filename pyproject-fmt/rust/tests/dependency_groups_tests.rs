@@ -1,15 +1,5 @@
 use indoc::indoc;
 
-fn format_dependency_groups_helper(start: &str, keep_full_version: bool) -> String {
-    super::evaluate_settings(
-        start,
-        &_pyproject_fmt::Settings {
-            keep_full_version,
-            ..super::default_settings()
-        },
-    )
-}
-
 #[test]
 fn test_format_dependency_groups_no_groups() {
     let start = indoc! {r""};
@@ -519,4 +509,14 @@ fn test_dependency_groups_group_that_is_not_an_array() {
     [dependency-groups]
     dev = "not-an-array"
     "#);
+}
+
+fn format_dependency_groups_helper(start: &str, keep_full_version: bool) -> String {
+    super::evaluate_settings(
+        start,
+        &_pyproject_fmt::Settings {
+            keep_full_version,
+            ..super::default_settings()
+        },
+    )
 }

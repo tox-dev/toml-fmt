@@ -1,21 +1,6 @@
+use super::{evaluate_full as evaluate, evaluate_long};
 use indoc::indoc;
 use insta::assert_snapshot;
-
-fn evaluate_core(start: &str, collapse: bool) -> String {
-    super::evaluate_settings(
-        start,
-        &_pyproject_fmt::Settings {
-            table_format: String::from(if collapse { "short" } else { "long" }),
-            ..super::default_settings()
-        },
-    )
-}
-
-fn evaluate(start: &str) -> String {
-    let result = evaluate_core(start, true);
-    super::assert_valid_toml(&result);
-    result
-}
 
 #[test]
 fn test_no_pixi_section() {
@@ -127,8 +112,7 @@ fn test_pixi_workspace_expanded_table() {
     documentation = "https://docs.example.com"
     homepage = "https://example.com"
     "#};
-    let result = evaluate_core(start, false);
-    super::assert_valid_toml(&result);
+    let result = evaluate_long(start);
     assert_snapshot!(result, @r#"
     [tool.pixi.workspace]
     name = "my-project"

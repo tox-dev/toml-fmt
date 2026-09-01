@@ -8,7 +8,7 @@
 
 use std::collections::HashSet;
 
-use toml_doc::Document;
+use toml_doc::{Document, Entry, Trivia};
 
 /// Tags a disabled key's trailing comment so the pass can find it again after the formatter has reordered and
 /// re-parsed everything. [`restore_disabled_keys`] strips it.
@@ -45,7 +45,7 @@ impl Drop for InUse {
 /// is disabled is the comment beside it, and none of those rewrites can say it of the entries they
 /// leave behind.
 #[must_use]
-pub fn is_enabled_here(entry: &toml_doc::Entry<'_>) -> bool {
+pub fn is_enabled_here(entry: &Entry<'_>) -> bool {
     let Some(comment) = entry.trail.comment.as_ref() else {
         return false;
     };
@@ -127,23 +127,26 @@ fn standing_comments(document: &Document<'_>) -> HashSet<usize> {
     let mut standing = HashSet::new();
     let mut line = 0;
     for entry in &document.root {
-        take_comments(&entry.lead, &mut line, &mut standing);
-        line += breaks(&entry.to_string()) - breaks(&entry.lead.to_string());
+        take_entry(&entry.lead, &entry.to_string(), &mut line, &mut standing);
     }
     for section in &document.sections {
-        take_comments(&section.header.lead, &mut line, &mut standing);
-        line += breaks(&section.header.to_string()) - breaks(&section.header.lead.to_string());
+        let header = &section.header;
+        take_entry(&header.lead, &header.to_string(), &mut line, &mut standing);
         for entry in &section.entries {
-            take_comments(&entry.lead, &mut line, &mut standing);
-            line += breaks(&entry.to_string()) - breaks(&entry.lead.to_string());
+            take_entry(&entry.lead, &entry.to_string(), &mut line, &mut standing);
         }
     }
     take_comments(&document.trailing, &mut line, &mut standing);
     standing
 }
 
+fn take_entry(lead: &Trivia<'_>, written: &str, line: &mut usize, standing: &mut HashSet<usize>) {
+    take_comments(lead, line, standing);
+    *line += breaks(written) - breaks(&lead.to_string());
+}
+
 /// The comment lines a run of trivia holds, counted from `line`, which it moves past that run.
-fn take_comments(trivia: &toml_doc::Trivia<'_>, line: &mut usize, standing: &mut HashSet<usize>) {
+fn take_comments(trivia: &Trivia<'_>, line: &mut usize, standing: &mut HashSet<usize>) {
     for piece in trivia.pieces() {
         if !piece.is_blank() {
             standing.insert(*line);
@@ -466,7 +469,7 @@ fn marked_spans(document: &Document<'_>, marker: &str) -> Vec<(usize, usize)> {
         push_span(&mut spans, &mut line, entry, marker);
     }
     for section in &document.sections {
-        line += section.header.to_string().matches('\n').count();
+        line += breaks(&section.header.to_string());
         for entry in &section.entries {
             push_span(&mut spans, &mut line, entry, marker);
         }
@@ -474,19 +477,19 @@ fn marked_spans(document: &Document<'_>, marker: &str) -> Vec<(usize, usize)> {
     spans
 }
 
-fn push_span(spans: &mut Vec<(usize, usize)>, line: &mut usize, entry: &toml_doc::Entry<'_>, marker: &str) {
+fn push_span(spans: &mut Vec<(usize, usize)>, line: &mut usize, entry: &Entry<'_>, marker: &str) {
     let written = entry.to_string();
-    let breaks = written.matches('\n').count();
+    let lines = breaks(&written);
     let enabled = entry
         .trail
         .comment
         .as_deref()
         .is_some_and(|comment| comment.contains(marker));
     if enabled {
-        let start = *line + entry.lead.to_string().matches('\n').count();
-        spans.push((start, *line + breaks - usize::from(written.ends_with('\n'))));
+        let start = *line + breaks(&entry.lead.to_string());
+        spans.push((start, *line + lines - usize::from(written.ends_with('\n'))));
     }
-    *line += breaks;
+    *line += lines;
 }
 
 fn join_like(original: &str, lines: Vec<String>) -> String {

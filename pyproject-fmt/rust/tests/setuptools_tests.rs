@@ -1,9 +1,5 @@
-use super::{default_settings, evaluate_full};
+use super::{default_settings, evaluate_full as evaluate, evaluate_long};
 use _pyproject_fmt::{format_toml, Settings};
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
 
 #[test]
 fn test_setuptools_top_level_key_order() {
@@ -244,8 +240,8 @@ fn test_setuptools_idempotent() {
     [tool.setuptools_scm]
     version_file = "src/pkg/_version.py"
     "#};
-    let once = evaluate_full(start);
-    let twice = evaluate_full(&once);
+    let once = evaluate(start);
+    let twice = evaluate(&once);
     assert_eq!(once, twice);
 }
 
@@ -260,19 +256,6 @@ fn test_setuptools_no_table_is_noop() {
     [project]
     name = "demo"
     "#);
-}
-
-fn long_settings() -> Settings {
-    Settings {
-        table_format: String::from("long"),
-        ..default_settings()
-    }
-}
-
-fn evaluate_long(start: &str) -> String {
-    let r = format_toml(start, &long_settings()).unwrap();
-    super::assert_valid_toml(&r);
-    r
 }
 
 #[test]

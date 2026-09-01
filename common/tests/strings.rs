@@ -3,16 +3,6 @@
 use common::strings::{self, Wrap};
 use toml_doc::Document;
 
-fn parse(source: &str) -> Document<'_> {
-    toml_doc::parse(source).expect("valid source")
-}
-
-fn rewrite(source: &str, transform: impl Fn(&str) -> String) -> String {
-    let mut document = parse(source);
-    strings::update(&mut document.root[0].key_value.value, transform);
-    document.to_string()
-}
-
 #[test]
 fn a_rewritten_value_keeps_its_quotes() {
     assert_eq!(
@@ -605,4 +595,14 @@ fn a_value_that_is_not_a_string_is_left_as_written() {
     );
 
     assert_eq!(document.to_string(), "a = [ 1 ]\n");
+}
+
+fn rewrite(source: &str, transform: impl Fn(&str) -> String) -> String {
+    let mut document = parse(source);
+    strings::update(&mut document.root[0].key_value.value, transform);
+    document.to_string()
+}
+
+fn parse(source: &str) -> Document<'_> {
+    toml_doc::parse(source).expect("valid source")
 }

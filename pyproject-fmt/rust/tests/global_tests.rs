@@ -1,8 +1,5 @@
+use super::evaluate_full as reorder_table_helper;
 use indoc::indoc;
-
-fn reorder_table_helper(start: &str) -> String {
-    super::evaluate_full(start)
-}
 
 #[test]
 fn test_reorder_table_reorder() {

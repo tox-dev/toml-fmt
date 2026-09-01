@@ -42,48 +42,6 @@ const SOURCES: &[&str] = &[
     ),
 ];
 
-fn parse(source: &str) -> Document<'_> {
-    toml_doc::parse(source).expect("valid source")
-}
-
-fn check(source: &str, pass: &str, act: impl FnOnce(&mut Document<'_>)) {
-    let mut document = parse(source);
-    act(&mut document);
-    let written = document.to_string();
-    assert!(
-        toml_doc::parse(&written).is_ok(),
-        "{pass} left something no parser reads back, from {source:?}:\n{written}"
-    );
-    // an independent parser catches what is well formed yet says something no TOML file can say
-    assert!(
-        written.parse::<toml::Table>().is_ok(),
-        "{pass} left something no TOML document can say, from {source:?}:\n{written}"
-    );
-}
-
-fn each(pass: &str, act: impl Fn(&mut Document<'_>) + Copy) {
-    for source in SOURCES {
-        check(source, pass, act);
-    }
-}
-
-/// Passes that move things around rather than rewrite them have to leave the document saying the
-/// same thing. Reading the output back is not enough: a child table can end up attached to the
-/// wrong array element and still parse.
-fn keeps_its_meaning(pass: &str, act: impl Fn(&mut Document<'_>) + Copy) {
-    for source in SOURCES {
-        check(source, pass, act);
-        let mut document = parse(source);
-        act(&mut document);
-        let written = document.to_string();
-        assert_eq!(
-            written.parse::<toml::Table>().expect("valid output"),
-            source.parse::<toml::Table>().expect("valid source"),
-            "{pass} changed what the document says, from {source:?}:\n{written}"
-        );
-    }
-}
-
 #[test]
 fn collapsing_leaves_a_document_that_reads_back() {
     keeps_its_meaning("collapse", |document| nesting::collapse(document, "tool.x"));
@@ -176,4 +134,43 @@ fn what_the_formatter_writes_reads_back_as_a_document() {
         Ok(String::from("a = [1,\n]\n"))
     );
     assert!(common::written_document("a = [1,\n").is_err());
+}
+
+fn each(pass: &str, act: impl Fn(&mut Document<'_>) + Copy) {
+    for source in SOURCES {
+        check(source, pass, act);
+    }
+}
+
+fn keeps_its_meaning(pass: &str, act: impl Fn(&mut Document<'_>) + Copy) {
+    for source in SOURCES {
+        check(source, pass, act);
+        let mut document = parse(source);
+        act(&mut document);
+        let written = document.to_string();
+        assert_eq!(
+            written.parse::<toml::Table>().expect("valid output"),
+            source.parse::<toml::Table>().expect("valid source"),
+            "{pass} changed what the document says, from {source:?}:\n{written}"
+        );
+    }
+}
+
+fn check(source: &str, pass: &str, act: impl FnOnce(&mut Document<'_>)) {
+    let mut document = parse(source);
+    act(&mut document);
+    let written = document.to_string();
+    assert!(
+        toml_doc::parse(&written).is_ok(),
+        "{pass} left something no parser reads back, from {source:?}:\n{written}"
+    );
+    // A second parser catches valid syntax that violates TOML table semantics.
+    assert!(
+        written.parse::<toml::Table>().is_ok(),
+        "{pass} left something no TOML document can say, from {source:?}:\n{written}"
+    );
+}
+
+fn parse(source: &str) -> Document<'_> {
+    toml_doc::parse(source).expect("valid source")
 }

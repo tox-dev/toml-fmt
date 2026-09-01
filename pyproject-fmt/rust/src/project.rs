@@ -10,7 +10,10 @@ use common::nesting::Width;
 use common::pep508::{is_valid_version, Requirement};
 use common::pep508::{Number, Operator, Version, VersionOp};
 use common::sections;
-use toml_doc::{Document, Entry, Value};
+use toml_doc::{
+    Array, Comment, Document, Entry, InlineTable, Key, KeyValue, LineEnding, Member, Pad, Piece, Section, SectionKind,
+    Trail, Trivia, Value,
+};
 
 use crate::TableFormatConfig;
 
@@ -241,12 +244,12 @@ fn expand_entry_points_in(entries: &mut Vec<Entry<'_>>, under: &[String], path: 
                 lead: if index == 0 {
                     entry.lead.clone()
                 } else {
-                    toml_doc::Trivia::default()
+                    Trivia::default()
                 },
                 indent: entry.indent.clone(),
-                key_value: toml_doc::KeyValue {
+                key_value: KeyValue {
                     // the parent's key parts carry over as written, quoting included
-                    key: toml_doc::Key::from_parts(
+                    key: Key::from_parts(
                         entry
                             .key_value
                             .key
@@ -260,7 +263,7 @@ fn expand_entry_points_in(entries: &mut Vec<Entry<'_>>, under: &[String], path: 
                     post_eq: " ".into(),
                     value: member.item.value.clone(),
                 },
-                trail: toml_doc::Trail {
+                trail: Trail {
                     ws: "".into(),
                     // the comment closing the table's line closes the last key it becomes
                     comment: (index == last).then(|| entry.trail.comment.clone()).flatten(),
@@ -268,12 +271,12 @@ fn expand_entry_points_in(entries: &mut Vec<Entry<'_>>, under: &[String], path: 
                 },
             };
             for text in comments_around(member) {
-                written.lead.pieces_mut().push(toml_doc::Piece::Comment {
+                written.lead.pieces_mut().push(Piece::Comment {
                     indent: "".into(),
                     // a comment runs to the end of its line, so it takes one of its own however the
                     // file it came from ended
                     text,
-                    ending: toml_doc::LineEnding::Lf,
+                    ending: LineEnding::Lf,
                 });
             }
             expanded.push(written);
@@ -283,7 +286,7 @@ fn expand_entry_points_in(entries: &mut Vec<Entry<'_>>, under: &[String], path: 
 }
 
 /// Whether the table carries a comment anywhere inside it.
-fn commented(table: &toml_doc::InlineTable<'_>) -> bool {
+fn commented(table: &InlineTable<'_>) -> bool {
     table.trailing.has_comment()
         || table
             .members
@@ -293,7 +296,7 @@ fn commented(table: &toml_doc::InlineTable<'_>) -> bool {
 
 /// The comments a multiline inline table wrote around one of its members, which the key that member
 /// becomes takes with it.
-fn comments_around<'a>(member: &toml_doc::Member<'a, toml_doc::KeyValue<'a>>) -> Vec<toml_doc::Comment<'a>> {
+fn comments_around<'a>(member: &Member<'a, KeyValue<'a>>) -> Vec<Comment<'a>> {
     member
         .lead
         .parts()
@@ -301,8 +304,8 @@ fn comments_around<'a>(member: &toml_doc::Member<'a, toml_doc::KeyValue<'a>>) ->
         .chain(member.trail.parts())
         .chain(member.after.parts())
         .filter_map(|part| match part {
-            toml_doc::Pad::Comment(text) => Some(text.clone()),
-            toml_doc::Pad::Space(_) | toml_doc::Pad::Newline(_) => None,
+            Pad::Comment(text) => Some(text.clone()),
+            Pad::Space(_) | Pad::Newline(_) => None,
         })
         .collect()
 }
@@ -381,7 +384,7 @@ fn generate_classifiers(
         if held.minors.is_empty() || names_classifiers(document, path) || !holds_a_project(document, path) {
             return;
         }
-        let mut written = toml_doc::Array::default();
+        let mut written = Array::default();
         apply_classifiers(&mut written, &held, &HashSet::new());
         write_classifiers(document, path, Value::Array(written));
         return;
@@ -479,13 +482,13 @@ fn write_classifiers(document: &mut Document<'_>, path: &[String], value: Value<
 fn push_classifiers(entries: &mut Vec<Entry<'_>>, under: &[String], value: Value<'static>) {
     let named: Vec<&str> = under.iter().map(String::as_str).chain(["classifiers"]).collect();
     let mut entry = common::build::entry("classifiers", value);
-    entry.key_value.key = toml_doc::Key::new(named);
+    entry.key_value.key = Key::new(named);
     entries.push(entry);
 }
 
 /// The set of `Programming Language :: Python` classifiers the declared range implies. Ones outside
 /// the range go, ones inside that are missing arrive, and everything else is left alone.
-fn apply_classifiers(array: &mut toml_doc::Array<'_>, held: &Supported, existing: &HashSet<String>) {
+fn apply_classifiers(array: &mut Array<'_>, held: &Supported, existing: &HashSet<String>) {
     let mut must_have: HashSet<String> = HashSet::new();
     // a project no Python 3 release satisfies is not a Python 3 project, and neither is one a
     // Python 2 release still runs
@@ -955,7 +958,7 @@ fn expand_array_of_tables(document: &mut Document<'_>, full_name: &str, key_orde
     if array.trailing.has_comment() || parent.entries[at].trail.comment.is_some() {
         return;
     }
-    let mut written: Vec<toml_doc::Section<'_>> = Vec::new();
+    let mut written: Vec<Section<'_>> = Vec::new();
     for member in &array.members {
         let Value::InlineTable(table) = &member.item else {
             return;
@@ -983,11 +986,7 @@ fn expand_array_of_tables(document: &mut Document<'_>, full_name: &str, key_orde
                 key,
             )
         });
-        written.push(common::build::section(
-            full_name,
-            toml_doc::SectionKind::ArrayOfTables,
-            fields,
-        ));
+        written.push(common::build::section(full_name, SectionKind::ArrayOfTables, fields));
     }
     if written.is_empty() {
         return;

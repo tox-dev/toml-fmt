@@ -6,68 +6,6 @@ use indoc::indoc;
 use super::default_settings;
 use _pyproject_fmt::{format_toml, Settings, TableFormatConfig};
 
-fn evaluate_project(
-    start: &str,
-    keep_full_version: bool,
-    max_supported_python: (u8, u8),
-    generate_python_version_classifiers: bool,
-) -> String {
-    run_project_fix(
-        start,
-        keep_full_version,
-        max_supported_python,
-        generate_python_version_classifiers,
-    )
-    .expect("the formatter accepts it")
-}
-
-fn evaluate_project_error(start: &str) -> String {
-    run_project_fix(start, false, (3, 12), false).expect_err("the formatter rejects it")
-}
-
-fn run_project_fix(
-    start: &str,
-    keep_full_version: bool,
-    max_supported_python: (u8, u8),
-    generate_python_version_classifiers: bool,
-) -> Result<String, String> {
-    let settings = Settings {
-        keep_full_version,
-        max_supported_python,
-        generate_python_version_classifiers,
-        ..default_settings()
-    };
-    let written = format_toml(start, &settings)?;
-    super::assert_valid_toml(&written);
-    Ok(written)
-}
-
-fn evaluate_config(
-    start: &str,
-    table_config: TableFormatConfig,
-    classifiers: bool,
-    max_supported_python: (u8, u8),
-) -> String {
-    let named = |held: &HashSet<Vec<String>>| held.iter().map(|name| sections::dotted_name(name)).collect();
-    evaluate_project_settings(&Settings {
-        table_format: String::from(if table_config.default_collapse { "short" } else { "long" }),
-        expand_tables: named(&table_config.expand),
-        collapse_tables: named(&table_config.collapse),
-        generate_python_version_classifiers: classifiers,
-        max_supported_python,
-        ..default_settings()
-    })(start)
-}
-
-/// Run the formatter under settings a case spells out.
-fn evaluate_project_settings(settings: &Settings) -> impl Fn(&str) -> String + '_ {
-    move |start| {
-        let written = format_toml(start, settings).expect("the formatter accepts it");
-        super::assert_valid_toml(&written);
-        written
-    }
-}
-
 #[test]
 fn test_project_no_project_section() {
     let start = "";
@@ -3127,23 +3065,6 @@ fn test_every_tool_reads_the_table_the_file_wrote() {
     }
 }
 
-fn wide_settings() -> _pyproject_fmt::Settings {
-    _pyproject_fmt::Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 12),
-        min_supported_python: (3, 10),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        sub_table_spacing: String::new(),
-        separate_root_table: String::from("\n"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-    }
-}
-
 /// A project written only as a child header is the same project, so its extras and requirements are
 /// read the way they are under the parent the file left implicit.
 #[test]
@@ -3344,4 +3265,82 @@ fn test_project_classifiers_go_with_the_keys_of_the_project_not_a_table_below_it
     [project.urls]
     homepage = "https://example.com"
     "#);
+}
+
+fn wide_settings() -> _pyproject_fmt::Settings {
+    _pyproject_fmt::Settings {
+        column_width: 120,
+        indent: 2,
+        keep_full_version: false,
+        max_supported_python: (3, 12),
+        min_supported_python: (3, 10),
+        generate_python_version_classifiers: false,
+        table_format: String::from("short"),
+        sub_table_spacing: String::new(),
+        separate_root_table: String::from("\n"),
+        expand_tables: vec![],
+        collapse_tables: vec![],
+        skip_wrap_for_keys: vec![],
+    }
+}
+
+fn evaluate_project(
+    start: &str,
+    keep_full_version: bool,
+    max_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
+) -> String {
+    run_project_fix(
+        start,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+    )
+    .expect("the formatter accepts it")
+}
+
+fn evaluate_project_error(start: &str) -> String {
+    run_project_fix(start, false, (3, 12), false).expect_err("the formatter rejects it")
+}
+
+fn evaluate_config(
+    start: &str,
+    table_config: TableFormatConfig,
+    classifiers: bool,
+    max_supported_python: (u8, u8),
+) -> String {
+    let named = |held: &HashSet<Vec<String>>| held.iter().map(|name| sections::dotted_name(name)).collect();
+    evaluate_project_settings(&Settings {
+        table_format: String::from(if table_config.default_collapse { "short" } else { "long" }),
+        expand_tables: named(&table_config.expand),
+        collapse_tables: named(&table_config.collapse),
+        generate_python_version_classifiers: classifiers,
+        max_supported_python,
+        ..default_settings()
+    })(start)
+}
+
+fn run_project_fix(
+    start: &str,
+    keep_full_version: bool,
+    max_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
+) -> Result<String, String> {
+    let settings = Settings {
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+        ..default_settings()
+    };
+    let written = format_toml(start, &settings)?;
+    super::assert_valid_toml(&written);
+    Ok(written)
+}
+
+fn evaluate_project_settings(settings: &Settings) -> impl Fn(&str) -> String + '_ {
+    move |start| {
+        let written = format_toml(start, settings).expect("the formatter accepts it");
+        super::assert_valid_toml(&written);
+        written
+    }
 }

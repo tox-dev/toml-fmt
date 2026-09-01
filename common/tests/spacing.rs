@@ -3,18 +3,6 @@
 use common::spacing::Spacing;
 use toml_doc::LineEnding;
 
-fn space(source: &str, within_group: Option<usize>) -> String {
-    let mut document = toml_doc::parse(source).expect("valid source");
-    Spacing {
-        between_groups: 1,
-        within_group,
-        nested_prefixes: &["tool"],
-        ending: LineEnding::Lf,
-    }
-    .apply(&mut document);
-    document.to_string()
-}
-
 #[test]
 fn a_different_tool_gets_an_empty_line_above_it() {
     assert_eq!(
@@ -140,4 +128,16 @@ fn empty_lines_inside_a_value_of_its_own_are_left_alone() {
     common::spacing::limit_blank_runs(&mut document, 2);
 
     assert_eq!(document.to_string(), source);
+}
+
+fn space(source: &str, within_group: Option<usize>) -> String {
+    let mut document = toml_doc::parse(source).expect("valid source");
+    Spacing {
+        between_groups: 1,
+        within_group,
+        nested_prefixes: &["tool"],
+        ending: LineEnding::Lf,
+    }
+    .apply(&mut document);
+    document.to_string()
 }

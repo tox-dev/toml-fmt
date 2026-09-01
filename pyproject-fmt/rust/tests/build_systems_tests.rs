@@ -1,15 +1,5 @@
 use indoc::indoc;
 
-fn format_build_systems_helper(start: &str, keep_full_version: bool) -> String {
-    super::evaluate_settings(
-        start,
-        &_pyproject_fmt::Settings {
-            keep_full_version,
-            ..super::default_settings()
-        },
-    )
-}
-
 #[test]
 fn test_format_build_systems_no_build_system() {
     let start = indoc! {r""};
@@ -254,4 +244,14 @@ fn test_format_build_systems_keeps_a_declared_wheel() {
         let result = format_build_systems_helper(&start, false);
         assert!(result.contains("\"wheel\""), "{result}");
     }
+}
+
+fn format_build_systems_helper(start: &str, keep_full_version: bool) -> String {
+    super::evaluate_settings(
+        start,
+        &_pyproject_fmt::Settings {
+            keep_full_version,
+            ..super::default_settings()
+        },
+    )
 }

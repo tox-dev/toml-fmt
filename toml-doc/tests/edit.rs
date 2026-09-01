@@ -2,10 +2,6 @@
 
 use toml_doc::{Document, Piece, Quoting, Repr, Value};
 
-fn parse(source: &str) -> Document<'_> {
-    toml_doc::parse(source).expect("valid source")
-}
-
 #[test]
 fn reordering_sections_carries_their_comments() {
     let mut document = parse("# about b\n[b]\nx = 1\n\n# about a\n[a]\ny = 2\n");
@@ -467,4 +463,8 @@ fn a_source_that_stops_mid_token_is_rejected() {
         assert!(toml_doc::parse(source).is_err(), "{source}");
         assert!(toml_doc::parse_syntax(source).is_err(), "{source}");
     }
+}
+
+fn parse(source: &str) -> Document<'_> {
+    toml_doc::parse(source).expect("valid source")
 }

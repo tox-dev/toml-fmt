@@ -1,9 +1,4 @@
-use super::{default_settings, evaluate_full};
-use _pyproject_fmt::{format_toml, Settings};
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
+use super::{evaluate_full as evaluate, evaluate_long};
 
 #[test]
 fn test_mypy_top_level_key_order_groups_sections() {
@@ -219,8 +214,8 @@ fn test_mypy_idempotent() {
     module = "third_party.*"
     ignore_missing_imports = true
     "#};
-    let once = evaluate_full(start);
-    let twice = evaluate_full(&once);
+    let once = evaluate(start);
+    let twice = evaluate(&once);
     assert_eq!(once, twice);
 }
 
@@ -246,7 +241,7 @@ fn test_mypy_does_not_reorder_unrelated_inline_tables() {
     name = "demo"
     authors = [ { email = "alice@example.com", name = "Alice" } ]
     "#};
-    let result = evaluate_full(start);
+    let result = evaluate(start);
     assert!(
         result.contains(r#"{ email = "alice@example.com", name = "Alice" }"#)
             || result.contains(r#"{ name = "Alice", email = "alice@example.com" }"#),
@@ -292,19 +287,6 @@ fn test_mypy_report_keys_grouped() {
     txt_report = "reports/txt"
     xml_report = "reports/xml"
     "#);
-}
-
-fn long_settings() -> Settings {
-    Settings {
-        table_format: String::from("long"),
-        ..default_settings()
-    }
-}
-
-fn evaluate_long(start: &str) -> String {
-    let r = format_toml(start, &long_settings()).unwrap();
-    super::assert_valid_toml(&r);
-    r
 }
 
 #[test]

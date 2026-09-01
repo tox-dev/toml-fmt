@@ -1,10 +1,4 @@
-use super::default_settings;
-use super::evaluate_full;
-use _pyproject_fmt::{format_toml, Settings};
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
+use super::{evaluate_full as evaluate, evaluate_long};
 
 #[test]
 fn test_pdm_top_level_order() {
@@ -84,7 +78,7 @@ fn test_pdm_source_aot_key_order_written_out() {
     url = "https://example.com/links"
     name = "internal"
     "#};
-    let result = super::evaluate_long(start);
+    let result = evaluate_long(start);
     insta::assert_snapshot!(result, @r#"
     [[tool.pdm.source]]
     name = "internal"
@@ -108,7 +102,7 @@ fn test_pdm_source_packages_sorted_in_both_forms() {
     source = [ { name = "internal", include_packages = [ "alpha", "zebra" ] } ]
     "#);
 
-    let written_out = super::evaluate_long(start);
+    let written_out = evaluate_long(start);
     insta::assert_snapshot!(written_out, @r#"
     [[tool.pdm.source]]
     name = "internal"
@@ -140,19 +134,6 @@ fn test_pdm_no_table_is_noop() {
     [project]
     name = "demo"
     "#);
-}
-
-fn long_settings() -> Settings {
-    Settings {
-        table_format: String::from("long"),
-        ..default_settings()
-    }
-}
-
-fn evaluate_long(start: &str) -> String {
-    let result = format_toml(start, &long_settings()).unwrap();
-    super::assert_valid_toml(&result);
-    result
 }
 
 #[test]

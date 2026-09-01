@@ -2,35 +2,11 @@ use std::collections::HashSet;
 
 use indoc::indoc;
 use insta::assert_snapshot;
+use pyo3::types::{PyDict, PyDictMethods};
+use pyo3::{PyResult, Python};
 
 use super::{assert_valid_toml, default_settings};
 use _pyproject_fmt::{format_toml, Settings};
-
-fn long_format_settings() -> Settings {
-    Settings {
-        table_format: String::from("long"),
-        ..default_settings()
-    }
-}
-
-fn format_toml_helper(
-    start: &str,
-    indent: usize,
-    keep_full_version: bool,
-    max_supported_python: (u8, u8),
-    generate_python_version_classifiers: bool,
-) -> String {
-    let settings = Settings {
-        indent,
-        keep_full_version,
-        max_supported_python,
-        generate_python_version_classifiers,
-        ..default_settings()
-    };
-    let result = format_toml(start, &settings).unwrap();
-    assert_valid_toml(&result);
-    result
-}
 
 #[test]
 fn test_format_toml_simple() {
@@ -648,20 +624,20 @@ fn test_format_with_non_table_lines_between_headers() {
 
 #[test]
 fn test_settings_new() {
-    let settings = Settings::new(
-        120,
-        4,
-        true,
-        (3, 13),
-        (3, 9),
-        true,
-        String::from("short"),
-        String::from("\n"),
-        String::from("\n\n"),
-        vec![String::from("project.urls")],
-        vec![String::from("project.authors")],
-        vec![],
-    )
+    let settings = new_settings(Settings {
+        column_width: 120,
+        indent: 4,
+        keep_full_version: true,
+        max_supported_python: (3, 13),
+        min_supported_python: (3, 9),
+        generate_python_version_classifiers: true,
+        table_format: String::from("short"),
+        sub_table_spacing: String::from("\n"),
+        separate_root_table: String::from("\n\n"),
+        expand_tables: vec![String::from("project.urls")],
+        collapse_tables: vec![String::from("project.authors")],
+        skip_wrap_for_keys: vec![],
+    })
     .expect("Python 3 bounds");
     assert_eq!(settings.column_width, 120);
     assert_eq!(settings.indent, 4);
@@ -680,20 +656,12 @@ fn test_settings_new() {
 fn test_table_format_config_from_settings() {
     use _pyproject_fmt::TableFormatConfig;
 
-    let settings = Settings::new(
-        120,
-        2,
-        false,
-        (3, 12),
-        (3, 9),
-        false,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![String::from("tool.ruff")],
-        vec![String::from("project")],
-        vec![],
-    )
+    let settings = new_settings(Settings {
+        max_supported_python: (3, 12),
+        expand_tables: vec![String::from("tool.ruff")],
+        collapse_tables: vec![String::from("project")],
+        ..default_settings()
+    })
     .expect("Python 3 bounds");
     let config = TableFormatConfig::new(
         &settings.table_format,
@@ -1210,17 +1178,6 @@ fn test_import_names_that_is_not_an_array() {
     name = "example"
     import-names = "pkg"
     "#);
-}
-
-/// Reading `requires-python` is what drives the generated classifiers, so nothing below is reached
-/// with the setting off.
-fn generating_classifiers() -> Settings {
-    Settings {
-        generate_python_version_classifiers: true,
-        max_supported_python: (3, 11),
-        min_supported_python: (3, 10),
-        ..default_settings()
-    }
 }
 
 #[test]
@@ -1825,20 +1782,11 @@ fn test_overrides_under_another_tool_keep_their_order() {
 /// cannot act on rather than one it asserts against.
 #[test]
 fn test_settings_reject_a_python_beyond_three() {
-    let built = Settings::new(
-        120,
-        2,
-        false,
-        (4, 0),
-        (3, 9),
-        true,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![],
-        vec![],
-        vec![],
-    );
+    let built = new_settings(Settings {
+        max_supported_python: (4, 0),
+        generate_python_version_classifiers: true,
+        ..default_settings()
+    });
 
     assert!(built.is_err());
 }
@@ -1847,20 +1795,12 @@ fn test_settings_reject_a_python_beyond_three() {
 /// told rather than read as some other table.
 #[test]
 fn test_settings_reject_a_selector_that_names_no_table() {
-    let built = Settings::new(
-        120,
-        2,
-        false,
-        (3, 12),
-        (3, 9),
-        true,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![String::from("project.\"urls")],
-        vec![],
-        vec![],
-    );
+    let built = new_settings(Settings {
+        max_supported_python: (3, 12),
+        generate_python_version_classifiers: true,
+        expand_tables: vec![String::from("project.\"urls")],
+        ..default_settings()
+    });
 
     let why = built.err().map(|error| error.to_string()).unwrap_or_default();
     assert!(
@@ -1872,20 +1812,12 @@ fn test_settings_reject_a_selector_that_names_no_table() {
 /// A pattern names a key, which a list holding nothing does not.
 #[test]
 fn test_settings_reject_a_pattern_written_as_nothing() {
-    let built = Settings::new(
-        120,
-        2,
-        false,
-        (3, 12),
-        (3, 9),
-        true,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![],
-        vec![],
-        vec![String::from(" ")],
-    );
+    let built = new_settings(Settings {
+        max_supported_python: (3, 12),
+        generate_python_version_classifiers: true,
+        skip_wrap_for_keys: vec![String::from(" ")],
+        ..default_settings()
+    });
 
     let why = built.err().map(|error| error.to_string()).unwrap_or_default();
     assert!(why.contains("skip_wrap_for_keys"), "{why}");
@@ -1986,4 +1918,61 @@ fn test_lib_settings_in_reads_the_table_it_is_given() {
         assert!(error.is_instance_of::<pyo3::exceptions::PyValueError>(py));
         assert_snapshot!(error.value(py).to_string(), @"column_width: 12:30 is not a setting");
     });
+}
+
+fn generating_classifiers() -> Settings {
+    Settings {
+        generate_python_version_classifiers: true,
+        max_supported_python: (3, 11),
+        min_supported_python: (3, 10),
+        ..default_settings()
+    }
+}
+
+fn format_toml_helper(
+    start: &str,
+    indent: usize,
+    keep_full_version: bool,
+    max_supported_python: (u8, u8),
+    generate_python_version_classifiers: bool,
+) -> String {
+    let settings = Settings {
+        indent,
+        keep_full_version,
+        max_supported_python,
+        generate_python_version_classifiers,
+        ..default_settings()
+    };
+    let result = format_toml(start, &settings).unwrap();
+    assert_valid_toml(&result);
+    result
+}
+
+fn long_format_settings() -> Settings {
+    Settings {
+        table_format: String::from("long"),
+        ..default_settings()
+    }
+}
+
+fn new_settings(settings: Settings) -> PyResult<Settings> {
+    Python::attach(|python| {
+        let kwargs = PyDict::new(python);
+        kwargs.set_item("column_width", settings.column_width)?;
+        kwargs.set_item("indent", settings.indent)?;
+        kwargs.set_item("keep_full_version", settings.keep_full_version)?;
+        kwargs.set_item("max_supported_python", settings.max_supported_python)?;
+        kwargs.set_item("min_supported_python", settings.min_supported_python)?;
+        kwargs.set_item(
+            "generate_python_version_classifiers",
+            settings.generate_python_version_classifiers,
+        )?;
+        kwargs.set_item("table_format", settings.table_format)?;
+        kwargs.set_item("sub_table_spacing", settings.sub_table_spacing)?;
+        kwargs.set_item("separate_root_table", settings.separate_root_table)?;
+        kwargs.set_item("expand_tables", settings.expand_tables)?;
+        kwargs.set_item("collapse_tables", settings.collapse_tables)?;
+        kwargs.set_item("skip_wrap_for_keys", settings.skip_wrap_for_keys)?;
+        Settings::new(Some(&kwargs))
+    })
 }
