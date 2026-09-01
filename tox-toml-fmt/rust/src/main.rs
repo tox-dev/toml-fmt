@@ -32,8 +32,20 @@ pub struct Settings {
 #[pymethods]
 impl Settings {
     #[new]
+    // one parameter per setting the command line holds
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys, pin_envs))]
+    #[pyo3(signature = (
+        *,
+        column_width,
+        indent,
+        table_format,
+        sub_table_spacing,
+        separate_root_table,
+        expand_tables,
+        collapse_tables,
+        skip_wrap_for_keys,
+        pin_envs,
+    ))]
     pub fn new(
         column_width: usize,
         indent: usize,

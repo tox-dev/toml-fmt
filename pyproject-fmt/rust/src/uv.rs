@@ -131,38 +131,39 @@ pub const PIP_KEY_ORDER: &[&str] = &[
     "universal",
 ];
 
-#[allow(clippy::too_many_lines)]
+/// The names holding a list of names, which sorts.
+static SORTS: &[&str] = &[
+    "allow-insecure-host",
+    "build-constraint-dependencies",
+    "constraint-dependencies",
+    "dev-dependencies",
+    "environments",
+    "exclude-dependencies",
+    "no-binary-package",
+    "no-build-isolation-package",
+    "no-build-package",
+    "no-proxy",
+    "no-sources-package",
+    "override-dependencies",
+    "pip.allow-insecure-host",
+    "pip.extra",
+    "pip.no-binary-package",
+    "pip.no-build-isolation-package",
+    "pip.no-build-package",
+    "pip.no-emit-package",
+    "pip.only-binary-package",
+    "pip.reinstall-package",
+    "pip.upgrade-package",
+    "reinstall-package",
+    "required-environments",
+    "upgrade-package",
+    "workspace.exclude",
+    "workspace.members",
+];
+
 /// Whether what the name holds is a list of names, which sorts.
 pub fn sorts(key: &str) -> bool {
-    matches!(
-        key,
-        "allow-insecure-host"
-            | "build-constraint-dependencies"
-            | "constraint-dependencies"
-            | "dev-dependencies"
-            | "environments"
-            | "exclude-dependencies"
-            | "no-binary-package"
-            | "no-build-isolation-package"
-            | "no-build-package"
-            | "no-proxy"
-            | "no-sources-package"
-            | "override-dependencies"
-            | "reinstall-package"
-            | "required-environments"
-            | "upgrade-package"
-            | "workspace.exclude"
-            | "workspace.members"
-            | "pip.allow-insecure-host"
-            | "pip.extra"
-            | "pip.no-binary-package"
-            | "pip.no-build-isolation-package"
-            | "pip.no-build-package"
-            | "pip.no-emit-package"
-            | "pip.only-binary-package"
-            | "pip.reinstall-package"
-            | "pip.upgrade-package"
-    )
+    SORTS.binary_search(&key).is_ok()
 }
 
 /// The same, for the names written under `pip`.

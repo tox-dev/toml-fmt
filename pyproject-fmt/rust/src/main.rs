@@ -70,8 +70,23 @@ pub struct Settings {
 #[pymethods]
 impl Settings {
     #[new]
+    // one parameter per setting the command line holds
     #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys))]
+    #[pyo3(signature = (
+        *,
+        column_width,
+        indent,
+        keep_full_version,
+        max_supported_python,
+        min_supported_python,
+        generate_python_version_classifiers,
+        table_format,
+        sub_table_spacing,
+        separate_root_table,
+        expand_tables,
+        collapse_tables,
+        skip_wrap_for_keys,
+    ))]
     pub fn new(
         column_width: usize,
         indent: usize,
