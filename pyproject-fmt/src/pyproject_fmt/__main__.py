@@ -45,9 +45,9 @@ class _PyProjectFormatter(TOMLFormatter[_PyProjectFmtNamespace]):
     @staticmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
         """Add project metadata options outside the shared formatter settings."""
-        msg = "keep full dependency versions - do not remove redundant .0 from versions"
+        msg = "retain redundant .0 components in dependency versions"
         parser.add_argument("--keep-full-version", action="store_true", help=msg)
-        msg = "do not generate Python version classifiers based on requires-python"
+        msg = "retain Python version classifiers instead of deriving them from requires-python"
         parser.add_argument(
             "--no-generate-python-version-classifiers",
             action="store_false",

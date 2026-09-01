@@ -7,7 +7,7 @@ backend-path = [ "." ]
 
 [project]
 name = "tox-toml-fmt"
-description = "Format your pyproject.toml file"
+description = "Format tox.toml files"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 keywords = [
   "format",
@@ -83,7 +83,7 @@ bindings = "pyo3"
 python-source = "src"
 manifest-path = "Cargo.toml"
 include = [
-  # ship the in-tree PEP 517 backend in the sdist so wheels can be built from the sdist
+  # ship the in-tree PEP 517 backend so build tools can create wheels from the sdist
   { path = "build_backend.py", format = "sdist" },
   { path = "rust-toolchain.toml", format = "sdist" },
   { path = "docs/", format = "sdist" },
@@ -105,7 +105,7 @@ show_error_codes = true
 
 [tool.coverage]
 run.omit = [
-  "*/_vendor/*", # vendored toml_fmt_common is covered by its own test suite
+  "*/_vendor/*", # vendored toml_fmt_common has its own test suite
 ]
 run.parallel = true
 run.plugins = [

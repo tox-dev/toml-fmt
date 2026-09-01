@@ -10,46 +10,46 @@ lint.select = [
   "ALL",
 ]
 lint.ignore = [
-  "missing-trailing-comma", # Conflict with formatter
-  "CPY",    # No copyright statements
-  "incorrect-blank-line-before-class",   # `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible
-  "multi-line-summary-first-line",   # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
-  "DOC",    # no good support
+  "CPY",                                       # the project omits copyright headers
+  "DOC",                                       # documentation rules conflict with the public API style
+  "hardcoded-bind-all-interfaces",             # tests may bind disposable servers to all interfaces
+  "incorrect-blank-line-before-class",         # `one-blank-line-before-class` (D203) and `no-blank-line-before-class` (D211) are incompatible
+  "missing-trailing-comma",                    # Conflict with formatter
+  "multi-line-summary-first-line",             # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
+  "non-empty-init-module",                     # toml-fmt-common exposes its API from __init__.py
   "single-line-implicit-string-concatenation", # Conflict with formatter
-  "non-empty-init-module", # allow code in __init__.py for toml-fmt-common
-  "hardcoded-bind-all-interfaces",   # Possible binding to all interface
 ]
 lint.per-file-ignores."**/build_backend.py" = [
-  "undocumented-public-function",   # the build-backend hooks are PEP 517 contract, documented at module level
-  "implicit-namespace-package", # is not a namespace
-  "print",   # the CLI reports what it patched
+  "implicit-namespace-package",   # is not a namespace
+  "print",                        # the CLI reports what it patched
+  "undocumented-public-function", # the build-backend hooks are PEP 517 contract, documented at module level
 ]
 lint.per-file-ignores."**/src/toml_fmt_common/__init__.py" = [
   "print", # the CLI reports what it formatted on stdout
 ]
 lint.per-file-ignores."**/tests/**/*.py" = [
-  "D",       # don't care about documentation in tests
-  "FBT",     # don't care about booleans as positional arguments in tests
-  "implicit-namespace-package",  # no implicit namespace
-  "too-many-arguments", # any number of arguments in tests
-  "too-many-positional-arguments", # any number of arguments in tests
-  "magic-value-comparison", # Magic value used in comparison, consider replacing with a constant variable
-  "assert",    # asserts allowed in tests...
-  "subprocess-without-shell-equals-true",    # `subprocess` call: check for execution of untrusted input
+  "assert",                               # asserts allowed in tests...
+  "D",                                    # test names document behavior
+  "FBT",                                  # positional booleans keep cases compact
+  "implicit-namespace-package",           # test modules are not packages
+  "magic-value-comparison",               # assertions need literal expected values
+  "subprocess-without-shell-equals-true", # tests pass trusted commands
+  "too-many-arguments",                   # fixtures may expose complete settings
+  "too-many-positional-arguments",        # fixtures may expose complete settings
 ]
 lint.per-file-ignores."**/toxfile.py" = [
-  "D",      # don't care about documentation in tox plugins
-  "implicit-namespace-package", # is not a namespace
-  "suspicious-subprocess-import",   # subprocess is required for tox plugin
-  "start-process-with-partial-path",   # partial path is fine for tox command
+  "D",                               # tox defines the plugin contracts
+  "implicit-namespace-package",      # each plugin is a module
+  "start-process-with-partial-path", # partial path is fine for tox command
+  "suspicious-subprocess-import",    # the tox plugin invokes child processes
 ]
 lint.per-file-ignores."tasks/**.py" = [
-  "D",      # don't care about documentation in tests
-  "implicit-namespace-package", # is not a namespace
-  "suspicious-subprocess-import",   # subprocess is required to drive the build
-  "subprocess-without-shell-equals-true",   # the build commands are ours, not untrusted input
-  "start-process-with-partial-path",   # uv is resolved from PATH
-  "print",   # allow print
+  "D",                                    # tasks are scripts, not public APIs
+  "implicit-namespace-package",           # tasks are modules
+  "print",                                # tasks report progress
+  "start-process-with-partial-path",      # tox resolves uv from PATH
+  "subprocess-without-shell-equals-true", # the build commands are ours, not untrusted input
+  "suspicious-subprocess-import",         # build tasks invoke child processes
 ]
 lint.isort = { known-first-party = [
   "pyproject_fmt",

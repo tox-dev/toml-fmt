@@ -3,7 +3,7 @@ env_list = ["fix", "3.15", "3.15t", "3.14", "3.13", "3.12", "3.11", "3.10", "typ
 skip_missing_interpreters = true
 
 [env_run_base]
-description = "run the tests with pytest under {env_name}"
+description = "run pytest under {env_name}"
 runner = "uv-venv-lock-runner"
 package = "wheel"
 wheel_build_env = ".pkg"
@@ -40,12 +40,12 @@ commands = [
 ]
 
 [env.type]
-description = "run type check on code base"
+description = "run type checks"
 dependency_groups = ["type"]
 commands = [["mypy", "src{/}toml_fmt_common", "tests"]]
 
 [env.pkg_meta]
-description = "check that the long description is valid"
+description = "validate package metadata"
 skip_install = true
 dependency_groups = ["pkg-meta"]
 commands = [
@@ -71,13 +71,13 @@ commands = [
 ]
 
 [env.dev]
-description = "dev environment with all deps at {envdir}"
+description = "create a development environment at {envdir}"
 package = "editable"
 dependency_groups = ["dev"]
 commands = [["uv", "pip", "tree"], ["python", "-c", 'print(r"{env_python}")']]
 
 [env.fix]
-description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
+description = "format supported files and report remaining violations"
 skip_install = true
 deps = ["pre-commit-uv>=4.3"]
 pass_env = [{ replace = "ref", of = ["env_run_base", "pass_env"], extend = true }, "PROGRAMDATA"]

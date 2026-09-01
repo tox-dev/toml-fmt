@@ -61,9 +61,9 @@ class Dumb(TOMLFormatter[DumpNamespace]):
 
     @staticmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
-        parser.add_argument("extra", help="this is something extra")
+        parser.add_argument("extra", help="extra value")
         parser.add_argument("-t", "--tuple-magic", default=(), type=lambda t: tuple(t.split(".")))
-        parser.add_argument("--loud", action="store_true", help="say more about what was done")
+        parser.add_argument("--loud", action="store_true", help="enable verbose output")
 
     @staticmethod
     def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
@@ -104,7 +104,13 @@ def test_dumb_help(capsys: pytest.CaptureFixture[str]) -> None:
 
     out, err = capsys.readouterr()
     assert not err
-    assert "this is something extra" in out
+    assert "extra value" in out
+
+
+def test_build_cli_returns_a_parser_without_reading_arguments() -> None:
+    parser, _ = build_cli(Dumb())
+
+    assert parser.parse_args(["E", "-"]).extra == "E"
 
 
 _GREEN: Final[str] = "\x1b[32m"

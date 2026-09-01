@@ -303,15 +303,15 @@ def _make_cli(
 
     mode_group = parser.add_argument_group("run mode")
     mode = mode_group.add_mutually_exclusive_group()
-    msg = "print the formatted TOML to the stdout, implied if reading from stdin"
+    msg = "write formatted TOML to stdout; implied for stdin"
     mode.add_argument("-s", "--stdout", action="store_true", help=msg)
-    msg = "check and fail if any input would be formatted, printing any diffs"
+    msg = "fail when an input needs formatting and print its diff"
     mode.add_argument("--check", action="store_true", help=msg)
     mode_group.add_argument(
         "-n",
         "--no-print-diff",
         action="store_true",
-        help="Flag indicating to print diff for the check mode",
+        help="suppress diffs in check mode",
     )
     parser.add_argument(
         "--config",
