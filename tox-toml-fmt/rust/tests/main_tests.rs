@@ -1,7 +1,8 @@
 use indoc::indoc;
 use insta::assert_snapshot;
+use pyo3::exceptions::PyTypeError;
 use pyo3::types::{PyDict, PyDictMethods};
-use pyo3::{PyResult, Python};
+use pyo3::{Bound, PyResult, Python};
 
 use super::{assert_valid_toml, default_settings, evaluate_settings};
 use _tox_toml_fmt::{format_toml, Settings};
@@ -358,16 +359,66 @@ fn test_settings_new_requires_keyword_arguments() {
 }
 
 #[test]
-fn test_settings_new_requires_every_keyword() {
+fn test_settings_new_requires_every_keyword() -> PyResult<()> {
     Python::attach(|python| {
-        let kwargs = PyDict::new(python);
+        for name in [
+            "column_width",
+            "indent",
+            "table_format",
+            "sub_table_spacing",
+            "separate_root_table",
+            "expand_tables",
+            "collapse_tables",
+            "skip_wrap_for_keys",
+            "pin_envs",
+        ] {
+            let kwargs = settings_kwargs(python, default_settings())?;
+            kwargs.del_item(name)?;
 
-        let error = Settings::new(Some(&kwargs))
-            .err()
-            .map(|error| error.to_string())
-            .unwrap_or_default();
-        assert_eq!(error, "TypeError: missing keyword argument: 'column_width'");
-    });
+            let error = Settings::new(Some(&kwargs))
+                .err()
+                .map(|error| error.to_string())
+                .unwrap_or_default();
+            assert_eq!(error, format!("TypeError: missing keyword argument: '{name}'"));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn test_settings_new_rejects_every_wrong_value_type() -> PyResult<()> {
+    Python::attach(|python| {
+        for name in [
+            "column_width",
+            "indent",
+            "table_format",
+            "sub_table_spacing",
+            "separate_root_table",
+            "expand_tables",
+            "collapse_tables",
+            "skip_wrap_for_keys",
+            "pin_envs",
+        ] {
+            let kwargs = settings_kwargs(python, default_settings())?;
+            kwargs.set_item(name, python.None())?;
+
+            let error = Settings::new(Some(&kwargs)).err().expect("None is not a setting value");
+            assert!(error.is_instance_of::<PyTypeError>(python));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn test_settings_new_rejects_a_non_string_keyword() -> PyResult<()> {
+    Python::attach(|python| {
+        let kwargs = settings_kwargs(python, default_settings())?;
+        kwargs.set_item(0, true)?;
+
+        let error = Settings::new(Some(&kwargs)).err().expect("keyword names are strings");
+        assert!(error.is_instance_of::<PyTypeError>(python));
+        Ok(())
+    })
 }
 
 /// A pin names an environment and a pattern names a key, so a list holding neither is told.
@@ -2464,17 +2515,19 @@ fn format_toml_helper(start: &str, indent: usize) -> String {
 }
 
 fn new_settings(settings: Settings) -> PyResult<Settings> {
-    Python::attach(|python| {
-        let kwargs = PyDict::new(python);
-        kwargs.set_item("column_width", settings.column_width)?;
-        kwargs.set_item("indent", settings.indent)?;
-        kwargs.set_item("table_format", settings.table_format)?;
-        kwargs.set_item("sub_table_spacing", settings.sub_table_spacing)?;
-        kwargs.set_item("separate_root_table", settings.separate_root_table)?;
-        kwargs.set_item("expand_tables", settings.expand_tables)?;
-        kwargs.set_item("collapse_tables", settings.collapse_tables)?;
-        kwargs.set_item("skip_wrap_for_keys", settings.skip_wrap_for_keys)?;
-        kwargs.set_item("pin_envs", settings.pin_envs)?;
-        Settings::new(Some(&kwargs))
-    })
+    Python::attach(|python| Settings::new(Some(&settings_kwargs(python, settings)?)))
+}
+
+fn settings_kwargs(python: Python<'_>, settings: Settings) -> PyResult<Bound<'_, PyDict>> {
+    let kwargs = PyDict::new(python);
+    kwargs.set_item("column_width", settings.column_width)?;
+    kwargs.set_item("indent", settings.indent)?;
+    kwargs.set_item("table_format", settings.table_format)?;
+    kwargs.set_item("sub_table_spacing", settings.sub_table_spacing)?;
+    kwargs.set_item("separate_root_table", settings.separate_root_table)?;
+    kwargs.set_item("expand_tables", settings.expand_tables)?;
+    kwargs.set_item("collapse_tables", settings.collapse_tables)?;
+    kwargs.set_item("skip_wrap_for_keys", settings.skip_wrap_for_keys)?;
+    kwargs.set_item("pin_envs", settings.pin_envs)?;
+    Ok(kwargs)
 }

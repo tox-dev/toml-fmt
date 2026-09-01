@@ -165,7 +165,8 @@ fn required_keywords<'py>(
 
 fn required<'py, T: FromPyObjectOwned<'py>>(kwargs: &Bound<'py, PyDict>, name: &str) -> PyResult<T> {
     kwargs
-        .get_item(name)?
+        .get_item(name)
+        .expect("Rust strings are valid Python dictionary keys")
         .ok_or_else(|| PyTypeError::new_err(format!("missing keyword argument: '{name}'")))?
         .extract()
         .map_err(Into::into)
