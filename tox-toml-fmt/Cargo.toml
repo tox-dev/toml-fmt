@@ -1,6 +1,6 @@
 [package]
 name = "tox-toml-fmt"
-version = "1.10.2"
+version = "1.10.3"
 description = "Format tox.toml files"
 repository = "https://github.com/tox-dev/tox-toml-fmt"
 license = "MIT"

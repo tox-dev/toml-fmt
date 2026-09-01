@@ -554,7 +554,7 @@ dependencies = [
 
 [[package]]
 name = "tox-toml-fmt"
-version = "1.10.2"
+version = "1.10.3"
 dependencies = [
  "common",
  "indoc",
