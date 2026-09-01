@@ -11,19 +11,23 @@ from argparse import (
     ArgumentParser,
     ArgumentTypeError,
     Namespace,
-    _ArgumentGroup,  # ruff: ignore[import-private-name]
+    _ArgumentGroup,  # ruff: ignore[import-private-name]  # argparse names the group type nowhere else
 )
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from importlib.metadata import version
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar, cast
+from typing import TYPE_CHECKING, Final, Generic, TypeAlias, TypeVar, cast
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Callable, Iterable, Iterator
 
-ArgumentGroup = _ArgumentGroup
+ArgumentGroup: TypeAlias = _ArgumentGroup
+
+#: What a TOML document holds, and so what a setting read from one arrives as.
+TomlValue: TypeAlias = "bool | int | float | str | Sequence[TomlValue] | Mapping[str, TomlValue]"
 
 
 class FmtNamespace(Namespace):
@@ -91,7 +95,7 @@ class TOMLFormatter(ABC, Generic[T]):
         raise NotImplementedError
 
     @abstractmethod
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:
+    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
         """
         Read the settings the text writes under a table, with the parser that reads the file itself.
 
@@ -168,15 +172,19 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
     held = _Constraints(
         conversion=type_conversion,
         # a value read from a file has to be one the command line would have accepted
-        allowed={action.dest: action.choices for action in parser._actions if action.choices},  # ruff: ignore[private-member-access]
+        allowed={
+            action.dest: action.choices
+            for action in parser._actions  # ruff: ignore[private-member-access]  # argparse lists them nowhere else
+            if action.choices
+        },
         accepts=_accepted_types(parser, info.opt),
     )
-    res = []
-    for pyproject_toml in info.opt.inputs:
-        raw_pyproject_toml, eol = _read_input(parser, pyproject_toml)
-        source = _display_name(pyproject_toml)
+    configs = []
+    for toml_path in info.opt.inputs:
+        raw, eol = _read_input(parser, toml_path)
+        source = _display_name(toml_path)
         try:
-            config = info.settings_in(raw_pyproject_toml, info.override_cli_from_section)
+            config = info.settings_in(raw, info.override_cli_from_section)
         except SyntaxError:
             # the formatter reads the same source next and reports on it in its own words, against
             # the file rather than against one setting
@@ -187,15 +195,15 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
         if explicit_config is not None:
             shared = _load_shared_config(parser, info, explicit_config)
             _apply_config(parser, override_opt, shared, str(explicit_config), held)
-        elif found := _find_config_file(info.prog, pyproject_toml.parent if pyproject_toml is not None else Path.cwd()):
+        elif found := _find_config_file(info.prog, toml_path.parent if toml_path is not None else Path.cwd()):
             _apply_config(parser, override_opt, _load_shared_config(parser, info, found), str(found), held)
         if config is not None:
             _apply_config(parser, override_opt, config, source, held)
 
-        res.append(
+        configs.append(
             _Config(
-                toml_filename=pyproject_toml,
-                toml=raw_pyproject_toml,
+                toml_filename=toml_path,
+                toml=raw,
                 stdout=info.opt.stdout,
                 check=info.opt.check,
                 no_print_diff=info.opt.no_print_diff,
@@ -204,7 +212,7 @@ def _cli_args(info: TOMLFormatter[T], args: Sequence[str]) -> list[_Config[T]]:
             )
         )
 
-    return res
+    return configs
 
 
 def _read_input(parser: ArgumentParser, path: Path | None) -> tuple[str, str]:
@@ -228,8 +236,8 @@ _NON_FORMAT_KEYS = frozenset({"inputs", "stdout", "check", "no_print_diff", "con
 class _Constraints:
     """What a setting has to satisfy, whether it was given on the command line or read from a file."""
 
-    conversion: Mapping[str, Callable[[Any], Any]]
-    allowed: Mapping[str, Iterable[Any]]
+    conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
+    allowed: Mapping[str, Iterable[TomlValue]]
     accepts: Mapping[str, type]
 
 
@@ -244,13 +252,15 @@ def _accepted_types(parser: ArgumentParser, opt: T) -> Mapping[str, type]:
     return {key: named.get(key) or _written_as(parser.get_default(key)) for key in vars(opt).keys() - _NON_FORMAT_KEYS}
 
 
-def _written_as(default: object) -> type:
+def _written_as(default: TomlValue) -> type:
     if isinstance(default, bool):
         return bool
     return list if isinstance(default, list) else str
 
 
-def _apply_config(parser: ArgumentParser, opt: T, config: dict[str, Any], source: str, held: _Constraints) -> None:
+def _apply_config(
+    parser: ArgumentParser, opt: T, config: dict[str, TomlValue], source: str, held: _Constraints
+) -> None:
     """Read the settings a TOML table holds, under the same constraints the command line applies."""
     known = set(vars(opt).keys()) - _NON_FORMAT_KEYS
     for key, raw in config.items():
@@ -280,25 +290,30 @@ def _find_config_file(prog: str, start: Path) -> Path | None:
         current = parent
 
 
-def _load_shared_config(parser: ArgumentParser, info: TOMLFormatter[T], path: Path) -> dict[str, Any]:
+def _load_shared_config(parser: ArgumentParser, info: TOMLFormatter[T], path: Path) -> dict[str, TomlValue]:
     try:
         return info.settings_in(path.read_text(encoding="utf-8"), ()) or {}
     except (SyntaxError, ValueError, UnicodeDecodeError) as exc:
         parser.error(f"{path}: {exc}")
 
 
-def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[Any], Any]]]:
-    """:param of: the formatter to build the CLI for :return: parser and type conversion mapping."""
+def build_cli(formatter: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]:
+    """
+    Build the command line the formatter is driven by.
+
+    :param formatter: the formatter to build the CLI for
+    :return: the parser, and what reads each setting the parser holds
+    """
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter,
-        prog=of.prog,
+        prog=formatter.prog,
     )
     parser.add_argument(
         "-V",
         "--version",
         action="version",
-        help="print package version of pyproject_fmt",
-        version=f"%(prog)s ({version(of.prog)})",
+        help=f"print package version of {formatter.prog}",
+        version=f"%(prog)s ({version(formatter.prog)})",
     )
 
     mode_group = parser.add_argument_group("run mode")
@@ -317,7 +332,7 @@ def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callab
         "--config",
         type=Path,
         default=None,
-        help=f"path to a shared {of.prog}.toml config file",
+        help=f"path to a shared {formatter.prog}.toml config file",
         metavar="path",
     )
 
@@ -329,17 +344,17 @@ def build_cli(of: TOMLFormatter[T]) -> tuple[ArgumentParser, Mapping[str, Callab
     format_group = parser.add_argument_group("formatting behavior", conflict_handler="resolve")
     for setting in SHARED_SETTINGS:
         setting.add_to(format_group)
-    of.add_format_flags(format_group)
-    type_conversion: Mapping[str, Callable[[Any], Any]] = {
-        a.dest: cast("Callable[[Any], Any]", a.type)
-        for a in format_group._actions  # ruff: ignore[private-member-access]
-        if a.type and a.dest
+    formatter.add_format_flags(format_group)
+    type_conversion: Mapping[str, Callable[[TomlValue], TomlValue]] = {
+        action.dest: cast("Callable[[TomlValue], TomlValue]", action.type)
+        for action in format_group._actions  # ruff: ignore[private-member-access]  # argparse lists them nowhere else
+        if action.type and action.dest
     }
-    msg = "pyproject.toml file(s) to format, use '-' to read from stdin"
+    msg = f"{formatter.filename} file(s) to format, use '-' to read from stdin"
     parser.add_argument(
         "inputs",
         nargs="+",
-        type=partial(_toml_path_creator, of.filename),
+        type=partial(_toml_path_creator, formatter.filename),
         help=msg,
     )
     return parser, type_conversion
@@ -350,10 +365,10 @@ _COUNT_LIMIT: Final[int] = 10_000
 formatter to build a string nothing can hold."""
 
 
-def count_argument(value: str | int) -> int:
+def count_argument(value: TomlValue) -> int:
     """Read a count of columns or spaces, which the formatter holds as an unsigned number."""
     # `True` is an integer to Python, and a file that writes one there names no count
-    if isinstance(value, bool):
+    if isinstance(value, bool) or not isinstance(value, (str, int)):
         msg = f"invalid count: {value!r}"
         raise ArgumentTypeError(msg)
     try:
@@ -370,7 +385,7 @@ def count_argument(value: str | int) -> int:
     return count
 
 
-def spacing_argument(value: str) -> str:
+def spacing_argument(value: TomlValue) -> str:
     r"""Convert literal ``\n`` sequences to actual newlines."""
     if not isinstance(value, str):
         msg = f"invalid spacing: {value!r}"
@@ -378,14 +393,15 @@ def spacing_argument(value: str) -> str:
     return value.replace("\\n", "\n")
 
 
-def list_argument(value: str | list[str]) -> list[str]:
+def list_argument(value: TomlValue) -> list[str]:
     """Convert a comma-separated string or list to a list of stripped strings."""
     if isinstance(value, str):
         return [held for part in _split_outside_quotes(value) if (held := part.strip())]
-    if not all(isinstance(held, str) for held in value):
+    read = [held for held in value if isinstance(held, str)] if isinstance(value, Sequence) else []
+    if not isinstance(value, Sequence) or len(read) != len(value):
         msg = f"invalid list: {value!r}, every entry names one thing"
         raise ArgumentTypeError(msg)
-    return value
+    return read
 
 
 def _split_outside_quotes(value: str) -> Iterator[str]:
@@ -423,7 +439,7 @@ _ESCAPES: Final[Mapping[str, str]] = {
 }
 
 
-def name_list_argument(value: str | list[str]) -> list[str]:
+def name_list_argument(value: TomlValue) -> list[str]:
     """Read a list of literal names, where a name TOML quotes may hold a comma or a space of its own."""
     if not isinstance(value, str):
         return list_argument(value)
@@ -432,7 +448,8 @@ def name_list_argument(value: str | list[str]) -> list[str]:
 
 def _read_name(name: str) -> str:
     """Read the one name the text writes, in whichever of TOML's forms it wrote it."""
-    if len(name) < 2 or name[0] != name[-1] or name[0] not in {'"', "'"}:  # ruff: ignore[magic-value-comparison]
+    quoted = len(name) >= 2 and name[0] == name[-1]  # ruff: ignore[magic-value-comparison]  # an open and a close
+    if not quoted or name[0] not in {'"', "'"}:
         return name
     body = name[1:-1]
     if name[0] == "'":
@@ -468,9 +485,9 @@ class Setting:
     help: str
     #: The TOML type a file writes the setting as.
     takes: type
-    default: Any
+    default: TomlValue
     #: What reads the written value, where the setting takes more than the type it is written as.
-    convert: Callable[[Any], Any] | None = None
+    convert: Callable[[TomlValue], TomlValue] | None = None
     choices: tuple[str, ...] | None = None
     metavar: str | None = None
 
@@ -480,14 +497,13 @@ class Setting:
 
     def add_to(self, parser: ArgumentGroup) -> None:
         """Register the flag that reads this setting from the command line."""
-        held: dict[str, Any] = {"default": self.default, "help": self.help}
+        action = parser.add_argument(self.flag, default=self.default, help=self.help)
         if self.convert is not None:
-            held["type"] = self.convert
+            action.type = self.convert
         if self.choices is not None:
-            held["choices"] = list(self.choices)
+            action.choices = list(self.choices)
         if self.metavar is not None:
-            held["metavar"] = self.metavar
-        parser.add_argument(self.flag, **held)
+            action.metavar = self.metavar
 
 
 SHARED_SETTINGS: Final[tuple[Setting, ...]] = (
@@ -533,7 +549,7 @@ def _toml_path_creator(filename: str, argument: str) -> Path | None:
 
     :param filename: name of the toml file
     :param argument: the string argument passed in
-    :return: the pyproject.toml path or None if stdin
+    :return: the file path, or None for stdin
     :raises ArgumentTypeError: invalid argument
     """
     if argument == "-":
@@ -566,15 +582,15 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
     try:
         formatted = info.format(config.toml, config.opt)
     except ValueError as exc:  # the formatter rejected the content, e.g. an invalid project.version
-        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)  # ruff: ignore[print]
+        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)
         return True
     before = config.toml
     changed = before != formatted
     if config.toml_filename is None or config.stdout:  # when reading from stdin or writing to stdout, print new format
-        print(formatted, end="")  # ruff: ignore[print]
+        print(formatted, end="")
         return changed
 
-    if before != formatted and not config.check:
+    if changed and not config.check:
         config.toml_filename.write_text(formatted, encoding="utf-8", newline=config.eol)
     if config.no_print_diff:
         return changed
@@ -585,15 +601,15 @@ def _handle_one(info: TOMLFormatter[T], config: _Config[T]) -> bool:
 
     if diff:
         diff = _color_diff(diff)
-        print("\n".join(diff))  # print diff on change  # ruff: ignore[print]
+        print("\n".join(diff))
     else:
-        print(f"no change for {name}")  # ruff: ignore[print]
+        print(f"no change for {name}")
     return changed
 
 
-GREEN = "\u001b[32m"
-RED = "\u001b[31m"
-RESET = "\u001b[0m"
+_GREEN: Final[str] = "\u001b[32m"
+_RED: Final[str] = "\u001b[31m"
+_RESET: Final[str] = "\u001b[0m"
 
 
 def _color_diff(diff: Iterable[str]) -> Iterable[str]:
@@ -607,9 +623,9 @@ def _color_diff(diff: Iterable[str]) -> Iterable[str]:
         return
     for line in diff:
         if line.startswith("+"):
-            yield f"{GREEN}{line}{RESET}"
+            yield f"{_GREEN}{line}{_RESET}"
         elif line.startswith("-"):
-            yield f"{RED}{line}{RESET}"
+            yield f"{_RED}{line}{_RESET}"
         else:
             yield line
 
@@ -625,6 +641,7 @@ __all__ = [
     "FmtNamespace",
     "Setting",
     "TOMLFormatter",
+    "TomlValue",
     "_build_cli",
     "build_cli",
     "list_argument",

@@ -62,7 +62,7 @@ def run(*command: str, at: Path | None = None) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison]
+    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison]  # the script name and one package
         print("Usage: check_sdist.py <package>")
         sys.exit(1)
     main(sys.argv[1])

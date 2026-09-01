@@ -1,4 +1,4 @@
-"""Configuration for documentation build."""  # ruff: ignore[implicit-namespace-package]
+"""Configuration for documentation build."""  # ruff: ignore[implicit-namespace-package]  # sphinx loads it by path
 
 from __future__ import annotations
 

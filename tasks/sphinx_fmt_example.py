@@ -23,8 +23,7 @@ class FmtExample(Directive):
 
     def run(self) -> list[nodes.Node]:
         module = self.state.document.settings.env.config.fmt_example_module
-        before = "\n".join(self.content)
-        text = render_example(module, before, self.options.get("config", ""))
+        text = render_example(module, "\n".join(self.content), self.options.get("config", ""))
         node = nodes.literal_block(text, text)
         node["language"] = "toml"
         return [node]
@@ -34,3 +33,9 @@ def setup(app: Sphinx) -> dict[str, bool]:
     app.add_config_value("fmt_example_module", "", "env")
     app.add_directive("fmt-example", FmtExample)
     return {"parallel_read_safe": True, "parallel_write_safe": True}
+
+
+__all__ = [
+    "FmtExample",
+    "setup",
+]

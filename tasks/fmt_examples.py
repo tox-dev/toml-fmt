@@ -8,13 +8,15 @@ exact output the installed formatter produces and can never drift from it.
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final, TypeAlias
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-# Default Settings kwargs per formatter, mirroring each package's CLI defaults.
-DEFAULTS: Final[Mapping[str, Mapping[str, Any]]] = {
+Setting: TypeAlias = bool | int | str | tuple[int, int] | tuple[str, ...]
+
+# each formatter's own CLI defaults, so an example renders the way the tool renders it unasked
+DEFAULTS: Final[Mapping[str, Mapping[str, Setting]]] = {
     "pyproject_fmt": {
         "column_width": 120,
         "indent": 2,
@@ -74,8 +76,8 @@ def format_example(module: str, before: str, config: str = "") -> str:
     return lib.format_toml(before, lib.Settings(**defaults))
 
 
-def _parse_config(config: str, defaults: Mapping[str, Any]) -> dict[str, Any]:
-    overrides: dict[str, Any] = {}
+def _parse_config(config: str, defaults: Mapping[str, Setting]) -> dict[str, Setting]:
+    overrides: dict[str, Setting] = {}
     for token in config.split():
         key, sep, raw = token.partition("=")
         if not sep or key not in defaults:
@@ -85,7 +87,7 @@ def _parse_config(config: str, defaults: Mapping[str, Any]) -> dict[str, Any]:
     return overrides
 
 
-def _coerce(raw: str, default: Any) -> Any:
+def _coerce(raw: str, default: Setting) -> Setting:
     if isinstance(default, bool):
         return raw == "true"
     if isinstance(default, int):
@@ -96,3 +98,11 @@ def _coerce(raw: str, default: Any) -> Any:
     if isinstance(default, (tuple, list)):
         return tuple(raw.split(","))
     return raw.replace("\\n", "\n")
+
+
+__all__ = [
+    "DEFAULTS",
+    "Setting",
+    "format_example",
+    "render_example",
+]

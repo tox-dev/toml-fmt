@@ -25,6 +25,9 @@ lint.per-file-ignores."**/build_backend.py" = [
   "INP001", # is not a namespace
   "T201",   # the CLI reports what it patched
 ]
+lint.per-file-ignores."**/src/toml_fmt_common/__init__.py" = [
+  "T201", # the CLI reports what it formatted on stdout
+]
 lint.per-file-ignores."**/tests/**/*.py" = [
   "D",       # don't care about documentation in tests
   "FBT",     # don't care about booleans as positional arguments in tests

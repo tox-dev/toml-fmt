@@ -277,7 +277,7 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     assert not err
 
 
-def test_pyproject_ftm_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_pyproject_fmt_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     txt = """
     [project]
     requires-python = "==3.12"
@@ -304,7 +304,7 @@ def test_pyproject_ftm_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture
     assert not err
 
 
-def test_pyproject_ftm_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_pyproject_fmt_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     txt = """\
     [project]
     requires-python = "==3.12"

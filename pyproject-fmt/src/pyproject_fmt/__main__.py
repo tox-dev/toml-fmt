@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser, ArgumentTypeError
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 
 from pyproject_fmt._lib import Settings, format_toml, settings_in
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, run
+from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, TomlValue, build_cli, run
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -43,7 +43,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Filename operating on."""
         return "pyproject.toml"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
+    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
         """
         Additional formatter  config.
 
@@ -59,26 +59,6 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             help=msg,
         )
 
-        def _version_argument(got: str) -> tuple[int, int]:
-            parts = got.split(".")
-            if len(parts) != 2:  # ruff: ignore[magic-value-comparison]
-                err = f"invalid version: {got}, must be e.g. 3.14"
-                raise ArgumentTypeError(err)
-            try:
-                major, minor = int(parts[0]), int(parts[1])
-            except ValueError as exc:
-                err = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
-                raise ArgumentTypeError(err) from exc
-            # the classifiers this generates name Python 3, and the formatter holds a minor as a byte
-            if major != 3 or not 0 <= minor <= _MINOR_LIMIT:  # ruff: ignore[magic-value-comparison]
-                err = f"invalid version: {got}, must name a Python 3 minor from 3.0 to 3.{_MINOR_LIMIT}"
-                raise ArgumentTypeError(err)
-            # a window that ends before it starts names no release, and would drop every classifier
-            if (major, minor) < _MIN_SUPPORTED_PYTHON:
-                err = f"invalid version: {got}, must not precede {'.'.join(str(x) for x in _MIN_SUPPORTED_PYTHON)}"
-                raise ArgumentTypeError(err)
-            return major, minor
-
         parser.add_argument(
             "--max-supported-python",
             metavar="major.minor",
@@ -92,7 +72,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Path where config overrides live."""
         return "tool", "pyproject-fmt"
 
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:  # ruff: ignore[no-self-use]
+    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
         """
         Read the settings the text writes under a table, with the parser that reads the file itself.
 
@@ -102,7 +82,7 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """
         return settings_in(text, list(path))
 
-    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]
+    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
         """
         Perform the formatting.
 
@@ -125,6 +105,27 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
             skip_wrap_for_keys=opt.skip_wrap_for_keys,
         )
         return format_toml(text, settings)
+
+
+def _version_argument(got: str) -> tuple[int, int]:
+    parts = got.split(".")
+    if len(parts) != 2:  # ruff: ignore[magic-value-comparison]  # a major and a minor
+        msg = f"invalid version: {got}, must be e.g. 3.14"
+        raise ArgumentTypeError(msg)
+    try:
+        major, minor = int(parts[0]), int(parts[1])
+    except ValueError as exc:
+        msg = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
+        raise ArgumentTypeError(msg) from exc
+    # the classifiers this generates name Python 3, and the formatter holds a minor as a byte
+    if major != 3 or not 0 <= minor <= _MINOR_LIMIT:  # ruff: ignore[magic-value-comparison]  # Python 3 only
+        msg = f"invalid version: {got}, must name a Python 3 minor from 3.0 to 3.{_MINOR_LIMIT}"
+        raise ArgumentTypeError(msg)
+    # a window that ends before it starts names no release, and would drop every classifier
+    if (major, minor) < _MIN_SUPPORTED_PYTHON:
+        msg = f"invalid version: {got}, must not precede {'.'.join(str(x) for x in _MIN_SUPPORTED_PYTHON)}"
+        raise ArgumentTypeError(msg)
+    return major, minor
 
 
 def runner(args: Sequence[str] | None = None) -> int:

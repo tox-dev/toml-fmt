@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, name_list_argument, run
+from toml_fmt_common import (
+    ArgumentGroup,
+    FmtNamespace,
+    TOMLFormatter,
+    TomlValue,
+    build_cli,
+    name_list_argument,
+    run,
+)
 
 from ._lib import Settings, format_toml, settings_in
 
@@ -36,7 +44,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Filename operating on."""
         return "tox.toml"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
+    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
         """
         Additional formatter  config.
 
@@ -55,7 +63,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """Path where config overrides live."""
         return ("tox-toml-fmt",)
 
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:  # ruff: ignore[no-self-use]
+    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
         """
         Read the settings the text writes under a table, with the parser that reads the file itself.
 
@@ -65,7 +73,7 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
         """
         return settings_in(text, list(path))
 
-    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]
+    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
         """
         Perform the formatting.
 
