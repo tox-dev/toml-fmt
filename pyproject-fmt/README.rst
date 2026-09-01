@@ -42,6 +42,10 @@ Python API
 
     exit_code = run(["path/to/pyproject.toml"])
 
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for settings and
+the `formatting reference <https://pyproject-fmt.readthedocs.io/en/latest/formatting.html>`_ for the rules applied to
+each table.
+
 Project settings
 ----------------
 
@@ -163,8 +167,8 @@ Patterns match dotted key segments:
 
 A quoted ``"*"`` segment names a literal asterisk.
 
-This reference separates file-wide rules from the key order and array policy for recognized tables. See
-:doc:`configuration` for available settings.
+This reference separates file-wide rules from the key order and array policy for recognized tables. See the
+`configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for available settings.
 
 General Formatting
 ------------------
@@ -374,6 +378,8 @@ Root groups have one blank line between them. Child tables stay adjacent unless 
    [tool.ruff.lint]
    select = [ "E", "W" ]
 
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for table
+overrides and spacing.
 
 .. _array-of-tables:
 
@@ -1733,6 +1739,8 @@ order.
 
 The formatter's own configuration table.
 
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for what each key
+controls.
 
 Keys follow the documented configuration sequence. The ``expand_tables``, ``collapse_tables``, and
 ``skip_wrap_for_keys`` lists sort and drop duplicate strings.

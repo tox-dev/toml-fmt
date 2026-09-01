@@ -1,8 +1,8 @@
 Formatting Rules
 ================
 
-This reference separates file-wide rules from the key order and array policy for recognized tables. See
-:doc:`configuration` for available settings.
+This reference separates file-wide rules from the key order and array policy for recognized tables. See the
+`configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for available settings.
 
 General Formatting
 ------------------
@@ -161,7 +161,8 @@ Root groups have one blank line between them. Child tables stay adjacent unless 
     [tool.ruff.lint]
     select = ["E", "W"]
 
-See :doc:`configuration` for table overrides and spacing.
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for table
+overrides and spacing.
 
 .. _array-of-tables:
 
@@ -1435,7 +1436,8 @@ sorts; changelog entries retain display order.
 
 The formatter's own configuration table.
 
-See :doc:`configuration` for what each key controls.
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for what each key
+controls.
 
 Keys follow the documented configuration sequence. The ``expand_tables``, ``collapse_tables``, and
 ``skip_wrap_for_keys`` lists sort and drop duplicate strings.

@@ -71,4 +71,6 @@ Python API
    configuration
    formatting
 
-See :doc:`configuration` for settings and :doc:`formatting` for the rules applied to each table.
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for settings and
+the `formatting reference <https://pyproject-fmt.readthedocs.io/en/latest/formatting.html>`_ for the rules applied to
+each table.

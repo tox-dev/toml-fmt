@@ -42,6 +42,10 @@ Python API
 
     exit_code = run(["path/to/tox.toml"])
 
+See the `configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for settings and
+the `formatting reference <https://tox-toml-fmt.readthedocs.io/en/latest/formatting.html>`_ for the rules applied to each
+table.
+
 Project settings
 ----------------
 
@@ -114,8 +118,8 @@ String wrapping
 Command-line interface
 ----------------------
 
-This reference separates file-wide rules from tox-specific ordering and normalization. See :doc:`configuration` for
-available settings.
+This reference separates file-wide rules from tox-specific ordering and normalization. See the
+`configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for available settings.
 
 General Formatting
 ------------------
@@ -569,6 +573,8 @@ The same order controls ``[env.NAME]`` tables. ``--pin-env`` moves both the list
    [env.lint]
    description = "lint"
 
+See the `configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for how to set
+``pin-env`` via the config file or CLI.
 
 ``use_develop`` Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~

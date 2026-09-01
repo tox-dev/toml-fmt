@@ -332,6 +332,44 @@ fn test_settings_new() {
     assert_eq!(settings.indent, 4);
 }
 
+#[test]
+fn test_settings_new_rejects_an_unexpected_keyword() -> PyResult<()> {
+    Python::attach(|python| {
+        let kwargs = PyDict::new(python);
+        kwargs.set_item("unexpected", true)?;
+
+        let error = Settings::new(Some(&kwargs))
+            .err()
+            .map(|error| error.to_string())
+            .unwrap_or_default();
+        assert_eq!(error, "TypeError: unexpected keyword argument: 'unexpected'");
+        Ok(())
+    })
+}
+
+#[test]
+fn test_settings_new_requires_keyword_arguments() {
+    let error = Settings::new(None)
+        .err()
+        .map(|error| error.to_string())
+        .unwrap_or_default();
+
+    assert_eq!(error, "TypeError: missing keyword argument: 'column_width'");
+}
+
+#[test]
+fn test_settings_new_requires_every_keyword() {
+    Python::attach(|python| {
+        let kwargs = PyDict::new(python);
+
+        let error = Settings::new(Some(&kwargs))
+            .err()
+            .map(|error| error.to_string())
+            .unwrap_or_default();
+        assert_eq!(error, "TypeError: missing keyword argument: 'column_width'");
+    });
+}
+
 /// A pin names an environment and a pattern names a key, so a list holding neither is told.
 #[test]
 fn test_settings_reject_a_name_written_as_nothing() {

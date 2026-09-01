@@ -1,8 +1,8 @@
 Formatting Rules
 ================
 
-This reference separates file-wide rules from tox-specific ordering and normalization. See :doc:`configuration` for
-available settings.
+This reference separates file-wide rules from tox-specific ordering and normalization. See the
+`configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for available settings.
 
 General Formatting
 ------------------
@@ -341,7 +341,8 @@ The same order controls ``[env.NAME]`` tables. ``--pin-env`` moves both the list
     [env.type]
     description = "type"
 
-See :doc:`configuration` for how to set ``pin-env`` via the config file or CLI.
+See the `configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for how to set
+``pin-env`` via the config file or CLI.
 
 ``use_develop`` Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~
