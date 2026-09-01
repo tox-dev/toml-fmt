@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import subprocess  # ruff: ignore[suspicious-subprocess-import]  # the test runs the installed CLI
+import asyncio
 import sys
 from pathlib import Path
 
@@ -15,6 +15,12 @@ import pytest
     ],
 )
 def test_help_names_the_program(command: list[str]) -> None:
-    got = subprocess.check_output([*command, "--help"], text=True)
+    async def read_help() -> str:
+        process = await asyncio.create_subprocess_exec(*command, "--help", stdout=asyncio.subprocess.PIPE)
+        stdout, _ = await process.communicate()
+        assert process.returncode == 0
+        return stdout.decode()
+
+    got = asyncio.run(read_help())
 
     assert got.startswith("usage: tox-toml-fmt ")

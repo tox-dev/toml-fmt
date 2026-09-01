@@ -1,4 +1,4 @@
-"""Main entry point for the formatter."""
+"""Keep CLI parsing in Python and TOML rewriting in Rust."""
 
 from __future__ import annotations
 
@@ -13,42 +13,38 @@ if TYPE_CHECKING:
 
 
 _MINOR_LIMIT: Final[int] = 255
-_MIN_SUPPORTED_PYTHON: Final[tuple[int, int]] = (3, 10)
-"""What a project supports where it says nothing about it, which is also the oldest release the
-formatter writes a classifier for."""
+_PYTHON_MAJOR: Final[int] = 3
+_MIN_SUPPORTED_PYTHON: Final[tuple[int, int]] = (_PYTHON_MAJOR, 10)
 
 
-class PyProjectFmtNamespace(FmtNamespace):
-    """Formatting arguments."""
+class _PyProjectFmtNamespace(FmtNamespace):
+    """Give project-specific argparse fields concrete types."""
 
     keep_full_version: bool
     max_supported_python: tuple[int, int]
     generate_python_version_classifiers: bool
 
 
-class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
-    """Format pyproject.toml."""
+class _PyProjectFormatter(TOMLFormatter[_PyProjectFmtNamespace]):
+    """Bind the shared CLI to the pyproject-fmt Rust extension."""
 
     def __init__(self) -> None:
-        """Create a formatter."""
-        super().__init__(PyProjectFmtNamespace())
+        """Start with the namespace argparse fills for each input."""
+        super().__init__(_PyProjectFmtNamespace())
 
     @property
     def prog(self) -> str:
-        """Program name."""
+        """Match the distribution name used for version lookup."""
         return "pyproject-fmt"
 
     @property
     def filename(self) -> str:
-        """Filename operating on."""
+        """Restrict positional directories to ``pyproject.toml``."""
         return "pyproject.toml"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
-        """
-        Additional formatter  config.
-
-        :param parser: parser to operate on.
-        """
+    @staticmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
+        """Add project metadata options outside the shared formatter settings."""
         msg = "keep full dependency versions - do not remove redundant .0 from versions"
         parser.add_argument("--keep-full-version", action="store_true", help=msg)
         msg = "do not generate Python version classifiers based on requires-python"
@@ -69,27 +65,17 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
-        """Path where config overrides live."""
+        """Keep per-file overrides under ``tool.pyproject-fmt``."""
         return "tool", "pyproject-fmt"
 
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
-        """
-        Read the settings the text writes under a table, with the parser that reads the file itself.
-
-        :param text: the TOML source to read
-        :param path: the table the settings are written under
-        :return: the settings, or ``None`` where the text writes no such table
-        """
+    @staticmethod
+    def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
+        """Use the Rust parser so TOML 1.1 settings remain visible."""
         return settings_in(text, list(path))
 
-    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]  # the formatter API declares it a method
-        """
-        Perform the formatting.
-
-        :param text: content to operate on
-        :param opt: formatter config
-        :return: formatted text
-        """
+    @staticmethod
+    def format(text: str, opt: _PyProjectFmtNamespace) -> str:
+        """Keep Python responsible for CLI state and Rust responsible for TOML edits."""
         settings = Settings(
             column_width=opt.column_width,
             indent=opt.indent,
@@ -108,20 +94,24 @@ class PyProjectFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
 
 def _version_argument(got: str) -> tuple[int, int]:
-    parts = got.split(".")
-    if len(parts) != 2:  # ruff: ignore[magic-value-comparison]  # a major and a minor
-        msg = f"invalid version: {got}, must be e.g. 3.14"
-        raise ArgumentTypeError(msg)
     try:
-        major, minor = int(parts[0]), int(parts[1])
+        major_text, minor_text = got.split(".")
+    except ValueError as exc:
+        msg = f"invalid version: {got}, must be e.g. 3.14"
+        raise ArgumentTypeError(msg) from exc
+    try:
+        major, minor = int(major_text), int(minor_text)
     except ValueError as exc:
         msg = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
         raise ArgumentTypeError(msg) from exc
     # the classifiers this generates name Python 3, and the formatter holds a minor as a byte
-    if major != 3 or not 0 <= minor <= _MINOR_LIMIT:  # ruff: ignore[magic-value-comparison]  # Python 3 only
-        msg = f"invalid version: {got}, must name a Python 3 minor from 3.0 to 3.{_MINOR_LIMIT}"
+    if major != _PYTHON_MAJOR or not 0 <= minor <= _MINOR_LIMIT:
+        msg = (
+            f"invalid version: {got}, must name a Python {_PYTHON_MAJOR} minor "
+            f"from {_PYTHON_MAJOR}.0 to {_PYTHON_MAJOR}.{_MINOR_LIMIT}"
+        )
         raise ArgumentTypeError(msg)
-    # a window that ends before it starts names no release, and would drop every classifier
+    # A window that ends before it starts names no release and would empty the classifier set.
     if (major, minor) < _MIN_SUPPORTED_PYTHON:
         msg = f"invalid version: {got}, must not precede {'.'.join(str(x) for x in _MIN_SUPPORTED_PYTHON)}"
         raise ArgumentTypeError(msg)
@@ -130,19 +120,20 @@ def _version_argument(got: str) -> tuple[int, int]:
 
 def runner(args: Sequence[str] | None = None) -> int:
     """
-    Run the formatter.
+    Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
 
-    :param args: CLI arguments
-    :return: exit code
+    Return 1 after a change or rejection, and 0 when inputs match.
     """
-    return run(PyProjectFormatter(), args)
+    return run(_PyProjectFormatter(), args)
 
 
-def _build_our_cli() -> ArgumentParser:
-    return build_cli(PyProjectFormatter())[0]  # pragma: no cover
+def build_parser() -> ArgumentParser:
+    """Build the parser without reading arguments, for documentation tooling."""
+    return build_cli(_PyProjectFormatter())[0]
 
 
 __all__ = [
+    "build_parser",
     "runner",
 ]
 

@@ -64,7 +64,7 @@ Command line interface
 ----------------------
 
 .. sphinx_argparse_cli::
-    :module: tox_toml_fmt.__main__
-    :func: _build_our_cli
+    :module: tox_toml_fmt
+    :func: build_parser
     :prog: tox-toml-fmt
     :title:

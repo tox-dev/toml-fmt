@@ -1,5 +1,3 @@
-"""Build a package the way a release builds it, then use it the way a packager does."""
-
 from __future__ import annotations
 
 import subprocess
@@ -7,9 +5,10 @@ import sys
 from pathlib import Path
 from tarfile import open as tar_open
 from tempfile import TemporaryDirectory
+from typing import Final
 
-_ROOT = Path(__file__).resolve().parents[1]
-_CARRIED = "toml-fmt-common/src/toml_fmt_common/__init__.py"
+_ROOT: Final[Path] = Path(__file__).resolve().parents[1]
+_CARRIED: Final[str] = "toml-fmt-common/src/toml_fmt_common/__init__.py"
 
 
 def main(package: str) -> None:
@@ -62,7 +61,9 @@ def run(*command: str, at: Path | None = None) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison]  # the script name and one package
+    try:
+        _, package = sys.argv
+    except ValueError:
         print("Usage: check_sdist.py <package>")
         sys.exit(1)
-    main(sys.argv[1])
+    main(package)

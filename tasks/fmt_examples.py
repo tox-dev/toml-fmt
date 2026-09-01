@@ -1,9 +1,4 @@
-"""Render TOML formatting examples by running the local formatter.
-
-Shared by the ``fmt-example`` Sphinx directive (live HTML build) and
-``generate_readme.py`` (static expansion for PyPI), so both surfaces show the
-exact output the installed formatter produces and can never drift from it.
-"""
+"""Render docs examples with the local extension so HTML and PyPI show the same output."""
 
 from __future__ import annotations
 
@@ -13,10 +8,10 @@ from typing import TYPE_CHECKING, Final, TypeAlias
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-Setting: TypeAlias = bool | int | str | tuple[int, int] | tuple[str, ...]
+_Setting: TypeAlias = bool | int | str | tuple[int, int] | tuple[str, ...]
 
-# each formatter's own CLI defaults, so an example renders the way the tool renders it unasked
-DEFAULTS: Final[Mapping[str, Mapping[str, Setting]]] = {
+# Match the CLI defaults so examples need no duplicate configuration.
+_DEFAULTS: Final[Mapping[str, Mapping[str, _Setting]]] = {
     "pyproject_fmt": {
         "column_width": 120,
         "indent": 2,
@@ -46,38 +41,23 @@ DEFAULTS: Final[Mapping[str, Mapping[str, Setting]]] = {
 
 
 def render_example(module: str, before: str, config: str = "") -> str:
-    """
-    Format ``before`` with ``module``'s formatter and render the example text.
-
-    :param module: formatter package, ``pyproject_fmt`` or ``tox_toml_fmt``
-    :param before: the input TOML the author wrote
-    :param config: ``key=value`` overrides, space-separated (e.g. ``table_format=long``)
-    :return: a ``# Before`` / ``# After`` block, or a single block when already formatted
-    """
+    """Use live formatter output in docs; omit labels when the input needs no change."""
     before = before.strip("\n")
-    after = format_example(module, before, config).strip("\n")
+    after = _format_example(module, before, config).strip("\n")
     if after == before:
         return after
     return f"# Before\n{before}\n\n# After\n{after}"
 
 
-def format_example(module: str, before: str, config: str = "") -> str:
-    """
-    Format ``before`` with ``module``'s formatter.
-
-    :param module: formatter package, ``pyproject_fmt`` or ``tox_toml_fmt``
-    :param before: the input TOML the author wrote
-    :param config: ``key=value`` overrides, space-separated
-    :return: the formatted TOML
-    """
+def _format_example(module: str, before: str, config: str = "") -> str:
     lib = importlib.import_module(f"{module}._lib")
-    defaults = dict(DEFAULTS[module])
+    defaults = dict(_DEFAULTS[module])
     defaults.update(_parse_config(config, defaults))
     return lib.format_toml(before, lib.Settings(**defaults))
 
 
-def _parse_config(config: str, defaults: Mapping[str, Setting]) -> dict[str, Setting]:
-    overrides: dict[str, Setting] = {}
+def _parse_config(config: str, defaults: Mapping[str, _Setting]) -> dict[str, _Setting]:
+    overrides: dict[str, _Setting] = {}
     for token in config.split():
         key, sep, raw = token.partition("=")
         if not sep or key not in defaults:
@@ -87,7 +67,7 @@ def _parse_config(config: str, defaults: Mapping[str, Setting]) -> dict[str, Set
     return overrides
 
 
-def _coerce(raw: str, default: Setting) -> Setting:
+def _coerce(raw: str, default: _Setting) -> _Setting:
     if isinstance(default, bool):
         return raw == "true"
     if isinstance(default, int):
@@ -101,8 +81,5 @@ def _coerce(raw: str, default: Setting) -> Setting:
 
 
 __all__ = [
-    "DEFAULTS",
-    "Setting",
-    "format_example",
     "render_example",
 ]

@@ -23,3 +23,8 @@ def tox_add_env_config(env_conf: EnvConfigSet, state: State) -> None:
     ):
         return
     subprocess.check_call(["tox", "run", "-e", "readme"], cwd=readme.parent, env=os.environ | {_ENV_VAR: "1"})
+
+
+__all__ = [
+    "tox_add_env_config",
+]

@@ -4,7 +4,7 @@ import os
 import sys
 from argparse import ArgumentTypeError
 from io import StringIO
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, ClassVar, Final
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
@@ -13,12 +13,12 @@ else:  # pragma: <3.11 cover
 
 import pytest
 
+import toml_fmt_common
 from toml_fmt_common import (
     ArgumentGroup,
     FmtNamespace,
     TOMLFormatter,
     TomlValue,
-    _build_cli,
     build_cli,
     count_argument,
     list_argument,
@@ -41,9 +41,11 @@ class DumpNamespace(FmtNamespace):
 
 
 class Dumb(TOMLFormatter[DumpNamespace]):
+    last_format_opt: ClassVar[DumpNamespace | None] = None
+
     def __init__(self) -> None:
         super().__init__(DumpNamespace())
-        self.last_format_opt: DumpNamespace | None = None
+        Dumb.last_format_opt = None
 
     @property
     def prog(self) -> str:
@@ -57,12 +59,14 @@ class Dumb(TOMLFormatter[DumpNamespace]):
     def override_cli_from_section(self) -> tuple[str, ...]:
         return "start", "sub"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]  # the API says method
+    @staticmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
         parser.add_argument("extra", help="this is something extra")
         parser.add_argument("-t", "--tuple-magic", default=(), type=lambda t: tuple(t.split(".")))
         parser.add_argument("--loud", action="store_true", help="say more about what was done")
 
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:  # ruff: ignore[no-self-use]  # the API says method
+    @staticmethod
+    def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
         try:
             held: TomlValue = tomllib.loads(text)
         except tomllib.TOMLDecodeError as exc:
@@ -77,11 +81,12 @@ class Dumb(TOMLFormatter[DumpNamespace]):
             if not isinstance(value, str | int | bool | list):
                 # the loader reads a malformed setting as a value error, whatever went wrong in it
                 msg = f"{name}: {value} is not a setting"
-                raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]  # the caller reports it as a setting error
+                raise TypeError(msg)
         return held
 
-    def format(self, text: str, opt: DumpNamespace) -> str:
-        self.last_format_opt = opt
+    @staticmethod
+    def format(text: str, opt: DumpNamespace) -> str:
+        Dumb.last_format_opt = opt
         if os.environ.get("NO_FMT"):
             return text
         return "\n".join([
@@ -237,7 +242,7 @@ def test_dumb_stdin(capsys: pytest.CaptureFixture[str], mocker: MockerFixture) -
 
 
 def _leave_missing(_path: Path) -> None:
-    """The path the argument names was never written."""
+    """Leave the requested path absent."""
 
 
 def _write_unreadable(path: Path) -> None:
@@ -473,16 +478,16 @@ def test_shared_args_config_file(formatting: tuple[Dumb, Path], tmp_path: Path) 
 
 
 def test_build_cli_underscore_alias_preserved() -> None:
-    # _build_cli is the pre-1.3.3 name every released pyproject-fmt/tox-toml-fmt imports;
-    # dropping it breaks those wheels on a fresh resolve (tox-dev/toml-fmt#355).
-    assert _build_cli is build_cli
+    # Releases through 1.3.2 import the old name (tox-dev/toml-fmt#355).
+    assert vars(toml_fmt_common)["_build_cli"] is build_cli
 
 
 class LegacyDumb(Dumb):
     # Mirrors pyproject-fmt <=2.21.2, which re-registers the shared format flags that
     # build_cli now also defines (tox-dev/toml-fmt#355).
-    def add_format_flags(self, parser: ArgumentGroup) -> None:
-        super().add_format_flags(parser)
+    @staticmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
+        Dumb.add_format_flags(parser)
         parser.add_argument("--table-format", choices=["short", "long"], default="short")
         parser.add_argument("--expand-tables", default=[])
 

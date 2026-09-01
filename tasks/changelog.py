@@ -6,7 +6,7 @@
 #   "pygithub>=2.8.1",
 # ]
 # ///
-"""The notes a release goes out with."""
+"""Build release notes from commits that affect a distributable package."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from local_inputs import LOCAL_INPUTS, affects
 from tomllib import load
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Iterator, Sequence
 
     from github.Repository import Repository as GitHubRepository
 
@@ -33,45 +33,49 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 _ROOT: Final[Path] = Path(__file__).parents[1]
 
 
-class Options(Namespace):
+class _Options(Namespace):
     project: str
     pr: int | None
     base: str
 
 
-def run() -> None:
-    options = parse_cli()
+def _main() -> None:
+    options = _parse_cli()
     print(f">> {options}")
     project = _ROOT / options.project
 
-    git_repo = Repo(_ROOT)
-    at = "tox-dev/toml-fmt"
-    github = Github(auth=Token(os.environ["GITHUB_TOKEN"]), verify=False)
-    gh_repo = github.get_repo(at)
-
-    version = get_version(project)
-    titles = [(title, pr) for title, pr, _ in entries(gh_repo, git_repo, options.pr, options.base, options.project)]
-    notes = release_notes(titles, at)
+    repository_name = "tox-dev/toml-fmt"
+    titles = [
+        (title, pr)
+        for title, pr, _ in _entries(
+            Github(auth=Token(os.environ["GITHUB_TOKEN"]), verify=False).get_repo(repository_name),
+            Repo(_ROOT),
+            options.pr,
+            options.base,
+            options.project,
+        )
+    ]
+    notes = _release_notes(titles, repository_name)
     print(notes)
 
     if output := os.environ.get("GITHUB_OUTPUT"):
-        print(f">> GitHub output set, populating: {output}")
+        print(f">> write GitHub output: {output}")
         with Path(output).open("at+", encoding="utf-8") as file_handler:
-            file_handler.write(f"version={version}\n")
+            file_handler.write(f"version={_get_version(project)}\n")
             file_handler.write(f"changelog<<EOF\n{notes}\nEOF\n")
 
 
-def parse_cli() -> Options:
+def _parse_cli() -> _Options:
     parser = ArgumentParser()
     parser.add_argument("project", choices=sorted(LOCAL_INPUTS))
     parser.add_argument("pr", type=lambda s: int(s) if s else None, nargs="?", default=None)
     parser.add_argument("base", type=str, nargs="?", default="")
-    options = Options()
+    options = _Options()
     parser.parse_args(namespace=options)
     return options
 
 
-def get_version(base: Path) -> str:
+def _get_version(base: Path) -> str:
     if (cargo := base / "Cargo.toml").exists():
         with cargo.open("rb") as file:
             return load(file)["package"]["version"]
@@ -79,7 +83,7 @@ def get_version(base: Path) -> str:
         return load(file)["project"]["version"]
 
 
-def entries(
+def _entries(
     gh_repo: GitHubRepository, git_repo: Repo, pr: int | None, base: str | None, project: str
 ) -> Iterator[tuple[str, str, str]]:
     if pr:
@@ -108,37 +112,50 @@ def entries(
             yield title, "", login
 
 
-#: The heading a change goes under, read from the conventional-commit type its title opens with. A
-#: type nothing here names is internal churn, and notes a user reads leave it out.
-UNDER: Final[dict[str, str]] = {"feat": "Added", "fix": "Fixed", "perf": "Performance", "docs": "Documentation"}
+# Commit types absent from this map describe internal changes that release notes omit.
+_HEADINGS: Final[dict[str, str]] = {
+    "feat": "Added",
+    "fix": "Fixed",
+    "perf": "Performance",
+    "docs": "Documentation",
+}
 
-#: The order the headings read in, so every release says what it added before what it repaired.
-IN_ORDER: Final[tuple[str, ...]] = ("Added", "Changed", "Fixed", "Removed", "Performance", "Documentation", "Packaging")
+# The release template places additions before repairs.
+_HEADING_ORDER: Final[tuple[str, ...]] = (
+    "Added",
+    "Changed",
+    "Fixed",
+    "Removed",
+    "Performance",
+    "Documentation",
+    "Packaging",
+)
 
 
-def release_notes(titles: list[tuple[str, str | None]], at: str) -> str:
-    """What the release says it changed, grouped under the heading each change belongs to."""
+def _release_notes(titles: Sequence[tuple[str, str | None]], repository_name: str) -> str:
     grouped: dict[str, list[str]] = {}
     for title, pr in titles:
-        if (under := heading_of(title)) is None:
+        if (heading := _heading_of(title)) is None:
             continue
-        said = f"- **{described(title)}**"
-        grouped.setdefault(under, []).append(f"{said} ([#{pr}](https://github.com/{at}/pull/{pr}))" if pr else said)
-    return "\n\n".join(f"### {under}\n\n" + "\n".join(grouped[under]) for under in IN_ORDER if under in grouped)
+        entry = f"- **{_description(title)}**"
+        grouped.setdefault(heading, []).append(
+            f"{entry} ([#{pr}](https://github.com/{repository_name}/pull/{pr}))" if pr else entry
+        )
+    return "\n\n".join(
+        f"### {heading}\n\n" + "\n".join(grouped[heading]) for heading in _HEADING_ORDER if heading in grouped
+    )
 
 
-def heading_of(title: str) -> str | None:
-    """The heading the title belongs under, or `None` where it says nothing a user reads."""
+def _heading_of(title: str) -> str | None:
     if (match := re.match(r"^\W*\s*(\w+)(\([^)]*\))?:", title)) is None:
         return None
-    return UNDER.get(match.group(1).lower())
+    return _HEADINGS.get(match.group(1).lower())
 
 
-def described(title: str) -> str:
-    """What the title says, without the emoji and the `type(scope):` the commit convention adds."""
-    said = re.sub(r"^\W*\s*\w+(\([^)]*\))?:\s*", "", title).strip()
-    return said[:1].upper() + said[1:] + ("" if said.endswith(".") else ".")
+def _description(title: str) -> str:
+    description = re.sub(r"^\W*\s*\w+(\([^)]*\))?:\s*", "", title).strip()
+    return description[:1].upper() + description[1:] + ("" if description.endswith(".") else ".")
 
 
 if __name__ == "__main__":
-    run()
+    _main()

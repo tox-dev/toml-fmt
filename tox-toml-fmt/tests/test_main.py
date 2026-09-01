@@ -11,7 +11,11 @@ else:  # pragma: <3.11 cover
 
 import pytest
 
-from tox_toml_fmt.__main__ import runner as run
+from tox_toml_fmt import build_parser, run
+
+
+def test_build_parser_uses_program_name() -> None:
+    assert build_parser().prog == "tox-toml-fmt"
 
 
 @pytest.mark.parametrize(
@@ -313,7 +317,7 @@ def test_every_python_environment_runs_the_tests() -> None:
     ],
 )
 def test_a_setting_is_read_however_the_file_writes_its_table(tmp_path: Path, settings: str) -> None:
-    """TOML gives every spelling of a table the same name, so the settings are read out of each."""
+    """TOML maps dotted and explicit table spellings to one path; settings follow that path."""
     tox_toml = tmp_path / "tox.toml"
     # a dotted key writes its own table, so it stands before the first header rather than under it
     tox_toml.write_text(f'{settings}\n\n[env.test]\ndescription = "run the whole unit test suite with coverage"\n')
@@ -340,7 +344,7 @@ def test_the_first_setting_the_formatter_cannot_hold_is_the_one_reported(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """A file with more than one bad setting names the same one every run."""
+    """Report the first invalid setting in source order."""
     tox_toml = tmp_path / "tox.toml"
     tox_toml.write_text('[env.test]\ndeps = [ "a" ]\n\n[tox-toml-fmt]\nz_bad = 1\na_bad = 2\n')
 

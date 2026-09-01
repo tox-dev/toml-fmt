@@ -1,5 +1,6 @@
 from collections.abc import Sequence
-from typing import Any
+
+from toml_fmt_common import TomlValue
 
 class Settings:
     def __init__(
@@ -35,4 +36,10 @@ class Settings:
     def pin_envs(self) -> Sequence[str]: ...
 
 def format_toml(content: str, settings: Settings) -> str: ...
-def settings_in(content: str, path: Sequence[str]) -> dict[str, Any] | None: ...
+def settings_in(content: str, path: Sequence[str]) -> dict[str, TomlValue] | None: ...
+
+__all__ = [
+    "Settings",
+    "format_toml",
+    "settings_in",
+]

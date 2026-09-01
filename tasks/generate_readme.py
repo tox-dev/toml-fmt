@@ -1,5 +1,3 @@
-"""Generate README.rst from the docs for PyPI."""
-
 from __future__ import annotations
 
 import re
@@ -122,14 +120,17 @@ def unwrap_dropdowns(content: str) -> str:
 
 def strip_main_title(content: str) -> str:
     lines = content.splitlines()
-    underline = lines[1] if len(lines) >= 2 else ""  # ruff: ignore[magic-value-comparison]  # a title and its rule
-    if underline and all(c == "=" for c in underline):
-        return "\n".join(lines[2:]).lstrip()
-    return content
+    match lines:
+        case [_, underline, *body] if underline and set(underline) == {"="}:
+            return "\n".join(body).lstrip()
+        case _:
+            return content
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison]  # the script name and one package
+    try:
+        _, package = sys.argv
+    except ValueError:
         print("Usage: generate_readme.py <package>")
         sys.exit(1)
-    main(sys.argv[1])
+    main(package)

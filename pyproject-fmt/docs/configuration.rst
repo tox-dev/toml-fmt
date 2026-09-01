@@ -87,8 +87,8 @@ Command line interface
 ----------------------
 
 .. sphinx_argparse_cli::
-    :module: pyproject_fmt.__main__
-    :func: _build_our_cli
+    :module: pyproject_fmt
+    :func: build_parser
     :prog: pyproject-fmt
     :title:
 
