@@ -4,7 +4,7 @@
 //! string, and one that outgrows the column is wrapped with line continuations. Choosing between
 //! those is the whole job here; the document holds the result as its own source text.
 
-use toml_doc::{Document, Quoting, Repr, Value};
+use toml_doc::{Document, Entry, Key, KeyValue, Quoting, Repr, Value};
 
 /// What `"""\` takes, which is what a wrapped value opens its first line with.
 const OPENER: usize = 4;
@@ -89,11 +89,11 @@ fn form(
         && wrap.prefix + OPENER <= wrap.column_width
         && let Some(broken) = wrap_with_continuations(text, wrap.column_width, wrap.indent)
     {
-        let written = multiline_repr(&broken);
+        let wrapped = multiline_repr(&broken);
         // a continuation eats the line break and the whitespace after it, so a value whose own
         // whitespace would go with them is left as the file wrote it
-        if toml_doc::decode(&written).is_ok_and(|read| read == text) {
-            return Some(written);
+        if toml_doc::decode(&wrapped).is_ok_and(|read| read == text) {
+            return Some(wrapped);
         }
         return None;
     }
@@ -154,8 +154,11 @@ fn wrap_with_continuations(text: &str, column_width: usize, indent: &str) -> Opt
         .then_some(result)
 }
 
-/// Break after ` :: `, which separates the parts of a classifier, else after the last space, else
-/// wherever the width runs out.
+/// What separates the parts of a classifier, which a line breaks after by preference.
+const CLASSIFIER_SEPARATOR: &str = " :: ";
+
+/// Break after [`CLASSIFIER_SEPARATOR`], else after the last space, else wherever the width runs
+/// out.
 fn wrap_point(text: &str, max_len: usize) -> usize {
     let ends = crate::width::break_points(text, max_len);
     let head_end = ends
@@ -165,8 +168,8 @@ fn wrap_point(text: &str, max_len: usize) -> usize {
         .last()
         .unwrap_or(ends[0]);
     let head = &text[..head_end];
-    if let Some(position) = head.rfind(" :: ") {
-        return position + 4;
+    if let Some(position) = head.rfind(CLASSIFIER_SEPARATOR) {
+        return position + CLASSIFIER_SEPARATOR.len();
     }
     head.rfind(' ').map_or(head_end, |position| position + 1)
 }
@@ -189,7 +192,7 @@ pub fn normalize_key_quotes(document: &mut Document<'_>) {
     }
 }
 
-fn normalize_key_value(key_value: &mut toml_doc::KeyValue<'_>) {
+fn normalize_key_value(key_value: &mut KeyValue<'_>) {
     normalize_key(&mut key_value.key);
     normalize_keys_in(&mut key_value.value);
 }
@@ -211,7 +214,7 @@ fn normalize_keys_in(value: &mut Value<'_>) {
     }
 }
 
-fn normalize_key(key: &mut toml_doc::Key<'_>) {
+fn normalize_key(key: &mut Key<'_>) {
     let names = key.segments();
     for (part, name) in key.parts_mut().iter_mut().zip(names) {
         part.set_name(&name);
@@ -234,13 +237,7 @@ pub fn wrap_long_strings(document: &mut Document<'_>, column_width: usize, inden
     }
 }
 
-fn wrap_entry(
-    entry: &mut toml_doc::Entry<'_>,
-    table: &[String],
-    column_width: usize,
-    indent: &str,
-    skip: &[Vec<Want>],
-) {
+fn wrap_entry(entry: &mut Entry<'_>, table: &[String], column_width: usize, indent: &str, skip: &[Vec<Want>]) {
     // a pattern is written against the key's whole path, table included, so `*.skip_me` reaches a
     // key of that name under any table
     let mut path = table.to_vec();
@@ -250,13 +247,13 @@ fn wrap_entry(
     }
     // the layout writes `key = ` ahead of the value, which is part of what the line runs to; the
     // key is measured as the layout will write it, not as the file spaced it out
-    let prefix = canonical_key_columns(&entry.key_value.key) + 3;
+    let prefix = canonical_key_columns(&entry.key_value.key) + " = ".len();
     wrap_value(&mut entry.key_value.value, column_width, indent, prefix, 0, false);
 }
 
 /// How wide the key is once it is written in its plainest form, with nothing between its parts but
 /// the dots that separate them.
-fn canonical_key_columns(key: &toml_doc::Key<'_>) -> usize {
+fn canonical_key_columns(key: &Key<'_>) -> usize {
     let names = key.segments();
     let dots = names.len() - 1;
     names

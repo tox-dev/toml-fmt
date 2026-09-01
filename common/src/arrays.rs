@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 
 use lexical_sort::natural_lexical_cmp;
-use toml_doc::{Array, Member, Pad, Repr, Value};
+use toml_doc::{Array, LineEnding, Member, Pad, Padding, Repr, Value};
 
 use crate::group::is_group_marker;
 
@@ -133,7 +133,7 @@ where
     let mut run = Array {
         members,
         trailing_comma: false,
-        trailing: toml_doc::Padding::default(),
+        trailing: Padding::default(),
     };
     sort(&mut run, to_key, cmp);
     run.members
@@ -158,7 +158,7 @@ where
     K: Fn(&str) -> String,
 {
     let mut seen = HashSet::new();
-    remove_members(array, |_, member| {
+    remove_members(array, |member| {
         string_of(member).is_none_or(|text| seen.insert(to_key(&text)))
     });
 }
@@ -168,7 +168,7 @@ pub fn retain_strings<P>(array: &mut Array<'_>, mut keep: P)
 where
     P: FnMut(&str) -> bool,
 {
-    remove_members(array, |_, member| string_of(member).is_none_or(|text| keep(&text)));
+    remove_members(array, |member| string_of(member).is_none_or(|text| keep(&text)));
 }
 
 /// Drop members, moving the comments a dropped member led with onto whatever follows it.
@@ -178,14 +178,14 @@ where
 /// what is left keeps the trailing comma the file wrote.
 fn remove_members<K>(array: &mut Array<'_>, mut keep: K)
 where
-    K: FnMut(usize, &Member<'_, Value<'_>>) -> bool,
+    K: FnMut(&Member<'_, Value<'_>>) -> bool,
 {
     let last = array.members.len().saturating_sub(1);
     let mut last_kept = true;
     let mut carried: Vec<Pad<'_>> = Vec::new();
     let mut kept: Vec<Member<'_, Value<'_>>> = Vec::with_capacity(array.members.len());
     for (index, mut member) in std::mem::take(&mut array.members).into_iter().enumerate() {
-        if keep(index, &member) {
+        if keep(&member) {
             member.lead.parts_mut().splice(0..0, carried.drain(..));
             kept.push(member);
         } else {
@@ -213,7 +213,7 @@ fn carry<'a>(carried: &mut Vec<Pad<'a>>, member: &Member<'a, Value<'a>>) {
         .filter(|part| matches!(part, Pad::Comment(_)));
     for comment in comments {
         carried.push(comment.clone());
-        carried.push(Pad::Newline(toml_doc::LineEnding::Lf));
+        carried.push(Pad::Newline(LineEnding::Lf));
     }
 }
 
@@ -267,9 +267,7 @@ where
 /// reads in: what a name says rather than how it is capitalized, and a number by its value rather
 /// than by its digits, so `py9` leads `py10`.
 pub fn sort_names_in(value: &mut Value<'_>) {
-    sort_strings_in(value, &|text| text.to_lowercase(), &|left, right| {
-        natural_lexical_cmp(left, right)
-    });
+    sort_strings_in(value, &|text| text.to_lowercase(), &natural_lexical_cmp);
 }
 
 /// Drop repeats from a value when it is an array of strings.

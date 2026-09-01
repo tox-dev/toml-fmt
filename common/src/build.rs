@@ -3,7 +3,15 @@
 //! Everything built here comes out unspaced; the layout pass decides what the whitespace looks
 //! like, so a builder only has to get the structure and the text right.
 
-use toml_doc::{Array, Entry, Header, Key, KeyValue, Member, Repr, Section, SectionKind, Trail, Trivia, Value};
+use toml_doc::{
+    Array, Entry, Header, Key, KeyValue, LineEnding, Member, Padding, Repr, Section, SectionKind, Trail, Trivia, Value,
+};
+
+/// `key = "text"`.
+#[must_use]
+pub fn string_entry(key: &str, text: &str) -> Entry<'static> {
+    entry(key, string(text))
+}
 
 /// `key = value`.
 #[must_use]
@@ -11,17 +19,8 @@ pub fn entry<'a>(key: &str, value: Value<'a>) -> Entry<'a> {
     Entry {
         lead: Trivia::default(),
         indent: "".into(),
-        key_value: KeyValue {
-            key: Key::new(key.split('.')),
-            pre_eq: " ".into(),
-            post_eq: " ".into(),
-            value,
-        },
-        trail: Trail {
-            ws: "".into(),
-            comment: None,
-            ending: toml_doc::LineEnding::Lf,
-        },
+        key_value: key_value(key, value),
+        trail: trail(),
     }
 }
 
@@ -36,12 +35,6 @@ pub fn key_value<'a>(key: &str, value: Value<'a>) -> KeyValue<'a> {
     }
 }
 
-/// `key = "text"`.
-#[must_use]
-pub fn string_entry(key: &str, text: &str) -> Entry<'static> {
-    entry(key, string(text))
-}
-
 /// A basic string value.
 #[must_use]
 pub fn string(text: &str) -> Value<'static> {
@@ -54,7 +47,7 @@ pub fn array<'a>(values: impl IntoIterator<Item = Value<'a>>) -> Value<'a> {
     Value::Array(Array {
         members: values.into_iter().map(member).collect(),
         trailing_comma: false,
-        trailing: toml_doc::Padding::default(),
+        trailing: Padding::default(),
     })
 }
 
@@ -62,10 +55,10 @@ pub fn array<'a>(values: impl IntoIterator<Item = Value<'a>>) -> Value<'a> {
 #[must_use]
 pub fn member<'a, T>(item: T) -> Member<'a, T> {
     Member {
-        lead: toml_doc::Padding::default(),
+        lead: Padding::default(),
         item,
-        trail: toml_doc::Padding::default(),
-        after: toml_doc::Padding::default(),
+        trail: Padding::default(),
+        after: Padding::default(),
     }
 }
 
@@ -80,12 +73,17 @@ pub fn section<'a>(name: &str, kind: SectionKind, entries: Vec<Entry<'a>>) -> Se
             pre_key: "".into(),
             key: Key::new(name.split('.')),
             post_key: "".into(),
-            trail: Trail {
-                ws: "".into(),
-                comment: None,
-                ending: toml_doc::LineEnding::Lf,
-            },
+            trail: trail(),
         },
         entries,
+    }
+}
+
+/// What ends a line the builder wrote: nothing after the value, and a newline.
+fn trail() -> Trail<'static> {
+    Trail {
+        ws: "".into(),
+        comment: None,
+        ending: LineEnding::Lf,
     }
 }
