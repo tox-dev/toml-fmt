@@ -1,18 +1,11 @@
 use indoc::indoc;
 use insta::assert_snapshot;
+use pyo3::exceptions::PyTypeError;
+use pyo3::types::{PyDict, PyDictMethods};
+use pyo3::{Bound, PyResult, Python};
 
 use super::{assert_valid_toml, default_settings, evaluate_settings};
 use _tox_toml_fmt::{format_toml, Settings};
-
-fn format_toml_helper(start: &str, indent: usize) -> String {
-    evaluate_settings(
-        start,
-        &Settings {
-            indent,
-            ..default_settings()
-        },
-    )
-}
 
 #[test]
 fn test_format_toml_simple() {
@@ -329,20 +322,103 @@ fn test_format_with_narrow_column_width() {
 
 #[test]
 fn test_settings_new() {
-    let settings = Settings::new(
-        120,
-        4,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![String::from("env.test")],
-        vec![],
-        vec![],
-        vec![],
-    )
+    let settings = new_settings(Settings {
+        column_width: 120,
+        indent: 4,
+        expand_tables: vec![String::from("env.test")],
+        ..default_settings()
+    })
     .expect("the settings name tables");
     assert_eq!(settings.column_width, 120);
     assert_eq!(settings.indent, 4);
+}
+
+#[test]
+fn test_settings_new_rejects_an_unexpected_keyword() -> PyResult<()> {
+    Python::attach(|python| {
+        let kwargs = PyDict::new(python);
+        kwargs.set_item("unexpected", true)?;
+
+        let error = Settings::new(Some(&kwargs))
+            .err()
+            .map(|error| error.to_string())
+            .unwrap_or_default();
+        assert_eq!(error, "TypeError: unexpected keyword argument: 'unexpected'");
+        Ok(())
+    })
+}
+
+#[test]
+fn test_settings_new_requires_keyword_arguments() {
+    let error = Settings::new(None)
+        .err()
+        .map(|error| error.to_string())
+        .unwrap_or_default();
+
+    assert_eq!(error, "TypeError: missing keyword argument: 'column_width'");
+}
+
+#[test]
+fn test_settings_new_requires_every_keyword() -> PyResult<()> {
+    Python::attach(|python| {
+        for name in [
+            "column_width",
+            "indent",
+            "table_format",
+            "sub_table_spacing",
+            "separate_root_table",
+            "expand_tables",
+            "collapse_tables",
+            "skip_wrap_for_keys",
+            "pin_envs",
+        ] {
+            let kwargs = settings_kwargs(python, default_settings())?;
+            kwargs.del_item(name)?;
+
+            let error = Settings::new(Some(&kwargs))
+                .err()
+                .map(|error| error.to_string())
+                .unwrap_or_default();
+            assert_eq!(error, format!("TypeError: missing keyword argument: '{name}'"));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn test_settings_new_rejects_every_wrong_value_type() -> PyResult<()> {
+    Python::attach(|python| {
+        for name in [
+            "column_width",
+            "indent",
+            "table_format",
+            "sub_table_spacing",
+            "separate_root_table",
+            "expand_tables",
+            "collapse_tables",
+            "skip_wrap_for_keys",
+            "pin_envs",
+        ] {
+            let kwargs = settings_kwargs(python, default_settings())?;
+            kwargs.set_item(name, python.None())?;
+
+            let error = Settings::new(Some(&kwargs)).err().expect("None is not a setting value");
+            assert!(error.is_instance_of::<PyTypeError>(python));
+        }
+        Ok(())
+    })
+}
+
+#[test]
+fn test_settings_new_rejects_a_non_string_keyword() -> PyResult<()> {
+    Python::attach(|python| {
+        let kwargs = settings_kwargs(python, default_settings())?;
+        kwargs.set_item(0, true)?;
+
+        let error = Settings::new(Some(&kwargs)).err().expect("keyword names are strings");
+        assert!(error.is_instance_of::<PyTypeError>(python));
+        Ok(())
+    })
 }
 
 /// A pin names an environment and a pattern names a key, so a list holding neither is told.
@@ -351,17 +427,13 @@ fn test_settings_reject_a_name_written_as_nothing() {
     for (at, setting) in [(7, "skip_wrap_for_keys"), (8, "pin_envs")] {
         let mut lists = vec![Vec::new(); 4];
         lists[at - 5] = vec![String::from(" ")];
-        let built = Settings::new(
-            120,
-            2,
-            String::from("short"),
-            String::new(),
-            String::from("\n"),
-            lists[0].clone(),
-            lists[1].clone(),
-            lists[2].clone(),
-            lists[3].clone(),
-        );
+        let built = new_settings(Settings {
+            expand_tables: lists[0].clone(),
+            collapse_tables: lists[1].clone(),
+            skip_wrap_for_keys: lists[2].clone(),
+            pin_envs: lists[3].clone(),
+            ..default_settings()
+        });
 
         let why = built.err().map(|error| error.to_string()).unwrap_or_default();
         assert!(why.contains(setting), "{why}");
@@ -372,17 +444,10 @@ fn test_settings_reject_a_name_written_as_nothing() {
 /// told rather than read as some other table.
 #[test]
 fn test_settings_reject_a_selector_that_names_no_table() {
-    let built = Settings::new(
-        120,
-        2,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![String::from("env.\"test")],
-        vec![],
-        vec![],
-        vec![],
-    );
+    let built = new_settings(Settings {
+        expand_tables: vec![String::from("env.\"test")],
+        ..default_settings()
+    });
 
     let why = built.err().map(|error| error.to_string()).unwrap_or_default();
     assert!(why.contains("expand_tables: env.\"test is not a table name"), "{why}");
@@ -390,18 +455,7 @@ fn test_settings_reject_a_selector_that_names_no_table() {
 
 #[test]
 fn test_settings_default_values() {
-    let settings = Settings::new(
-        80,
-        2,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![],
-        vec![],
-        vec![],
-        vec![],
-    )
-    .expect("the settings name tables");
+    let settings = new_settings(default_settings()).expect("the settings name tables");
     assert_eq!(settings.column_width, 80);
     assert_eq!(settings.indent, 2);
 }
@@ -433,18 +487,7 @@ fn test_settings_field_access() {
 #[test]
 fn test_format_toml_with_direct_settings() {
     let content = "env_list = ['a', 'b']";
-    let settings = Settings::new(
-        80,
-        2,
-        String::from("short"),
-        String::new(),
-        String::from("\n"),
-        vec![],
-        vec![],
-        vec![],
-        vec![],
-    )
-    .expect("the settings name tables");
+    let settings = new_settings(default_settings()).expect("the settings name tables");
     let result = format_toml(content, &settings).expect("the formatter reads its own output");
     assert!(result.contains("env_list"));
     assert!(result.contains("\"a\""));
@@ -2459,4 +2502,32 @@ fn test_the_root_table_is_read_however_the_file_writes_it() {
         format_toml_helper("env = { test = { setenv = { A = \"1\" }, deps = [ \"z\", \"a\" ] } }\n", 2),
         @r#"env = { test = { deps = [ "a", "z" ], set_env = { A = "1" } } }"#
     );
+}
+
+fn format_toml_helper(start: &str, indent: usize) -> String {
+    evaluate_settings(
+        start,
+        &Settings {
+            indent,
+            ..default_settings()
+        },
+    )
+}
+
+fn new_settings(settings: Settings) -> PyResult<Settings> {
+    Python::attach(|python| Settings::new(Some(&settings_kwargs(python, settings)?)))
+}
+
+fn settings_kwargs(python: Python<'_>, settings: Settings) -> PyResult<Bound<'_, PyDict>> {
+    let kwargs = PyDict::new(python);
+    kwargs.set_item("column_width", settings.column_width)?;
+    kwargs.set_item("indent", settings.indent)?;
+    kwargs.set_item("table_format", settings.table_format)?;
+    kwargs.set_item("sub_table_spacing", settings.sub_table_spacing)?;
+    kwargs.set_item("separate_root_table", settings.separate_root_table)?;
+    kwargs.set_item("expand_tables", settings.expand_tables)?;
+    kwargs.set_item("collapse_tables", settings.collapse_tables)?;
+    kwargs.set_item("skip_wrap_for_keys", settings.skip_wrap_for_keys)?;
+    kwargs.set_item("pin_envs", settings.pin_envs)?;
+    Ok(kwargs)
 }

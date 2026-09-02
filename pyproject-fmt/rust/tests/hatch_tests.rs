@@ -1,8 +1,4 @@
-use super::{default_settings, evaluate_full};
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
+use super::{default_settings, evaluate_full as evaluate};
 
 #[test]
 fn test_hatch_version_first_then_build() {
@@ -152,8 +148,8 @@ fn test_hatch_idempotent() {
     [tool.hatch.envs.default]
     dependencies = ["pytest"]
     "#};
-    let once = evaluate_full(start);
-    let twice = evaluate_full(&once);
+    let once = evaluate(start);
+    let twice = evaluate(&once);
     assert_eq!(once, twice);
 }
 
@@ -168,16 +164,6 @@ fn test_hatch_no_table_is_noop() {
     [project]
     name = "demo"
     "#);
-}
-
-fn evaluate_long(start: &str) -> String {
-    super::evaluate_settings(
-        start,
-        &_pyproject_fmt::Settings {
-            table_format: String::from("long"),
-            ..default_settings()
-        },
-    )
 }
 
 #[test]
@@ -259,7 +245,7 @@ fn test_disabled_keys_reorder_and_stay_valid_comments_issue_390() {
         version.source = "vcs"
         version.raw-options = { local_scheme = "no-local-version" }  # be able to publish dev version
     "#};
-    let result = evaluate_full(start);
+    let result = evaluate(start);
     insta::assert_snapshot!(result, @r#"
     [tool.hatch]
     version.source = "vcs"
@@ -270,7 +256,7 @@ fn test_disabled_keys_reorder_and_stay_valid_comments_issue_390() {
     #   { path = "README.rst", start-after = ".. begin" }
     # ]
     "#);
-    assert_eq!(evaluate_full(&result), result, "idempotent");
+    assert_eq!(evaluate(&result), result, "idempotent");
 }
 
 /// An environment name the file quoted because it holds a dot is one segment, and the tables under
@@ -366,7 +352,7 @@ fn test_hatch_artifacts_keep_their_order() {
     [tool.hatch]
     build.artifacts = ["*.so", "!/foo/*.so"]
     "#};
-    let result = evaluate_full(start);
+    let result = evaluate(start);
 
     insta::assert_snapshot!(result, @r#"
     [tool.hatch]
@@ -409,4 +395,14 @@ fn test_hatch_hooks_and_overrides_keep_their_order() {
     [tool.hatch.envs.demo.overrides.name.".*"]
     set-dependencies = [ "from-all" ]
     "#);
+}
+
+fn evaluate_long(start: &str) -> String {
+    super::evaluate_settings(
+        start,
+        &_pyproject_fmt::Settings {
+            table_format: String::from("long"),
+            ..default_settings()
+        },
+    )
 }

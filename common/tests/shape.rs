@@ -3,10 +3,6 @@
 
 use common::shape::{Tables, Written};
 
-fn named(name: &str) -> Vec<String> {
-    common::sections::parse_name(name)
-}
-
 /// The closest setting that names a table or one above it decides whether it folds, so a setting
 /// on a child outranks one on its parent.
 #[test]
@@ -76,4 +72,8 @@ fn a_skipped_key_keeps_the_value_the_file_wrote() {
 
     assert!(written(&[]).contains("\"\"\"\\"), "{}", written(&[]));
     assert_eq!(written(&[String::from("tool.a.held")]), source);
+}
+
+fn named(name: &str) -> Vec<String> {
+    common::sections::parse_name(name)
 }

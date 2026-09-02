@@ -1,15 +1,26 @@
 from __future__ import annotations
 
-import subprocess  # ruff: ignore[suspicious-subprocess-import]
+import asyncio
 import sys
 from pathlib import Path
 
-
-def test_help_invocation_as_module() -> None:
-    subprocess.check_call([sys.executable, "-m", "tox_toml_fmt", "--help"])
+import pytest
 
 
-def test_help_invocation_as_script() -> None:
-    subprocess.check_call(
-        [str(Path(sys.executable).parent / "tox-toml-fmt"), "--help"],
-    )
+@pytest.mark.parametrize(
+    "command",
+    [
+        pytest.param([sys.executable, "-m", "tox_toml_fmt"], id="as-a-module"),
+        pytest.param([str(Path(sys.executable).parent / "tox-toml-fmt")], id="as-a-script"),
+    ],
+)
+def test_help_names_the_program(command: list[str]) -> None:
+    async def read_help() -> str:
+        process = await asyncio.create_subprocess_exec(*command, "--help", stdout=asyncio.subprocess.PIPE)
+        stdout, _ = await process.communicate()
+        assert process.returncode == 0
+        return stdout.decode()
+
+    got = asyncio.run(read_help())
+
+    assert got.startswith("usage: tox-toml-fmt ")

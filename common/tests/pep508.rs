@@ -1,16 +1,5 @@
 use common::pep508::{MarkerExpr, Requirement, is_valid_version};
 
-fn format_requirement_helper(start: &str, keep_full_version: bool) -> String {
-    Requirement::new(start)
-        .unwrap()
-        .normalize(keep_full_version)
-        .to_string()
-}
-
-fn format_marker_helper(input: &str) -> String {
-    MarkerExpr::new(input).unwrap().to_string()
-}
-
 /// Two spellings of one distribution name are the same name, which is what decides where a
 /// requirement sorts against the others.
 #[test]
@@ -567,4 +556,15 @@ fn a_marker_that_stops_reading_partway_is_rejected() {
     ] {
         assert!(MarkerExpr::new(written).is_err(), "{written}");
     }
+}
+
+fn format_requirement_helper(start: &str, keep_full_version: bool) -> String {
+    Requirement::new(start)
+        .unwrap()
+        .normalize(keep_full_version)
+        .to_string()
+}
+
+fn format_marker_helper(input: &str) -> String {
+    MarkerExpr::new(input).unwrap().to_string()
 }

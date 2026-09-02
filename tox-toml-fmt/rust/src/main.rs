@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 use std::string::String;
 
-use pyo3::exceptions::PyValueError;
+use pyo3::exceptions::{PyTypeError, PyValueError};
+use pyo3::prelude::FromPyObjectOwned;
 #[cfg(feature = "extension-module")]
 use pyo3::prelude::{PyModule, PyModuleMethods};
+use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
+use pyo3::{pyclass, pymethods, Bound, PyResult};
 #[cfg(feature = "extension-module")]
-use pyo3::types::PyDict;
-use pyo3::{pyclass, pymethods, PyResult};
-#[cfg(feature = "extension-module")]
-use pyo3::{pyfunction, pymodule, wrap_pyfunction, Bound, Python};
+use pyo3::{pyfunction, pymodule, wrap_pyfunction, Python};
 
 use toml_doc::Document;
 
@@ -32,19 +32,29 @@ pub struct Settings {
 #[pymethods]
 impl Settings {
     #[new]
-    #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys, pin_envs))]
-    pub fn new(
-        column_width: usize,
-        indent: usize,
-        table_format: String,
-        sub_table_spacing: String,
-        separate_root_table: String,
-        expand_tables: Vec<String>,
-        collapse_tables: Vec<String>,
-        skip_wrap_for_keys: Vec<String>,
-        pin_envs: Vec<String>,
-    ) -> PyResult<Self> {
+    #[pyo3(signature = (**kwargs))]
+    pub fn new(kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
+        const NAMES: &[&str] = &[
+            "column_width",
+            "indent",
+            "table_format",
+            "sub_table_spacing",
+            "separate_root_table",
+            "expand_tables",
+            "collapse_tables",
+            "skip_wrap_for_keys",
+            "pin_envs",
+        ];
+        let kwargs = required_keywords(kwargs, NAMES)?;
+        let column_width = required(kwargs, "column_width")?;
+        let indent = required(kwargs, "indent")?;
+        let table_format = required(kwargs, "table_format")?;
+        let sub_table_spacing = required(kwargs, "sub_table_spacing")?;
+        let separate_root_table = required(kwargs, "separate_root_table")?;
+        let expand_tables: Vec<String> = required(kwargs, "expand_tables")?;
+        let collapse_tables: Vec<String> = required(kwargs, "collapse_tables")?;
+        let skip_wrap_for_keys: Vec<String> = required(kwargs, "skip_wrap_for_keys")?;
+        let pin_envs: Vec<String> = required(kwargs, "pin_envs")?;
         // a selector names a table the way TOML names one, so a file asking for a name no key
         // spells is told rather than formatted as though it had asked for nothing
         for (setting, held) in [("expand_tables", &expand_tables), ("collapse_tables", &collapse_tables)] {
@@ -77,6 +87,29 @@ impl Settings {
             pin_envs,
         })
     }
+}
+
+fn required_keywords<'py>(
+    kwargs: Option<&'py Bound<'py, PyDict>>,
+    names: &[&str],
+) -> PyResult<&'py Bound<'py, PyDict>> {
+    let kwargs = kwargs.ok_or_else(|| PyTypeError::new_err(format!("missing keyword argument: '{}'", names[0])))?;
+    for key in kwargs.keys() {
+        let name = key.extract::<String>()?;
+        if !names.contains(&name.as_str()) {
+            return Err(PyTypeError::new_err(format!("unexpected keyword argument: '{name}'")));
+        }
+    }
+    Ok(kwargs)
+}
+
+fn required<'py, T: FromPyObjectOwned<'py>>(kwargs: &Bound<'py, PyDict>, name: &str) -> PyResult<T> {
+    kwargs
+        .get_item(name)
+        .expect("Rust strings are valid Python dictionary keys")
+        .ok_or_else(|| PyTypeError::new_err(format!("missing keyword argument: '{name}'")))?
+        .extract()
+        .map_err(Into::into)
 }
 
 pub type TableFormatConfig = common::shape::Tables;

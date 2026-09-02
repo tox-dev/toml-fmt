@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 use std::string::String;
 
-use pyo3::exceptions::PyValueError;
-use pyo3::prelude::{PyModule, PyModuleMethods};
-use pyo3::types::PyDict;
+use pyo3::exceptions::{PyTypeError, PyValueError};
+use pyo3::prelude::{FromPyObjectOwned, PyModule, PyModuleMethods};
+use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
 use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
 
 use crate::global::reorder_tables;
@@ -70,22 +70,35 @@ pub struct Settings {
 #[pymethods]
 impl Settings {
     #[new]
-    #[allow(clippy::too_many_arguments)]
-    #[pyo3(signature = (*, column_width, indent, keep_full_version, max_supported_python, min_supported_python, generate_python_version_classifiers, table_format, sub_table_spacing, separate_root_table, expand_tables, collapse_tables, skip_wrap_for_keys))]
-    pub fn new(
-        column_width: usize,
-        indent: usize,
-        keep_full_version: bool,
-        max_supported_python: (u8, u8),
-        min_supported_python: (u8, u8),
-        generate_python_version_classifiers: bool,
-        table_format: String,
-        sub_table_spacing: String,
-        separate_root_table: String,
-        expand_tables: Vec<String>,
-        collapse_tables: Vec<String>,
-        skip_wrap_for_keys: Vec<String>,
-    ) -> PyResult<Self> {
+    #[pyo3(signature = (**kwargs))]
+    pub fn new(kwargs: Option<&Bound<'_, PyDict>>) -> PyResult<Self> {
+        const NAMES: &[&str] = &[
+            "column_width",
+            "indent",
+            "keep_full_version",
+            "max_supported_python",
+            "min_supported_python",
+            "generate_python_version_classifiers",
+            "table_format",
+            "sub_table_spacing",
+            "separate_root_table",
+            "expand_tables",
+            "collapse_tables",
+            "skip_wrap_for_keys",
+        ];
+        let kwargs = required_keywords(kwargs, NAMES)?;
+        let column_width = required(kwargs, "column_width")?;
+        let indent = required(kwargs, "indent")?;
+        let keep_full_version = required(kwargs, "keep_full_version")?;
+        let max_supported_python: (u8, u8) = required(kwargs, "max_supported_python")?;
+        let min_supported_python: (u8, u8) = required(kwargs, "min_supported_python")?;
+        let generate_python_version_classifiers = required(kwargs, "generate_python_version_classifiers")?;
+        let table_format = required(kwargs, "table_format")?;
+        let sub_table_spacing = required(kwargs, "sub_table_spacing")?;
+        let separate_root_table = required(kwargs, "separate_root_table")?;
+        let expand_tables: Vec<String> = required(kwargs, "expand_tables")?;
+        let collapse_tables: Vec<String> = required(kwargs, "collapse_tables")?;
+        let skip_wrap_for_keys: Vec<String> = required(kwargs, "skip_wrap_for_keys")?;
         // the classifiers this generates name Python 3, so a bound naming another major says
         // nothing this can act on
         for (name, version) in [
@@ -134,6 +147,29 @@ impl Settings {
             skip_wrap_for_keys,
         })
     }
+}
+
+fn required_keywords<'py>(
+    kwargs: Option<&'py Bound<'py, PyDict>>,
+    names: &[&str],
+) -> PyResult<&'py Bound<'py, PyDict>> {
+    let kwargs = kwargs.ok_or_else(|| PyTypeError::new_err(format!("missing keyword argument: '{}'", names[0])))?;
+    for key in kwargs.keys() {
+        let name = key.extract::<String>()?;
+        if !names.contains(&name.as_str()) {
+            return Err(PyTypeError::new_err(format!("unexpected keyword argument: '{name}'")));
+        }
+    }
+    Ok(kwargs)
+}
+
+fn required<'py, T: FromPyObjectOwned<'py>>(kwargs: &Bound<'py, PyDict>, name: &str) -> PyResult<T> {
+    kwargs
+        .get_item(name)
+        .expect("Rust strings are valid Python dictionary keys")
+        .ok_or_else(|| PyTypeError::new_err(format!("missing keyword argument: '{name}'")))?
+        .extract()
+        .map_err(Into::into)
 }
 
 pub type TableFormatConfig = common::shape::Tables;

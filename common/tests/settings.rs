@@ -2,12 +2,6 @@
 
 use common::settings::{self, Setting};
 
-fn read(source: &str, path: &[&str]) -> Result<Option<Vec<(String, Setting)>>, String> {
-    let document = toml_doc::parse(source).expect("valid source");
-    let path: Vec<String> = path.iter().map(|part| (*part).to_owned()).collect();
-    settings::read(&document, &path)
-}
-
 #[test]
 fn a_document_writing_no_such_table_holds_no_settings() {
     assert_eq!(read("a = 1\n", &["tool", "fmt"]), Ok(None));
@@ -183,4 +177,10 @@ fn settings_inside_a_value_that_is_not_a_table_are_rejected() {
         read("tool = { fmt = 1 }\n", &["tool", "fmt"]),
         Err(String::from("tool.fmt: the settings are not a table"))
     );
+}
+
+fn read(source: &str, path: &[&str]) -> Result<Option<Vec<(String, Setting)>>, String> {
+    let document = toml_doc::parse(source).expect("valid source");
+    let path: Vec<String> = path.iter().map(|part| (*part).to_owned()).collect();
+    settings::read(&document, &path)
 }

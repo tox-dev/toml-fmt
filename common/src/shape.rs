@@ -80,6 +80,7 @@ impl Written<'_> {
             ending: LineEnding::Lf,
         }
         .apply(document);
+        // a run of blank lines the file wrote reads as one gap, and nothing needs a second
         crate::spacing::limit_blank_runs(document, 2);
     }
 }

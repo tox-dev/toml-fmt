@@ -1,44 +1,4 @@
-use _pyproject_fmt::{format_toml, Settings};
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
-
-fn default_poetry_settings() -> Settings {
-    Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        sub_table_spacing: String::new(),
-        separate_root_table: String::from("\n"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-    }
-}
-
-fn evaluate_full(start: &str) -> String {
-    let result = format_toml(start, &default_poetry_settings()).unwrap();
-    super::assert_valid_toml(&result);
-    result
-}
-
-fn long_format_settings() -> Settings {
-    Settings {
-        table_format: String::from("long"),
-        ..default_poetry_settings()
-    }
-}
-
-fn evaluate_long(start: &str) -> String {
-    let result = format_toml(start, &long_format_settings()).unwrap();
-    super::assert_valid_toml(&result);
-    result
-}
+use super::{evaluate_full as evaluate, evaluate_long};
 
 #[test]
 fn test_poetry_top_level_key_order() {
@@ -504,8 +464,8 @@ fn test_poetry_full_pipeline_idempotent() {
     requests = { extras = ["socks"], version = "^2.31" }
     foo = { git = "https://github.com/example/foo", branch = "main" }
     "#};
-    let once = evaluate_full(start);
-    let twice = evaluate_full(&once);
+    let once = evaluate(start);
+    let twice = evaluate(&once);
     assert_eq!(once, twice);
 }
 
@@ -518,7 +478,7 @@ fn test_poetry_does_not_reorder_unrelated_inline_tables() {
     name = "demo"
     authors = [ { email = "alice@example.com", name = "Alice" } ]
     "#};
-    let result = evaluate_full(start);
+    let result = evaluate(start);
     assert!(
         result.contains(r#"{ email = "alice@example.com", name = "Alice" }"#)
             || result.contains(r#"{ name = "Alice", email = "alice@example.com" }"#),

@@ -4,33 +4,13 @@ use super::data_dir;
 
 use insta::assert_snapshot;
 
-use super::assert_valid_toml;
-
-fn evaluate_core(start: &str, collapse: bool) -> String {
-    super::evaluate_settings(
-        start,
-        &_pyproject_fmt::Settings {
-            table_format: String::from(if collapse { "short" } else { "long" }),
-            ..super::default_settings()
-        },
-    )
-}
-
-fn evaluate(start: &str) -> String {
-    evaluate_with_collapse(start, true)
-}
-
-fn evaluate_with_collapse(start: &str, collapse: bool) -> String {
-    let result = evaluate_core(start, collapse);
-    assert_valid_toml(&result);
-    result
-}
+use super::{evaluate_full as evaluate, evaluate_long};
 
 #[test]
 fn test_order_uv() {
     let data = data_dir();
     let start = read_to_string(data.join("uv-order.toml")).unwrap();
-    let result = evaluate_core(&start, true);
+    let result = evaluate(&start);
     assert_snapshot!(result);
 }
 
@@ -203,7 +183,7 @@ fn test_uv_pip_table_no_collapse() {
     extra = ["dev", "test", "docs"]
     index-url = "https://pypi.org/simple"
     "#};
-    let result = evaluate_with_collapse(start, false);
+    let result = evaluate_long(start);
     assert_snapshot!(result, @r#"
     [tool.uv.pip]
     index-url = "https://pypi.org/simple"
@@ -221,7 +201,7 @@ fn test_uv_sources_table_no_collapse() {
     alpha = { path = "../alpha" }
     mango = { workspace = true }
     "#};
-    let result = evaluate_with_collapse(start, false);
+    let result = evaluate_long(start);
     assert_snapshot!(result, @r#"
     [tool.uv.sources]
     alpha = { path = "../alpha" }

@@ -1,13 +1,9 @@
-use super::evaluate_full;
+use super::evaluate_full as evaluate;
 use std::fs::read_to_string;
 
 use super::data_dir;
 
 use insta::assert_snapshot;
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
 
 #[test]
 fn test_order_ruff() {
@@ -28,9 +24,8 @@ fn test_ruff_comment_21() {
         "ANN003",
     ]
 
-    # Do not automatically remove commented out code.
-    # We comment out code during development, and with VSCode auto-save, this code
-    # is sometimes annoyingly removed.
+    # Keep commented-out code.
+    # Developers use it during development, and VSCode auto-save can remove it.
     unfixable = ["ERA001"]
     "#};
     let result = evaluate(start);
@@ -41,9 +36,8 @@ fn test_ruff_comment_21() {
       # Missing type annotation for **{name}.
       "ANN003",
     ]
-    # Do not automatically remove commented out code.
-    # We comment out code during development, and with VSCode auto-save, this code
-    # is sometimes annoyingly removed.
+    # Keep commented-out code.
+    # Developers use it during development, and VSCode auto-save can remove it.
     lint.unfixable = [ "ERA001" ]
     "#);
 }

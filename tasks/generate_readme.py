@@ -1,5 +1,3 @@
-"""Generate README.rst from the docs for PyPI."""
-
 from __future__ import annotations
 
 import re
@@ -10,14 +8,12 @@ from fmt_examples import render_example
 
 
 def main(package: str) -> None:
-    pkg = Path(package)
-    module = package.replace("-", "_")
-    docs_dir = pkg / "docs"
+    docs_dir = Path(package) / "docs"
     if not (index_path := docs_dir / "index.rst").exists():
         return
 
     def read(path: Path) -> str:
-        return expand_fmt_examples(path.read_text(encoding="utf-8"), module)
+        return expand_fmt_examples(path.read_text(encoding="utf-8"), package.replace("-", "_"))
 
     processed = process_rst_for_pypi(read(index_path))
 
@@ -27,31 +23,31 @@ def main(package: str) -> None:
     if (formatting_path := docs_dir / "formatting.rst").exists():
         processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(formatting_path)))
 
-    (pkg / "README.rst").write_text(processed.rstrip() + "\n", encoding="utf-8")
+    (docs_dir.parent / "README.rst").write_text(processed.rstrip() + "\n", encoding="utf-8")
 
 
 def expand_fmt_examples(content: str, module: str) -> str:
     """Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to."""
     lines = content.splitlines()
     result: list[str] = []
-    i = 0
-    while i < len(lines):
-        if (match := re.match(r"^(\s*)\.\. fmt-example::\s*$", lines[i])) is None:
-            result.append(lines[i])
-            i += 1
+    at = 0
+    while at < len(lines):
+        if (match := re.match(r"^(\s*)\.\. fmt-example::\s*$", lines[at])) is None:
+            result.append(lines[at])
+            at += 1
             continue
         base = match.group(1)
         config = ""
-        i += 1
-        while i < len(lines) and (option := re.match(rf"^{base}\s+:config:\s*(.*)$", lines[i])):
+        at += 1
+        while at < len(lines) and (option := re.match(rf"^{base}\s+:config:\s*(.*)$", lines[at])):
             config = option.group(1).strip()
-            i += 1
-        while i < len(lines) and not lines[i].strip():
-            i += 1
+            at += 1
+        while at < len(lines) and not lines[at].strip():
+            at += 1
         body: list[str] = []
-        while i < len(lines) and (not lines[i].strip() or lines[i].startswith(f"{base} ")):
-            body.append(lines[i])
-            i += 1
+        while at < len(lines) and (not lines[at].strip() or lines[at].startswith(f"{base} ")):
+            body.append(lines[at])
+            at += 1
         before = "\n".join(line[len(base) :] for line in body).strip("\n")
         rendered = render_example(module, _dedent(before), config)
         result.extend((f"{base}.. code-block:: toml", ""))
@@ -64,33 +60,6 @@ def _dedent(text: str) -> str:
     body = [line for line in text.splitlines() if line.strip()]
     pad = min((len(line) - len(line.lstrip()) for line in body), default=0)
     return "\n".join(line[pad:] if line.strip() else "" for line in text.splitlines())
-
-
-def strip_main_title(content: str) -> str:
-    lines = content.splitlines()
-    if len(lines) >= 2 and lines[1] and all(c == "=" for c in lines[1]):  # ruff: ignore[magic-value-comparison]
-        return "\n".join(lines[2:]).lstrip()
-    return content
-
-
-def unwrap_dropdowns(content: str) -> str:
-    """Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive."""
-    result: list[str] = []
-    in_dropdown = False
-    for line in content.splitlines():
-        if not in_dropdown:
-            if line.startswith(".. dropdown::"):
-                in_dropdown = True
-            else:
-                result.append(line)
-        elif not line:
-            result.append("")
-        elif line.startswith("    "):
-            result.append(line[4:])
-        else:
-            in_dropdown = False
-            result.append(line)
-    return "\n".join(result)
 
 
 def process_rst_for_pypi(content: str) -> str:
@@ -129,36 +98,39 @@ def process_rst_for_pypi(content: str) -> str:
     return "\n".join(result).rstrip()
 
 
-def convert_md_to_rst_inline(line: str) -> str:
-    result = ""
-    in_backtick = False
-    for ch in line:
-        if ch == "`":
-            result += "``"
-            in_backtick = not in_backtick
+def unwrap_dropdowns(content: str) -> str:
+    """Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive."""
+    result: list[str] = []
+    in_dropdown = False
+    for line in content.splitlines():
+        if not in_dropdown:
+            if line.startswith(".. dropdown::"):
+                in_dropdown = True
+            else:
+                result.append(line)
+        elif not line:
+            result.append("")
+        elif line.startswith("    "):
+            result.append(line[4:])
         else:
-            result += ch
-    if in_backtick:
-        result += "``"
-    pos = 0
-    while (start := result.find("[", pos)) != -1:
-        if (bracket_end := result.find("]", start)) == -1:
-            break
-        if (
-            bracket_end + 1 < len(result)
-            and result[bracket_end + 1] == "("
-            and (paren_end := result.find(")", bracket_end + 2)) != -1
-        ):
-            link = f"`{result[start + 1 : bracket_end]} <{result[bracket_end + 2 : paren_end]}>`_"
-            result = f"{result[:start]}{link}{result[paren_end + 1 :]}"
-            pos = start + len(link)
-        else:
-            pos = bracket_end + 1
-    return result
+            in_dropdown = False
+            result.append(line)
+    return "\n".join(result)
+
+
+def strip_main_title(content: str) -> str:
+    lines = content.splitlines()
+    match lines:
+        case [_, underline, *body] if underline and set(underline) == {"="}:
+            return "\n".join(body).lstrip()
+        case _:
+            return content
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:  # ruff: ignore[magic-value-comparison]
+    try:
+        _, package = sys.argv
+    except ValueError:
         print("Usage: generate_readme.py <package>")
         sys.exit(1)
-    main(sys.argv[1])
+    main(package)

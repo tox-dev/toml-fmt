@@ -1,6 +1,6 @@
 # toml-fmt-common
 
-Contains Python code common to all formatters under the `toml-fmt` umbrella (meant to only be used by that project).
+Shared Python command-line support for the `toml-fmt` workspace. This package is internal to the project.
 
 [![check](https://github.com/tox-dev/toml-fmt-common/actions/workflows/check.yaml/badge.svg)](https://github.com/tox-dev/toml-fmt-common/actions/workflows/check.yaml)
 [![PyPI version](https://badge.fury.io/py/toml-fmt-common.svg)](https://badge.fury.io/py/toml-fmt-common)

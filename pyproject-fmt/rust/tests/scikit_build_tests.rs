@@ -1,23 +1,4 @@
-use super::default_settings;
-use super::evaluate_full;
-use _pyproject_fmt::{format_toml, Settings};
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
-
-fn long_settings() -> Settings {
-    Settings {
-        table_format: String::from("long"),
-        ..default_settings()
-    }
-}
-
-fn evaluate_long(start: &str) -> String {
-    let result = format_toml(start, &long_settings()).unwrap();
-    super::assert_valid_toml(&result);
-    result
-}
+use super::{evaluate_full as evaluate, evaluate_long};
 
 #[test]
 fn test_scikit_build_order() {

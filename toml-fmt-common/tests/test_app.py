@@ -4,7 +4,7 @@ import os
 import sys
 from argparse import ArgumentTypeError
 from io import StringIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, ClassVar, Final
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
@@ -13,15 +13,12 @@ else:  # pragma: <3.11 cover
 
 import pytest
 
+import toml_fmt_common
 from toml_fmt_common import (
-    GREEN,
-    RED,
-    RESET,
     ArgumentGroup,
     FmtNamespace,
     TOMLFormatter,
-    _build_cli,
-    _color_diff,
+    TomlValue,
     build_cli,
     count_argument,
     list_argument,
@@ -44,9 +41,11 @@ class DumpNamespace(FmtNamespace):
 
 
 class Dumb(TOMLFormatter[DumpNamespace]):
+    last_format_opt: ClassVar[DumpNamespace | None] = None
+
     def __init__(self) -> None:
         super().__init__(DumpNamespace())
-        self.last_format_opt: DumpNamespace | None = None
+        Dumb.last_format_opt = None
 
     @property
     def prog(self) -> str:
@@ -60,14 +59,16 @@ class Dumb(TOMLFormatter[DumpNamespace]):
     def override_cli_from_section(self) -> tuple[str, ...]:
         return "start", "sub"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
-        parser.add_argument("extra", help="this is something extra")
+    @staticmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
+        parser.add_argument("extra", help="extra value")
         parser.add_argument("-t", "--tuple-magic", default=(), type=lambda t: tuple(t.split(".")))
-        parser.add_argument("--loud", action="store_true", help="say more about what was done")
+        parser.add_argument("--loud", action="store_true", help="enable verbose output")
 
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:  # ruff: ignore[no-self-use]
+    @staticmethod
+    def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
         try:
-            held: Any = tomllib.loads(text)
+            held: TomlValue = tomllib.loads(text)
         except tomllib.TOMLDecodeError as exc:
             raise SyntaxError(str(exc)) from exc
         for part in path:
@@ -80,11 +81,12 @@ class Dumb(TOMLFormatter[DumpNamespace]):
             if not isinstance(value, str | int | bool | list):
                 # the loader reads a malformed setting as a value error, whatever went wrong in it
                 msg = f"{name}: {value} is not a setting"
-                raise ValueError(msg)  # ruff: ignore[type-check-without-type-error]
+                raise TypeError(msg)
         return held
 
-    def format(self, text: str, opt: DumpNamespace) -> str:
-        self.last_format_opt = opt
+    @staticmethod
+    def format(text: str, opt: DumpNamespace) -> str:
+        Dumb.last_format_opt = opt
         if os.environ.get("NO_FMT"):
             return text
         return "\n".join([
@@ -102,7 +104,18 @@ def test_dumb_help(capsys: pytest.CaptureFixture[str]) -> None:
 
     out, err = capsys.readouterr()
     assert not err
-    assert "this is something extra" in out
+    assert "extra value" in out
+
+
+def test_build_cli_returns_a_parser_without_reading_arguments() -> None:
+    parser, _ = build_cli(Dumb())
+
+    assert parser.parse_args(["E", "-"]).extra == "E"
+
+
+_GREEN: Final[str] = "\x1b[32m"
+_RED: Final[str] = "\x1b[31m"
+_RESET: Final[str] = "\x1b[0m"
 
 
 @pytest.mark.parametrize(
@@ -132,20 +145,38 @@ def test_a_formatted_file_is_written_back_and_the_change_printed(
     out, err = capsys.readouterr()
     assert not err
     assert out.splitlines() == [
-        f"{RED}--- {dumb}",
-        f"{RESET}",
-        f"{GREEN}+++ {dumb}",
-        f"{RESET}",
+        f"{_RED}--- {dumb}",
+        f"{_RESET}",
+        f"{_GREEN}+++ {dumb}",
+        f"{_RESET}",
         hunk,
         "",
         *(f" {line}" for line in start.splitlines()),
-        *(f"{GREEN}+{line}{RESET}" for line in added),
+        *(f"{_GREEN}+{line}{_RESET}" for line in added),
     ]
 
 
-def test_color_diff_disabled_by_no_color(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NO_COLOR", "1")
-    assert list(_color_diff(["+added", "-removed", " context"])) == ["+added", "-removed", " context"]
+def test_no_color_leaves_the_diff_uncolored(
+    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")  # https://no-color.org
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("[start.sub]\nextra = 'B'")
+
+    assert run(Dumb(), ["E", str(dumb)]) == 1
+
+    out, _ = capsys.readouterr()
+    assert out.splitlines() == [
+        f"--- {dumb}",
+        "",
+        f"+++ {dumb}",
+        "",
+        "@@ -1,2 +1,3 @@",
+        "",
+        " [start.sub]",
+        " extra = 'B'",
+        "+extras = 'B'",
+    ]
 
 
 def test_dumb_format_no_print_diff(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
@@ -194,14 +225,14 @@ def test_dumb_format_via_folder(
     out, err = capsys.readouterr()
     assert not err
     assert out.splitlines() == [
-        f"{RED}--- dumb.toml",
-        f"{RESET}",
-        f"{GREEN}+++ dumb.toml",
-        f"{RESET}",
+        f"{_RED}--- dumb.toml",
+        f"{_RESET}",
+        f"{_GREEN}+++ dumb.toml",
+        f"{_RESET}",
         "@@ -0,0 +1,2 @@",
         "",
-        f"{GREEN}+{RESET}",
-        f"{GREEN}+extras = 'E'{RESET}",
+        f"{_GREEN}+{_RESET}",
+        f"{_GREEN}+extras = 'E'{_RESET}",
     ]
 
 
@@ -217,7 +248,7 @@ def test_dumb_stdin(capsys: pytest.CaptureFixture[str], mocker: MockerFixture) -
 
 
 def _leave_missing(_path: Path) -> None:
-    """The path the argument names was never written."""
+    """Leave the requested path absent."""
 
 
 def _write_unreadable(path: Path) -> None:
@@ -381,25 +412,31 @@ def test_shared_args_in_help(capsys: pytest.CaptureFixture[str]) -> None:
         assert arg in out
 
 
-def test_shared_args_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.fixture
+def formatting(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Dumb, Path]:
     monkeypatch.setenv("NO_FMT", "1")
     dumb = tmp_path / "dumb.toml"
     dumb.write_text("")
-    fmt = Dumb()
+    return Dumb(), dumb
+
+
+def test_shared_args_defaults(formatting: tuple[Dumb, Path]) -> None:
+    fmt, dumb = formatting
     run(fmt, ["E", str(dumb)])
-    assert fmt.opt.table_format == "short"
-    assert not fmt.opt.sub_table_spacing
-    assert fmt.opt.separate_root_table == "\n"
-    assert fmt.opt.expand_tables == []
-    assert fmt.opt.collapse_tables == []
-    assert fmt.opt.skip_wrap_for_keys == []
+
+    expected: dict[str, TomlValue] = {
+        "table_format": "short",
+        "sub_table_spacing": "",
+        "separate_root_table": "\n",
+        "expand_tables": [],
+        "collapse_tables": [],
+        "skip_wrap_for_keys": [],
+    }
+    assert {key: getattr(fmt.opt, key) for key in expected} == expected
 
 
-def test_shared_args_cli_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NO_FMT", "1")
-    dumb = tmp_path / "dumb.toml"
-    dumb.write_text("")
-    fmt = Dumb()
+def test_shared_args_cli_override(formatting: tuple[Dumb, Path]) -> None:
+    fmt, dumb = formatting
     run(
         fmt,
         [
@@ -419,39 +456,44 @@ def test_shared_args_cli_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             "*.parse",
         ],
     )
-    assert fmt.opt.table_format == "long"
-    assert fmt.opt.sub_table_spacing == "\n"
-    assert fmt.opt.separate_root_table == "\n\n"
-    assert fmt.opt.expand_tables == ["a", "b"]
-    assert fmt.opt.collapse_tables == ["c"]
-    assert fmt.opt.skip_wrap_for_keys == ["*.parse"]
+    expected: dict[str, TomlValue] = {
+        "table_format": "long",
+        "sub_table_spacing": "\n",
+        "separate_root_table": "\n\n",
+        "expand_tables": ["a", "b"],
+        "collapse_tables": ["c"],
+        "skip_wrap_for_keys": ["*.parse"],
+    }
+    assert {key: getattr(fmt.opt, key) for key in expected} == expected
 
 
-def test_shared_args_config_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("NO_FMT", "1")
+def test_shared_args_config_file(formatting: tuple[Dumb, Path], tmp_path: Path) -> None:
+    fmt, dumb = formatting
     config = tmp_path / "toml-fmt-common.toml"
     config.write_text('table_format = "long"\nsub_table_spacing = "\\n"\nexpand_tables = ["x", "y"]')
-    dumb = tmp_path / "dumb.toml"
-    dumb.write_text("")
-    fmt = Dumb()
+
     run(fmt, ["E", str(dumb), "--config", str(config)])
+
     assert fmt.last_format_opt is not None
-    assert fmt.last_format_opt.table_format == "long"
-    assert fmt.last_format_opt.sub_table_spacing == "\n"
-    assert fmt.last_format_opt.expand_tables == ["x", "y"]
+    expected: dict[str, TomlValue] = {
+        "table_format": "long",
+        "sub_table_spacing": "\n",
+        "expand_tables": ["x", "y"],
+    }
+    assert {key: getattr(fmt.last_format_opt, key) for key in expected} == expected
 
 
 def test_build_cli_underscore_alias_preserved() -> None:
-    # _build_cli is the pre-1.3.3 name every released pyproject-fmt/tox-toml-fmt imports;
-    # dropping it breaks those wheels on a fresh resolve (tox-dev/toml-fmt#355).
-    assert _build_cli is build_cli
+    # Releases through 1.3.2 import the old name (tox-dev/toml-fmt#355).
+    assert vars(toml_fmt_common)["_build_cli"] is build_cli
 
 
 class LegacyDumb(Dumb):
     # Mirrors pyproject-fmt <=2.21.2, which re-registers the shared format flags that
     # build_cli now also defines (tox-dev/toml-fmt#355).
-    def add_format_flags(self, parser: ArgumentGroup) -> None:
-        super().add_format_flags(parser)
+    @staticmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
+        Dumb.add_format_flags(parser)
         parser.add_argument("--table-format", choices=["short", "long"], default="short")
         parser.add_argument("--expand-tables", default=[])
 
@@ -603,20 +645,32 @@ def test_a_count_wider_than_any_line() -> None:
         count_argument(10_001)
 
 
-def test_spacing_reads_only_what_a_spacing_is_written_as() -> None:
+def test_a_spacing_reads_the_newline_it_writes() -> None:
     assert spacing_argument(r"\n") == "\n"
+
+
+def test_a_spacing_written_as_a_number_is_no_spacing() -> None:
     with pytest.raises(ArgumentTypeError, match="invalid spacing"):
-        spacing_argument(1)  # type: ignore[arg-type]  # a file may write a number where a spacing belongs
+        spacing_argument(1)
 
 
-def test_a_list_reads_only_the_names_in_it() -> None:
-    assert list_argument("a, b") == ["a", "b"]
-    assert list_argument(["a"]) == ["a"]
-    # a name TOML quotes may hold a comma of its own, which separates nothing
-    assert list_argument('tool."a,b"') == ['tool."a,b"']
-    assert list_argument("tool.'a,b', other") == ["tool.'a,b'", "other"]
+@pytest.mark.parametrize(
+    ("written", "names"),
+    [
+        pytest.param("a, b", ["a", "b"], id="separated-by-commas"),
+        pytest.param(["a"], ["a"], id="written-as-a-list"),
+        # a name TOML quotes may hold a comma of its own, which separates nothing
+        pytest.param('tool."a,b"', ['tool."a,b"'], id="a-comma-inside-quotes"),
+        pytest.param("tool.'a,b', other", ["tool.'a,b'", "other"], id="a-quoted-name-beside-another"),
+    ],
+)
+def test_a_list_reads_the_names_in_it(written: TomlValue, names: list[str]) -> None:
+    assert list_argument(written) == names
+
+
+def test_a_list_entry_written_as_a_number_names_nothing() -> None:
     with pytest.raises(ArgumentTypeError, match="every entry names one thing"):
-        list_argument([1])  # type: ignore[list-item]  # a file may write a number where a name belongs
+        list_argument([1])
 
 
 @pytest.mark.parametrize(

@@ -1,35 +1,8 @@
 use common::disabled::MARKER;
 use indoc::indoc;
 
-use super::assert_valid_toml;
+use super::{assert_valid_toml, default_settings};
 use _pyproject_fmt::{format_toml, Settings};
-
-fn settings() -> Settings {
-    Settings {
-        column_width: 120,
-        indent: 2,
-        keep_full_version: false,
-        max_supported_python: (3, 9),
-        min_supported_python: (3, 9),
-        generate_python_version_classifiers: false,
-        table_format: String::from("short"),
-        sub_table_spacing: String::new(),
-        separate_root_table: String::from("\n"),
-        expand_tables: vec![],
-        collapse_tables: vec![],
-        skip_wrap_for_keys: vec![],
-    }
-}
-
-fn evaluate(start: &str) -> String {
-    let result = format_toml(start, &settings()).unwrap();
-    assert_valid_toml(&result);
-    assert!(
-        !result.contains(MARKER),
-        "internal marker leaked into output:\n{result}"
-    );
-    result
-}
 
 #[test]
 fn test_disabled_keys_stay_anchored_to_their_entry() {
@@ -266,7 +239,7 @@ fn test_a_disabled_requires_python_says_nothing() {
     let settings = Settings {
         generate_python_version_classifiers: true,
         max_supported_python: (3, 13),
-        ..settings()
+        ..default_settings()
     };
     let result = format_toml(start, &settings).unwrap();
 
@@ -281,4 +254,14 @@ fn test_a_disabled_requires_python_says_nothing() {
       "Programming Language :: Python :: 3.13",
     ]
     "#);
+}
+
+fn evaluate(start: &str) -> String {
+    let result = format_toml(start, &default_settings()).unwrap();
+    assert_valid_toml(&result);
+    assert!(
+        !result.contains(MARKER),
+        "internal marker leaked into output:\n{result}"
+    );
+    result
 }

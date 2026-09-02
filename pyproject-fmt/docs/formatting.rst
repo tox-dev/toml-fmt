@@ -1,20 +1,18 @@
 Formatting Rules
 ================
 
-What the formatter does to a ``pyproject.toml``: the rules below hold for every file, and the per-table sections that
-follow give the key order and array policy of each tool it knows.
-
-See :doc:`configuration` for the options that steer them and how they are set.
+This reference separates file-wide rules from the key order and array policy for recognized tables. See the
+`configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for available settings.
 
 General Formatting
 ------------------
 
-These rules apply uniformly across the entire ``pyproject.toml`` file.
+These rules cover the complete ``pyproject.toml`` file.
 
 Table Ordering
 ~~~~~~~~~~~~~~
 
-Tables are reordered into a consistent structure:
+The formatter writes tables in this order:
 
 1. ``[build-system]``
 2. ``[project]``
@@ -36,12 +34,12 @@ Tables are reordered into a consistent structure:
       ``towncrier``, ``vendoring``
    8. Any other ``tool.*`` in alphabetical order
 
-5. Any other tables (alphabetically)
+5. Other tables, alphabetically
 
 String Quotes
 ~~~~~~~~~~~~~
 
-All strings use double quotes by default. Single quotes are only used when the value contains double quotes:
+Strings use double quotes unless the value contains one:
 
 .. fmt-example::
 
@@ -51,10 +49,8 @@ All strings use double quotes by default. Single quotes are only used when the v
 Key Quotes
 ~~~~~~~~~~
 
-TOML keys are normalized to the simplest valid form. Keys that are valid bare keys (containing only
-``A-Za-z0-9_-``) have redundant quotes stripped. Single-quoted (literal) keys that require quoting are
-converted to double-quoted (basic) strings with proper escaping. This applies to all keys: table headers,
-key-value pairs, and inline table keys:
+The formatter removes quotes from bare keys containing ``A-Za-z0-9_-``. Keys that need quotes use escaped double
+quotes. The rule covers headers, assignments, and inline tables:
 
 .. fmt-example::
 
@@ -62,7 +58,7 @@ key-value pairs, and inline table keys:
     "line-length" = 120
     lint.per-file-ignores.'tests/*' = ["S101"]
 
-Backslashes and double quotes within literal keys are escaped during conversion:
+Conversion escapes backslashes and double quotes in literal keys:
 
 .. fmt-example::
 
@@ -71,14 +67,13 @@ Backslashes and double quotes within literal keys are escaped during conversion:
 Array Formatting
 ~~~~~~~~~~~~~~~~
 
-Arrays are formatted based on line length, trailing comma presence, and comments. Short arrays stay on one line:
+Short arrays stay on one line:
 
 .. fmt-example::
 
     keywords = ["python", "toml"]
 
-Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
-keep the example short):
+An array that exceeds ``column_width`` expands and gains a trailing comma:
 
 .. fmt-example::
     :config: column_width=30 generate_python_version_classifiers=false
@@ -86,14 +81,13 @@ keep the example short):
     [project]
     keywords = ["web", "toml", "pyproject", "formatting"]
 
-A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
+A trailing comma retains multiline form at any width:
 
 .. fmt-example::
 
     classifiers = ["Development Status :: 4 - Beta",]
 
-A comment on an entry also forces the multiline format. Here ``["E501", "E701"]`` would fit on one line, but the
-comment keeps it expanded:
+A member comment also retains multiline form:
 
 .. fmt-example::
 
@@ -102,40 +96,30 @@ comment keeps it expanded:
       "E701",
     ]
 
-**Multiline formatting rules:**
-
-An array becomes multiline when any of these conditions are met:
-
-1. **Trailing comma present** - A trailing comma signals intent to keep multiline format
-2. **Exceeds column width** - Arrays longer than ``column_width`` are expanded (and get a trailing comma added)
-3. **Contains comments** - Arrays with inline or leading comments are always multiline
+An array uses multiline form when it has a trailing comma, exceeds ``column_width``, or contains a member comment.
 
 String Wrapping
 ~~~~~~~~~~~~~~~
 
-A string whose line runs past ``column_width`` is wrapped into a multi-line triple-quoted string using line
-continuations, each of which fits the column (shown here with a small ``column_width``). The line is measured from the
-start of its key, or from the indent a nested value is written at, so a long key can be what pushes a value into
-wrapping. A key already wider than the column keeps its value on one line, since breaking it up would not bring the
-line back.
+The formatter wraps a string that pushes its line past ``column_width``. Continuations account for the key or nested
+indent. A key wider than the limit keeps its value on one line because wrapping cannot shorten that prefix.
 
 .. fmt-example::
     :config: column_width=40
 
     description = "Format your pyproject.toml file in place"
 
-Wrapping prefers breaking at spaces and at ``" :: "`` separators (common in Python classifiers). Strings inside inline
-tables are never wrapped. Strings that contain actual newlines are preserved as multi-line strings without adding line
-continuations. Use ``skip_wrap_for_keys`` to prevent wrapping for specific keys.
+Wrapping prefers spaces and ``" :: "`` separators. It skips inline-table strings and strings containing newlines.
+``skip_wrap_for_keys`` excludes selected paths.
 
 .. _table-formatting:
 
 Table Formatting
 ~~~~~~~~~~~~~~~~
 
-Sub-tables can be formatted in two styles controlled by ``table_format``:
+``table_format`` selects a child-table shape.
 
-**Short format** (collapsed to dotted keys):
+Short form uses dotted keys:
 
 .. fmt-example::
     :config: generate_python_version_classifiers=false
@@ -144,7 +128,7 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
     urls.homepage = "https://example.com"
     urls.repository = "https://github.com/example/project"
 
-**Long format** (expanded to table headers):
+Long form uses headers:
 
 .. fmt-example::
     :config: table_format=long generate_python_version_classifiers=false
@@ -153,9 +137,9 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
     homepage = "https://example.com"
     repository = "https://github.com/example/project"
 
-Expanded sub-tables keep the order their dotted keys would have: a table's key order (see the per-table sections
-below) ranks its sub-tables, and sub-tables it does not list follow alphabetically. So ``[tool.coverage.run]`` comes
-before ``[tool.coverage.report]`` in the long format just as ``run.*`` keys precede ``report.*`` keys in the short one:
+Child headers follow the same rank as their dotted keys. Unlisted children follow alphabetically, so
+``[tool.coverage.run]`` precedes ``[tool.coverage.report]`` in long form just as ``run.*`` precedes ``report.*`` in
+short form:
 
 .. fmt-example::
     :config: table_format=long
@@ -166,11 +150,7 @@ before ``[tool.coverage.report]`` in the long format just as ``run.*`` keys prec
     [tool.coverage.run]
     branch = true
 
-**Table spacing:**
-
-By default, different table groups (e.g. ``[project]`` and ``[tool.ruff]``) are separated by a blank line, while
-sub-tables within the same group (e.g. ``[tool.ruff]`` and ``[tool.ruff.lint]``) are kept compact with no blank line
-between them. ``sub_table_spacing = "\n"`` puts one between sub-tables instead:
+Root groups have one blank line between them. Child tables stay adjacent unless ``sub_table_spacing`` adds a gap:
 
 .. fmt-example::
     :config: table_format=long sub_table_spacing=\n
@@ -181,14 +161,15 @@ between them. ``sub_table_spacing = "\n"`` puts one between sub-tables instead:
     [tool.ruff.lint]
     select = ["E", "W"]
 
-See :doc:`configuration` for how to control this behavior.
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for table
+overrides and spacing.
 
 .. _array-of-tables:
 
 Array of Tables
 ~~~~~~~~~~~~~~~
 
-An array of tables collapses into an array of inline tables where each one fits the configured ``column_width``:
+Short form folds an array of tables when each entry fits within ``column_width``:
 
 .. code-block:: toml
 
@@ -203,21 +184,13 @@ An array of tables collapses into an array of inline tables where each one fits 
     [tool.commitizen]
     customize.questions = [ { type = "list" }, { type = "input" } ]
 
-Where one of them does not fit, the array stays written out as ``[[...]]``: an inline table cannot span lines in
-TOML 1.0.0, and burying a wide one in braces reads worse than the headers it came from.
+If one entry exceeds the limit, ``[[...]]`` headers remain because TOML 1.0 inline tables cannot span lines.
 
 Comment Preservation
 ~~~~~~~~~~~~~~~~~~~~
 
-All comments are preserved during formatting:
-
-- **Inline comments** - Comments after a value on the same line stay with that value
-- **Leading comments** - Comments on the line before an entry stay with the entry below
-- **Block comments** - Multi-line comment blocks are preserved
-
-**Inline comment alignment:**
-
-Inline comments within arrays are aligned independently per array, based on that array's longest value:
+Comments move with the value or entry they describe. Within an array, trailing comments align against that array's
+longest value:
 
 .. fmt-example::
 
@@ -230,11 +203,9 @@ Inline comments within arrays are aligned independently per array, based on that
 Disabled Keys
 ~~~~~~~~~~~~~
 
-A commented-out line whose body is itself a single valid key-value (for example ``# default = true``) is treated as a
-temporarily *disabled* field rather than free text. The formatter enables it for the duration of the pass, so it is laid
-out and ordered together with the table it belongs to, then comments it out again on the way out. This keeps a disabled
-key anchored to its entry instead of drifting to the next table, and formats the line the same way the enabled key would
-be:
+A comment containing one valid assignment, such as ``# default = true``, represents a disabled field. The formatter
+temporarily enables the assignment, formats it with its table, and restores the comment marker. This keeps the field
+beside its active peers:
 
 .. fmt-example::
 
@@ -244,22 +215,15 @@ be:
     # default = true
     # ignore-error-codes = [400,401,403]
 
-Comments that are not a single valid key-value (prose, multi-line blocks, commented-out table headers like
-``# [tool.x]``) are left untouched and follow the usual comment-preservation rules above. The heuristic is purely
-structural, so a prose comment that *happens* to be valid TOML (such as a ``key = value`` example written in
-documentation) is reflowed too; if that matters, phrase the comment so it does not parse as a key-value. Keys that would
-not fit on a single line within ``column_width`` are left as plain comments.
+Prose, multiline blocks, and commented headers remain ordinary comments. The check is structural: prose that parses as
+one assignment receives disabled-field formatting. Rephrase such prose to avoid that interpretation. An
+assignment wider than ``column_width`` also remains an ordinary comment.
 
 Group Markers
 ~~~~~~~~~~~~~
 
-By default the formatter reorders each array, table, and section list as a single unit, so any entry can move to its
-sorted position. Mark a boundary with a standalone comment that starts with ``# Group:``: the formatter then sorts within
-each group, holds the groups in their original order, and keeps the marker at the top of its group. Reach for this when
-related entries belong together but should still be sorted.
-
-Files without a ``# Group:`` marker format the same as before, so the feature stays opt-in. Case does not matter, so
-``# group:`` works too. Only standalone comment lines count; the formatter ignores inline trailing comments.
+An isolated ``# Group:`` comment divides an array, table, or section list into independent sort ranges. Group order and
+the marker position stay fixed. Matching ignores case; trailing comments do not create boundaries.
 
 The formatter sorts the entries inside each group:
 
@@ -276,29 +240,27 @@ The formatter sorts the entries inside each group:
       "psycopg2",
     ]
 
-A ``# Group:`` marker works the same way before a key in a table or before a ``[tool.*]`` header: the formatter sorts the
-keys or sections up to the next marker, and never moves them across the boundary.
+The same marker can precede a table key or ``[tool.*]`` header.
 
 Line Endings
 ~~~~~~~~~~~~
 
-The formatter writes a file back with the line ending it already used, so a ``\r\n`` file stays ``\r\n`` and Git on
-Windows does not flag it as modified. A file mixing both endings gets whichever one it uses more, with a tie going to
-``\n``. Line endings alone never count as a change, so a file that is already formatted is left alone whichever ending
-it uses. Output written to stdout always uses ``\n``.
+Output retains the input's line ending. Mixed files use the more frequent ending, with ties resolved to ``\n``. Stdout
+uses ``\n``.
 
 Table-Specific Handling
 -----------------------
 
-Beyond general formatting, each table has specific key ordering and value normalization rules.
+Recognized tables add the rules below.
 
 ``[build-system]``
 ~~~~~~~~~~~~~~~~~~
 
-The :pep:`517` / :pep:`518` table that declares how your project is built. See the
+The :pep:`517` / :pep:`518` table declares the project's build process. See the
 `packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#pyproject-build-system-table>`_.
 
-Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``requires`` is normalized and sorted.
+Keys follow ``build-backend`` → ``requires`` → ``backend-path``. ``requires`` receives normalized spelling and
+package-name order.
 
 .. dropdown:: Formatting details
 
@@ -306,11 +268,11 @@ Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``
 
     **Value normalization:**
 
-    - ``requires``: dependencies normalized per :pep:`508` and sorted alphabetically by package name
-    - ``backend-path``: order preserved, since the frontend searches the directories in the order they are listed
+    - ``requires``: :pep:`508` spelling and package-name order
+    - ``backend-path``: input order, which controls the frontend's search
 
     **Preserved as written:** every requirement the file declares. Setuptools has bundled ``bdist_wheel`` since
-    70.1, so a ``wheel`` entry beside it is usually redundant, but no specifier says which release a resolver will
+    70.1, so a ``wheel`` entry beside it can be redundant, but no specifier says which release a resolver will
     pick for a given build, and removing a dependency the author declared can leave that build unable to run.
 
     .. fmt-example::
@@ -325,8 +287,8 @@ Keys are ordered ``build-backend`` → ``requires`` → ``backend-path``, and ``
 The :pep:`621` core metadata table. See the
 `packaging specification <https://packaging.python.org/en/latest/specifications/pyproject-toml/#pyproject-project-table>`_.
 
-Keys follow the canonical metadata order; name, dependencies, classifiers, and keywords are normalized and sorted;
-version is validated.
+Keys follow the canonical metadata order. The formatter normalizes the name, dependency arrays, classifiers, and
+keywords, and validates the version.
 
 .. dropdown:: Formatting details
 
@@ -342,17 +304,17 @@ version is validated.
 
     ``version``
         Kept verbatim, because it is the exact version published in the package metadata, and normalizing would rewrite
-        e.g. CalVer ``2026.08.10`` to ``2026.8.10``. A value that is not a valid :pep:`440` version is rejected: the
-        formatter reports it on standard error, leaves the file untouched, and exits with a non-zero status.
+        for example, CalVer ``2026.08.10`` to ``2026.8.10``. The formatter rejects values outside :pep:`440`, reports
+        the error, and leaves the file untouched.
 
     ``description``
         Whitespace normalized: multiple spaces collapsed, consistent spacing after periods.
 
     ``license``
-        License expression operators (``and``, ``or``, ``with``) uppercased: ``MIT or Apache-2.0`` →
-        ``MIT OR Apache-2.0``. The value is only rewritten once it parses as an SPDX expression over
-        registered license and exception identifiers, so free-form text that happens to read like one
-        (``MIT or later``) is left as the file wrote it.
+        Uppercases license expression operators (``and``, ``or``, ``with``): ``MIT or Apache-2.0`` →
+        ``MIT OR Apache-2.0``. The formatter rewrites a value after it parses as an SPDX expression over registered
+        license and exception identifiers, so free-form text that happens to read like one
+        (``MIT or later``) retains its input spelling.
 
     ``requires-python``
         Whitespace removed: ``>= 3.9`` → ``>=3.9``
@@ -364,20 +326,18 @@ version is validated.
         Sorted alphabetically.
 
     ``import-names`` / ``import-namespaces``
-        Written the way :pep:`794` spells one, a dotted name of Python identifiers with the one
-        modifier it defines after it (``pkg.sub ;private`` → ``pkg.sub; private``), and sorted
-        alphabetically. An entry saying anything else is left as the file wrote it.
+        Uses :pep:`794` spelling: a dotted name of Python identifiers followed by its optional modifier
+        (``pkg.sub ;private`` → ``pkg.sub; private``). Valid entries sort alphabetically; other values retain their
+        input spelling.
 
     ``classifiers``
         Deduplicated and sorted alphabetically.
 
     ``authors`` / ``maintainers``
-        Left in the order they are written, since that order is published metadata. The keys within each entry are
-        ordered: ``name`` → ``email``.
+        Retain published order. Each entry uses ``name`` → ``email`` key order.
 
-    **Dependency normalization:** every dependency array (``dependencies``, ``optional-dependencies.*``) is
-    normalized per :pep:`508` (spaces removed, redundant ``.0`` suffixes stripped unless
-    ``keep_full_version = true``) and sorted alphabetically by canonical package name:
+    **Dependency normalization:** dependency arrays use :pep:`508` spelling and canonical package-name order. The
+    formatter removes spaces and redundant ``.0`` suffixes unless ``keep_full_version = true``:
 
     .. fmt-example::
         :config: generate_python_version_classifiers=false
@@ -394,7 +354,7 @@ version is validated.
         [project]
         dependencies = ["pkg @ git+https://github.com/user/repo.git@main ; python_version>='3.10'"]
 
-    **Optional-dependency extra names** are normalized to lowercase with hyphens:
+    **Optional-dependency extra names** use lowercase with hyphens:
 
     .. fmt-example::
         :config: generate_python_version_classifiers=false
@@ -402,15 +362,15 @@ version is validated.
         [project.optional-dependencies]
         Dev_Tools = ["pytest"]
 
-    **Python version classifiers** are generated automatically from ``requires-python`` and
-    ``max_supported_python`` (here ``3.14``). Disable with ``generate_python_version_classifiers = false``:
+    **Python version classifiers** derive from ``requires-python`` and ``max_supported_python`` (here ``3.14``).
+    Disable generation with ``generate_python_version_classifiers = false``:
 
     .. fmt-example::
 
         [project]
         requires-python = ">=3.10"
 
-    **Entry points:** inline tables within ``entry-points`` are expanded to dotted keys:
+    **Entry points:** inline tables within ``entry-points`` expand to dotted keys:
 
     .. fmt-example::
         :config: generate_python_version_classifiers=false
@@ -442,7 +402,8 @@ version is validated.
 The :pep:`735` table for named groups of development dependencies. See the
 `packaging specification <https://packaging.python.org/en/latest/specifications/dependency-groups/>`_.
 
-Groups are ordered ``dev`` → ``test`` → ``type`` → ``docs`` → others alphabetically; each group is normalized and sorted.
+Groups follow ``dev`` → ``test`` → ``type`` → ``docs`` → other names alphabetically. Each group receives normalized
+dependency spelling and package-name order.
 
 .. dropdown:: Formatting details
 
@@ -451,8 +412,7 @@ Groups are ordered ``dev`` → ``test`` → ``type`` → ``docs`` → others alp
     **Value normalization:**
 
     - all dependencies normalized per :pep:`508`
-    - an ``include-group`` pulls its group in where it is written, so it stays where the file put it and the
-      requirements written between two of them sort
+    - an ``include-group`` pulls its group into its current position; requirements between two inclusions sort
 
     .. fmt-example::
 
@@ -465,9 +425,8 @@ Groups are ordered ``dev`` → ``test`` → ``type`` → ``docs`` → others alp
 `Poetry <https://python-poetry.org/>`_ is a Python dependency management and packaging tool. See its
 `pyproject.toml reference <https://python-poetry.org/docs/pyproject/>`_.
 
-Covers both Poetry 1.x (legacy metadata under ``[tool.poetry]``) and Poetry 2.x (metadata moved to ``[project]``,
-Poetry-specific keys still here). Metadata is ordered by section, Poetry-specific inline tables get canonical key
-order, and set-semantic arrays are sorted while order-significant ones are preserved.
+Covers Poetry 1.x metadata under ``[tool.poetry]`` and Poetry 2.x tool-specific keys. Sections and inline tables follow
+Poetry's documented order. Set-like arrays sort; sequence-dependent arrays retain input order.
 
 .. dropdown:: Formatting details
 
@@ -498,8 +457,7 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
 
     ``[[tool.poetry.source]]``
         Each entry's keys ordered ``name`` → ``url`` → ``priority`` → ``links`` → ``indexed``, with the deprecated
-        ``default`` and ``secondary`` keys placed last. Array order itself is preserved (priority ordering is
-        semantically significant).
+        ``default`` and ``secondary`` last. Entries retain priority order.
 
     **Sorted arrays:**
 
@@ -510,12 +468,11 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
     - Per-dependency ``extras`` arrays (in ``dependencies``, ``dev-dependencies``, per-group dependencies,
       ``requires-plugins``, ``build-constraints``): sorted alphabetically.
 
-    **Preserved as written** (order is semantically significant): ``authors``, ``maintainers``, ``packages``,
+    **Preserved order:** ``authors``, ``maintainers``, ``packages``,
     ``include``, ``readme`` (when an array), multi-constraint dependency arrays, and ``[[tool.poetry.source]]``
     entries.
 
-    **Inline-table key ordering:** when a Poetry-specific inline table is detected (via discriminator keys unique
-    to Poetry's schema), its keys are reordered:
+    **Inline-table key ordering:** Poetry discriminator keys select one of these orders:
 
     - Sources (``{ priority = ... }``, ``{ secondary = ... }``, ``{ links = ... }``, ``{ indexed = ... }``):
       ``name`` → ``url`` → ``priority`` → ``links`` → ``indexed`` → ``default`` → ``secondary``.
@@ -528,8 +485,7 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
     - File dependencies (``{ file = ... }``):
       ``file`` → ``subdirectory`` → ``python`` → ``platform`` → ``markers`` → ``optional`` → ``extras``.
 
-    Inline tables that don't match any Poetry-specific schema (for example ``[[project.authors]]`` inline form
-    ``{ name = "...", email = "..." }``) are left untouched.
+    Inline tables outside these schemas, such as ``{ name = "...", email = "..." }``, retain their input order.
 
     .. fmt-example::
 
@@ -549,8 +505,8 @@ order, and set-semantic arrays are sorted while order-significant ones are prese
 `PDM <https://pdm-project.org/latest/>`_ is a modern Python package and dependency manager. See its
 `build configuration reference <https://pdm-project.org/latest/reference/build/>`_.
 
-Top-level keys are ordered distribution → resolution → version → build → scripts → source → dev-dependencies →
-publish → options; name and glob arrays are sorted, while source-entry order is preserved.
+Top-level keys follow distribution → resolution → version → build → scripts → source → dev-dependencies → publish →
+options. Name and glob arrays sort; source entries retain priority order.
 
 .. dropdown:: Formatting details
 
@@ -573,13 +529,13 @@ publish → options; name and glob arrays are sorted, while source-entry order i
 ``[tool.setuptools]`` and ``[tool.setuptools_scm]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`setuptools <https://setuptools.pypa.io/en/latest/>`_ is a long-standing build backend and packaging library;
+`setuptools <https://setuptools.pypa.io/en/latest/>`_ is a build backend and packaging library;
 `setuptools_scm <https://setuptools-scm.readthedocs.io/en/latest/>`_ derives the package version from SCM tags. See
 the setuptools `pyproject.toml reference <https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html>`_
 and the setuptools_scm `configuration reference <https://setuptools-scm.readthedocs.io/en/latest/config/>`_.
 
-Keys in both tables are grouped (discovery → data → metadata → deprecated); name and glob arrays are sorted, while
-literal lists like ``packages`` are preserved.
+Both tables group keys by discovery → data → metadata → deprecated. Name and glob arrays sort; literal lists such as
+``packages`` retain input order.
 
 .. dropdown:: Formatting details
 
@@ -600,7 +556,7 @@ literal lists like ``packages`` are preserved.
 
     ``[tool.setuptools.package-data]`` / ``[tool.setuptools.exclude-package-data]`` / ``[tool.setuptools.data-files]``
     ordering: the catch-all ``"*"`` pattern always goes first, then the other package patterns alphabetically; each
-    value (an array of glob patterns) is sorted alphabetically.
+    value sorts alphabetically.
 
     ``[tool.setuptools.dynamic]`` ordering: field names alphabetized. Inline-table directives (e.g.
     ``version = { attr = "pkg.__version__" }`` or ``readme = { file = "README.md", content-type = "text/markdown" }``)
@@ -613,9 +569,9 @@ literal lists like ``packages`` are preserved.
     - ``packages.find.include`` / ``packages.find.exclude`` / ``packages.find-namespace.*``: alphabetized.
     - Values inside ``package-data`` / ``exclude-package-data`` tables: alphabetized.
 
-    **Preserved as written** (order is meaningful): ``packages`` (literal list, first match wins),
+    **Preserved order:** ``packages`` (literal list, first match wins),
     ``license-files`` (PEP 639 concatenation order), ``script-files`` and the ``data-files`` lists (installed in
-    order, so the order says which of two files sharing a name is installed), and everything under
+    order, which decides which of two files sharing a name reaches the installation), and everything under
     ``[[tool.setuptools.ext-modules]]`` (compiler and linker argv arrays).
 
     ``[tool.setuptools_scm]`` key ordering (grouped):
@@ -647,11 +603,11 @@ literal lists like ``packages`` are preserved.
 ``[tool.hatch.*]``
 ~~~~~~~~~~~~~~~~~~
 
-`Hatch <https://hatch.pypa.io/latest/>`_ is a modern, extensible Python project manager built around the Hatchling
-build backend. See its `build configuration reference <https://hatch.pypa.io/latest/config/build/>`_.
+`Hatch <https://hatch.pypa.io/latest/>`_ is a Python project manager based on the Hatchling build backend. See its
+`build configuration reference <https://hatch.pypa.io/latest/config/build/>`_.
 
-Keys across the many ``[tool.hatch.*]`` sub-tables are grouped (version → metadata → build → publish → workspace →
-environments); name and path arrays are sorted, while build-hook and matrix order are preserved.
+Hatch tables group keys by version → metadata → build → publish → workspace → environments. Name and path arrays sort;
+build hooks and matrix entries retain input order.
 
 .. dropdown:: Formatting details
 
@@ -682,7 +638,7 @@ environments); name and path arrays are sorted, while build-hook and matrix orde
       read, where a ``!pattern`` after a broader one takes back what it matched.
     - Environments: per-env ``dependencies``, ``extra-dependencies``, ``features``, ``platforms``,
       ``env-include``, ``env-exclude``. ``pre-install-commands`` and ``post-install-commands`` keep their order, since
-      hatch runs them in the order they are listed.
+      hatch runs them in list order.
     - Workspace: ``members``, ``exclude``.
 
     ``scripts`` and ``env-vars`` sub-tables under each environment have their inner keys alphabetized.
@@ -696,8 +652,8 @@ environments); name and path arrays are sorted, while build-hook and matrix orde
 Python C/C++ extensions. See its `configuration reference
 <https://scikit-build-core.readthedocs.io/en/latest/configuration/index.html>`_.
 
-Keys are ordered meta → build → cmake → ninja → sdist → wheel → install → editable → logging → metadata → search
-→ ``generate`` → ``overrides``; name and path lists are sorted, while cmake/ninja argv are preserved.
+Keys follow meta → build → cmake → ninja → sdist → wheel → install → editable → logging → metadata → search →
+``generate`` → ``overrides``. Name and path lists sort; cmake and ninja arguments retain input order.
 
 .. dropdown:: Formatting details
 
@@ -718,8 +674,8 @@ Keys are ordered meta → build → cmake → ninja → sdist → wheel → inst
 `Maturin <https://www.maturin.rs/>`_ builds and publishes Rust-based Python extension modules. See its
 `configuration reference <https://www.maturin.rs/config>`_.
 
-Keys are ordered module identity → source layout → cargo settings → compatibility/strip → behavior; set-semantic
-arrays are sorted, while cargo/rustc argv are preserved.
+Keys follow module identity → source layout → cargo settings → compatibility/strip → behavior. Set-like arrays sort;
+cargo and rustc arguments retain input order.
 
 .. dropdown:: Formatting details
 
@@ -741,8 +697,8 @@ arrays are sorted, while cargo/rustc argv are preserved.
 `Pixi <https://pixi.prefix.dev/latest/>`_ is a cross-platform conda/PyPI package and environment manager. See its
 `pyproject.toml reference <https://pixi.prefix.dev/latest/python/pyproject_toml/>`_.
 
-Keys are grouped by function (workspace metadata → configuration → dependencies → environments → build); a platform
-array of plain names is sorted.
+Keys follow workspace metadata → configuration → dependencies → environments → build. A platform array containing
+plain names sorts.
 
 .. dropdown:: Formatting details
 
@@ -765,17 +721,17 @@ array of plain names is sorted.
     **Sorted arrays:** ``workspace.platforms`` and ``workspace.preview``, where every entry is a plain name.
 
     **Preserved as written:** ``workspace.channels`` and ``workspace.build-variants-files``, since pixi reads both in
-    the order they are listed and lets the earlier entry win, and a ``workspace.platforms`` holding a rich platform
+    input order and lets the earlier entry win, and a ``workspace.platforms`` holding a rich platform
     table, since that names no platform to sort by and pixi runs the first entry the host satisfies.
 
 ``[tool.uv]``
 ~~~~~~~~~~~~~
 
-`uv <https://docs.astral.sh/uv/>`_ is a fast Python package and project manager from Astral. See its
+`uv <https://docs.astral.sh/uv/>`_ is Astral's Python package and project manager. See its
 `settings reference <https://docs.astral.sh/uv/reference/settings/>`_.
 
-Keys are grouped by function (Python → dependencies → sources → resolution → build → network → publishing →
-workspace); package-name arrays and the ``sources`` table are sorted alphabetically.
+Keys follow Python → dependencies → sources → resolution → build → network → publishing → workspace. Package-name
+arrays and the ``sources`` table sort alphabetically.
 
 .. dropdown:: Formatting details
 
@@ -810,7 +766,7 @@ workspace); package-name arrays and the ``sources`` table are sorted alphabetica
       ``environments``, ``required-environments``, ``allow-insecure-host``, ``no-proxy``, ``workspace.members``,
       ``workspace.exclude``
 
-    **Sources table:** ``sources`` entries are sorted alphabetically by package name:
+    **Sources table:** entries sort by package name:
 
     .. fmt-example::
 
@@ -827,8 +783,8 @@ workspace); package-name arrays and the ``sources`` table are sorted alphabetica
 `cibuildwheel <https://cibuildwheel.pypa.io/en/stable/>`_ builds Python wheels across platforms in CI. See its
 `options reference <https://cibuildwheel.pypa.io/en/stable/options/>`_.
 
-Keys are ordered selection → build config → build phases → test phases → platform images → per-platform sub-tables
-→ ``overrides``; set-semantic arrays are sorted, while argv-like lists are preserved.
+Keys follow selection → build config → build phases → test phases → platform images → per-platform sub-tables →
+``overrides``. Set-like arrays sort; argument lists retain input order.
 
 .. dropdown:: Formatting details
 
@@ -842,7 +798,7 @@ Keys are ordered selection → build config → build phases → test phases →
 
     Per-platform sub-tables follow the same inner ordering. ``overrides`` entries, whether written as
     ``[[tool.cibuildwheel.overrides]]`` or as inline tables in ``overrides = [...]``, place ``select`` first
-    (required), then the regular cibuildwheel keys; the array order itself is preserved (later overrides win).
+    (required), then the regular cibuildwheel keys. Entries retain order because later overrides win.
 
     **Sorted arrays:** ``enable``, ``test-extras``, ``test-groups``.
 
@@ -852,10 +808,10 @@ Keys are ordered selection → build config → build phases → test phases →
 ``[tool.autopep8]``
 ~~~~~~~~~~~~~~~~~~~
 
-`autopep8 <https://github.com/hhatto/autopep8>`_ automatically formats Python code to conform to PEP 8. See its
+`autopep8 <https://github.com/hhatto/autopep8>`_ formats Python code to conform to PEP 8. See its
 `configuration reference <https://github.com/hhatto/autopep8#pyproject-toml>`_.
 
-Keys are ordered length/indent → mode → rules → behavior; rule lists are sorted.
+Keys follow length/indent → mode → rules → behavior. Rule lists sort.
 
 .. dropdown:: Formatting details
 
@@ -867,10 +823,10 @@ Keys are ordered length/indent → mode → rules → behavior; rule lists are s
 ``[tool.black]``
 ~~~~~~~~~~~~~~~~
 
-`Black <https://black.readthedocs.io/en/stable/>`_ is an opinionated Python code formatter. See its
+`Black <https://black.readthedocs.io/en/stable/>`_ is a Python code formatter. See its
 `configuration reference <https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html>`_.
 
-Keys follow Black's option grouping; ``target-version`` and ``enable-unstable-feature`` arrays are alphabetized.
+Keys follow Black's option groups. ``target-version`` and ``enable-unstable-feature`` sort alphabetically.
 
 .. dropdown:: Formatting details
 
@@ -884,7 +840,7 @@ Keys follow Black's option grouping; ``target-version`` and ``enable-unstable-fe
 
     **Sorted arrays:** ``target-version`` (so ``py39`` precedes ``py310``), ``enable-unstable-feature``.
 
-    The ``include`` / ``exclude`` family are regex strings, not arrays, so they're left as-is.
+    The ``include`` and ``exclude`` family hold regex strings, so they retain input spelling.
 
 ``[tool.yapf]``
 ~~~~~~~~~~~~~~~
@@ -905,7 +861,7 @@ A single flat table: ``based_on_style`` comes first (it sets the defaults), then
 `djLint <https://djlint.com/>`_ is a linter and formatter for HTML templates (Django, Jinja, and more). See its
 `configuration reference <https://djlint.com/docs/configuration/>`_.
 
-Keys are ordered profile/scope → formatting → linting → ignores → output; exclude and block lists are sorted.
+Keys follow profile/scope → formatting → linting → ignores → output. Exclude and block lists sort.
 
 .. dropdown:: Formatting details
 
@@ -917,11 +873,11 @@ Keys are ordered profile/scope → formatting → linting → ignores → output
 ``[tool.ruff]``
 ~~~~~~~~~~~~~~~
 
-`Ruff <https://docs.astral.sh/ruff/>`_ is a fast Python linter and formatter written in Rust. See its
+`Ruff <https://docs.astral.sh/ruff/>`_ is a Python linter and formatter written in Rust. See its
 `settings reference <https://docs.astral.sh/ruff/settings/>`_.
 
 Keys follow Ruff's option grouping (global → paths → behavior → output → ``format`` → ``lint``); rule-code, path, and
-name arrays are sorted with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``).
+name arrays use natural order (``RUF1`` < ``RUF9`` < ``RUF10``).
 
 .. dropdown:: Formatting details
 
@@ -938,7 +894,7 @@ name arrays are sorted with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``).
        ``fixable`` → ``unfixable`` → plugin configurations
 
     **Sorted arrays:** alphabetical with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``); per-file-ignores values
-    are sorted too:
+    follow the same order:
 
     .. fmt-example::
 
@@ -982,8 +938,7 @@ name arrays are sorted with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``).
       ``lint.pydocstyle.property-decorators``, ``lint.pyflakes.extend-generics``,
       ``lint.pylint.allow-dunder-method-names``, ``lint.pylint.allow-magic-value-types``
 
-    **Preserved as written:** ``lint.isort.forced-separate``, whose groups become auxiliary import blocks in the order
-    they are listed.
+    **Preserved order:** ``lint.isort.forced-separate``, whose list order controls auxiliary import blocks.
 
 ``[tool.isort]``
 ~~~~~~~~~~~~~~~~
@@ -992,7 +947,7 @@ name arrays are sorted with natural ordering (``RUF1`` < ``RUF9`` < ``RUF10``).
 `configuration options <https://pycqa.github.io/isort/docs/configuration/options.html>`_.
 
 ``profile`` comes first (it sets the defaults everything else overrides), then output style, known sources,
-separation, skip patterns, and import edits; name lists are sorted, while sequence-sensitive lists are preserved.
+separation, skip patterns, and import edits. Name lists sort; sequence-dependent lists retain input order.
 
 .. dropdown:: Formatting details
 
@@ -1011,9 +966,9 @@ separation, skip patterns, and import edits; name lists are sorted, while sequen
     ``blocked_extensions``, ``single_line_exclusions``, ``treat_comments_as_code``,
     ``treat_all_comments_as_code``, ``constants``, ``variables``.
 
-    **Preserved as written** (sequence is significant): ``sections`` (output section order), ``no_lines_before``,
-    ``add_imports``, ``remove_imports``, ``required_imports``, ``force_to_top``, ``forced_separate`` (each group is
-    appended to the sections in the order it is listed).
+    **Preserved order:** ``sections`` (output section order), ``no_lines_before``,
+    ``add_imports``, ``remove_imports``, ``required_imports``, ``force_to_top``, ``forced_separate`` (list order sets
+    group placement).
 
 ``[tool.pylint.*]``
 ~~~~~~~~~~~~~~~~~~~
@@ -1021,8 +976,7 @@ separation, skip patterns, and import edits; name lists are sorted, while sequen
 `Pylint <https://pylint.readthedocs.io/en/stable/>`_ is a static analyzer and linter for Python. See
 its `configuration reference <https://pylint.readthedocs.io/en/stable/user_guide/configuration/index.html>`_.
 
-Sub-tables follow Pylint's checker-group order; all rule, name, and path lists are sorted by leaf key name
-regardless of sub-table.
+Sub-tables follow Pylint's checker-group order. Rule, name, and path lists sort by leaf key, independent of sub-table.
 
 .. dropdown:: Formatting details
 
@@ -1046,7 +1000,7 @@ regardless of sub-table.
 `codespell <https://github.com/codespell-project/codespell>`_ checks code and text for common misspellings. See its
 `configuration reference <https://github.com/codespell-project/codespell#using-a-config-file>`_.
 
-Keys are ordered dictionaries → scope → fix behavior → output; word and path lists are sorted.
+Keys follow dictionaries → scope → fix behavior → output. Word and path lists sort.
 
 .. dropdown:: Formatting details
 
@@ -1064,7 +1018,7 @@ Keys are ordered dictionaries → scope → fix behavior → output; word and pa
 `docformatter <https://docformatter.readthedocs.io/en/latest/>`_ formats Python docstrings to follow PEP 257. See
 its `configuration reference <https://docformatter.readthedocs.io/en/latest/configuration.html>`_.
 
-Keys are ordered behavior → format width → wrap/summary tweaks → other.
+Keys follow behavior → format width → wrap/summary tweaks → other.
 
 .. dropdown:: Formatting details
 
@@ -1078,7 +1032,7 @@ Keys are ordered behavior → format width → wrap/summary tweaks → other.
 `interrogate <https://interrogate.readthedocs.io/en/latest/>`_ measures docstring coverage of a Python codebase.
 See its `configuration reference <https://interrogate.readthedocs.io/en/latest/#configuration>`_.
 
-Keys are ordered threshold → ignore flags → exclude → output; exclude and regex lists are sorted.
+Keys follow threshold → ignore flags → exclude → output. Exclude and regex lists sort.
 
 .. dropdown:: Formatting details
 
@@ -1092,7 +1046,7 @@ Keys are ordered threshold → ignore flags → exclude → output; exclude and 
 `check-manifest <https://github.com/mgedmin/check-manifest>`_ checks that ``MANIFEST.in`` is complete for an
 sdist. See its `configuration reference <https://github.com/mgedmin/check-manifest#configuration>`_.
 
-Keys are ordered ``ignore`` → ``ignore-bad-ideas`` → ``ignore-default-rules``; both glob lists are sorted.
+Keys follow ``ignore`` → ``ignore-bad-ideas`` → ``ignore-default-rules``. Both glob lists sort.
 
 .. dropdown:: Formatting details
 
@@ -1106,8 +1060,7 @@ Keys are ordered ``ignore`` → ``ignore-bad-ideas`` → ``ignore-default-rules`
 `deptry <https://deptry.com/>`_ finds unused, missing, and transitive dependencies in Python projects. See its
 `usage reference <https://deptry.com/usage/>`_.
 
-Keys are ordered scope/exclude → ignore rules → per-rule ignores → behavior → mapping; the ignore and path lists
-are sorted.
+Keys follow scope/exclude → ignore rules → per-rule ignores → behavior → mapping. Ignore and path lists sort.
 
 .. dropdown:: Formatting details
 
@@ -1122,7 +1075,7 @@ are sorted.
 `Vulture <https://github.com/jendrikseipp/vulture>`_ finds unused (dead) Python code. See its
 `configuration reference <https://github.com/jendrikseipp/vulture#configuration>`_.
 
-Keys are ordered paths → ignore → behavior → output; path and name lists are sorted.
+Keys follow paths → ignore → behavior → output. Path and name lists sort.
 
 .. dropdown:: Formatting details
 
@@ -1137,8 +1090,8 @@ Keys are ordered paths → ignore → behavior → output; path and name lists a
 `Bandit <https://bandit.readthedocs.io/en/latest/>`_ finds common security issues in Python code. See its
 `configuration reference <https://bandit.readthedocs.io/en/latest/config.html>`_.
 
-Keys are ordered ``exclude_dirs`` → ``targets`` → ``tests`` → ``skips`` → per-plugin sub-tables; all array values
-are alphabetized.
+Keys follow ``exclude_dirs`` → ``targets`` → ``tests`` → ``skips`` → per-plugin sub-tables. Array values sort
+alphabetically.
 
 .. dropdown:: Formatting details
 
@@ -1153,8 +1106,8 @@ are alphabetized.
 `mypy <https://mypy.readthedocs.io/en/stable/>`_ is a static type checker for Python. See its
 `configuration reference <https://mypy.readthedocs.io/en/stable/config_file.html>`_.
 
-Covers all documented mypy options plus the ``[[tool.mypy.overrides]]`` array of tables, reordered to match mypy's
-configuration reference; set-semantic arrays are sorted, while ``plugins`` and ``mypy_path`` are preserved.
+Covers mypy's documented options and ``[[tool.mypy.overrides]]``. Keys follow the mypy reference, set-like arrays sort,
+and ``plugins`` plus ``mypy_path`` retain input order.
 
 .. dropdown:: Formatting details
 
@@ -1203,15 +1156,14 @@ configuration reference; set-semantic arrays are sorted, while ``plugins`` and `
     - Inside overrides entries: ``module`` (when an array of patterns), ``always_true``, ``always_false``,
       ``disable_error_code``, ``enable_error_code``.
 
-    **Preserved as written:** ``plugins`` (run in declared order; reordering changes behavior) and ``mypy_path``
+    **Preserved order:** ``plugins`` (run in declared order; reordering changes behavior) and ``mypy_path``
     (a search path with priority semantics).
 
     **Inline-table handling:** when ``[[tool.mypy.overrides]]`` collapses to ``overrides = [{...}, {...}]`` under
-    the default ``table_format = "short"``, key order inside each entry is normalized via discriminators unique to
-    mypy (``disable_error_code`` / ``enable_error_code`` / ``ignore_missing_imports`` / ``follow_untyped_imports``
-    / ``ignore_errors`` / ``warn_unused_ignores`` / ``disallow_untyped_defs`` / ``check_untyped_defs``). The arrays
-    inside each inline entry are sorted in place, so ``disable_error_code = [...]`` is alphabetized whether the
-    override is expanded or collapsed.
+    the default ``table_format = "short"``, mypy-specific discriminators select each entry's key order:
+    ``disable_error_code`` / ``enable_error_code`` / ``ignore_missing_imports`` / ``follow_untyped_imports`` /
+    ``ignore_errors`` / ``warn_unused_ignores`` / ``disallow_untyped_defs`` / ``check_untyped_defs``. Arrays inside
+    each entry sort in either table shape.
 
     .. fmt-example::
 
@@ -1222,34 +1174,32 @@ configuration reference; set-semantic arrays are sorted, while ``plugins`` and `
 ``[tool.pyrefly]``
 ~~~~~~~~~~~~~~~~~~
 
-`Pyrefly <https://pyrefly.org/>`_ is Meta's fast Python type checker and language server, written in Rust. See its
+`Pyrefly <https://pyrefly.org/>`_ is Meta's Python type checker and language server, written in Rust. See its
 `configuration reference <https://pyrefly.org/en/docs/configuration/>`_.
 
-Keys follow a fixed platform → paths → behavior → ``errors`` order; the selection arrays are sorted while the search
-paths keep their order.
+Keys follow platform → paths → behavior → ``errors``. Selection arrays sort; search paths retain input order.
 
 .. dropdown:: Formatting details
 
     **Key ordering:** ``python-version`` → ``python-platform`` → ``python-interpreter-path`` → ``project-includes`` →
     ``project-excludes`` → ``search-path`` → ``site-package-path`` → ``use-untyped-imports`` →
     ``replace-imports-with-any`` → ``ignore-errors-in-generated-code`` → ``errors``. Pyrefly spells its options with
-    hyphens; the underscore forms older files hold are ordered beside them.
+    hyphens; older underscore forms take the same rank.
 
     **Sorted arrays:** ``project-includes``, ``project-excludes``. ``search-path`` and ``site-package-path`` keep
-    their order, since pyrefly searches them in the order they are listed, and so does
-    ``replace-imports-with-any``, where the first rule that matches decides: a ``!`` rule exempts an import only while
-    it stands before a broader rule that would also match it.
+    input order because pyrefly searches them in sequence. ``replace-imports-with-any`` also retains order because the
+    first match decides: a ``!`` rule exempts an import only while it precedes a broader matching rule.
 
 ``[tool.pyright]`` and ``[tool.basedpyright]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`Pyright <https://microsoft.github.io/pyright/>`_ is Microsoft's fast Python type checker;
+`Pyright <https://microsoft.github.io/pyright/>`_ is Microsoft's Python type checker;
 `basedpyright <https://docs.basedpyright.com/>`_ is a community fork sharing the same schema. See the pyright
 `configuration reference <https://microsoft.github.io/pyright/#/configuration>`_ and the basedpyright
 `config-files reference <https://docs.basedpyright.com/latest/configuration/config-files/>`_.
 
-Keys are ordered platform → mode flags → paths → strict-flavor toggles → ``defineConstant`` → ``report*`` rules
-(alphabetized) → ``executionEnvironments``; path arrays are sorted.
+Keys follow platform → mode flags → paths → strict-flavor toggles → ``defineConstant`` → alphabetical ``report*``
+rules → ``executionEnvironments``. Path arrays sort.
 
 .. dropdown:: Formatting details
 
@@ -1266,20 +1216,20 @@ Keys are ordered platform → mode flags → paths → strict-flavor toggles →
     6. All ``report*`` rules, alphabetized
     7. ``executionEnvironments`` (last)
 
-    The ``report*`` rules (70+ in pyright; basedpyright adds more) are collected from the input and inserted
-    alphabetically rather than hardcoded, so new diagnostic rules don't require formatter changes.
+    The formatter gathers ``report*`` rules from the input and sorts them, so new diagnostic names need no formatter
+    update.
 
     **Sorted arrays:** ``include``, ``exclude``, ``ignore``, ``strict``. ``extraPaths`` keeps its order, since
-    pyright searches the roots in the order they are given.
+    pyright searches roots in list order.
 
 ``[tool.ty]``
 ~~~~~~~~~~~~~
 
-`ty <https://docs.astral.sh/ty/>`_ is Astral's fast Python type checker, written in Rust. See its
+`ty <https://docs.astral.sh/ty/>`_ is Astral's Python type checker, written in Rust. See its
 `configuration reference <https://docs.astral.sh/ty/reference/configuration/>`_.
 
-Keys are ordered ``src`` → ``environment`` → ``rules`` → ``terminal`` → ``overrides``; ``src.include`` is sorted,
-while ``src.exclude`` keeps its order.
+Keys follow ``src`` → ``environment`` → ``rules`` → ``terminal`` → ``overrides``. ``src.include`` sorts;
+``src.exclude`` retains input order.
 
 .. dropdown:: Formatting details
 
@@ -1290,16 +1240,16 @@ while ``src.exclude`` keeps its order.
     **Sorted arrays:** ``src.include``. ``src.exclude`` keeps its order, since ty reads it the way a gitignore is
     read and a ``!pattern`` takes back what a broader one excluded.
 
-    The schema is still pre-1.0; unknown keys are alphabetized after the canonical set.
+    The schema remains pre-1.0; unknown keys follow the canonical set alphabetically.
 
 ``[tool.pytest.ini_options]``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-`pytest <https://docs.pytest.org/en/stable/>`_ is a feature-rich testing framework for Python. See its
+`pytest <https://docs.pytest.org/en/stable/>`_ is a testing framework for Python. See its
 `configuration reference <https://docs.pytest.org/en/stable/reference/customize.html>`_.
 
-Keys in the ``ini_options`` block follow the pytest reference order; set-semantic arrays are sorted, while
-``addopts`` and ``pythonpath`` are preserved.
+Keys in ``ini_options`` follow the pytest reference. Set-like arrays sort; ``addopts`` and ``pythonpath`` retain input
+order.
 
 .. dropdown:: Formatting details
 
@@ -1310,7 +1260,7 @@ Keys in the ``ini_options`` block follow the pytest reference order; set-semanti
     ``python_files``, ``python_classes``, ``python_functions``, ``markers``, ``doctest_optionflags``,
     ``usefixtures``, ``required_plugins``.
 
-    **Preserved as written:** ``addopts`` (CLI argv, order matters), ``testpaths`` (the collection order),
+    **Preserved order:** ``addopts`` (CLI arguments), ``testpaths`` (collection order),
     ``filterwarnings`` (the last filter that matches wins) and ``pythonpath`` (a search path with
     priority semantics).
 
@@ -1330,7 +1280,7 @@ Keys in the ``ini_options`` block follow the pytest reference order; set-semanti
 `configuration reference <https://coverage.readthedocs.io/en/latest/config.html>`_.
 
 Keys follow coverage.py's workflow phases (run → paths → report → output formats) with related options kept adjacent;
-set-semantic arrays are sorted.
+set-like arrays sort.
 
 .. dropdown:: Formatting details
 
@@ -1393,15 +1343,14 @@ set-semantic arrays are sorted.
 `tox <https://tox.wiki/en/stable/>`_ automates and standardizes testing across multiple Python environments. See
 its `configuration reference <https://tox.wiki/en/stable/config.html>`_.
 
-A ``[tool.tox]`` block in ``pyproject.toml`` reuses the ``tox-toml-fmt`` rules, so it is formatted identically to a
-standalone ``tox.toml``.
+A ``[tool.tox]`` block reuses the ``tox-toml-fmt`` rules applied to a standalone ``tox.toml``.
 
 .. dropdown:: Formatting details
 
     Reuses the rules from ``tox-toml-fmt``: alias normalization (``envlist`` → ``env_list``, ``setenv`` →
     ``set_env``, etc.), canonical key ordering for the root table and every env table, PEP 508 requirement
-    normalization and sorting in ``deps`` (``constraints`` names the files tox hands to pip, so it is left as
-    written), sorted ``pass_env`` (inline-table entries first),
+    normalization and sorting in ``deps`` (``constraints`` retains file order), sorted ``pass_env`` (inline-table
+    entries first),
     version-aware ``env_list`` sorting (``py313`` before ``py312`` before ``py311``), and inline-table reordering
     for ``replace``, ``prefix``, ``product``, and ``value`` directives.
 
@@ -1415,7 +1364,7 @@ standalone ``tox.toml``.
 version strings across files and tags releases. See its `configuration reference
 <https://callowayproject.github.io/bump-my-version/reference/configuration/>`_.
 
-Keys are ordered identity → format → tag → commit → behavior → ``files`` / ``parts``.
+Keys follow identity → format → tag → commit → behavior → ``files`` / ``parts``.
 
 .. dropdown:: Formatting details
 
@@ -1431,7 +1380,7 @@ Keys are ordered identity → format → tag → commit → behavior → ``files
 bumps and changelogs. See its
 `configuration reference <https://commitizen-tools.github.io/commitizen/config/configuration_file/>`_.
 
-Keys are ordered rule selection → version source → bump behavior → tag/sign → changelog → hooks → ``customize``.
+Keys follow rule selection → version source → bump behavior → tag/sign → changelog → hooks → ``customize``.
 
 .. dropdown:: Formatting details
 
@@ -1448,8 +1397,8 @@ Keys are ordered rule selection → version source → bump behavior → tag/sig
 releases from commit history. See its `configuration reference
 <https://python-semantic-release.readthedocs.io/en/latest/configuration/configuration.html>`_.
 
-Keys are ordered tag/version → assets → version source → repo → commit parser → branches → publish → changelog →
-remote; version and asset lists are sorted.
+Keys follow tag/version → assets → version source → repo → commit parser → branches → publish → changelog → remote.
+``exclude_commit_patterns`` sorts; declaration lists retain input order.
 
 .. dropdown:: Formatting details
 
@@ -1465,8 +1414,8 @@ remote; version and asset lists are sorted.
 `towncrier <https://towncrier.readthedocs.io/en/stable/>`_ builds release notes from news-fragment files. See its
 `configuration reference <https://towncrier.readthedocs.io/en/stable/configuration.html>`_.
 
-Keys are ordered package identity → news location → rendering → behavior → ``type`` / ``section``; the ``ignore``
-glob list is sorted, while changelog display order is preserved.
+Keys follow package identity → news location → rendering → behavior → ``type`` / ``section``. The ``ignore`` list
+sorts; changelog entries retain display order.
 
 .. dropdown:: Formatting details
 
@@ -1477,8 +1426,8 @@ glob list is sorted, while changelog display order is preserved.
     of tables, last).
 
     ``[[tool.towncrier.type]]`` entries get keys ordered ``directory`` → ``name`` → ``showcontent``;
-    ``[[tool.towncrier.section]]`` entries get ``path`` → ``name`` → ``showcontent``. Array order is preserved
-    (display order in the rendered changelog).
+    ``[[tool.towncrier.section]]`` entries get ``path`` → ``name`` → ``showcontent``. Arrays retain changelog display
+    order.
 
     **Sorted arrays:** ``ignore`` (file globs to skip).
 
@@ -1487,21 +1436,22 @@ glob list is sorted, while changelog display order is preserved.
 
 The formatter's own configuration table.
 
-See :doc:`configuration` for what each key controls.
+See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for what each key
+controls.
 
-Keys are ordered to match the documented configuration sequence; the ``expand_tables``, ``collapse_tables``, and
-``skip_wrap_for_keys`` lists are sorted and deduplicated.
+Keys follow the documented configuration sequence. The ``expand_tables``, ``collapse_tables``, and
+``skip_wrap_for_keys`` lists sort and drop duplicate strings.
 
 .. dropdown:: Formatting details
 
     **Key ordering:** ``column_width`` → ``indent`` → ``keep_full_version`` →
     ``generate_python_version_classifiers`` → ``max_supported_python`` → ``table_format`` → ``sub_table_spacing`` →
-    ``separate_root_table`` → ``expand_tables`` → ``collapse_tables`` → ``skip_wrap_for_keys``. Unrecognized keys are
-    appended alphabetically.
+    ``separate_root_table`` → ``expand_tables`` → ``collapse_tables`` → ``skip_wrap_for_keys``. Unrecognized keys
+    follow alphabetically.
 
-    **Sorted arrays:** ``expand_tables``, ``collapse_tables``, ``skip_wrap_for_keys``. Each is matched as a set, so
-    sorting and dropping byte-identical duplicates leaves behavior unchanged. Duplicate removal keeps case variants
-    distinct, matching the case-sensitive lookups these lists feed.
+    **Sorted arrays:** ``expand_tables``, ``collapse_tables``, ``skip_wrap_for_keys``. Matching treats each as a set,
+    so sorting and dropping byte-identical duplicates leaves behavior unchanged. Duplicate removal keeps case variants
+    distinct for case-sensitive lookup.
 
     .. fmt-example::
 
@@ -1514,5 +1464,4 @@ Keys are ordered to match the documented configuration sequence; the ``expand_ta
 Other Tables
 ~~~~~~~~~~~~
 
-Any unrecognized tables are preserved and reordered according to standard table ordering rules. Keys within unknown
-tables are not reordered or normalized.
+Unrecognized tables take their standard table position. Their keys and values retain input order and spelling.

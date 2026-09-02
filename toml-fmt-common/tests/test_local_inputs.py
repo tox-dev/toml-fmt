@@ -76,23 +76,15 @@ def test_every_project_the_changelog_accepts_has_ownership() -> None:
     assert set(LOCAL_INPUTS) == {"pyproject-fmt", "tox-toml-fmt", "toml-fmt-common"}
 
 
-def test_affects_reads_every_changed_file() -> None:
-    assert affects("tox-toml-fmt", ["README.md", "toml-doc/src/lib.rs"]) is True
-    assert affects("tox-toml-fmt", ["README.md", "docs/index.rst"]) is False
-
-
-def _watched(workflow: str) -> set[str]:
-    """The path prefixes a workflow filters on, however its two filter lists quote them."""
-    held = set()
-    for line in workflow.splitlines():
-        text = line.strip().lstrip("- ").strip("\"'")
-        if text.endswith("/**"):
-            held.add(f"{text[:-2]}")
-        elif text in {"Cargo.toml", "Cargo.lock"}:
-            held.add("Cargo.")
-        elif text == "rust-toolchain.toml":
-            held.add(text)
-    return held
+@pytest.mark.parametrize(
+    ("changed", "reaches"),
+    [
+        pytest.param(["README.md", "toml-doc/src/lib.rs"], True, id="one-of-them-reaches"),
+        pytest.param(["README.md", "docs/index.rst"], False, id="none-of-them-reaches"),
+    ],
+)
+def test_affects_reads_every_changed_file(changed: list[str], reaches: bool) -> None:
+    assert affects("tox-toml-fmt", changed) is reaches
 
 
 @pytest.mark.parametrize("kind", ["build", "test"])
@@ -102,3 +94,17 @@ def test_every_workflow_watches_exactly_the_local_inputs(project: str, kind: str
     workflow = (_ROOT / ".github" / "workflows" / f"{project.replace('-', '_')}_{kind}.yaml").read_text()
 
     assert _watched(workflow) == set(LOCAL_INPUTS[project])
+
+
+def _watched(workflow: str) -> set[str]:
+    """The path prefixes a workflow filters on, however its two filter lists quote them."""
+    held = set()
+    for line in workflow.splitlines():
+        text = line.strip().lstrip("- ").strip("\"'")
+        if text.endswith("/**"):
+            held.add(text[:-2])
+        elif text in {"Cargo.toml", "Cargo.lock"}:
+            held.add("Cargo.")
+        elif text == "rust-toolchain.toml":
+            held.add(text)
+    return held

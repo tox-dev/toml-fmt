@@ -1,7 +1,7 @@
 [package]
 name = "common"
 version = "1.0.0"
-description = "Common code for formatting TOML files"
+description = "Shared TOML formatting passes"
 repository = "https://github.com/tox-dev/toml-fmt"
 readme = "README.md"
 license = "MIT"

@@ -6,7 +6,10 @@
 
 use std::collections::HashMap;
 
-use toml_doc::{Document, Entry, Piece, Section, SectionKind, Value};
+use toml_doc::{
+    Document, Entry, InlineTable, Key, KeyPart, KeyValue, LineEnding, Member, Piece, Section, SectionKind, Trivia,
+    Value,
+};
 
 use crate::group::{base_segments, is_group_marker};
 
@@ -66,7 +69,7 @@ where
 /// `path`, so a rule can rename what a key names wherever the file wrote it.
 pub fn for_names_under<F>(document: &mut Document<'_>, path: &[String], mut visit: F)
 where
-    F: FnMut(&[String], &mut toml_doc::Key<'_>),
+    F: FnMut(&[String], &mut Key<'_>),
 {
     for_key_values(document, path, &mut |key_value, under| {
         let named = named_by(under, &key_value.key);
@@ -85,7 +88,7 @@ where
 /// of them.
 pub fn for_key_paths_under<F>(document: &mut Document<'_>, path: &[String], mut visit: F)
 where
-    F: FnMut(&[String], &mut toml_doc::KeyValue<'_>),
+    F: FnMut(&[String], &mut KeyValue<'_>),
 {
     for_key_values(document, path, &mut |key_value, under| {
         let named = named_by(under, &key_value.key);
@@ -116,12 +119,12 @@ pub fn reorder_tables_of(
 }
 
 /// What a key names below the table it belongs to, which the caller has already picked it for.
-fn below(under: &[String], key: &toml_doc::Key<'_>, table: &[String]) -> Vec<String> {
+fn below(under: &[String], key: &Key<'_>, table: &[String]) -> Vec<String> {
     named_by(under, key)[table.len()..].to_vec()
 }
 
 /// The whole path a key names, which is the table it sits under followed by its own segments.
-fn named_by(under: &[String], key: &toml_doc::Key<'_>) -> Vec<String> {
+fn named_by(under: &[String], key: &Key<'_>) -> Vec<String> {
     under.iter().chain(&key.segments()).cloned().collect()
 }
 
@@ -129,7 +132,7 @@ fn named_by(under: &[String], key: &toml_doc::Key<'_>) -> Vec<String> {
 /// sits under, descending into the tables the file wrote as values.
 fn for_key_values<F>(document: &mut Document<'_>, path: &[String], visit: &mut F)
 where
-    F: FnMut(&mut toml_doc::KeyValue<'_>, &[String]),
+    F: FnMut(&mut KeyValue<'_>, &[String]),
 {
     for entry in active(&mut document.root) {
         take_key_value(&mut entry.key_value, &[], path, visit);
@@ -142,9 +145,9 @@ where
     }
 }
 
-fn take_key_value<F>(key_value: &mut toml_doc::KeyValue<'_>, under: &[String], path: &[String], visit: &mut F)
+fn take_key_value<F>(key_value: &mut KeyValue<'_>, under: &[String], path: &[String], visit: &mut F)
 where
-    F: FnMut(&mut toml_doc::KeyValue<'_>, &[String]),
+    F: FnMut(&mut KeyValue<'_>, &[String]),
 {
     let named = named_by(under, &key_value.key);
     // a key on the way to the table says nothing about it, but what it holds may
@@ -189,7 +192,7 @@ where
 /// Run `visit` over the table written at `path`, where the file wrote one as a value.
 pub fn for_table_at<F>(document: &mut Document<'_>, path: &[String], mut visit: F)
 where
-    F: FnMut(&mut toml_doc::InlineTable<'_>),
+    F: FnMut(&mut InlineTable<'_>),
 {
     for_value_at(document, path, |value| {
         if let Value::InlineTable(table) = value {
@@ -250,7 +253,7 @@ enum Which<'a> {
 
 impl Which<'_> {
     /// The table a key belongs to, where it belongs to one being ordered.
-    fn table(self, under: &[String], key: &toml_doc::Key<'_>) -> Option<Vec<String>> {
+    fn table(self, under: &[String], key: &Key<'_>) -> Option<Vec<String>> {
         let named = named_by(under, key);
         let path = match self {
             Self::At(path) => path.to_vec(),
@@ -278,7 +281,7 @@ struct Ordering<'a> {
 
 impl Ordering<'_> {
     /// Where a key sits among the ones it is sorted against.
-    fn ranked(self, tail: &[String], key: &toml_doc::Key<'_>) -> (usize, String) {
+    fn ranked(self, tail: &[String], key: &Key<'_>) -> (usize, String) {
         let name = dotted_name(tail);
         // a sort that keeps equal keys where they were is what holds a run in place, so the keys of
         // an ordered name are all given the same one
@@ -318,7 +321,7 @@ impl Ordering<'_> {
         self,
         under: &[String],
         slots: std::ops::Range<usize>,
-        key_of: impl Fn(usize) -> &'k toml_doc::Key<'k>,
+        key_of: impl Fn(usize) -> &'k Key<'k>,
     ) -> Vec<(Vec<String>, Vec<usize>)> {
         let mut held: Vec<(Vec<String>, Vec<usize>)> = Vec::new();
         for at in slots {
@@ -448,7 +451,7 @@ pub fn active<'e, 'a>(entries: &'e mut [Entry<'a>]) -> impl Iterator<Item = &'e 
 /// reads as the one name the file gave it and no rule written against a bare name can match it.
 /// Build a name to compare against with [`quoted_segment`], so both sides spell it the same way.
 #[must_use]
-pub fn dispatch_name(key: &toml_doc::Key<'_>) -> String {
+pub fn dispatch_name(key: &Key<'_>) -> String {
     dotted_name(&key.segments())
 }
 
@@ -517,7 +520,7 @@ pub fn reorder_keys_within(entries: &mut [Entry<'_>], order: &[&str], keep_order
 }
 
 /// Take the lines up to and including the group marker off the trivia.
-fn take_marker<'a>(lead: &mut toml_doc::Trivia<'a>) -> Vec<Piece<'a>> {
+fn take_marker<'a>(lead: &mut Trivia<'a>) -> Vec<Piece<'a>> {
     let pieces = lead.pieces_mut();
     let last = pieces.iter().rposition(|piece| match piece {
         Piece::Comment { text, .. } => is_group_marker(text),
@@ -548,7 +551,7 @@ pub fn rename_keys(entries: &mut [Entry<'_>], aliases: &[(&str, &str)]) -> Vec<(
         if taken.iter().any(|held| held == replacement) {
             continue;
         }
-        entry.key_value.key = toml_doc::Key::new(replacement.split('.'));
+        entry.key_value.key = Key::new(replacement.split('.'));
         taken.push((*replacement).to_owned());
         renamed.push((key, (*replacement).to_owned()));
     }
@@ -644,10 +647,10 @@ pub fn find<'e, 'a>(entries: &'e mut [Entry<'a>], key: &str) -> Option<&'e mut V
 
 /// A key as it was written, quotes included, which is what decides where it sorts: `"Source Code"`
 /// leads `Changelog` because the quote does.
-fn written_key(key: &toml_doc::Key<'_>) -> String {
+fn written_key(key: &Key<'_>) -> String {
     key.parts()
         .iter()
-        .map(toml_doc::KeyPart::written)
+        .map(KeyPart::written)
         .collect::<Vec<&str>>()
         .join(".")
 }
@@ -691,7 +694,7 @@ fn groups(entries: &[Entry<'_>]) -> Vec<std::ops::Range<usize>> {
 }
 
 /// Put the members of a table written as a value in order, one authored group at a time.
-pub fn sort_members<T, K: Ord>(members: &mut Vec<toml_doc::Member<'_, T>>, mut key_of: impl FnMut(&T) -> K) {
+pub fn sort_members<T, K: Ord>(members: &mut Vec<Member<'_, T>>, mut key_of: impl FnMut(&T) -> K) {
     for group in crate::group::member_ranges(members) {
         let held: Vec<usize> = group.collect();
         sort_slots(members, &held, |member| key_of(&member.item));
@@ -900,9 +903,9 @@ pub fn reorder_within_keeping(
         }
         pieces.insert(
             0,
-            toml_doc::Piece::Blank {
+            Piece::Blank {
                 indent: "".into(),
-                ending: toml_doc::LineEnding::Lf,
+                ending: LineEnding::Lf,
             },
         );
     }

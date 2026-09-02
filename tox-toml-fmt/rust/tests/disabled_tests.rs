@@ -4,16 +4,6 @@ use indoc::indoc;
 use super::{assert_valid_toml, default_settings};
 use _tox_toml_fmt::format_toml;
 
-fn evaluate(start: &str) -> String {
-    let result = format_toml(start, &default_settings()).expect("the formatter reads its own output");
-    assert_valid_toml(&result);
-    assert!(
-        !result.contains(MARKER),
-        "internal marker leaked into output:\n{result}"
-    );
-    result
-}
-
 #[test]
 fn test_disabled_key_stays_with_its_env_table() {
     let start = indoc! {r#"
@@ -189,4 +179,14 @@ fn test_a_commented_env_list_orders_no_table() {
     description = "b"
     "#);
     assert_eq!(evaluate(&commented), commented);
+}
+
+fn evaluate(start: &str) -> String {
+    let result = format_toml(start, &default_settings()).expect("the formatter reads its own output");
+    assert_valid_toml(&result);
+    assert!(
+        !result.contains(MARKER),
+        "internal marker leaked into output:\n{result}"
+    );
+    result
 }

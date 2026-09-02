@@ -4,31 +4,6 @@ use common::arrays;
 use common::layout::Layout;
 use toml_doc::{Array, Document, LineEnding, Value};
 
-fn parse(source: &str) -> Document<'_> {
-    toml_doc::parse(source).expect("valid source")
-}
-
-/// Reordering leaves the separators where position put them, so the layout pass follows it just as
-/// it does in the formatter.
-fn written(document: &mut Document<'_>) -> String {
-    Layout {
-        column_width: 120,
-        indent: 2,
-        ending: LineEnding::Lf,
-    }
-    .apply(document);
-    document.to_string()
-}
-
-fn with_array(source: &str, act: impl FnOnce(&mut Array<'_>)) -> String {
-    let mut document = parse(source);
-    let Value::Array(array) = &mut document.root[0].key_value.value else {
-        panic!("the test source holds an array");
-    };
-    act(array);
-    written(&mut document)
-}
-
 #[test]
 fn deduping_leaves_a_member_that_is_not_a_string() {
     assert_eq!(
@@ -352,4 +327,27 @@ fn members_that_hold_their_place_sort_within_their_own_group() {
         ),
         "a = [\n  \"a\",\n  \"z\",\n  # Group: later\n  \"b\",\n  \"y\",\n]\n"
     );
+}
+
+fn with_array(source: &str, act: impl FnOnce(&mut Array<'_>)) -> String {
+    let mut document = parse(source);
+    let Value::Array(array) = &mut document.root[0].key_value.value else {
+        panic!("the test source holds an array");
+    };
+    act(array);
+    written(&mut document)
+}
+
+fn parse(source: &str) -> Document<'_> {
+    toml_doc::parse(source).expect("valid source")
+}
+
+fn written(document: &mut Document<'_>) -> String {
+    Layout {
+        column_width: 120,
+        indent: 2,
+        ending: LineEnding::Lf,
+    }
+    .apply(document);
+    document.to_string()
 }

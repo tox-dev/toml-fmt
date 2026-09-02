@@ -2,14 +2,6 @@
 
 use toml_doc::{Key, Repr, Value};
 
-fn scalar(source: &str) -> Repr<'static> {
-    let document = toml_doc::parse(source).expect("valid source");
-    let Value::Scalar(repr) = &document.root[0].key_value.value else {
-        panic!("expected a scalar");
-    };
-    repr.clone().into_owned()
-}
-
 #[test]
 fn escapes_resolve_to_the_characters_they_name() {
     let decoded: Vec<String> = [
@@ -151,4 +143,12 @@ fn a_token_reads_back_the_characters_it_stands_for() {
     assert_eq!(held(0), "1");
     assert_eq!(held(1), "a\tb");
     assert_eq!(held(2), "a\\tb");
+}
+
+fn scalar(source: &str) -> Repr<'static> {
+    let document = toml_doc::parse(source).expect("valid source");
+    let Value::Scalar(repr) = &document.root[0].key_value.value else {
+        panic!("expected a scalar");
+    };
+    repr.clone().into_owned()
 }

@@ -1,20 +1,4 @@
-use super::{default_settings, evaluate_full, evaluate_settings};
-use _pyproject_fmt::Settings;
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
-
-/// The same rules in the format that keeps every environment in a header of its own.
-fn evaluate_long(start: &str) -> String {
-    evaluate_settings(
-        start,
-        &Settings {
-            table_format: String::from("long"),
-            ..default_settings()
-        },
-    )
-}
+use super::{evaluate_full as evaluate, evaluate_long};
 
 #[test]
 fn test_tox_root_order() {

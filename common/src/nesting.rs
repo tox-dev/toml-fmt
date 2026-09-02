@@ -6,7 +6,10 @@
 
 use std::collections::HashSet;
 
-use toml_doc::{Document, Entry, InlineTable, Key, KeyPart, Section, SectionKind, Value};
+use toml_doc::{
+    Array, Comment, Document, Entry, Header, InlineTable, Key, KeyPart, KeyValue, LineEnding, Pad, Padding, Piece,
+    Section, SectionKind, Trail, Trivia, Value,
+};
 
 /// Fold every `[name.sub]` into `[name]` as `sub.key` entries, and every `[[name.sub]]` into
 /// `sub = [ { ... } ]`.
@@ -119,7 +122,7 @@ pub fn collapse_of(document: &mut Document<'_>, root: &[String], wanted: &dyn Fn
             .cloned()
             .collect();
         if let Some(text) = section.header.trail.comment.take() {
-            kept.push(toml_doc::Piece::Comment {
+            kept.push(Piece::Comment {
                 indent: "".into(),
                 text,
                 ending: section.header.trail.ending,
@@ -347,7 +350,7 @@ fn empty_table_entry<'a>(leaf: KeyPart<'a>, section: &Section<'a>) -> Entry<'a> 
     Entry {
         lead: section.header.lead.clone(),
         indent: "".into(),
-        key_value: toml_doc::KeyValue {
+        key_value: KeyValue {
             key: Key::from_parts(vec![leaf]),
             pre_eq: " ".into(),
             post_eq: " ".into(),
@@ -357,15 +360,15 @@ fn empty_table_entry<'a>(leaf: KeyPart<'a>, section: &Section<'a>) -> Entry<'a> 
     }
 }
 
-fn header_for<'a>(key: Key<'a>, sibling: &Section<'a>) -> toml_doc::Header<'a> {
-    toml_doc::Header {
-        lead: toml_doc::Trivia::default(),
+fn header_for<'a>(key: Key<'a>, sibling: &Section<'a>) -> Header<'a> {
+    Header {
+        lead: Trivia::default(),
         indent: "".into(),
         kind: SectionKind::Table,
         pre_key: "".into(),
         key,
         post_key: "".into(),
-        trail: toml_doc::Trail {
+        trail: Trail {
             ws: "".into(),
             comment: None,
             ending: sibling.header.trail.ending,
@@ -429,7 +432,7 @@ fn collapse_array_of_tables_under(document: &mut Document<'_>, name: &[String], 
                 .map(|entry| crate::build::member(entry.key_value.clone()))
                 .collect(),
             trailing_comma: false,
-            trailing: toml_doc::Padding::default(),
+            trailing: Padding::default(),
         };
         let mut member = crate::build::member(Value::InlineTable(table));
         // folding a table too wide for one line would bury it, so it stays written out. What it
@@ -446,10 +449,10 @@ fn collapse_array_of_tables_under(document: &mut Document<'_>, name: &[String], 
     document.sections.retain(|section| !named(section, name));
     let index = Under::new(document, parent);
     let at = index_of(document, &index, parent).expect("the parent was just written out");
-    let array = toml_doc::Array {
+    let array = Array {
         members,
         trailing_comma: false,
-        trailing: toml_doc::Padding::default(),
+        trailing: Padding::default(),
     };
     let mut entry = crate::build::entry(field, Value::Array(array));
     // the field's own segment carries over, so a quoted name holding a dot stays one key
@@ -467,7 +470,7 @@ fn fits_one_line(leaf: &KeyPart<'_>, value: &Value<'_>, width: Width) -> bool {
     crate::layout::Layout {
         column_width: width.column,
         indent: width.indent,
-        ending: toml_doc::LineEnding::Lf,
+        ending: LineEnding::Lf,
     }
     .apply(&mut document);
     let written = document.to_string();
@@ -484,24 +487,24 @@ fn has_comment(entry: &Entry<'_>) -> bool {
 
 /// The comments above the header and above or beside its first key, moved to where they lead the
 /// inline table the table folds into.
-fn lead_comments<'a>(section: &Section<'a>) -> toml_doc::Padding<'a> {
-    let mut lead = toml_doc::Padding::default();
+fn lead_comments<'a>(section: &Section<'a>) -> Padding<'a> {
+    let mut lead = Padding::default();
     let first = section.entries.first();
     let texts = comments_in(&section.header.lead)
         .chain(section.header.trail.comment.clone())
         .chain(first.into_iter().flat_map(|entry| comments_in(&entry.lead)))
         .chain(first.and_then(|entry| entry.trail.comment.clone()));
     for text in texts {
-        lead.parts_mut().push(toml_doc::Pad::Comment(text));
+        lead.parts_mut().push(Pad::Comment(text));
         // a comment runs to the end of its line, so the value has to start on the next one
-        lead.parts_mut().push(toml_doc::Pad::Newline(toml_doc::LineEnding::Lf));
+        lead.parts_mut().push(Pad::Newline(LineEnding::Lf));
     }
     lead
 }
 
-fn comments_in<'a>(trivia: &toml_doc::Trivia<'a>) -> impl Iterator<Item = toml_doc::Comment<'a>> {
+fn comments_in<'a>(trivia: &Trivia<'a>) -> impl Iterator<Item = Comment<'a>> {
     trivia.pieces().iter().filter_map(|piece| match piece {
-        toml_doc::Piece::Comment { text, .. } => Some(text.clone()),
-        toml_doc::Piece::Blank { .. } => None,
+        Piece::Comment { text, .. } => Some(text.clone()),
+        Piece::Blank { .. } => None,
     })
 }

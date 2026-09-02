@@ -3,10 +3,6 @@
 use common::nesting;
 use toml_doc::Document;
 
-fn parse(source: &str) -> Document<'_> {
-    toml_doc::parse(source).expect("valid source")
-}
-
 #[test]
 fn a_sub_table_folds_into_its_parent_as_dotted_keys() {
     let mut document = parse("[tool.x]\na = 1\n[tool.x.sub]\nb = 2\nc = 3\n");
@@ -391,4 +387,8 @@ fn a_table_of_only_disabled_keys_is_not_folded() {
     .expect("the pass wrote a document");
 
     assert_eq!(formatted, source);
+}
+
+fn parse(source: &str) -> Document<'_> {
+    toml_doc::parse(source).expect("valid source")
 }

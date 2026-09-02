@@ -77,66 +77,68 @@ pub const KEY_ORDER: &[&str] = &[
     "lint",
 ];
 
-#[allow(clippy::too_many_lines)]
+/// The names holding a list of names, which sorts.
+static SORTS: &[&str] = &[
+    "builtins",
+    "exclude",
+    "extend-exclude",
+    "extend-include",
+    "format.exclude",
+    "include",
+    "lint.allowed-confusables",
+    "lint.exclude",
+    "lint.extend-fixable",
+    "lint.extend-ignore",
+    "lint.extend-safe-fixes",
+    "lint.extend-select",
+    "lint.extend-unsafe-fixes",
+    "lint.external",
+    "lint.fixable",
+    "lint.flake8-bandit.hardcoded-tmp-directory",
+    "lint.flake8-bandit.hardcoded-tmp-directory-extend",
+    "lint.flake8-boolean-trap.extend-allowed-calls",
+    "lint.flake8-bugbear.extend-immutable-calls",
+    "lint.flake8-builtins.builtins-ignorelist",
+    "lint.flake8-gettext.extend-function-names",
+    "lint.flake8-gettext.function-names",
+    "lint.flake8-import-conventions.banned-from",
+    "lint.flake8-pytest-style.raises-extend-require-match-for",
+    "lint.flake8-pytest-style.raises-require-match-for",
+    "lint.flake8-self.extend-ignore-names",
+    "lint.flake8-self.ignore-names",
+    "lint.flake8-tidy-imports.banned-module-level-imports",
+    "lint.flake8-type-checking.exempt-modules",
+    "lint.flake8-type-checking.runtime-evaluated-base-classes",
+    "lint.flake8-type-checking.runtime-evaluated-decorators",
+    "lint.ignore",
+    "lint.isort.constants",
+    "lint.isort.default-section",
+    "lint.isort.extra-standard-library",
+    "lint.isort.no-lines-before",
+    "lint.isort.required-imports",
+    "lint.isort.single-line-exclusions",
+    "lint.isort.variables",
+    "lint.logger-objects",
+    "lint.pep8-naming.classmethod-decorators",
+    "lint.pep8-naming.extend-ignore-names",
+    "lint.pep8-naming.ignore-names",
+    "lint.pep8-naming.staticmethod-decorators",
+    "lint.pydocstyle.ignore-decorators",
+    "lint.pydocstyle.property-decorators",
+    "lint.pyflakes.extend-generics",
+    "lint.pylint.allow-dunder-method-names",
+    "lint.pylint.allow-magic-value-types",
+    "lint.select",
+    "lint.task-tags",
+    "lint.typing-modules",
+    "lint.unfixable",
+    "namespace-packages",
+    "src",
+];
+
 /// Whether what the name holds is a list of names, which sorts.
 pub fn sorts(key: &str) -> bool {
-    matches!(
-        key,
-        "exclude"
-            | "extend-exclude"
-            | "builtins"
-            | "include"
-            | "extend-include"
-            | "namespace-packages"
-            | "src"
-            | "format.exclude"
-            | "lint.allowed-confusables"
-            | "lint.exclude"
-            | "lint.extend-fixable"
-            | "lint.extend-ignore"
-            | "lint.extend-safe-fixes"
-            | "lint.extend-select"
-            | "lint.extend-unsafe-fixes"
-            | "lint.external"
-            | "lint.fixable"
-            | "lint.ignore"
-            | "lint.logger-objects"
-            | "lint.select"
-            | "lint.task-tags"
-            | "lint.typing-modules"
-            | "lint.unfixable"
-            | "lint.flake8-bandit.hardcoded-tmp-directory"
-            | "lint.flake8-bandit.hardcoded-tmp-directory-extend"
-            | "lint.flake8-boolean-trap.extend-allowed-calls"
-            | "lint.flake8-bugbear.extend-immutable-calls"
-            | "lint.flake8-builtins.builtins-ignorelist"
-            | "lint.flake8-gettext.extend-function-names"
-            | "lint.flake8-gettext.function-names"
-            | "lint.flake8-import-conventions.banned-from"
-            | "lint.flake8-pytest-style.raises-extend-require-match-for"
-            | "lint.flake8-pytest-style.raises-require-match-for"
-            | "lint.flake8-self.extend-ignore-names"
-            | "lint.flake8-self.ignore-names"
-            | "lint.flake8-tidy-imports.banned-module-level-imports"
-            | "lint.flake8-type-checking.exempt-modules"
-            | "lint.flake8-type-checking.runtime-evaluated-base-classes"
-            | "lint.flake8-type-checking.runtime-evaluated-decorators"
-            | "lint.isort.constants"
-            | "lint.isort.default-section"
-            | "lint.isort.extra-standard-library"
-            | "lint.isort.no-lines-before"
-            | "lint.isort.required-imports"
-            | "lint.isort.single-line-exclusions"
-            | "lint.isort.variables"
-            | "lint.pep8-naming.classmethod-decorators"
-            | "lint.pep8-naming.extend-ignore-names"
-            | "lint.pep8-naming.ignore-names"
-            | "lint.pep8-naming.staticmethod-decorators"
-            | "lint.pydocstyle.ignore-decorators"
-            | "lint.pydocstyle.property-decorators"
-            | "lint.pyflakes.extend-generics"
-            | "lint.pylint.allow-dunder-method-names"
-            | "lint.pylint.allow-magic-value-types"
-    ) || key.starts_with("lint.extend-per-file-ignores.")
+    SORTS.binary_search(&key).is_ok()
+        || key.starts_with("lint.extend-per-file-ignores.")
         || key.starts_with("lint.per-file-ignores.")
 }

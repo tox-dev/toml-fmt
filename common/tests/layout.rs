@@ -3,17 +3,6 @@
 use common::layout::Layout;
 use toml_doc::LineEnding;
 
-fn lay_out(source: &str, column_width: usize) -> String {
-    let mut document = toml_doc::parse(source).expect("valid source");
-    Layout {
-        column_width,
-        indent: 2,
-        ending: LineEnding::Lf,
-    }
-    .apply(&mut document);
-    document.to_string()
-}
-
 #[test]
 fn spacing_around_the_equals_sign_is_normalized() {
     assert_eq!(lay_out("a=1\nb   =    2\n", 120), "a = 1\nb = 2\n");
@@ -457,4 +446,15 @@ fn the_last_line_of_a_file_is_closed_whether_it_holds_a_comment_or_nothing() {
 #[test]
 fn a_value_holding_a_backslash_keeps_the_form_it_was_written_in() {
     assert_eq!(lay_out("a = 'x\\y'\n", 120), "a = 'x\\y'\n");
+}
+
+fn lay_out(source: &str, column_width: usize) -> String {
+    let mut document = toml_doc::parse(source).expect("valid source");
+    Layout {
+        column_width,
+        indent: 2,
+        ending: LineEnding::Lf,
+    }
+    .apply(&mut document);
+    document.to_string()
 }

@@ -1,0 +1,1 @@
+"""Build pyproject-fmt documentation."""

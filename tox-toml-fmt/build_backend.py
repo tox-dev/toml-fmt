@@ -1,11 +1,8 @@
 """
-Vendor toml-fmt-common into what we build, as a PEP 517 backend and as a CLI patcher.
+Vendor toml-fmt-common into each wheel and source distribution.
 
-A new toml-fmt-common release must never break an already published consumer
-(tox-dev/toml-fmt#355), so every artifact is made self-contained instead of depending on it.
-
-The CLI entry point exists because CI builds wheels with ``maturin build``, which never
-invokes a PEP 517 backend; the same patch then runs on maturin-action's output.
+Published consumers resolve new toml-fmt-common releases, so each artifact carries matching sources
+(tox-dev/toml-fmt#355). ``maturin build`` skips PEP 517 backends; the CLI patches maturin-action output.
 """
 
 # /// script
@@ -25,8 +22,8 @@ from shutil import copy2
 from sys import argv
 from tarfile import TarInfo
 from tarfile import open as tar_open
-from tempfile import mkdtemp
-from typing import TYPE_CHECKING
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING, Final, TypeAlias
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import maturin
@@ -34,160 +31,178 @@ import maturin
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Mapping
 
-    ConfigSettings = Mapping[str, str | list[str]]
+    _ConfigSettings: TypeAlias = Mapping[str, str | list[str]]
 
-# our wrapper backend is intentional; silence maturin's missing-backend warning
+# Maturin warns when a wrapper backend omits this switch.
 environ.setdefault("MATURIN_NO_MISSING_BUILD_BACKEND_WARNING", "1")
 
-_HERE = Path(__file__).resolve().parent
+_HERE: Final[Path] = Path(__file__).resolve().parent
 # the sdist keeps a copy of this file beside the tests, a directory below the pyproject.toml it belongs to
-_OWN = next(p for p in (_HERE / "pyproject.toml", _HERE.parent / "pyproject.toml") if p.is_file())
-_MODULE = findall(r'(?m)^name = "(.*)"', _OWN.read_text())[0].replace("-", "_")
-_VENDOR = "toml_fmt_common"
+_OWN: Final[Path] = next(path for path in (_HERE / "pyproject.toml", _HERE.parent / "pyproject.toml") if path.is_file())
+_MODULE: Final[str] = findall(r'(?m)^name = "(.*)"', _OWN.read_text())[0].replace("-", "_")
+_VENDOR: Final[str] = "toml_fmt_common"
 # a checkout keeps toml-fmt-common beside the package; the sdist carries it within
-_COMMON = _HERE / "toml-fmt-common" if (_HERE / "toml-fmt-common").is_dir() else _HERE.parent / "toml-fmt-common"
+_COMMON: Final[Path] = (
+    _HERE / "toml-fmt-common" if (_HERE / "toml-fmt-common").is_dir() else _HERE.parent / "toml-fmt-common"
+)
 
 
 def build_wheel(
     wheel_directory: str,
-    config_settings: ConfigSettings | None = None,
+    config_settings: _ConfigSettings | None = None,
     metadata_directory: str | None = None,
 ) -> str:
-    return built(maturin.build_wheel, wheel_directory, config_settings, metadata_directory, vendor_into_wheel)
+    return _built(maturin.build_wheel, wheel_directory, config_settings, metadata_directory, _vendor_into_wheel)
 
 
-def build_sdist(sdist_directory: str, config_settings: ConfigSettings | None = None) -> str:
+def build_sdist(sdist_directory: str, config_settings: _ConfigSettings | None = None) -> str:
     name = maturin.build_sdist(sdist_directory, config_settings)
-    if common_is_present():
-        vendor_into_sdist(Path(sdist_directory) / name)
+    if _common_is_present():
+        _vendor_into_sdist(Path(sdist_directory) / name)
     return name
 
 
 def build_editable(
     wheel_directory: str,
-    config_settings: ConfigSettings | None = None,
+    config_settings: _ConfigSettings | None = None,
     metadata_directory: str | None = None,
 ) -> str:
-    return built(maturin.build_editable, wheel_directory, config_settings, metadata_directory, link_common_into_wheel)
+    return _built(maturin.build_editable, wheel_directory, config_settings, metadata_directory, _link_common_into_wheel)
 
 
-def get_requires_for_build_wheel(config_settings: ConfigSettings | None = None) -> list[str]:
+def get_requires_for_build_wheel(config_settings: _ConfigSettings | None = None) -> list[str]:
     return maturin.get_requires_for_build_wheel(config_settings)
 
 
-def get_requires_for_build_sdist(config_settings: ConfigSettings | None = None) -> list[str]:
+def get_requires_for_build_sdist(config_settings: _ConfigSettings | None = None) -> list[str]:
     return maturin.get_requires_for_build_sdist(config_settings)
 
 
-def get_requires_for_build_editable(config_settings: ConfigSettings | None = None) -> list[str]:
+def get_requires_for_build_editable(config_settings: _ConfigSettings | None = None) -> list[str]:
     return maturin.get_requires_for_build_editable(config_settings)
 
 
-def built(
-    build: Callable[[str, ConfigSettings | None, str | None], str],
+def _built(
+    build: Callable[[str, _ConfigSettings | None, str | None], str],
     wheel_directory: str,
-    config_settings: ConfigSettings | None,
+    config_settings: _ConfigSettings | None,
     metadata_directory: str | None,
     carry: Callable[[Path], None],
 ) -> str:
-    if not common_is_present():
+    if not _common_is_present():
         return build(wheel_directory, config_settings, metadata_directory)
-    tmp = Path(mkdtemp())
-    name = build(str(tmp), config_settings, metadata_directory)
-    carry(tmp / name)
-    copy2(tmp / name, Path(wheel_directory) / name)
-    return name
+    with TemporaryDirectory() as directory:
+        temporary = Path(directory)
+        name = build(str(temporary), config_settings, metadata_directory)
+        carry(temporary / name)
+        copy2(temporary / name, Path(wheel_directory) / name)
+        return name
 
 
-def common_is_present() -> bool:
+def _common_is_present() -> bool:
     return (_COMMON / "src" / _VENDOR).is_dir()
 
 
-def main() -> None:
+def _main() -> None:
     target = Path(argv[1])
-    if not common_is_present():
+    if not _common_is_present():
         print(f"no toml-fmt-common sources under {_COMMON}")
         raise SystemExit(1)
     if not (wheels := sorted(target.glob("*.whl")) if target.is_dir() else [target]):
         print(f"no wheels found in {target}")
         raise SystemExit(1)
     for wheel in wheels:
-        vendor_into_wheel(wheel)
+        _vendor_into_wheel(wheel)
         print(f"vendored toml-fmt-common into {wheel.name}")
 
 
-def vendor_into_wheel(wheel: Path) -> None:
-    at = f"{_MODULE}/_vendor/"
-    changed = {f"{at}__init__.py": b""} | {f"{at}{name}": data for name, data in common_sources()}
-    with ZipFile(wheel) as src:
-        if (entry := f"{_MODULE}/__main__.py") in src.namelist():
-            spelled = sub(rf"\b{_VENDOR}\b", f"{_MODULE}._vendor.{_VENDOR}", src.read(entry).decode())
+def _vendor_into_wheel(wheel: Path) -> None:
+    vendor_path = f"{_MODULE}/_vendor/"
+    changed = {f"{vendor_path}__init__.py": b""} | {f"{vendor_path}{name}": data for name, data in _common_sources()}
+    with ZipFile(wheel) as source:
+        if (entry := f"{_MODULE}/__main__.py") in source.namelist():
+            spelled = sub(rf"\b{_VENDOR}\b", f"{_MODULE}._vendor.{_VENDOR}", source.read(entry).decode())
             changed[entry] = spelled.encode()
-    rewrite(wheel, changed)
+    _rewrite(wheel, changed)
 
 
-def link_common_into_wheel(wheel: Path) -> None:
+def _link_common_into_wheel(wheel: Path) -> None:
     # an editable install reads the package from the source tree, where the import stays unvendored
-    rewrite(wheel, {f"{_MODULE}_{_VENDOR}.pth": f"{_COMMON / 'src'}\n".encode()})
+    _rewrite(wheel, {f"{_MODULE}_{_VENDOR}.pth": f"{_COMMON / 'src'}\n".encode()})
 
 
-def rewrite(wheel: Path, changed: dict[str, bytes]) -> None:
-    with ZipFile(wheel) as src:
-        names = src.namelist()
+def _rewrite(wheel: Path, changed: dict[str, bytes]) -> None:
+    with ZipFile(wheel) as source:
+        names = source.namelist()
         dist_info = next(n for n in names if n.endswith(".dist-info/METADATA")).split("/")[0]
-        out = {n: src.read(n) for n in names if not n.endswith("/RECORD")}
-    out.update(changed)
-    out[f"{dist_info}/METADATA"] = own_metadata(out[f"{dist_info}/METADATA"])
+        entries = {name: source.read(name) for name in names if not name.endswith("/RECORD")}
+    entries.update(changed)
+    entries[f"{dist_info}/METADATA"] = _own_metadata(entries[f"{dist_info}/METADATA"])
 
     record = []
-    for name, data in out.items():
+    for name, data in entries.items():
         digest = urlsafe_b64encode(sha256(data).digest()).rstrip(b"=").decode()
         record.append(f"{name},sha256={digest},{len(data)}")
     record.append(f"{dist_info}/RECORD,,")
-    out[f"{dist_info}/RECORD"] = ("\n".join(record) + "\n").encode()
+    entries[f"{dist_info}/RECORD"] = ("\n".join(record) + "\n").encode()
 
-    with ZipFile(wheel, "w", ZIP_DEFLATED) as zf:
-        for name, data in out.items():
-            zf.writestr(name, data)
+    with ZipFile(wheel, "w", ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(name, data)
 
 
-def vendor_into_sdist(sdist: Path) -> None:
-    held = []
-    with tar_open(sdist) as src:
-        for member in src.getmembers():
-            content = src.extractfile(member)
-            held.append((member, content.read() if content else b""))
-    root = held[0][0].name.split("/")[0]
+def _vendor_into_sdist(sdist: Path) -> None:
+    members = []
+    with tar_open(sdist) as source:
+        for member in source.getmembers():
+            content = source.extractfile(member)
+            members.append((member, content.read() if content else b""))
+    root = members[0][0].name.split("/")[0]
 
     added = [(f"{root}/{_COMMON.name}/pyproject.toml", (_COMMON / "pyproject.toml").read_bytes())]
-    added += [(f"{root}/{_COMMON.name}/src/{name}", data) for name, data in common_sources()]
+    added += [(f"{root}/{_COMMON.name}/src/{name}", data) for name, data in _common_sources()]
 
-    with tar_open(sdist, "w:gz") as out:
-        for member, data in held:
-            out.addfile(member, BytesIO(data) if member.isfile() else None)
+    with tar_open(sdist, "w:gz") as archive:
+        for member, data in members:
+            archive.addfile(member, BytesIO(data) if member.isfile() else None)
         for name, data in added:
             info = TarInfo(name)
             info.size = len(data)
             info.mode = 0o644
-            out.addfile(info, BytesIO(data))
+            archive.addfile(info, BytesIO(data))
 
 
-def own_metadata(metadata: bytes) -> bytes:
-    deps_block = search(r"(?ms)^dependencies = \[(.*?)\]", (_COMMON / "pyproject.toml").read_text())
-    if not (deps := findall(r'"([^"]*)"', deps_block.group(1)) if deps_block else []):
+def _own_metadata(metadata: bytes) -> bytes:
+    dependency_block = search(r"(?ms)^dependencies = \[(.*?)\]", (_COMMON / "pyproject.toml").read_text())
+    if not (dependencies := findall(r'"([^"]*)"', dependency_block.group(1)) if dependency_block else []):
         return metadata
     # Requires-Dist belongs in the header block; everything past the first blank line is the description
-    headers, sep, description = metadata.decode().partition("\n\n")
-    return "".join([headers.rstrip("\n"), *(f"\nRequires-Dist: {d}" for d in deps), sep, description]).encode()
+    headers, separator, description = metadata.decode().partition("\n\n")
+    return "".join([
+        headers.rstrip("\n"),
+        *(f"\nRequires-Dist: {dependency}" for dependency in dependencies),
+        separator,
+        description,
+    ]).encode()
 
 
-def common_sources() -> Iterator[tuple[str, bytes]]:
-    src = _COMMON / "src" / _VENDOR
-    # vendor only the package's Python sources; local build artifacts (bytecode, caches, ext modules) never leak
-    for file in sorted(src.rglob("*")):
+def _common_sources() -> Iterator[tuple[str, bytes]]:
+    source = _COMMON / "src" / _VENDOR
+    # Build-host artifacts do not belong in a source distribution.
+    for file in sorted(source.rglob("*")):
         if file.is_file() and (file.suffix in {".py", ".pyi"} or file.name == "py.typed"):
-            yield file.relative_to(src.parent).as_posix(), file.read_bytes()
+            yield file.relative_to(source.parent).as_posix(), file.read_bytes()
+
+
+__all__ = [
+    "build_editable",
+    "build_sdist",
+    "build_wheel",
+    "get_requires_for_build_editable",
+    "get_requires_for_build_sdist",
+    "get_requires_for_build_wheel",
+]
 
 
 if __name__ == "__main__":
-    main()
+    _main()

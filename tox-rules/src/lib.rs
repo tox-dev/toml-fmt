@@ -4,7 +4,7 @@ use common::arrays::{map_strings, sort, sort_names_in, sort_strings_in, string_o
 use common::pep508::Requirement;
 use common::sections::{self, InlineSchema};
 use lexical_sort::natural_lexical_cmp;
-use toml_doc::{Document, Entry, Value};
+use toml_doc::{Array, Document, Entry, InlineTable, Key, Member, Piece, Value};
 
 /// The table the root rules run against: a `tox.toml` writes its own keys before any header, while
 /// a `pyproject.toml` writes them under the table `prefix` names.
@@ -197,7 +197,7 @@ fn follow_renames(value: &mut Value<'_>, renamed: &[(Vec<String>, String, String
 }
 
 /// Whether the inline table is one of tox's `replace = "ref"` substitutions.
-fn names_a_reference(table: &toml_doc::InlineTable<'_>) -> bool {
+fn names_a_reference(table: &InlineTable<'_>) -> bool {
     table.members.iter().any(|member| {
         member.item.key.is_path("replace")
             && common::strings::text_of(&member.item.value).is_some_and(|held| held == "ref")
@@ -205,7 +205,7 @@ fn names_a_reference(table: &toml_doc::InlineTable<'_>) -> bool {
 }
 
 /// The last segment of a reference path is the key it names; the ones before it name the table.
-fn rename_in_path(path: &mut toml_doc::Array<'_>, renamed: &[(Vec<String>, String, String)], root: &[String]) {
+fn rename_in_path(path: &mut Array<'_>, renamed: &[(Vec<String>, String, String)], root: &[String]) {
     let named: Vec<String> = path.members.iter().filter_map(string_of).collect();
     if named.len() != path.members.len() {
         return;
@@ -369,7 +369,7 @@ fn upgrade_use_develop(entries: &mut Vec<Entry<'_>>, head: &[String]) {
         if let Some(text) = removed.trail.comment {
             match package.trail.comment {
                 None => package.trail.comment = Some(text),
-                Some(_) => package.lead.pieces_mut().push(toml_doc::Piece::Comment {
+                Some(_) => package.lead.pieces_mut().push(Piece::Comment {
                     indent: "".into(),
                     text,
                     ending: removed.trail.ending,
@@ -385,7 +385,7 @@ fn upgrade_use_develop(entries: &mut Vec<Entry<'_>>, head: &[String]) {
         .chain(["package"])
         .collect::<Vec<&str>>();
     let mut replacement = common::build::string_entry(&named.join("."), "editable");
-    replacement.key_value.key = toml_doc::Key::new(named);
+    replacement.key_value.key = Key::new(named);
     replacement.lead = removed.lead;
     replacement.trail.comment = removed.trail.comment;
     entries.insert(at, replacement);
@@ -442,7 +442,7 @@ fn normalize_and_sort_requirements(value: &mut Value<'_>) {
 
 /// Whether the member is an ordinary requirement rather than a line pip reads as something else: an
 /// option, a file it pulls in, a path, a URL, or a name tox fills in.
-fn reads_as_a_requirement(member: &toml_doc::Member<'_, Value<'_>>) -> bool {
+fn reads_as_a_requirement(member: &Member<'_, Value<'_>>) -> bool {
     string_of(member).is_some_and(|text| !should_skip_normalization(&text) && Requirement::new(&text).is_ok())
 }
 
@@ -508,7 +508,7 @@ pub fn sort_env_list_with_prefix(document: &mut Document<'_>, pin_envs: &[String
 }
 
 /// Where a name sits in the list, or `None` where the entry names no one environment.
-fn ranked_env(member: &toml_doc::Member<'_, Value<'_>>, pin_envs: &[String]) -> Option<(i32, i32, i32, String)> {
+fn ranked_env(member: &Member<'_, Value<'_>>, pin_envs: &[String]) -> Option<(i32, i32, i32, String)> {
     let named = string_of(member)?.to_lowercase();
     for part in named.split('-') {
         if let Some(at) = pin_envs.iter().position(|pin| pin.to_lowercase() == part) {

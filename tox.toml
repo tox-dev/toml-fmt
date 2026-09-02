@@ -2,10 +2,10 @@ requires = ["tox>=4.61.2", "tox-uv>=1.36"]
 env_list = ["fix"]
 
 [env.fix]
-description = "format the code base to adhere to our styles, and complain about what we cannot do automatically"
+description = "format supported files and report remaining violations"
 skip_install = true
 deps = ["pre-commit-uv>=4.3"]
-pass_env = [{ replace = "ref", of = ["env_run_base", "pass_env"], extend = true }, "PROGRAMDATA"]
+pass_env = ["PROGRAMDATA"]
 commands = [["pre-commit", "run", "--all-files", "--show-diff-on-failure", { replace = "posargs", extend = true }]]
 
 [env.coverage]

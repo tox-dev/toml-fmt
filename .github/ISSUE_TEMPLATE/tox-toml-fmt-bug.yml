@@ -1,51 +1,46 @@
-name: "🐛 tox-toml-fmt: Bug Report"
+name: "tox-toml-fmt bug"
 description: Report a bug in tox-toml-fmt
 labels: ["bug", "tox-toml-fmt"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Thank you for taking the time to report a bug in tox-toml-fmt.
-        Please fill out the sections below to help us understand and reproduce the issue.
   - type: textarea
     id: description
     attributes:
-      label: 📝 Description
-      description: A clear and concise description of what the bug is.
-      placeholder: Describe the issue you encountered...
+      label: Description
+      description: Describe the failure and how to reproduce it.
+      placeholder: What command did you run, and what happened?
     validations:
       required: true
   - type: textarea
     id: input
     attributes:
-      label: 📄 Input tox.toml
-      description: The tox.toml content that triggers the bug.
-      placeholder: Paste the relevant portion of your tox.toml here
+      label: Input tox.toml
+      description: Include the smallest file that reproduces the failure.
+      placeholder: Paste TOML here
       render: toml
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: ✅ Expected output
-      description: What you expected the formatted output to look like.
+      label: Expected output
+      description: Show the expected TOML.
       render: toml
   - type: textarea
     id: actual
     attributes:
-      label: ❌ Actual output
-      description: What actually happened (formatted output or error message).
+      label: Actual output
+      description: Show the resulting TOML or error.
       render: toml
   - type: input
     id: version
     attributes:
-      label: 🏷️ Version
-      description: Output of `tox-toml-fmt --version`
+      label: Version
+      description: Paste the output of `tox-toml-fmt --version`.
       placeholder: "tox-toml-fmt 1.x.x"
     validations:
       required: true
   - type: textarea
     id: additional
     attributes:
-      label: 📎 Additional context
-      description: Any other relevant context (OS, Python version, configuration options used).
+      label: Environment
+      description: Include the operating system, Python version, and relevant formatter settings.

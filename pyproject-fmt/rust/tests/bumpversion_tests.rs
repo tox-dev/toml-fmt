@@ -1,8 +1,4 @@
-use super::evaluate_full;
-
-fn evaluate(start: &str) -> String {
-    evaluate_full(start)
-}
+use super::evaluate_full as evaluate;
 
 #[test]
 fn test_bumpversion_order() {

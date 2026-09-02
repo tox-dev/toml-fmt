@@ -1,10 +1,18 @@
-"""Main entry point for the formatter."""
+"""Keep CLI parsing in Python and TOML rewriting in Rust."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, build_cli, name_list_argument, run
+from toml_fmt_common import (
+    ArgumentGroup,
+    FmtNamespace,
+    TOMLFormatter,
+    TomlValue,
+    build_cli,
+    name_list_argument,
+    run,
+)
 
 from ._lib import Settings, format_toml, settings_in
 
@@ -13,35 +21,32 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-class PyProjectFmtNamespace(FmtNamespace):
-    """Formatting arguments."""
+class _ToxTOMLNamespace(FmtNamespace):
+    """Give tox-specific argparse fields concrete types."""
 
     pin_envs: list[str]
 
 
-class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
-    """Format pyproject.toml."""
+class _ToxTOMLFormatter(TOMLFormatter[_ToxTOMLNamespace]):
+    """Bind the shared CLI to the tox-toml-fmt Rust extension."""
 
     def __init__(self) -> None:
-        """Create a formatter."""
-        super().__init__(PyProjectFmtNamespace())
+        """Start with the namespace argparse fills for each input."""
+        super().__init__(_ToxTOMLNamespace())
 
     @property
     def prog(self) -> str:
-        """Program name."""
+        """Match the distribution name used for version lookup."""
         return "tox-toml-fmt"
 
     @property
     def filename(self) -> str:
-        """Filename operating on."""
+        """Restrict positional directories to ``tox.toml``."""
         return "tox.toml"
 
-    def add_format_flags(self, parser: ArgumentGroup) -> None:  # ruff: ignore[no-self-use]
-        """
-        Additional formatter  config.
-
-        :param parser: parser to operate on.
-        """
+    @staticmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
+        """Add tox environment options outside the shared formatter settings."""
         parser.add_argument(
             "--pin-env",
             type=name_list_argument,
@@ -52,27 +57,17 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
     @property
     def override_cli_from_section(self) -> tuple[str, ...]:
-        """Path where config overrides live."""
+        """Keep per-file overrides under ``tox-toml-fmt``."""
         return ("tox-toml-fmt",)
 
-    def settings_in(self, text: str, path: Sequence[str]) -> dict[str, Any] | None:  # ruff: ignore[no-self-use]
-        """
-        Read the settings the text writes under a table, with the parser that reads the file itself.
-
-        :param text: the TOML source to read
-        :param path: the table the settings are written under
-        :return: the settings, or ``None`` where the text writes no such table
-        """
+    @staticmethod
+    def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
+        """Use the Rust parser so TOML 1.1 settings remain visible."""
         return settings_in(text, list(path))
 
-    def format(self, text: str, opt: PyProjectFmtNamespace) -> str:  # ruff: ignore[no-self-use]
-        """
-        Perform the formatting.
-
-        :param text: content to operate on
-        :param opt: formatter config
-        :return: formatted text
-        """
+    @staticmethod
+    def format(text: str, opt: _ToxTOMLNamespace) -> str:
+        """Keep Python responsible for CLI state and Rust responsible for TOML edits."""
         settings = Settings(
             column_width=opt.column_width,
             indent=opt.indent,
@@ -89,19 +84,20 @@ class ToxTOMLFormatter(TOMLFormatter[PyProjectFmtNamespace]):
 
 def runner(args: Sequence[str] | None = None) -> int:
     """
-    Run the formatter.
+    Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
 
-    :param args: CLI arguments
-    :return: exit code
+    Return 1 after a change or rejection, and 0 when inputs match.
     """
-    return run(ToxTOMLFormatter(), args)
+    return run(_ToxTOMLFormatter(), args)
 
 
-def _build_our_cli() -> ArgumentParser:
-    return build_cli(ToxTOMLFormatter())[0]  # pragma: no cover
+def build_parser() -> ArgumentParser:
+    """Build the parser without reading arguments, for documentation tooling."""
+    return build_cli(_ToxTOMLFormatter())[0]
 
 
 __all__ = [
+    "build_parser",
     "runner",
 ]
 

@@ -1,4 +1,4 @@
-"""What each distributable package is built from."""
+"""Keep changelog ownership and workflow rebuild paths in one mapping."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ LOCAL_INPUTS: Final[dict[str, tuple[str, ...]]] = {
 
 
 def affects(project: str, changed_files: Iterable[str]) -> bool:
-    """Whether a change to these files reaches what `project` ships."""
+    """Match changes to the package whose artifact includes them."""
     return any(file_path.startswith(LOCAL_INPUTS[project]) for file_path in changed_files)
 
 

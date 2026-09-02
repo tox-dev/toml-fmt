@@ -128,19 +128,16 @@ fn push<'doc>(found: &mut Named<'doc>, name: String, value: Option<&'doc Value<'
 
 fn read_value(name: &str, value: &Value<'_>) -> Result<Setting, String> {
     match value {
-        Value::Scalar(repr) => {
-            if repr.quoting().is_some() {
-                let text = toml_doc::decode(repr).expect("the document was read before this");
-                return Ok(Setting::Text(text));
-            }
-            match repr.text() {
-                "true" => Ok(Setting::Truth(true)),
-                "false" => Ok(Setting::Truth(false)),
-                text => read_whole(text)
-                    .map(Setting::Whole)
-                    .ok_or_else(|| format!("{name}: {text} is not a setting")),
-            }
-        }
+        Value::Scalar(repr) if repr.quoting().is_some() => Ok(Setting::Text(
+            toml_doc::decode(repr).expect("the document was read before this"),
+        )),
+        Value::Scalar(repr) => match repr.text() {
+            "true" => Ok(Setting::Truth(true)),
+            "false" => Ok(Setting::Truth(false)),
+            text => read_whole(text)
+                .map(Setting::Whole)
+                .ok_or_else(|| format!("{name}: {text} is not a setting")),
+        },
         Value::Array(array) => array
             .members
             .iter()
@@ -158,12 +155,10 @@ fn read_whole(text: &str) -> Option<i64> {
         Some(rest) => (-1, rest.to_owned()),
         None => (1, held.strip_prefix('+').unwrap_or(&held).to_owned()),
     };
-    let (radix, digits) = match digits.get(..2) {
-        Some("0x") => (16, &digits[2..]),
-        Some("0o") => (8, &digits[2..]),
-        Some("0b") => (2, &digits[2..]),
-        _ => (10, &digits[..]),
-    };
+    let (radix, digits) = [("0x", 16), ("0o", 8), ("0b", 2)]
+        .into_iter()
+        .find_map(|(prefix, radix)| digits.strip_prefix(prefix).map(|rest| (radix, rest)))
+        .unwrap_or((10, &digits));
     i64::from_str_radix(digits, radix).ok().map(|read| read * sign)
 }
 

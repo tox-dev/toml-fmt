@@ -4,7 +4,16 @@
 //! Every rule writes into the slots the document already carries, so laying out is a walk that sets
 //! fields rather than a pass that re-prints the file.
 
-use toml_doc::{Array, Document, Entry, InlineTable, LineEnding, Pad, Padding, Section, Value};
+use toml_doc::{
+    Array, Document, Entry, InlineTable, Key, LineEnding, Member, Pad, Padding, Piece, Repr, Section, Trail, Trivia,
+    Value,
+};
+
+/// What sits between a value and the comment closing its line.
+const COMMENT_GAP: &str = "  ";
+
+/// What the layout writes between a key and its value.
+const AROUND_EQUALS: &str = " = ";
 
 /// How wide a line may run, and how far a continuation line is pushed in.
 #[derive(Debug, Clone, Copy)]
@@ -44,24 +53,26 @@ impl Layout {
         tighten_key(&mut entry.key_value.key);
         entry.key_value.pre_eq = " ".into();
         entry.key_value.post_eq = " ".into();
-        let prefix = crate::width::columns(&entry.indent) + crate::width::columns(&entry.key_value.key.to_string()) + 3;
+        let prefix = crate::width::columns(&entry.indent)
+            + crate::width::columns(&entry.key_value.key.to_string())
+            + AROUND_EQUALS.len();
         // a comment closing the line is part of how wide that line runs
         let suffix = entry
             .trail
             .comment
             .as_ref()
-            .map_or(0, |text| crate::width::columns(text) + 2);
+            .map_or(0, |text| crate::width::columns(text) + COMMENT_GAP.len());
         self.value(&mut entry.key_value.value, depth, prefix, suffix);
         self.trail_of(&mut entry.trail);
     }
 
     /// A line that ran out without a break gets one, since folding and reordering can leave any
     /// line with another below it.
-    fn trail_of(self, trail: &mut toml_doc::Trail<'_>) {
+    fn trail_of(self, trail: &mut Trail<'_>) {
         // a comment closing a line sits two spaces past the value, which is the column the array
         // alignment pass widens from
         trail.ws = if trail.comment.is_some() {
-            "  ".into()
+            COMMENT_GAP.into()
         } else {
             "".into()
         };
@@ -112,11 +123,7 @@ impl Layout {
     /// would start past the column it was asked to fit, so it stays on one line unless the file says
     /// otherwise.
     fn array_breaks(self, array: &Array<'_>, depth: usize, width: usize) -> bool {
-        let commented = array
-            .members
-            .iter()
-            .any(|member| member.lead.has_comment() || member.trail.has_comment() || member.after.has_comment())
-            || array.trailing.has_comment();
+        let commented = holds_a_comment(&array.members, &array.trailing);
         let room = self.indent.saturating_mul(depth + 1) < self.column_width;
         array.trailing_comma || commented || (room && width > self.column_width)
     }
@@ -158,11 +165,7 @@ impl Layout {
     /// comment. Such a table keeps the spacing the file gave it; only what sits around `=` and the
     /// values themselves are laid out.
     fn inline_table(self, table: &mut InlineTable<'_>, depth: usize, prefix: usize) -> Written {
-        let commented = table
-            .members
-            .iter()
-            .any(|member| member.lead.has_comment() || member.trail.has_comment() || member.after.has_comment())
-            || table.trailing.has_comment();
+        let commented = holds_a_comment(&table.members, &table.trailing);
         // members share a line, so each one starts where the ones before it left off, and a member
         // the file wrote on a line of its own starts where that line's indent leaves it
         let mut column = prefix + 2;
@@ -172,7 +175,7 @@ impl Layout {
                 column = indent;
             }
             tighten_key(&mut member.item.key);
-            let key_width = crate::width::columns(&member.item.key.to_string()) + 3;
+            let key_width = crate::width::columns(&member.item.key.to_string()) + AROUND_EQUALS.len();
             let written = self.value(&mut member.item.value, depth, column + key_width, 0);
             column += key_width + written.last_line + 2;
             held.push(Written::of(key_width).then(written));
@@ -211,11 +214,11 @@ impl Layout {
     }
 
     /// A comment leading an item sits at the item's own column, wherever the file had put it.
-    fn indent_lead(self, lead: &mut toml_doc::Trivia<'_>, depth: usize) {
+    fn indent_lead(self, lead: &mut Trivia<'_>, depth: usize) {
         for piece in lead.pieces_mut() {
             match piece {
-                toml_doc::Piece::Blank { indent, .. } => *indent = "".into(),
-                toml_doc::Piece::Comment { indent, .. } => *indent = self.pad(depth).into(),
+                Piece::Blank { indent, .. } => *indent = "".into(),
+                Piece::Comment { indent, .. } => *indent = self.pad(depth).into(),
             }
         }
     }
@@ -226,7 +229,7 @@ impl Layout {
         self.indent_lead(&mut document.trailing, 0);
         if let Some(piece) = document.trailing.pieces_mut().last_mut() {
             match piece {
-                toml_doc::Piece::Blank { ending, .. } | toml_doc::Piece::Comment { ending, .. } => {
+                Piece::Blank { ending, .. } | Piece::Comment { ending, .. } => {
                     *ending = self.ending;
                 }
             }
@@ -243,7 +246,7 @@ impl Layout {
                 out.parts_mut().push(Pad::Newline(self.ending));
                 out.parts_mut().push(Pad::Space(self.pad(depth).into()));
             } else {
-                out.parts_mut().push(Pad::Space("  ".into()));
+                out.parts_mut().push(Pad::Space(COMMENT_GAP.into()));
             }
             out.parts_mut().push(Pad::Comment(comment.into()));
         }
@@ -255,9 +258,18 @@ impl Layout {
     }
 }
 
+/// Whether anything the container holds carries a comment, which is what keeps it written out over
+/// lines: no one-line form has anywhere to put one.
+fn holds_a_comment<T>(members: &[Member<'_, T>], trailing: &Padding<'_>) -> bool {
+    members
+        .iter()
+        .any(|member| member.lead.has_comment() || member.trail.has_comment() || member.after.has_comment())
+        || trailing.has_comment()
+}
+
 /// A dotted key reads as one name, so no spacing sits around its dots. A quoted segment keeps its
 /// quotes, written the same way as any other string.
-fn tighten_key(key: &mut toml_doc::Key<'_>) {
+fn tighten_key(key: &mut Key<'_>) {
     let names = key.segments();
     for (part, name) in key.parts_mut().iter_mut().zip(names) {
         part.lead = "".into();
@@ -272,7 +284,7 @@ fn tighten_key(key: &mut toml_doc::Key<'_>) {
 
 /// A single-line string is written with double quotes, unless it holds one, in which case single
 /// quotes save it from being escaped.
-fn normalize_quotes(repr: &mut toml_doc::Repr<'_>) {
+fn normalize_quotes(repr: &mut Repr<'_>) {
     let Some(quoting) = repr.quoting() else { return };
     if quoting.is_multiline() {
         return;
@@ -284,13 +296,13 @@ fn normalize_quotes(repr: &mut toml_doc::Repr<'_>) {
 
 /// The text as a double-quoted string, unless writing it that way would mean adding escapes the
 /// form it was written in does not need.
-fn double_quoted(text: &str) -> Option<toml_doc::Repr<'static>> {
+fn double_quoted(text: &str) -> Option<Repr<'static>> {
     if text.contains('"') {
-        return toml_doc::fits_literal(text).then(|| toml_doc::Repr::literal_string(text));
+        return toml_doc::fits_literal(text).then(|| Repr::literal_string(text));
     }
     // a backslash the file wrote plainly would gain an escape on the way into double quotes, and a
     // value nothing else touched is not worth spelling at more length
-    (!text.contains('\\')).then(|| toml_doc::Repr::basic_string(text))
+    (!text.contains('\\')).then(|| Repr::basic_string(text))
 }
 
 fn space(width: usize) -> Padding<'static> {
@@ -380,12 +392,11 @@ fn opens_a_line(padding: &Padding<'_>) -> Option<usize> {
         .map(|(_, indent)| crate::width::columns(indent))
 }
 
-/// How far along the line the member ends.
+/// How wide a value is written: the columns it takes in all, and the columns of the line it ends
+/// on, since a value the layout broke over lines only ends on the last of them.
 ///
 /// What moves a comment along is the text written before it, escapes and quotes included, and a
 /// value that closes on a later line carries only that line with it.
-/// How wide a value is written: the columns it takes in all, and the columns of the line it ends
-/// on, since a value the layout broke over lines only ends on the last of them.
 #[derive(Debug, Clone, Copy, Default)]
 struct Written {
     columns: usize,
@@ -447,7 +458,7 @@ fn one_line_written(held: &[Written]) -> Written {
 
 /// What the members take once the layout has written them out over several lines.
 fn written_members<T>(
-    members: &[toml_doc::Member<'_, T>],
+    members: &[Member<'_, T>],
     held: &[Written],
     trailing_comma: bool,
     trailing: &Padding<'_>,

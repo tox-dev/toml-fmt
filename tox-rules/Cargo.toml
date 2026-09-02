@@ -1,7 +1,7 @@
 [package]
 name = "tox-rules"
 version = "1.9.3"
-description = "How a tox configuration is formatted, wherever it is written"
+description = "Formatting rules for tox.toml and tool.tox"
 repository = "https://github.com/tox-dev/toml-fmt"
 license = "MIT"
 edition = "2021"

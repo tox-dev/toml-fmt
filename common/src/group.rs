@@ -1,6 +1,9 @@
 //! What holds items together: the `# Group:` markers sorting must not cross, and the name a
 //! table groups under.
 
+/// What opens a group, whatever case the comment writes it in.
+const MARKER: &str = "group:";
+
 /// Whether a comment opens a group, as `# Group: web`. Case does not matter.
 #[must_use]
 pub fn is_group_marker(comment: &str) -> bool {
@@ -8,8 +11,8 @@ pub fn is_group_marker(comment: &str) -> bool {
         .trim_start()
         .strip_prefix('#')
         .map(str::trim_start)
-        .and_then(|rest| rest.get(..6))
-        .is_some_and(|head| head.eq_ignore_ascii_case("group:"))
+        .and_then(|rest| rest.get(..MARKER.len()))
+        .is_some_and(|head| head.eq_ignore_ascii_case(MARKER))
 }
 
 /// The ranges a `# Group:` marker splits the members into, or one range covering all of them.

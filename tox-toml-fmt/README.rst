@@ -1,136 +1,135 @@
-Overview
-========
+tox-toml-fmt
+============
 
-Apply a consistent format to your ``tox.toml`` file with comment support. See
-`the releases <https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt>`_ for what changed.
+``tox-toml-fmt`` formats ``tox.toml`` files without discarding comments. It uses a small configuration surface to keep
+results stable across projects. See the
+`release history <https://github.com/tox-dev/toml-fmt/releases?q=tox-toml-fmt>`_ for version changes.
 
+Install
+-------
 
-Philosophy
-----------
-This is an *opinionated formatter*, with the same objectives as `black <https://github.com/psf/black>`_: it offers few
-configuration settings on purpose. In return you get consistency, predictability, and smaller diffs.
-
-Use
----
-
-Via ``CLI``
-~~~~~~~~~~~
-
-`tox-toml-fmt <https://pypi.org/project/tox-toml-fmt>`_ is a CLI tool that needs Python 3.10 or higher to run. Install it into an isolated environment
-with `pipx <https://pypi.org/project/pipx>`_ or `uv <https://pypi.org/project/uv>`_; that way you can upgrade tox-toml-fmt later without disturbing the rest of your
-system. A ``pip`` path follows for completeness, though we discourage it:
+The command requires Python 3.10 or later. An isolated tool environment avoids dependency conflicts with the target
+project.
 
 
     .. code-block:: bash
 
-        # install uv per https://docs.astral.sh/uv/#getting-started
         uv tool install tox-toml-fmt
         tox-toml-fmt --help
 
+Pre-commit
+----------
 
-Via ``pre-commit`` hook
-~~~~~~~~~~~~~~~~~~~~~~~
-
-See `pre-commit/pre-commit <https://github.com/pre-commit/pre-commit>`_ for instructions, sample ``.pre-commit-config.yaml``:
+Add the hook to ``.pre-commit-config.yaml`` and set ``rev`` to the required release:
 
 .. code-block:: yaml
 
     - repo: https://github.com/tox-dev/tox-toml-fmt
-      rev: "v1.0.0"
+      rev: ""
       hooks:
         - id: tox-toml-fmt
 
-Via Python
-~~~~~~~~~~
+See `pre-commit/pre-commit <https://github.com/pre-commit/pre-commit>`_ for installation and update commands.
 
-Call ``tox-toml-fmt`` as a Python module to format TOML from your own code.
+Python API
+----------
+
+``run`` accepts command-line arguments and returns the process exit code:
 
 .. code-block:: python
 
     from tox_toml_fmt import run
 
-    # Format a tox.toml file and return the exit code
     exit_code = run(["path/to/tox.toml"])
 
-The ``run`` function accepts command-line arguments as a list and returns an exit code (0 for success, non-zero for
-failure).
+See the `configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for settings and
+the `formatting reference <https://tox-toml-fmt.readthedocs.io/en/latest/formatting.html>`_ for the rules applied to each
+table.
 
+Project settings
+----------------
 
-The ``[tox-toml-fmt]`` table is used when present in the ``tox.toml`` file:
+Put per-file settings in ``[tox-toml-fmt]``:
 
 .. code-block:: toml
 
     [tox-toml-fmt]
-
-    # After how many columns split arrays/dicts into multiple lines and wrap long strings;
-    # use a trailing comma in arrays to force multiline format instead of lowering this value
     column_width = 120
-
-    # Number of spaces for indentation
     indent = 2
-
-    # Extra newlines between sub-tables in the same group (e.g. "\n" for one blank line
-    # between sub-tables)
+    table_format = "short"
     sub_table_spacing = ""
-
-    # Extra newlines between root table groups (e.g. "\n" for one blank line, "\n\n" for two)
     separate_root_table = "\n"
+    expand_tables = []
+    collapse_tables = []
+    skip_wrap_for_keys = []
+    pin_envs = []
 
-    # Environments pinned to the start of env_list
+These values match the command defaults. ``column_width`` controls array expansion and string wrapping. A trailing
+comma keeps an array multiline regardless of its width. ``indent`` controls continuation indentation.
+
+``table_format`` controls child tables below an environment. Environment tables retain their ``[env.NAME]`` headers.
+``expand_tables`` and ``collapse_tables`` override the default by table path, and ``collapse_tables`` wins a tie.
+
+``pin_envs`` writes named environments before the version-based order used for the rest of ``env_list`` and
+``[env.NAME]`` tables.
+
+Shared settings
+---------------
+
+A standalone ``tox-toml-fmt.toml`` can hold settings for several projects. The file uses the same keys without the
+``[tox-toml-fmt]`` header:
+
+.. code-block:: toml
+
+    column_width = 120
+    indent = 2
+    table_format = "short"
     pin_envs = ["fix", "type"]
 
-If not set they will default to values from the CLI. The example above shows the defaults (except ``pin_envs``
-which defaults to an empty list).
-
-Shared configuration file
--------------------------
-
-Place formatting settings in a standalone ``tox-toml-fmt.toml`` file instead of (or alongside) the ``[tox-toml-fmt]``
-table. In a monorepo this shares one configuration across projects without repeating it in every ``tox.toml``.
-
-The formatter searches for ``tox-toml-fmt.toml`` from the directory of the file being formatted up to the filesystem
-root, and the first match wins. Pass an explicit path via ``--config``:
+For each input, the formatter searches from the input's directory toward the filesystem root and uses the nearest
+``tox-toml-fmt.toml``. ``--config`` selects a file directly:
 
 .. code-block:: bash
 
     tox-toml-fmt --config /path/to/tox-toml-fmt.toml tox.toml
 
-The shared config file uses the same keys as the ``[tox-toml-fmt]`` table, but without the table header:
+Command-line values establish defaults, the shared file overrides them, and ``[tox-toml-fmt]`` has final precedence.
+The formatter validates file settings with the command-line converters. An unknown key or invalid value stops
+formatting and reports its source.
+
+Spacing
+-------
+
+``sub_table_spacing`` inserts text between child tables in one group. ``separate_root_table`` inserts text between root
+groups. Each ``\n`` adds one blank line.
+
+String wrapping
+---------------
+
+``skip_wrap_for_keys`` excludes matching keys from line-continuation wrapping:
 
 .. code-block:: toml
 
-    column_width = 120
-    indent = 2
-    sub_table_spacing = ""
-    separate_root_table = "\n"
-    pin_envs = ["fix", "type"]
+    [tox-toml-fmt]
+    skip_wrap_for_keys = ["*.commands", "env.*.description"]
 
-When both a shared config file and a ``[tox-toml-fmt]`` table exist, per-file settings from the ``[tox-toml-fmt]``
-table take precedence over the shared config file.
+``*`` matches one dotted key segment. A quoted ``"*"`` segment names a literal asterisk.
 
-Settings are read with the same parser that reads the file, so a value only TOML 1.1 spells does not hide the table
-they are written in. Every key there has to be one the formatter knows, written as the type its command-line flag
-takes; anything else is reported against the file and the key, and nothing is formatted.
+Command-line interface
+----------------------
 
-``tox-toml-fmt`` is an opinionated formatter, much like `black <https://github.com/psf/black>`_ is for Python code. It
-keeps configuration minimal so every ``tox.toml`` lands on one standard format. That buys you:
-
-- less time configuring tools
-- smaller diffs when committing changes
-- code reviews where formatting never comes up
-
-A few options exist (``column_width``, ``indent``, ``table_format``, ``sub_table_spacing``, ``separate_root_table``),
-but there are no dozens of toggles.
+This reference separates file-wide rules from tox-specific ordering and normalization. See the
+`configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for available settings.
 
 General Formatting
 ------------------
 
-These rules apply uniformly across the entire ``tox.toml`` file.
+These rules cover the complete ``tox.toml`` file.
 
 String Quotes
 ~~~~~~~~~~~~~
 
-All strings use double quotes by default. Single quotes are only used when the value contains double quotes:
+Strings use double quotes unless the value contains one:
 
 .. code-block:: toml
 
@@ -147,10 +146,8 @@ All strings use double quotes by default. Single quotes are only used when the v
 Key Quotes
 ~~~~~~~~~~
 
-TOML keys are normalized to the simplest valid form. Keys that are valid bare keys (containing only
-``A-Za-z0-9_-``) have redundant quotes stripped. Single-quoted (literal) keys that require quoting are
-converted to double-quoted (basic) strings with proper escaping. This applies to all keys: table headers,
-key-value pairs, and inline table keys:
+The formatter removes quotes from bare keys containing ``A-Za-z0-9_-``. Keys that need quotes use escaped double
+quotes. The rule covers headers, assignments, and inline tables:
 
 .. code-block:: toml
 
@@ -164,12 +161,12 @@ key-value pairs, and inline table keys:
    description = "run tests"
    pass_env = [ { else = "no" } ]
 
-Backslashes and double quotes within literal keys are escaped during conversion.
+Conversion escapes backslashes and double quotes in literal keys.
 
 Array Formatting
 ~~~~~~~~~~~~~~~~
 
-Arrays are formatted based on line length, trailing comma presence, and comments. Short arrays stay on one line:
+Short arrays stay on one line:
 
 .. code-block:: toml
 
@@ -179,8 +176,7 @@ Arrays are formatted based on line length, trailing comma presence, and comments
    # After
    env_list = [ "py313", "py312", "lint" ]
 
-Arrays that exceed ``column_width`` are expanded and get a trailing comma (shown here with a small ``column_width`` to
-keep the example short):
+An array that exceeds ``column_width`` expands and gains a trailing comma:
 
 .. code-block:: toml
 
@@ -196,7 +192,7 @@ keep the example short):
      "tox>=4",
    ]
 
-A trailing comma forces the multiline format, even for an array that would otherwise fit on one line:
+A trailing comma retains multiline form at any width:
 
 .. code-block:: toml
 
@@ -208,8 +204,7 @@ A trailing comma forces the multiline format, even for an array that would other
      "pytest>=7",
    ]
 
-A comment on an entry also forces the multiline format. Here ``["pytest>=7", "coverage>=7"]`` would fit on one line,
-but the comment keeps it expanded:
+A member comment also retains multiline form:
 
 .. code-block:: toml
 
@@ -218,20 +213,13 @@ but the comment keeps it expanded:
      "coverage>=7",
    ]
 
-**Multiline formatting rules:**
-
-An array becomes multiline when any of these conditions are met:
-
-1. **Trailing comma present** - A trailing comma signals intent to keep multiline format
-2. **Exceeds column width** - Arrays longer than ``column_width`` are expanded (and get a trailing comma added)
-3. **Contains comments** - Arrays with inline or leading comments are always multiline
+An array uses multiline form when it has a trailing comma, exceeds ``column_width``, or contains a member comment.
 
 String Wrapping
 ~~~~~~~~~~~~~~~
 
-Strings whose line runs past ``column_width`` are wrapped using TOML multiline basic strings with line-ending
-backslashes (shown here with a small ``column_width``). The line is measured from the start of its key, so a long key
-can be what pushes a value into wrapping; a key already wider than the column keeps its value on one line:
+The formatter wraps a string that pushes its line past ``column_width``. Continuations account for the key prefix. A
+key wider than the limit keeps its value on one line because wrapping cannot shorten that prefix:
 
 .. code-block:: toml
 
@@ -246,15 +234,14 @@ can be what pushes a value into wrapping; a key already wider than the column ke
      coverage\
      """
 
-Specific keys can be excluded from wrapping using ``skip_wrap_for_keys``. Patterns support wildcards
-(e.g. ``*.commands`` skips wrapping for ``commands`` under any table).
+``skip_wrap_for_keys`` excludes selected paths. For example, ``*.commands`` matches a ``commands`` key under any table.
 
 Table Formatting
 ~~~~~~~~~~~~~~~~
 
-Sub-tables can be formatted in two styles controlled by ``table_format``:
+``table_format`` selects a child-table shape.
 
-**Short format** (default, collapsed to dotted keys):
+Short form uses dotted keys:
 
 .. code-block:: toml
 
@@ -262,7 +249,7 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
    description = "run tests"
    sub.value = 1
 
-**Long format** (expanded to table headers):
+Long form uses headers:
 
 .. code-block:: toml
 
@@ -277,51 +264,27 @@ Sub-tables can be formatted in two styles controlled by ``table_format``:
    [env.test.sub]
    value = 1
 
-Individual tables can override the default using ``expand_tables`` and ``collapse_tables``.
+``expand_tables`` and ``collapse_tables`` override individual paths. Root groups have one blank line between them.
+Child tables stay adjacent unless ``sub_table_spacing`` adds a gap.
 
-**Table spacing:**
-
-By default, different table groups are separated by a blank line, while sub-tables within the same group are kept
-compact. You can control this with ``sub_table_spacing`` and ``separate_root_table``. Each option takes a string of
-``\n`` characters where each ``\n`` adds one blank line. For example, setting ``sub_table_spacing = "\n"`` adds a blank
-line between sub-tables within the same environment.
-
-
-**Environment tables are always expanded:**
-
-Regardless of the ``table_format`` setting, ``[env.*]`` tables are never collapsed into dotted keys under ``[env]``.
-Each environment always gets its own ``[env.NAME]`` table section:
+Environment tables retain ``[env.NAME]`` headers regardless of ``table_format``:
 
 .. code-block:: toml
 
-    # This is always the output format, even in short mode:
     [env.fix]
     description = "fix"
 
     [env.test]
     description = "test"
 
-    # Dotted keys under [env] are automatically expanded:
-    # [env]
-    # fix.description = "fix"    →    [env.fix]
-    #                                  description = "fix"
-
-Sub-tables within an environment (e.g. ``[env.test.sub]``) still follow the ``table_format`` setting, and are
-ordered by the same environment key order as dotted keys: ones the order lists (such as ``set_env``) come first,
-the rest follow alphabetically.
+Child tables below an environment follow ``table_format``. Their headers use the same rank as dotted keys, followed by
+unlisted names in alphabetical order.
 
 Comment Preservation
 ~~~~~~~~~~~~~~~~~~~~
 
-All comments are preserved during formatting:
-
-- **Inline comments** - Comments after a value on the same line stay with that value
-- **Leading comments** - Comments on the line before an entry stay with the entry below
-- **Block comments** - Multi-line comment blocks are preserved
-
-**Inline comment alignment:**
-
-Inline comments within arrays are aligned independently per array, based on that array's longest value:
+Comments move with the value or entry they describe. Within an array, trailing comments align against that array's
+longest value:
 
 .. code-block:: toml
 
@@ -342,11 +305,9 @@ Inline comments within arrays are aligned independently per array, based on that
 Disabled Keys
 ~~~~~~~~~~~~~
 
-A commented-out line whose body is itself a single valid key-value (for example ``# set_env = { A = "1" }``) is treated
-as a temporarily *disabled* field rather than free text. The formatter enables it for the duration of the pass, so it is
-laid out and ordered together with the table it belongs to, then comments it out again on the way out. This keeps a
-disabled key anchored to its entry instead of drifting to the next table, and formats the line the same way the enabled
-key would be:
+A comment containing one valid assignment, such as ``# set_env = { A = "1" }``, represents a disabled field. The
+formatter temporarily enables the assignment, formats it with its table, and restores the comment marker. This keeps
+the field beside its active peers:
 
 .. code-block:: toml
 
@@ -360,22 +321,15 @@ key would be:
    description = "run the tests"
    # set_env = { A = "1" }
 
-Comments that are not a single valid key-value (prose, multi-line blocks, commented-out table headers like
-``# [env.docs]``) are left untouched and follow the usual comment-preservation rules above. The heuristic is purely
-structural, so a prose comment that *happens* to be valid TOML is reflowed too; if that matters, phrase the comment so it
-does not parse as a key-value. Keys that would not fit on a single line within ``column_width`` are left as plain
-comments.
+Prose, multiline blocks, and commented headers remain ordinary comments. The check is structural: prose that parses as
+one assignment receives disabled-field formatting. Rephrase such prose to avoid that interpretation. An
+assignment wider than ``column_width`` also remains an ordinary comment.
 
 Group Markers
 ~~~~~~~~~~~~~
 
-By default the formatter reorders each array and table as a single unit, so any entry can move to its sorted position.
-Mark a boundary with a standalone comment that starts with ``# Group:``: the formatter then sorts within each group,
-holds the groups in their original order, and keeps the marker at the top of its group. Reach for this when related
-entries belong together but should still be sorted.
-
-Files without a ``# Group:`` marker format the same as before, so the feature stays opt-in. Case does not matter, so
-``# group:`` works too. Only standalone comment lines count; the formatter ignores inline trailing comments.
+An isolated ``# Group:`` comment divides an array or table into independent sort ranges. Group order and the marker
+position stay fixed. Matching ignores case; trailing comments do not create boundaries.
 
 .. code-block:: toml
 
@@ -404,27 +358,25 @@ Files without a ``# Group:`` marker format the same as before, so the feature st
 Line Endings
 ~~~~~~~~~~~~
 
-The formatter writes a file back with the line ending it already used, so a ``\r\n`` file stays ``\r\n`` and Git on
-Windows does not flag it as modified. A file mixing both endings gets whichever one it uses more, with a tie going to
-``\n``. Line endings alone never count as a change, so a file that is already formatted is left alone whichever ending
-it uses. Output written to stdout always uses ``\n``.
+Output retains the input's line ending. Mixed files use the more frequent ending, with ties resolved to ``\n``. Stdout
+uses ``\n``.
 
 Table-Specific Handling
 -----------------------
 
-Beyond general formatting, tables have specific key ordering, value normalization, and sorting rules.
+tox tables add the rules below.
 
 Table Ordering
 ~~~~~~~~~~~~~~
 
-Tables are reordered into a consistent structure:
+The formatter writes tables in this order:
 
 1. Root-level keys (``min_version``, ``requires``, ``env_list``, etc.)
 2. ``[env_run_base]``
 3. ``[env_pkg_base]``
 4. ``[env_base.*]`` sections (shared base configurations)
 5. ``[env.NAME]`` sections ordered by ``env_list`` if specified
-6. Any remaining ``[env.*]`` sections not in ``env_list``, sorted alphabetically
+6. Remaining ``[env.*]`` sections, alphabetically
 7. ``[env]`` (catch-all environment table, if present)
 
 .. code-block:: toml
@@ -454,15 +406,15 @@ Tables are reordered into a consistent structure:
     [env.py313]
     # ...
 
-Environments not listed in ``env_list`` are placed at the end, sorted alphabetically.
+Environments absent from ``env_list`` follow in alphabetical order.
 
 Alias Normalization
 ~~~~~~~~~~~~~~~~~~~
 
-Legacy INI-style key names are renamed to their modern tox 4 TOML equivalents. This applies automatically
-to the root table, ``[env_run_base]``, ``[env_pkg_base]``, and all ``[env.*]`` tables.
+The formatter renames legacy INI keys to their tox 4 TOML equivalents in the root, ``[env_run_base]``,
+``[env_pkg_base]``, and ``[env.*]`` tables.
 
-**Root table aliases:**
+Root aliases:
 
 .. code-block:: toml
 
@@ -480,7 +432,7 @@ Full list: ``envlist`` → ``env_list``, ``toxinidir`` → ``tox_root``, ``toxwo
 ``skipsdist`` → ``no_package``, ``isolated_build_env`` → ``package_env``, ``setupdir`` → ``package_root``,
 ``minversion`` → ``min_version``, ``ignore_basepython_conflict`` → ``ignore_base_python_conflict``
 
-**Environment table aliases:**
+Environment aliases:
 
 .. code-block:: toml
 
@@ -504,7 +456,7 @@ Full list: ``setenv`` → ``set_env``, ``passenv`` → ``pass_env``, ``envdir`` 
 Root Key Ordering
 ~~~~~~~~~~~~~~~~~
 
-Keys in the root table are reordered into a consistent sequence:
+Root keys follow this sequence:
 
 ``min_version`` → ``requires`` → ``provision_tox_env`` → ``env_list`` → ``labels`` → ``base`` →
 ``package_env`` → ``package_root`` → ``no_package`` → ``skip_missing_interpreters`` →
@@ -525,8 +477,7 @@ Keys in the root table are reordered into a consistent sequence:
 Environment Key Ordering
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Keys within ``[env_run_base]``, ``[env_pkg_base]``, and ``[env.*]`` tables are reordered to group related
-settings:
+Environment keys follow this sequence:
 
 ``factors`` → ``runner`` → ``description`` → ``base_python`` → ``default_base_python`` →
 ``system_site_packages`` → ``always_copy`` → ``download`` → ``virtualenv_spec`` → ``package`` →
@@ -561,8 +512,7 @@ after ``file`` overrides what the file said while one written before it does not
 ``requires`` Normalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Dependencies in the root ``requires`` array are normalized per PEP 508 (canonical package names,
-consistent spacing around specifiers) and sorted alphabetically by package name:
+The formatter applies PEP 508 spelling to root ``requires`` dependencies and sorts them by package name:
 
 .. code-block:: toml
 
@@ -575,14 +525,14 @@ consistent spacing around specifiers) and sorted alphabetically by package name:
 ``env_list`` Order
 ~~~~~~~~~~~~~~~~~~
 
-The ``env_list`` array is written in a fixed order:
+``env_list`` uses this order:
 
-1. **Pinned environments**, in the order ``--pin-env`` names them
-2. **CPython versions** (``py3.12``, ``py312``, ``3.12``), newest first
-3. **PyPy versions** (``pypy3.10``, ``pypy310``), newest first
-4. **Everything else** (``lint``, ``type``, ``docs``), by name
+1. Environments named by ``--pin-env``, in argument order
+2. CPython versions such as ``py3.12``, ``py312``, and ``3.12``, newest first
+3. PyPy versions such as ``pypy3.10`` and ``pypy310``, newest first
+4. Other names, alphabetically
 
-A compound name separated by ``-`` is placed by the first part of it that reads as one of those.
+A compound name takes the rank of its first recognized ``-``-separated part.
 
 .. code-block:: toml
 
@@ -595,8 +545,7 @@ A compound name separated by ``-`` is placed by the first part of it that reads 
 An entry that generates environments rather than naming one, such as ``{ product = ... }``, names none of them, and
 what it generates is read where it sits, so it holds the place the file gave it while the names around it move.
 
-That order is also where each ``[env.NAME]`` table is written, so the file reads the way tox runs it. ``--pin-env``
-(here ``fix,type``) moves both:
+The same order controls ``[env.NAME]`` tables. ``--pin-env`` moves both the list entries and tables:
 
 .. code-block:: toml
 
@@ -624,14 +573,15 @@ That order is also where each ``[env.NAME]`` table is written, so the file reads
    [env.lint]
    description = "lint"
 
+See the `configuration reference <https://tox-toml-fmt.readthedocs.io/en/latest/configuration.html>`_ for how to set
+``pin-env`` via the config file or CLI.
 
 ``use_develop`` Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The legacy ``use_develop = true`` setting is automatically converted to the modern ``package = "editable"``
-equivalent. If ``use_develop = false``, the key is left as-is. tox reads ``use_develop`` before ``package`` and
-installs an editable package whatever ``package`` says, so a ``package`` key already there is given the mode the
-environment ran with:
+The formatter converts ``use_develop = true`` to ``package = "editable"`` and retains ``use_develop = false``. When
+both keys exist, tox lets ``use_develop`` determine the package mode, so the conversion applies that mode to
+``package``:
 
 .. code-block:: toml
 
@@ -646,19 +596,19 @@ environment ran with:
 Array Sorting
 ~~~~~~~~~~~~~
 
-Certain arrays within environment tables are sorted automatically:
+Environment arrays use these policies.
 
-**Sorted by canonical PEP 508 package name:**
+PEP 508 package order:
 
-- ``deps``: dependencies normalized and sorted by package name. ``constraints`` names the files tox hands to pip, so
-  it is left as written.
+- ``deps`` receives normalized dependency spelling and package-name order. ``constraints`` retains file order because
+  it names files for pip.
 
 pip reads this list the way it reads a requirements file, where a later ``--index-url`` replaces the one before it, so
 a list holding anything but plain requirements keeps the order it names them in. Pip options and file references
 (``-r``, ``-c``, ``-e``, ``--index-url``), local paths (``./``, ``../``, ``/``), URLs, artifact filenames (``.whl``,
 ``.zip``, ``.tar.gz`` and the other archive suffixes pip installs by name), and entries containing tox substitution
-variables (``{tox_root}``, etc.) are each such an entry: they are left as written, and the list they sit in
-is left in its order while every requirement beside them is still normalized:
+variables such as ``{tox_root}`` preserve list order. Plain requirements in the same list still receive normalized
+spelling:
 
 .. code-block:: toml
 
@@ -670,14 +620,13 @@ is left in its order while every requirement beside them is still normalized:
    [env_run_base]
    deps = [ "pytest>=7", "-r requirements.txt", "coverage", "-e ./my-pkg[test]" ]
 
-**Sorted alphabetically:**
+Alphabetical order:
 
 - ``dependency_groups``, ``allowlist_externals``, ``extras``, ``labels``, ``depends``
 
-**Special handling for ``pass_env``:**
+``pass_env``:
 
-Replacement objects (inline tables like ``{ replace = "default", ... }``) are pinned to the start,
-then string entries are sorted alphabetically:
+Replacement objects such as ``{ replace = "default", ... }`` lead the list, followed by sorted strings:
 
 .. code-block:: toml
 
@@ -689,7 +638,7 @@ then string entries are sorted alphabetically:
    [env.test]
    pass_env = [ { replace = "env", name = "PATH" }, "CI", "HOME", "TERM" ]
 
-**Arrays NOT sorted:**
+Preserved order:
 
 - ``commands``, ``commands_pre``, ``commands_post``: execution order matters
 - ``base_python``: first entry takes priority
@@ -697,8 +646,7 @@ then string entries are sorted alphabetically:
 Inline Table Key Reordering
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Keys within inline tables are reordered into a consistent order based on the inline table's type. The type
-is detected by the presence of a discriminator key:
+A discriminator key selects the inline-table order:
 
 - ``replace``: ``replace`` → ``condition`` → ``of`` → ``env`` → ``key`` → ``name`` → ``pattern`` →
   ``then`` → ``else`` → ``default`` → ``extend`` → ``marker``
@@ -706,7 +654,7 @@ is detected by the presence of a discriminator key:
 - ``product``: ``product`` → ``exclude``
 - ``value``: ``value`` → ``marker``
 
-Keys not listed in the schema are appended at the end in their original order.
+Unlisted keys follow in input order.
 
 .. code-block:: toml
 
@@ -718,10 +666,9 @@ Keys not listed in the schema are appended at the end in their original order.
    env_list = [ { product = [ "py312", "py313" ], exclude = [ "py312-django" ] } ]
    pass_env = [ { replace = "default", default = ".", extend = true } ]
 
-This reordering applies to all inline tables in the file, including those nested inside arrays.
+The rule includes inline tables nested in arrays.
 
 Other Tables
 ~~~~~~~~~~~~
 
-Any unrecognized tables are preserved and reordered according to standard table ordering rules. Keys within
-unknown tables are not reordered or normalized.
+Unrecognized tables take their standard table position. Their keys and values retain input order and spelling.

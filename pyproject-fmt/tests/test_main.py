@@ -11,7 +11,11 @@ else:  # pragma: <3.11 cover
 
 import pytest
 
-from pyproject_fmt.__main__ import runner as run
+from pyproject_fmt import build_parser, run
+
+
+def test_build_parser_uses_program_name() -> None:
+    assert build_parser().prog == "pyproject-fmt"
 
 
 @pytest.mark.parametrize(
@@ -277,7 +281,7 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     assert not err
 
 
-def test_pyproject_ftm_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_pyproject_fmt_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     txt = """
     [project]
     requires-python = "==3.12"
@@ -304,7 +308,7 @@ def test_pyproject_ftm_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture
     assert not err
 
 
-def test_pyproject_ftm_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_pyproject_fmt_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     txt = """\
     [project]
     requires-python = "==3.12"
@@ -630,7 +634,7 @@ def test_every_python_environment_runs_the_tests() -> None:
     ],
 )
 def test_a_setting_is_read_however_the_file_writes_its_table(tmp_path: Path, settings: str) -> None:
-    """TOML gives every spelling of a table the same name, so the settings are read out of each."""
+    """TOML maps dotted and explicit table spellings to one path; settings follow that path."""
     pyproject_toml = tmp_path / "pyproject.toml"
     # a dotted key writes its own table, so it stands before the first header rather than under it
     pyproject_toml.write_text(
@@ -659,7 +663,7 @@ def test_the_first_setting_the_formatter_cannot_hold_is_the_one_reported(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """A file with more than one bad setting names the same one every run."""
+    """Report the first invalid setting in source order."""
     pyproject_toml = tmp_path / "pyproject.toml"
     pyproject_toml.write_text('[project]\nname = "x"\n\n[tool.pyproject-fmt]\nz_bad = 1\na_bad = 2\n')
 
