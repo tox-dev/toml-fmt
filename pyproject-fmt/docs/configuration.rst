@@ -13,7 +13,7 @@ Put per-file settings in ``[tool.pyproject-fmt]``:
     indent = 2
     keep_full_version = false
     generate_python_version_classifiers = true
-    max_supported_python = "3.14"
+    max_supported_python = "3.15"
     table_format = "short"
     sub_table_spacing = ""
     separate_root_table = "\n"
@@ -39,7 +39,7 @@ A standalone ``pyproject-fmt.toml`` can hold settings for several projects. The 
     column_width = 120
     indent = 2
     table_format = "short"
-    max_supported_python = "3.14"
+    max_supported_python = "3.15"
 
 For each input, the formatter searches from the input's directory toward the filesystem root and uses the nearest
 ``pyproject-fmt.toml``. ``--config`` selects a file directly:

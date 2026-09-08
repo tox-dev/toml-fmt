@@ -10,12 +10,39 @@ else:  # pragma: <3.11 cover
     import tomli as tomllib
 
 import pytest
+from trove_classifiers import classifiers
 
 from pyproject_fmt import build_parser, run
 
 
 def test_build_parser_uses_program_name() -> None:
     assert build_parser().prog == "pyproject-fmt"
+
+
+def test_the_default_max_supported_python_names_a_published_classifier() -> None:
+    """PyPI turns away an upload naming a classifier it does not publish, so the default writes none."""
+    major, minor = build_parser().get_default("max_supported_python")
+
+    assert f"Programming Language :: Python :: {major}.{minor}" in classifiers
+
+
+def test_the_default_max_supported_python_trails_the_newest_classifier_by_one() -> None:
+    """
+    A classifier is published while its release is still in beta, so the newest one runs a release
+    ahead of the newest that ships. Two ahead says a release has shipped that the default leaves out,
+    which is what asks for the bump.
+    """
+    major, minor = build_parser().get_default("max_supported_python")
+    published = max(
+        int(held)
+        for name in classifiers
+        if (held := name.removeprefix(f"Programming Language :: Python :: {major}.")).isdigit()
+        and name.startswith(f"Programming Language :: Python :: {major}.")
+    )
+
+    assert published - minor <= 1, (
+        f"Python {major}.{published} has a classifier, so the default may name {major}.{published - 1}"
+    )
 
 
 @pytest.mark.parametrize(

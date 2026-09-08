@@ -16,7 +16,7 @@ _DEFAULTS: Final[Mapping[str, Mapping[str, _Setting]]] = {
         "column_width": 120,
         "indent": 2,
         "keep_full_version": False,
-        "max_supported_python": (3, 14),
+        "max_supported_python": (3, 15),
         "min_supported_python": (3, 10),
         "generate_python_version_classifiers": True,
         "table_format": "short",
