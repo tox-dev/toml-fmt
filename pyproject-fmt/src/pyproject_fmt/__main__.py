@@ -59,7 +59,7 @@ class _PyProjectFormatter(TOMLFormatter[_PyProjectFmtNamespace]):
             "--max-supported-python",
             metavar="major.minor",
             type=_version_argument,
-            default=(3, 14),
+            default=(3, 15),
             help="latest Python version the project supports (e.g. 3.14)",
         )
 

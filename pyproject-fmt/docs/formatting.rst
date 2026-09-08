@@ -362,7 +362,7 @@ keywords, and validates the version.
         [project.optional-dependencies]
         Dev_Tools = ["pytest"]
 
-    **Python version classifiers** derive from ``requires-python`` and ``max_supported_python`` (here ``3.14``).
+    **Python version classifiers** derive from ``requires-python`` and ``max_supported_python`` (here ``3.15``).
     Disable generation with ``generate_python_version_classifiers = false``:
 
     .. fmt-example::

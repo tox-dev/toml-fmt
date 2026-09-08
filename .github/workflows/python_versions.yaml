@@ -1,0 +1,44 @@
+name: 🐍 python versions
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+permissions: {}
+jobs:
+  bump:
+    name: ⬆️ bump
+    runs-on: ubuntu-24.04
+    environment: update-deps
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 🐍 Setup uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      - name: ⬆️ Set the releases the defaults name
+        run: uv run tasks/python_versions.py
+      - name: 🎨 Run prek
+        run: uvx prek run --all-files || true
+      - name: 🔀 Create Pull Request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
+          commit-message: "Set the Python releases the defaults name"
+          title: "Set the Python releases the defaults name"
+          body: |
+            The newest release the defaults name has to satisfy two things at once: PyPI publishes
+            a classifier for it, and Python has published a release candidate. A classifier appears
+            while a release is still changing, and a candidate PyPI has no classifier for is one no
+            upload may carry, so neither alone is enough.
+
+            The oldest comes from the release cycles still carrying fixes.
+
+            Each run reads what is true that day rather than any date published ahead of it, so a
+            release that slips arrives when it arrives. Anyone naming `max_supported_python`
+            themselves keeps what they set.
+          branch: update-python-versions
+          delete-branch: true

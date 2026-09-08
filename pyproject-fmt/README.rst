@@ -58,7 +58,7 @@ Put per-file settings in ``[tool.pyproject-fmt]``:
     indent = 2
     keep_full_version = false
     generate_python_version_classifiers = true
-    max_supported_python = "3.14"
+    max_supported_python = "3.15"
     table_format = "short"
     sub_table_spacing = ""
     separate_root_table = "\n"
@@ -84,7 +84,7 @@ A standalone ``pyproject-fmt.toml`` can hold settings for several projects. The 
     column_width = 120
     indent = 2
     table_format = "short"
-    max_supported_python = "3.14"
+    max_supported_python = "3.15"
 
 For each input, the formatter searches from the input's directory toward the filesystem root and uses the nearest
 ``pyproject-fmt.toml``. ``--config`` selects a file directly:
@@ -622,7 +622,7 @@ at whitespace; without it, installers read the ``;`` and the marker as part of t
    [project]
    optional-dependencies.dev-tools = [ "pytest" ]
 
-**Python version classifiers** derive from ``requires-python`` and ``max_supported_python`` (here ``3.14``).
+**Python version classifiers** derive from ``requires-python`` and ``max_supported_python`` (here ``3.15``).
 Disable generation with ``generate_python_version_classifiers = false``:
 
 .. code-block:: toml
@@ -641,6 +641,7 @@ Disable generation with ``generate_python_version_classifiers = false``:
      "Programming Language :: Python :: 3.12",
      "Programming Language :: Python :: 3.13",
      "Programming Language :: Python :: 3.14",
+     "Programming Language :: Python :: 3.15",
    ]
 
 **Entry points:** inline tables within ``entry-points`` expand to dotted keys:
