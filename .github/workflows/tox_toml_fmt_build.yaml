@@ -58,7 +58,7 @@ jobs:
               - '.github/workflows/_build.yaml'
   build:
     needs: changes
-    uses: ./.github/workflows/_build.yaml
+    uses: $/.github/workflows/_build.yaml
     with:
       package-name: tox-toml-fmt
       pre-commit-mirror: tox-dev/tox-toml-fmt
