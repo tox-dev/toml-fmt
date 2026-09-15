@@ -44,4 +44,4 @@ common = { path = "../common", features = ["python"] }
 indoc = { version = "2.0.7" }   # dedented test cases for literal strings
 insta = { version = "1.48.0", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.29.2", features = ["auto-initialize"] }
-toml = "1.1.4"                  # an independent parser, to read back what the formatter wrote
+toml = "1.1.6"                  # an independent parser, to read back what the formatter wrote
