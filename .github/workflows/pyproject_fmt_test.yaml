@@ -47,7 +47,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           components: clippy
       - name: 📎 Run Clippy
@@ -64,7 +64,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           components: rustfmt
       - name: 🎨 Check formatting
@@ -81,7 +81,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: 🔨 Build
         run: cargo build -p pyproject-fmt --locked
   test:
@@ -97,11 +97,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           components: llvm-tools-preview
       - name: 📦 Install cargo-llvm-cov and cargo-nextest
-        uses: taiki-e/install-action@0758d235715de2f3551eacc980d9ae8fce9342c3 # v2.87.3
+        uses: taiki-e/install-action@d438492cf8a250514fa2d34b30bc3c0dc37c65ff # v2.87.8
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: ✅ Run tests with coverage
@@ -142,7 +142,7 @@ jobs:
         if: matrix.py != '3.14'
         run: uv python install --python-preference only-managed ${{ matrix.py }}
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: 📝 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
@@ -182,7 +182,7 @@ jobs:
       - name: 🔧 Install tox
         run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
       - name: 🦀 Setup Rust
-        uses: actions-rust-lang/setup-rust-toolchain@166cdcfd11aee3cb47222f9ddb555ce30ddb9659 # v1.17.0
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: 📝 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
