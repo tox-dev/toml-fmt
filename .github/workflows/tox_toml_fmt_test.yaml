@@ -101,13 +101,13 @@ jobs:
         with:
           components: llvm-tools-preview
       - name: 📦 Install cargo-llvm-cov and cargo-nextest
-        uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2.87.13
+        uses: taiki-e/install-action@dfae9bf3d6f6c6f20ef4ebb3486c01a51341ff12 # v2.87.18
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: ✅ Run tests with coverage
         run: cargo llvm-cov nextest -p tox-toml-fmt --no-default-features --locked --fail-under-lines 100 --codecov --output-path coverage.json
       - name: 📤 Upload coverage
-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
@@ -117,7 +117,7 @@ jobs:
       - name: ✅ Run the tox rule tests with coverage
         run: cargo llvm-cov nextest -p tox-rules --no-default-features --locked --fail-under-lines 100 --codecov --output-path tox-rules.json
       - name: 📤 Upload the tox rule coverage
-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: tox-rules.json
@@ -142,7 +142,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
@@ -184,7 +184,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
