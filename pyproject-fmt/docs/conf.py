@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, timezone
 from importlib.metadata import version as metadata_version
 from pathlib import Path
+from typing import Final
 
 sys.path.insert(0, str(Path(__file__).parents[2] / "tasks"))
 
@@ -58,3 +59,5 @@ linkcheck_anchors_ignore_for_url = [
 ]
 
 markdown_http_base = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+# sphinx-markdown-builder cannot translate the label node of sphinx-inline-tabs, so llms.txt lacks tab titles
+llms_txt_suppress_unknown_node_warnings: Final[list[str]] = ["label"]
