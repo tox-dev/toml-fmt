@@ -45,7 +45,7 @@ test = [
   "covdefaults>=2.3",
   "pytest>=9.1.1",
   "pytest-cov>=7.1",
-  "pytest-mock>=3.15.1",
+  "pytest-mock>=3.16",
   "tomli>=2.4.1; python_version<'3.11'",
 ]
 type = [
@@ -55,7 +55,7 @@ type = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=7",
-  "uv>=0.12.15",
+  "uv>=0.12.21",
 ]
 
 [tool.uv]
