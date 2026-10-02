@@ -38,7 +38,7 @@ jobs:
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: 📦 Install cargo-edit
-        uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3
+        uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3.5.0
         with:
           crate: cargo-edit
       - name: 📥 Checkout
@@ -76,7 +76,7 @@ jobs:
       - name: 👀 Show changes
         run: git diff HEAD -u
       - name: 📤 Upload source
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: source
           path: |
@@ -105,7 +105,7 @@ jobs:
           - {runner: ubuntu-24.04, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2, zig: true, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t"}
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: source
       - name: 🔨 Build wheels
@@ -124,7 +124,7 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-linux-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
@@ -142,7 +142,7 @@ jobs:
           - {runner: windows-11-arm, target: aarch64, interpreter: "3.15t", python: "3.11", extra: "--no-default-features --features extension-module", suffix: "-315t"}
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: source
       - name: 🐍 Setup Python
@@ -165,7 +165,7 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-windows-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
@@ -183,7 +183,7 @@ jobs:
           - {runner: macos-15, target: aarch64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t"}
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: source
       - name: 🔨 Build wheels
@@ -201,7 +201,7 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload wheels
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-macos-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
@@ -211,7 +211,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: 📥 Download source
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: source
       - name: 📦 Setup uv
@@ -223,7 +223,7 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 📤 Upload sdist
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-sdist
           path: dist
