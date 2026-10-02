@@ -231,7 +231,7 @@ jobs:
     name: ✅ ${{ inputs.package-name }}-build
     if: always()
     needs: [bump, linux, windows, macos, sdist]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Decide whether all jobs passed or were skipped
         run: |

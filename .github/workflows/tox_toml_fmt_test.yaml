@@ -12,7 +12,7 @@ permissions:
 jobs:
   changes:
     name: 🔍 changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
     steps:
@@ -209,7 +209,7 @@ jobs:
     name: ✅ tox-toml-fmt
     if: always()
     needs: [changes, clippy, fmt, build, test, py, check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Decide whether all jobs passed or were skipped
         run: |

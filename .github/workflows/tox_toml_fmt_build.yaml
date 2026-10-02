@@ -30,7 +30,7 @@ concurrency:
 jobs:
   changes:
     name: 🔍 changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     outputs:
