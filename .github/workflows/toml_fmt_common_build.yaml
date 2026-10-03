@@ -13,7 +13,7 @@ permissions:
 jobs:
   changes:
     name: 🔍 changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
     steps:
@@ -22,6 +22,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🔍 Check for changes
+        if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
@@ -33,7 +34,7 @@ jobs:
     name: 🔨 build
     needs: changes
     if: needs.changes.outputs.run == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     defaults:
       run:
         working-directory: toml-fmt-common
@@ -53,7 +54,7 @@ jobs:
     name: ✅ toml-fmt-common-build
     if: always()
     needs: [changes, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Decide whether all jobs passed or were skipped
         run: |

@@ -12,7 +12,7 @@ permissions:
 jobs:
   changes:
     name: 🔍 changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
     steps:
@@ -21,6 +21,7 @@ jobs:
         with:
           persist-credentials: false
       - name: 🔍 Check for changes
+        if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
@@ -101,7 +102,7 @@ jobs:
         with:
           components: llvm-tools-preview
       - name: 📦 Install cargo-llvm-cov and cargo-nextest
-        uses: taiki-e/install-action@dfae9bf3d6f6c6f20ef4ebb3486c01a51341ff12 # v2.87.18
+        uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: ✅ Run tests with coverage
@@ -199,7 +200,7 @@ jobs:
     name: ✅ pyproject-fmt
     if: always()
     needs: [changes, clippy, fmt, build, test, py, check]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Decide whether all jobs passed or were skipped
         run: |
