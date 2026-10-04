@@ -159,6 +159,7 @@ def test_indent(tmp_path: Path, indent: int) -> None:
 @pytest.mark.parametrize(
     ("flag", "message"),
     [
+        pytest.param("--max-supported-python=3.10", "must not precede 3.11", id="maximum-below-the-minimum"),
         pytest.param("--max-supported-python=4.0", "must name a Python 3 minor", id="another-major"),
         pytest.param("--max-supported-python=3.256", "must name a Python 3 minor", id="minor-too-large"),
         pytest.param("--indent=-1", "must not be negative", id="negative-indent"),
@@ -193,7 +194,7 @@ def test_a_setting_the_formatter_cannot_hold(
         pytest.param("colm_width = 80", "unknown setting", id="misspelled"),
         pytest.param("check = true", "unknown setting", id="run-mode"),
         pytest.param("column_width = 100000", "must be at most", id="count-beyond-a-line"),
-        pytest.param('max_supported_python = "3.9"', "must not precede 3.10", id="maximum-below-the-minimum"),
+        pytest.param('max_supported_python = "3.10"', "must not precede 3.11", id="maximum-below-the-minimum"),
         pytest.param("[tool.pyproject-fmt.deeper]\nheld = 1", "unknown setting", id="table-below-the-settings"),
     ],
 )
@@ -235,7 +236,7 @@ def test_keep_full_version_cli(tmp_path: Path) -> None:
     [project]
     classifiers = [
       "Programming Language :: Python :: 3 :: Only",
-      "Programming Language :: Python :: 3.10",
+      "Programming Language :: Python :: 3.11",
     ]
     dependencies = [
       "a==1.0.0",
@@ -245,8 +246,8 @@ def test_keep_full_version_cli(tmp_path: Path) -> None:
     ]
     """
     pyproject_toml = tmp_path / "pyproject.toml"
-    pyproject_toml.write_text(dedent(start))
-    args = [str(pyproject_toml), "--keep-full-version", "--max-supported-python", "3.10"]
+    pyproject_toml.write_text(dedent(start).replace('"a==1.0.0"', '"A==1.0.0"'))
+    args = [str(pyproject_toml), "--keep-full-version", "--max-supported-python", "3.11"]
     run(args)
     output = pyproject_toml.read_text()
     assert output == dedent(start)
@@ -285,7 +286,6 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     ]
     classifiers = [
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
     ]
     dynamic = [

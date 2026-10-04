@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 _MINOR_LIMIT: Final[int] = 255
 _PYTHON_MAJOR: Final[int] = 3
-_MIN_SUPPORTED_PYTHON: Final[tuple[int, int]] = (_PYTHON_MAJOR, 10)
+_MIN_SUPPORTED_PYTHON: Final[tuple[int, int]] = (_PYTHON_MAJOR, 11)
 
 
 class _PyProjectFmtNamespace(FmtNamespace):
