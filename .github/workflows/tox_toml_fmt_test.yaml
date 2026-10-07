@@ -108,15 +108,19 @@ jobs:
       - name: ✅ Run tests with coverage
         run: cargo llvm-cov nextest -p tox-toml-fmt --no-default-features --locked --fail-under-lines 100 --codecov --output-path coverage.json
       - name: 📤 Upload coverage
+        id: formatter-coverage
+        background: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
+          disable_search: true
           flags: tox-toml-fmt
       # the tox rules are a crate of their own, so they prove their own coverage rather than leaning
       # on the formatter that ships them
       - name: ✅ Run the tox rule tests with coverage
         run: cargo llvm-cov nextest -p tox-rules --no-default-features --locked --fail-under-lines 100 --codecov --output-path tox-rules.json
+      - wait: formatter-coverage
       - name: 📤 Upload the tox rule coverage
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
