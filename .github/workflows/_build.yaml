@@ -160,7 +160,6 @@ jobs:
           enable-cache: false
           activate-environment: true
           python-version: ${{ matrix.platform.python }}
-          python-arch: ${{ matrix.platform.target == 'x86' && 'i686' || matrix.platform.target == 'aarch64' && 'aarch64' || 'x86_64' }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
