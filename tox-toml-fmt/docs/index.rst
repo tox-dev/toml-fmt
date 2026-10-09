@@ -8,7 +8,7 @@ results stable across projects. See the
 Install
 -------
 
-The command requires Python 3.10 or later. An isolated tool environment avoids dependency conflicts with the target
+The command requires Python 3.11 or later. An isolated tool environment avoids dependency conflicts with the target
 project.
 
 .. tab:: uv

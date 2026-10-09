@@ -14,6 +14,7 @@ import os
 import re
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
+from tomllib import load
 from typing import TYPE_CHECKING, Final
 
 import urllib3
@@ -21,7 +22,6 @@ from git import Repo
 from github import Github
 from github.Auth import Token
 from local_inputs import LOCAL_INPUTS, affects
-from tomllib import load
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence

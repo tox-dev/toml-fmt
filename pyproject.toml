@@ -2,6 +2,7 @@
 workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
 
 [tool.ruff]
+target-version = "py311"
 line-length = 120
 format.preview = true
 format.docstring-code-line-length = 100

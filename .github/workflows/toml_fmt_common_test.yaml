@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: ["3.15", "3.15t", "3.14", "3.13", "3.12", "3.11", "3.10", type, pkg_meta]
+        env: ["3.15", "3.15t", "3.14", "3.13", "3.12", "3.11", type, pkg_meta]
     defaults:
       run:
         working-directory: toml-fmt-common
@@ -57,9 +57,9 @@ jobs:
           enable-cache: false
           cache-dependency-glob: "pyproject.toml"
       - name: 🔧 Install tox
-        run: uv tool install --python-preference only-managed --python 3.14 tox --with tox-uv
+        run: uv tool install --python-preference only-managed --python 3.15 tox --with tox-uv
       - name: 🐍 Install Python
-        if: startsWith(matrix.env, '3.') && matrix.env != '3.14'
+        if: startsWith(matrix.env, '3.') && matrix.env != '3.15'
         run: uv python install --python-preference only-managed ${{ matrix.env }}
       - name: 🔧 Setup test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}

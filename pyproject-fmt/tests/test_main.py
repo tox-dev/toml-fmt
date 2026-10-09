@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import sys
+import tomllib
 from pathlib import Path
 from textwrap import dedent
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    import tomllib
-else:  # pragma: <3.11 cover
-    import tomli as tomllib
 
 import pytest
 from trove_classifiers import classifiers
