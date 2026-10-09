@@ -93,10 +93,10 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - {runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.11 3.14t pypy3.11"}
-          - {runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.11 3.14t"}
-          - {runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.11 3.14t"}
-          - {runner: ubuntu-24.04, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2, zig: true, interpreter: "3.11 3.14t"}
+          - {runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.15 3.14t pypy3.11"}
+          - {runner: ubuntu-24.04, target: x86_64-unknown-linux-musl, manylinux: musllinux_1_2, interpreter: "3.15 3.14t"}
+          - {runner: ubuntu-24.04, target: aarch64, manylinux: "2_28", zig: true, interpreter: "3.15 3.14t"}
+          - {runner: ubuntu-24.04, target: aarch64-unknown-linux-musl, manylinux: musllinux_1_2, zig: true, interpreter: "3.15 3.14t"}
           - {runner: ubuntu-24.04, target: riscv64gc-unknown-linux-gnu, manylinux: "2_31"}
           # 3.15t needs explicit no-abi3 build (PEP 803 incomplete in 3.15.0a8)
           - {runner: ubuntu-24.04, target: x86_64, manylinux: "2_28", interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t"}
@@ -112,7 +112,7 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.11' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
+          args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: true
       - name: 📦 Setup uv
@@ -136,8 +136,8 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - {runner: windows-2025, target: x64, interpreter: "3.11 3.14t", python: "3.15"}
-          - {runner: windows-11-arm, target: aarch64, interpreter: "3.11 3.14t", python: "3.15"}
+          - {runner: windows-2025, target: x64, interpreter: "3.15 3.14t", python: "3.15"}
+          - {runner: windows-11-arm, target: aarch64, interpreter: "3.15 3.14t", python: "3.15"}
           - {runner: windows-2025, target: x64, interpreter: "3.15t", python: "3.15", extra: "--no-default-features --features extension-module", suffix: "-315t"}
           - {runner: windows-11-arm, target: aarch64, interpreter: "3.15t", python: "3.15", extra: "--no-default-features --features extension-module", suffix: "-315t"}
     steps:
@@ -154,7 +154,7 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
-          args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.11' }} ${{ matrix.platform.extra || '' }} --target-dir target
+          args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: true
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
@@ -177,8 +177,8 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - {runner: macos-15, target: x86_64, interpreter: "3.11 3.14t pypy3.11"}
-          - {runner: macos-15, target: aarch64, interpreter: "3.11 3.14t pypy3.11"}
+          - {runner: macos-15, target: x86_64, interpreter: "3.15 3.14t pypy3.11"}
+          - {runner: macos-15, target: aarch64, interpreter: "3.15 3.14t pypy3.11"}
           - {runner: macos-15, target: x86_64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t"}
           - {runner: macos-15, target: aarch64, interpreter: "3.15t", extra: "--no-default-features --features extension-module", suffix: "-315t"}
     steps:
