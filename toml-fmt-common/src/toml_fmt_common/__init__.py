@@ -118,7 +118,9 @@ def run(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str] | None = Non
     A supplied argument list supports embedding; the console script falls back to ``sys.argv``.
     """
     configs = _cli_args(formatter, sys.argv[1:] if args is None else args)
-    return int(any(_handle_one(formatter, config) for config in configs))
+    # collect first: any() over a generator stops at the first changed input and leaves the rest unformatted
+    results = [_handle_one(formatter, config) for config in configs]
+    return int(any(results))
 
 
 @dataclass(frozen=True)

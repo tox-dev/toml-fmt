@@ -236,6 +236,29 @@ def test_dumb_format_via_folder(
     ]
 
 
+def test_every_input_is_formatted_after_an_earlier_one_changes(tmp_path: Path) -> None:
+    first, second = tmp_path / "a" / "dumb.toml", tmp_path / "b" / "dumb.toml"
+    for path in (first, second):
+        path.parent.mkdir()
+        path.write_text("ok = 1")
+
+    assert run(Dumb(), ["E", str(first), str(second), "--no-print-diff"]) == 1
+
+    assert [first.read_text(), second.read_text()] == ["ok = 1\nextras = 'E'"] * 2
+
+
+def test_every_input_is_formatted_after_an_earlier_one_is_rejected(tmp_path: Path, mocker: MockerFixture) -> None:
+    first, second = tmp_path / "a" / "dumb.toml", tmp_path / "b" / "dumb.toml"
+    for path in (first, second):
+        path.parent.mkdir()
+        path.write_text("ok = 1")
+    mocker.patch.object(Dumb, "format", side_effect=[ValueError("bad version"), "ok = 2"])
+
+    assert run(Dumb(), ["E", str(first), str(second), "--no-print-diff"]) == 1
+
+    assert [first.read_text(), second.read_text()] == ["ok = 1", "ok = 2"]
+
+
 def test_dumb_stdin(capsys: pytest.CaptureFixture[str], mocker: MockerFixture) -> None:
     mocker.patch("sys.stdin", StringIO("ok = 1"))
 
