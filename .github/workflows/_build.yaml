@@ -54,6 +54,7 @@ jobs:
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
+          python-version: "3.15"
           enable-cache: true
           cache-dependency-glob: "tasks/changelog.py"
       - name: 📝 Generate changelog
@@ -63,8 +64,12 @@ jobs:
           PACKAGE: ${{ inputs.package-name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: 🐍 Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        env:
+          UV_VENV_SEED: "true"
         with:
+          enable-cache: false
+          activate-environment: true
           python-version: "3.15"
       - name: 🎨 Run pre-commit
         uses: tox-dev/action-pre-commit-uv@e09b8958484dfe71f4ac3bc7afb230ba506402ec # v1.0.5
@@ -117,6 +122,8 @@ jobs:
           sccache: true
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
         run: uv run --no-project "$PACKAGE/build_backend.py" dist
@@ -146,10 +153,14 @@ jobs:
         with:
           name: source
       - name: 🐍 Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        env:
+          UV_VENV_SEED: "true"
         with:
+          enable-cache: false
+          activate-environment: true
           python-version: ${{ matrix.platform.python }}
-          architecture: ${{ matrix.platform.target == 'x86' && 'x86' || matrix.platform.target == 'aarch64' && 'arm64' || 'x64' }}
+          python-arch: ${{ matrix.platform.target == 'x86' && 'i686' || matrix.platform.target == 'aarch64' && 'aarch64' || 'x86_64' }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -158,6 +169,8 @@ jobs:
           sccache: true
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
         run: uv run --no-project "$PACKAGE/build_backend.py" dist
@@ -194,6 +207,8 @@ jobs:
           sccache: true
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
         run: uv run --no-project "$PACKAGE/build_backend.py" dist
@@ -216,6 +231,8 @@ jobs:
           name: source
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.15"
       - name: 📦 Build sdist
         # an sdist compiles nothing, so it goes through PEP 517 and the backend vendors toml-fmt-common
         run: uv build --sdist --out-dir dist "$PACKAGE"
