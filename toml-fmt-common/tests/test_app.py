@@ -1,15 +1,10 @@
 from __future__ import annotations
 
 import os
-import sys
+import tomllib
 from argparse import ArgumentTypeError
 from io import StringIO
 from typing import TYPE_CHECKING, ClassVar, Final
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    import tomllib
-else:  # pragma: <3.11 cover
-    import tomli as tomllib
 
 import pytest
 

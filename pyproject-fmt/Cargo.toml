@@ -36,7 +36,7 @@ lexical-sort = { version = "0.3.1" }
 extension-module = ["pyo3/extension-module"]
 # `abi3` can be disabled to produce per-version wheels (needed for free-threaded 3.15t until
 # CPython lands PEP 803 abi3t loader: https://github.com/python/cpython/issues/146636).
-abi3 = ["pyo3/abi3-py310"]
+abi3 = ["pyo3/abi3-py311"]
 default = ["extension-module", "abi3"]
 
 [dev-dependencies]

@@ -2,10 +2,10 @@ version: 2
 build:
   os: ubuntu-lts-latest
   tools:
-    python: "3.14"
     rust: "latest"
   commands:
-    - pip install tox-uv
-    - tox -c tox-toml-fmt/tox.toml run -e readme
-    - tox -c tox-toml-fmt/tox.toml run -e docs -vv --notest
-    - tox -c tox-toml-fmt/tox.toml run -e docs --skip-pkg-install --
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - ~/.local/bin/uv tool install tox --with tox-uv -p 3.15 --managed-python
+    - ~/.local/bin/tox -c tox-toml-fmt/tox.toml run -e readme
+    - ~/.local/bin/tox -c tox-toml-fmt/tox.toml run -e docs -vv --notest
+    - ~/.local/bin/tox -c tox-toml-fmt/tox.toml run -e docs --skip-pkg-install --

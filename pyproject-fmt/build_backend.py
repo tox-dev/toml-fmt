@@ -6,7 +6,7 @@ Published consumers resolve new toml-fmt-common releases, so each artifact carri
 """
 
 # /// script
-# requires-python = ">=3.10"
+# requires-python = ">=3.11"
 # dependencies = ["maturin>=1.13.3"]
 # ///
 

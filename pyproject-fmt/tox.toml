@@ -1,134 +1,138 @@
-requires = ["tox>=4.64.6", "tox-uv>=1.36"]
-env_list = ["fix", "3.15", "3.15t", "3.14", "3.13", "3.12", "3.11", "3.10", "type", "docs", "pkg_meta", "pkg_sdist"]
+requires = [ "tox>=4.64.7", "tox-uv>=1.36" ]
+env_list = [ "3.15", "3.14", "3.13", "3.12", "3.11", "3.15t", "docs", "fix", "pkg_meta", "pkg_sdist", "type" ]
 skip_missing_interpreters = true
 
 [env_run_base]
-description = "run pytest under {env_name}"
 runner = "uv-venv-lock-runner"
+description = "run pytest under {env_name}"
+default_base_python = [ "3.15" ]
 package = "wheel"
 wheel_build_env = ".pkg"
-dependency_groups = ["test"]
-pass_env = ["PYTEST_*", "SSL_CERT_FILE"]
+dependency_groups = [ "test" ]
+pass_env = [ "PYTEST_*", "SSL_CERT_FILE" ]
 set_env.COVERAGE_FILE = { replace = "env", name = "COVERAGE_FILE", default = "{work_dir}{/}.coverage.{env_name}" }
 set_env.COVERAGE_FILECOVERAGE_PROCESS_START = "{tox_root}{/}pyproject.toml"
 commands = [
-    [
-        "pytest",
-        { replace = "posargs", extend = true, default = [
-            "--durations",
-            "5",
-            "--junitxml",
-            "{work_dir}{/}junit.{env_name}.xml",
-            "--no-cov-on-fail",
-            "--cov",
-            "{env_site_packages_dir}{/}pyproject_fmt",
-            "--cov",
-            "{tox_root}{/}tests",
-            "--cov-config",
-            "{tox_root}{/}pyproject.toml",
-            "--cov-context",
-            "test",
-            "--cov-report",
-            "term-missing:skip-covered",
-            "--cov-report",
-            "html:{env_tmp_dir}{/}htmlcov",
-            "--cov-report",
-            "xml:{work_dir}{/}coverage.{env_name}.xml",
-            "tests",
-        ] },
-    ],
+  [
+    "pytest",
+    { replace = "posargs", default = [
+      "--durations",
+      "5",
+      "--junitxml",
+      "{work_dir}{/}junit.{env_name}.xml",
+      "--no-cov-on-fail",
+      "--cov",
+      "{env_site_packages_dir}{/}pyproject_fmt",
+      "--cov",
+      "{tox_root}{/}tests",
+      "--cov-config",
+      "{tox_root}{/}pyproject.toml",
+      "--cov-context",
+      "test",
+      "--cov-report",
+      "term-missing:skip-covered",
+      "--cov-report",
+      "html:{env_tmp_dir}{/}htmlcov",
+      "--cov-report",
+      "xml:{work_dir}{/}coverage.{env_name}.xml",
+      "tests",
+    ], extend = true },
+  ],
 ]
 
-[env."3.14t"]
-description = "run tests under free-threaded 3.14 (no abi3: a free-threaded build loads no abi3 wheel)"
-set_env.MATURIN_PEP517_ARGS = "--no-default-features --features extension-module"
+[env_pkg_base]
+default_base_python = [ "3.15" ]
 
 [env."3.15t"]
 description = "run tests under free-threaded 3.15 (no abi3: PEP 803 abi3t is not in 3.15.0a8 yet)"
 set_env.MATURIN_PEP517_ARGS = "--no-default-features --features extension-module"
 
-[env.type]
-description = "run type checks"
-dependency_groups = ["type"]
-set_env.MYPYPATH = "{tox_root}{/}..{/}toml-fmt-common{/}src"
-commands = [["mypy", "src{/}pyproject_fmt"], ["mypy", "tests"]]
-
 [env.docs]
 description = "build documentation"
-base_python = ["3.14"]
-dependency_groups = ["docs"]
+base_python = [ "3.15" ]
+dependency_groups = [ "docs" ]
 commands = [
-    [
-        "sphinx-build",
-        "-d",
-        "{env_tmp_dir}{/}docs_tree",
-        "docs",
-        "{env:READTHEDOCS_OUTPUT:{work_dir}{/}docs_out}/html",
-        "--color",
-        "-b",
-        "html",
-        { replace = "posargs", default = [
-            "-b",
-            "linkcheck",
-        ], extend = true },
-        "-W",
-    ],
-    [
-        "python",
-        "-c",
-        'print(r"documentation available under file://{work_dir}{/}docs_out{/}html{/}index.html")',
-    ],
+  [
+    "sphinx-build",
+    "-d",
+    "{env_tmp_dir}{/}docs_tree",
+    "docs",
+    "{env:READTHEDOCS_OUTPUT:{work_dir}{/}docs_out}/html",
+    "--color",
+    "-b",
+    "html",
+    { replace = "posargs", default = [
+      "-b",
+      "linkcheck",
+    ], extend = true },
+    "-W",
+  ],
+  [
+    "python",
+    "-c",
+    'print(r"documentation available under file://{work_dir}{/}docs_out{/}html{/}index.html")',
+  ],
 ]
 
 [env.pkg_meta]
 description = "validate package metadata"
 skip_install = true
-dependency_groups = ["pkg-meta"]
+dependency_groups = [ "pkg-meta" ]
 commands = [
-    [
-        "uv",
-        "build",
-        "--sdist",
-        "--wheel",
-        "--out-dir",
-        "{env_tmp_dir}",
-        ".",
-    ],
-    [
-        "twine",
-        "check",
-        "{env_tmp_dir}{/}*",
-    ],
-    [
-        "check-wheel-contents",
-        "--no-config",
-        "{env_tmp_dir}",
-    ],
+  [
+    "uv",
+    "build",
+    "--sdist",
+    "--wheel",
+    "--out-dir",
+    "{env_tmp_dir}",
+    ".",
+  ],
+  [
+    "twine",
+    "check",
+    "{env_tmp_dir}{/}*",
+  ],
+  [
+    "check-wheel-contents",
+    "--no-config",
+    "{env_tmp_dir}",
+  ],
 ]
 
-[env.readme]
-description = "generate README.rst from docs"
+[env.pkg_sdist]
 runner = "uv-venv-runner"
-package = "wheel"
-wheel_build_env = ".pkg"
-dependency_groups = []
+description = "build and test the source distribution"
+skip_install = true
+dependency_groups = [ "test" ]
 change_dir = "{tox_root}{/}.."
-commands = [["python", "tasks{/}generate_readme.py", "pyproject-fmt"]]
+commands = [ [ "python", "tasks{/}check_sdist.py", "pyproject-fmt" ] ]
+
+[env.type]
+description = "run type checks"
+dependency_groups = [ "type" ]
+set_env.MYPYPATH = "{tox_root}{/}..{/}toml-fmt-common{/}src"
+commands = [ [ "mypy", "src{/}pyproject_fmt" ], [ "mypy", "tests" ] ]
+
+[env."3.14t"]
+description = "run tests under free-threaded 3.14 (no abi3: a free-threaded build loads no abi3 wheel)"
+set_env.MATURIN_PEP517_ARGS = "--no-default-features --features extension-module"
 
 [env.dev]
 description = "create a development environment at {envdir}"
 package = "editable"
-dependency_groups = ["dev"]
+dependency_groups = [ "dev" ]
 commands = [
-    ["uv", "pip", "tree"],
-    ["python", "-c", "import toml_fmt_common"],
-    ["python", "-c", 'print(r"{env_python}")'],
+  [ "uv", "pip", "tree" ],
+  [ "python", "-c", "import toml_fmt_common" ],
+  [ "python", "-c", 'print(r"{env_python}")' ],
 ]
 
-[env.pkg_sdist]
-description = "build and test the source distribution"
+[env.readme]
 runner = "uv-venv-runner"
-skip_install = true
-dependency_groups = ["test"]
+description = "generate README.rst from docs"
+package = "wheel"
+wheel_build_env = ".pkg"
+dependency_groups = []
 change_dir = "{tox_root}{/}.."
-commands = [["python", "tasks{/}check_sdist.py", "pyproject-fmt"]]
+commands = [ [ "python", "tasks{/}generate_readme.py", "pyproject-fmt" ] ]

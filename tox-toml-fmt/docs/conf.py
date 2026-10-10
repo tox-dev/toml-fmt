@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import version as metadata_version
 from pathlib import Path
 from typing import Final
@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parents[2] / "tasks"))
 company, name = "tox-dev", "tox-toml-fmt"
 ver = metadata_version("tox-toml-fmt")
 release, version = ver, ".".join(ver.split(".")[:2])
-now = datetime.now(tz=timezone.utc)
+now = datetime.now(tz=UTC)
 project_copyright = f"2022-{now.year}, {company}"
 master_doc, source_suffix = "index", ".rst"
 

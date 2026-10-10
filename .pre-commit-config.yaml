@@ -1,3 +1,5 @@
+default_language_version:
+  python: python3.15
 ci:
   autoupdate_schedule: monthly
   # these build the local Rust extension via uv; pre-commit.ci has no toolchain, so CI regenerates instead
@@ -54,7 +56,6 @@ repos:
     rev: v2.4.3
     hooks:
       - id: codespell
-        additional_dependencies: ["tomli>=2.4.1"]
   - repo: https://github.com/abravalheri/validate-pyproject
     rev: '0.26'
     hooks:
