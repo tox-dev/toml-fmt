@@ -28,8 +28,8 @@ tox-rules = { path = "../tox-rules" }
 regex = { version = "1.13.1" }
 # The registered SPDX identifiers and expression grammar, so a license string is only
 # rewritten once it is known to be an expression rather than free-form prose.
-spdx = { version = "0.13.5", default-features = false }
-pyo3 = { version = "0.29.3", features = ["generate-import-lib"] } # integration with Python
+spdx = { version = "0.13.6", default-features = false }
+pyo3 = { version = "0.30.1", features = ["generate-import-lib"] } # integration with Python
 lexical-sort = { version = "0.3.1" }
 
 [features]
@@ -41,7 +41,7 @@ default = ["extension-module", "abi3"]
 
 [dev-dependencies]
 common = { path = "../common", features = ["python"] }
-indoc = { version = "2.0.7" }   # dedented test cases for literal strings
-insta = { version = "1.48.0", features = ["redactions"] } # snapshot testing
-pyo3 = { version = "0.29.3", features = ["auto-initialize"] }
-toml = "1.1.6"                  # an independent parser, to read back what the formatter wrote
+indoc = { version = "2.0.8" }   # dedented test cases for literal strings
+insta = { version = "1.49.0", features = ["redactions"] } # snapshot testing
+pyo3 = { version = "0.30.1", features = ["auto-initialize"] }
+toml = "1.1.8"                  # an independent parser, to read back what the formatter wrote
