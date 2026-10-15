@@ -14,6 +14,6 @@ pedantic = "warn"
 nursery = "warn"
 
 [workspace.dependencies]
-toml_parser = { version = "1.1.3" }
+toml_parser = { version = "1.1.5" }
 
 [workspace.lints.rust]
