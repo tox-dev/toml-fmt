@@ -1,4 +1,4 @@
-requires = [ "tox>=4.64.7", "tox-uv>=1.36" ]
+requires = [ "tox>=4.65.5", "tox-uv>=1.37" ]
 env_list = [ "3.15", "3.14", "3.13", "3.12", "3.11", "3.15t", "docs", "fix", "pkg_meta", "pkg_sdist", "type" ]
 skip_missing_interpreters = true
 
