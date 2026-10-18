@@ -21,6 +21,12 @@ directory. `tasks/` contains repository maintenance scripts.
 
 ## Development commands
 
+Add a nonempty `changelog.d/pyproject-fmt/<PR>.feature.md`, `.bugfix.md`, or `.doc.md` for a `pyproject-fmt` change. Use
+`changelog.d/tox-toml-fmt/` for `tox-toml-fmt`. A pull request affecting both packages needs an entry in each directory.
+Apply `skip news` when neither package needs a release note; the label can be added after opening the pull request.
+Release preparation folds only the selected package's entries into its section of [CHANGELOG.md](CHANGELOG.md), commits
+the new version, then pushes its tag. The tag starts the build and publish workflow.
+
 Use Cargo from the repository root for Rust changes:
 
 ```bash

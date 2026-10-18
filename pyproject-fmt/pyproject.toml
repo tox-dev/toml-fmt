@@ -35,7 +35,7 @@ dynamic = [
 ]
 urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt/tree/main/pyproject-fmt"
-urls.Changelog = "https://github.com/tox-dev/toml-fmt/releases?q=pyproject-fmt"
+urls.Changelog = "https://github.com/tox-dev/toml-fmt/blob/main/CHANGELOG.md#pyproject-fmt"
 urls.Documentation = "https://pyproject-fmt.readthedocs.io/en/latest/"
 scripts.pyproject-fmt = "pyproject_fmt.__main__:runner"
 

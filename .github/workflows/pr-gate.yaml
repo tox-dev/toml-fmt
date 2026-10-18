@@ -1,0 +1,92 @@
+name: PR gate
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+permissions: {}
+concurrency:
+  group: pr-gate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  news:
+    name: News fragment
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip news') }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require a package changelog entry
+        run: |
+          pyproject_required=0
+          tox_required=0
+          pyproject_found=0
+          tox_found=0
+          while IFS= read -r path; do
+            case "$path" in
+              pyproject-fmt/*) pyproject_required=1 ;;
+              tox-toml-fmt/*) tox_required=1 ;;
+              common/*|toml-doc/*|toml-fmt-common/*|tox-rules/*|Cargo.toml|Cargo.lock)
+                pyproject_required=1
+                tox_required=1
+                ;;
+            esac
+            if [[ "$path" =~ ^changelog\.d/pyproject-fmt/[0-9]+\.(feature|bugfix|doc)\.md$ && -s "$path" ]]; then
+              pyproject_found=1
+            elif [[ "$path" =~ ^changelog\.d/tox-toml-fmt/[0-9]+\.(feature|bugfix|doc)\.md$ && -s "$path" ]]; then
+              tox_found=1
+            fi
+          done < <(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD)
+          if (( (pyproject_required && !pyproject_found) || (tox_required && !tox_found) ||
+            (!pyproject_required && !tox_required && !pyproject_found && !tox_found) )); then
+            echo "::error::add nonempty package changelog fragments or apply skip news"
+            exit 1
+          fi
+  common:
+    uses: $/.github/workflows/common.yaml
+    permissions:
+      contents: read
+  toml-doc:
+    uses: $/.github/workflows/toml_doc.yaml
+    permissions:
+      contents: read
+  shared-build:
+    uses: $/.github/workflows/toml_fmt_common_build.yaml
+    permissions:
+      contents: read
+  shared-test:
+    uses: $/.github/workflows/toml_fmt_common_test.yaml
+    permissions:
+      contents: read
+  pyproject-build:
+    uses: $/.github/workflows/pyproject_fmt_build.yaml
+    permissions:
+      contents: read
+      pull-requests: read
+  pyproject-test:
+    uses: $/.github/workflows/pyproject_fmt_test.yaml
+    permissions:
+      contents: read
+  tox-build:
+    uses: $/.github/workflows/tox_toml_fmt_build.yaml
+    permissions:
+      contents: read
+      pull-requests: read
+  tox-test:
+    uses: $/.github/workflows/tox_toml_fmt_test.yaml
+    permissions:
+      contents: read
+  gate:
+    name: Required checks pass
+    if: always()
+    needs: [news, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test]
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          jq -e 'all(to_entries[]; .value.result == "success" or (.key == "news" and .value.result == "skipped"))' <<< "$NEEDS_JSON"

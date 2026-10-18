@@ -8,10 +8,8 @@ jobs:
   python:
     name: 🐍 python
     runs-on: ubuntu-24.04
-    environment: update-deps
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -20,7 +18,7 @@ jobs:
       - name: 🦀 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: 🐍 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 🧪 Install tox
@@ -40,27 +38,29 @@ jobs:
       - name: 🔒 Update lock file
         run: uv lock --upgrade
       - name: 🎨 Run prek
-        run: uvx prek run --all-files || true
-      - name: 🔀 Create Pull Request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        run: uvx prek run --all-files
+      - name: Save the changes
+        run: git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          commit-message: "Update Python dependencies"
-          title: "Update Python dependencies"
-          body: |
-            Automated Python dependency update.
-
-            - Bumped dependency version constraints in `pyproject.toml` and `tox.toml`
-            - Updated `uv.lock` with latest compatible versions
-          branch: update-python-dependencies
-          delete-branch: true
+          name: python-patch
+          path: ${{ runner.temp }}/changes.patch
+          if-no-files-found: error
+  python-pr:
+    needs: python
+    uses: $/.github/workflows/app-pr.yaml
+    with:
+      kind: python
+      branch: update-python-dependencies
+      title: Update Python dependencies
+      body: Update dependency constraints and the uv lockfile from the scheduled scan.
+    permissions:
+      contents: read
   rust:
     name: 🦀 rust
     runs-on: ubuntu-24.04
-    environment: update-deps
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -74,15 +74,20 @@ jobs:
           cargo upgrade --incompatible
       - name: ⬆️ Update Cargo.lock
         run: cargo update
-      - name: 🔀 Create Pull Request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      - name: Save the changes
+        run: git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          commit-message: "Update Rust dependencies"
-          title: "Update Rust dependencies"
-          body: |
-            Automated Rust dependency update.
-
-            - Updated `Cargo.lock` with latest compatible versions
-          branch: update-rust-dependencies
-          delete-branch: true
+          name: rust-patch
+          path: ${{ runner.temp }}/changes.patch
+          if-no-files-found: error
+  rust-pr:
+    needs: rust
+    uses: $/.github/workflows/app-pr.yaml
+    with:
+      kind: rust
+      branch: update-rust-dependencies
+      title: Update Rust dependencies
+      body: Update Cargo manifests and the lockfile from the scheduled scan.
+    permissions:
+      contents: read

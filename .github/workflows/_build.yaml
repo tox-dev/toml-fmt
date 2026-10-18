@@ -5,20 +5,19 @@ on:
         required: true
         type: string
         description: "Package name (e.g. pyproject-fmt)"
-      pre-commit-mirror:
-        required: true
-        type: string
-        description: "Pre-commit mirror repo (e.g. tox-dev/pyproject-fmt)"
       run:
         required: false
         type: string
         default: "true"
         description: "When 'false', skip the build jobs but still post the aggregate gate"
+      release-build:
+        required: false
+        type: boolean
+        default: false
+        description: Build the exact version from a protected release tag
     outputs:
       version:
         value: ${{ jobs.bump.outputs.version }}
-      changelog:
-        value: ${{ jobs.bump.outputs.changelog }}
 permissions:
   contents: read
 env:
@@ -30,14 +29,15 @@ jobs:
     if: ${{ inputs.run == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
-      pull-requests: read
+      contents: read
     outputs:
-      version: ${{ steps.v.outputs.version }}
-      changelog: ${{ steps.v.outputs.changelog }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: 🦀 Setup Rust
+        if: ${{ !inputs.release-build }}
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: 📦 Install cargo-edit
+        if: ${{ !inputs.release-build }}
         uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3.5.0
         with:
           crate: cargo-edit
@@ -47,24 +47,21 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: 🔖 Bump version
+        if: ${{ !inputs.release-build }}
         run: cargo set-version -p "$PACKAGE" --bump "$RELEASE_TYPE"
         env:
           PACKAGE: ${{ inputs.package-name }}
-          RELEASE_TYPE: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null && 'patch' || github.event.inputs.release }}
-      - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          python-version: "3.15"
-          enable-cache: true
-          cache-dependency-glob: "tasks/changelog.py"
-      - name: 📝 Generate changelog
-        id: v
-        run: uv run tasks/changelog.py "$PACKAGE" "${{ github.event.number }}" "${{ github.event.pull_request.base.sha }}"
+          RELEASE_TYPE: ${{ github.event.inputs.release != null && github.event.inputs.release != 'no' && github.event.inputs.release || 'patch' }}
+      - name: Read package version
+        id: version
         env:
           PACKAGE: ${{ inputs.package-name }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: 🐍 Setup Python
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        if: ${{ !inputs.release-build }}
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_VENV_SEED: "true"
         with:
@@ -72,18 +69,21 @@ jobs:
           activate-environment: true
           python-version: "3.15"
       - name: 🎨 Run pre-commit
+        if: ${{ !inputs.release-build }}
         uses: tox-dev/action-pre-commit-uv@e09b8958484dfe71f4ac3bc7afb230ba506402ec # v1.0.5
         continue-on-error: true
       - name: 📝 Generate README.rst
+        if: ${{ !inputs.release-build }}
         run: uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
         env:
           PACKAGE: ${{ inputs.package-name }}
       - name: 👀 Show changes
+        if: ${{ !inputs.release-build }}
         run: git diff HEAD -u
       - name: 📤 Upload source
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: source
+          name: ${{ inputs.package-name }}-source
           path: |
             .
             !.git
@@ -112,16 +112,16 @@ jobs:
       - name: 📥 Download source
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: source
+          name: ${{ inputs.package-name }}-source
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
-          sccache: true
+          sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
@@ -133,7 +133,7 @@ jobs:
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: wheels-linux-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
+          name: ${{ inputs.package-name }}-wheels-linux-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
   windows:
     name: 🪟 ${{ matrix.platform.target }}
@@ -151,9 +151,9 @@ jobs:
       - name: 📥 Download source
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: source
+          name: ${{ inputs.package-name }}-source
       - name: 🐍 Setup Python
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_VENV_SEED: "true"
         with:
@@ -165,9 +165,9 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target
-          sccache: true
+          sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
@@ -179,7 +179,7 @@ jobs:
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: wheels-windows-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
+          name: ${{ inputs.package-name }}-wheels-windows-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
   macos:
     name: 🍎 ${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
@@ -197,15 +197,15 @@ jobs:
       - name: 📥 Download source
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: source
+          name: ${{ inputs.package-name }}-source
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
-          sccache: true
+          sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
@@ -217,7 +217,7 @@ jobs:
       - name: 📤 Upload wheels
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: wheels-macos-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
+          name: ${{ inputs.package-name }}-wheels-macos-${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
           path: dist
   sdist:
     name: 📦 sdist
@@ -227,9 +227,9 @@ jobs:
       - name: 📥 Download source
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: source
+          name: ${{ inputs.package-name }}-source
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Build sdist
@@ -241,7 +241,7 @@ jobs:
       - name: 📤 Upload sdist
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: wheels-sdist
+          name: ${{ inputs.package-name }}-wheels-sdist
           path: dist
   all-pass:
     name: ✅ ${{ inputs.package-name }}-build

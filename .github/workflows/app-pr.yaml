@@ -1,0 +1,98 @@
+name: Open maintenance PR
+on:
+  workflow_call:
+    inputs:
+      kind:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      title:
+        required: true
+        type: string
+      body:
+        required: true
+        type: string
+permissions: {}
+jobs:
+  open:
+    runs-on: ubuntu-26.04
+    environment: release-auth
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.kind }}-patch
+          path: ${{ runner.temp }}/maintenance
+      - name: Apply the selected changes
+        id: patch
+        env:
+          KIND: ${{ inputs.kind }}
+        run: |
+          set -euo pipefail
+          patch="$RUNNER_TEMP/maintenance/changes.patch"
+          if [[ ! -s "$patch" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git apply --check "$patch"
+          git apply --index "$patch"
+          case "$KIND" in
+            python) allowed='pyproject.toml
+          tox.toml
+          uv.lock
+          pyproject-fmt/pyproject.toml
+          pyproject-fmt/tox.toml
+          tox-toml-fmt/pyproject.toml
+          tox-toml-fmt/tox.toml
+          toml-fmt-common/pyproject.toml
+          toml-fmt-common/tox.toml' ;;
+            rust) allowed='Cargo.toml
+          Cargo.lock
+          common/Cargo.toml
+          pyproject-fmt/Cargo.toml
+          toml-doc/Cargo.toml
+          tox-rules/Cargo.toml
+          tox-toml-fmt/Cargo.toml' ;;
+            versions) allowed='tasks/fmt_examples.py
+          pyproject-fmt/pyproject.toml
+          tox-toml-fmt/pyproject.toml
+          pyproject-fmt/docs/configuration.rst
+          pyproject-fmt/docs/formatting.rst
+          pyproject-fmt/src/pyproject_fmt/__main__.py' ;;
+            *) echo "::error::unknown maintenance task: $KIND"; exit 1 ;;
+          esac
+          while IFS= read -r path; do
+            if ! grep -Fxq -- "$path" <<< "$allowed"; then
+              echo "::error::unexpected $KIND path: $path"
+              exit 1
+            fi
+          done < <(git diff --cached --name-only)
+          git diff --cached --check
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - id: token
+        if: steps.patch.outputs.changed == 'true'
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+      - if: steps.patch.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.token.outputs.token }}
+          branch: ${{ inputs.branch }}
+          commit-message: ${{ inputs.title }}
+          title: ${{ inputs.title }}
+          body: ${{ inputs.body }}
+          labels: skip news
+          delete-branch: true

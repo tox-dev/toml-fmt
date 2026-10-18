@@ -1,13 +1,6 @@
 name: 📦 tox-toml-fmt
 on:
   workflow_dispatch:
-    inputs:
-      release:
-        description: "🚀 Release (semver bump)?"
-        required: true
-        default: "no"
-        type: choice
-        options: ["no", patch, minor, major]
   push:
     branches: ["main"]
     paths:
@@ -21,12 +14,15 @@ on:
       - "rust-toolchain.toml"
       - ".github/workflows/tox_toml_fmt_build.yaml"
       - ".github/workflows/_build.yaml"
-  pull_request:
+  workflow_call:
+    outputs:
+      version:
+        value: ${{ jobs.build.outputs.version }}
   schedule:
     - cron: "0 8 * * *"
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event.inputs.release && github.event.inputs.release != 'no' && '-release' || '' }}
-  cancel-in-progress: ${{ github.event.inputs.release == 'no' || github.event.inputs.release == null }}
+  group: tox_toml_fmt_build-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 jobs:
   changes:
     name: 🔍 changes
@@ -62,70 +58,8 @@ jobs:
     uses: $/.github/workflows/_build.yaml
     with:
       package-name: tox-toml-fmt
-      pre-commit-mirror: tox-dev/tox-toml-fmt
       run: ${{ needs.changes.outputs.run }}
-    secrets: inherit # zizmor: ignore[secrets-inherit]
+      release-build: ${{ startsWith(github.ref, 'refs/tags/') }}
     permissions:
-      contents: write
-      id-token: write
+      contents: read
       pull-requests: read
-  release:
-    name: 🚀 release
-    runs-on: ubuntu-24.04
-    environment:
-      name: release
-      url: https://pypi.org/project/tox-toml-fmt/${{ needs.build.outputs.version }}
-    permissions:
-      id-token: write
-      contents: write
-    if: github.event.inputs.release != 'no' && github.event.inputs.release != null && github.ref == 'refs/heads/main'
-    needs: [build]
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: ${{ secrets.RELEASE_TOKEN }}
-          persist-credentials: true
-      - name: 📥 Download source
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: source
-          path: .
-      - name: 👀 Show changes
-        run: git diff HEAD -u
-      - name: 💾 Commit release
-        run: |
-          git config --global user.name 'Bernat Gabor'
-          git config --global user.email 'gaborbernat@users.noreply.github.com'
-          git commit -am "Release tox-toml-fmt ${VERSION} [skip ci]"
-        env:
-          VERSION: ${{ needs.build.outputs.version }}
-      - name: 📥 Download wheels
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: wheels-*
-          path: dist
-          merge-multiple: "true"
-      - name: 👀 Show wheels
-        run: ls -lth dist
-      - name: 🚀 Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
-        with:
-          skip-existing: true
-      - name: 📢 Create GitHub release
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          VERSION: ${{ needs.build.outputs.version }}
-          CHANGELOG: ${{ needs.build.outputs.changelog }}
-        run: |
-          git pull --rebase origin main
-          git tag "tox-toml-fmt/${VERSION}"
-          git push
-          git push --tags
-          gh release create "tox-toml-fmt/${VERSION}" \
-              --title="tox-toml-fmt/${VERSION}" --verify-tag \
-            --notes "${CHANGELOG}"
-      - name: 🔄 Trigger pre-commit mirror sync
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: gh workflow run main.yaml --repo "tox-dev/tox-toml-fmt"
