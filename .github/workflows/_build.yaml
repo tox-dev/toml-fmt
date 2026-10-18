@@ -70,7 +70,7 @@ jobs:
           python-version: "3.15"
       - name: 🎨 Run pre-commit
         if: ${{ !inputs.release-build }}
-        uses: tox-dev/action-pre-commit-uv@e09b8958484dfe71f4ac3bc7afb230ba506402ec # v1.0.5
+        uses: tox-dev/action-pre-commit-uv@4de52c139ed1a6963bcc4c30042c4ef9d75d8b11 # v1.1.0
         continue-on-error: true
       - name: 📝 Generate README.rst
         if: ${{ !inputs.release-build }}
