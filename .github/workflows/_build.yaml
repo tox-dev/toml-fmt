@@ -61,7 +61,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: 🐍 Setup Python
         if: ${{ !inputs.release-build }}
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_VENV_SEED: "true"
         with:
@@ -121,7 +121,7 @@ jobs:
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
           sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
@@ -153,7 +153,7 @@ jobs:
         with:
           name: ${{ inputs.package-name }}-source
       - name: 🐍 Setup Python
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         env:
           UV_VENV_SEED: "true"
         with:
@@ -167,7 +167,7 @@ jobs:
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
@@ -205,7 +205,7 @@ jobs:
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
@@ -229,7 +229,7 @@ jobs:
         with:
           name: ${{ inputs.package-name }}-source
       - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
       - name: 📦 Build sdist
