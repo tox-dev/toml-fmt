@@ -2,11 +2,11 @@ name: 📦 toml-fmt-common
 on:
   push:
     branches: ["main"]
-  pull_request:
+  workflow_call:
   schedule:
     - cron: "0 8 * * *"
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: toml_fmt_common_build-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: read
