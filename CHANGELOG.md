@@ -599,7 +599,7 @@ Maintenance release: dependency updates and internal changes only.
 
 ### 2.4.1 (2024-10-17)
 
-[Release history](https://github.com/tox-dev/toml-fmt/releases/tag/pyproject-fmt/2.4.1).
+[Tag](https://github.com/tox-dev/toml-fmt/tree/pyproject-fmt/2.4.1).
 
 ### 2.4.0 (2024-10-17)
 
@@ -870,7 +870,7 @@ Maintenance release: dependency updates and internal changes only.
 
 ### 1.3.0 (2026-01-30)
 
-[Release history](https://github.com/tox-dev/toml-fmt/releases/tag/tox-toml-fmt/1.3.0).
+[Tag](https://github.com/tox-dev/toml-fmt/tree/tox-toml-fmt/1.3.0).
 
 ### 1.2.2 (2026-01-07)
 
