@@ -10,16 +10,17 @@ name = "tox-toml-fmt"
 description = "Format tox.toml files"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 keywords = [
-  "format",
-  "pyproject",
+  "formatter",
+  "toml",
+  "tox",
 ]
-license.file = "LICENSE.txt"
+license = "MIT"
+license-files = [ "LICENSE.txt" ]
 authors = [
   { name = "Bernat Gabor", email = "gaborjbernat@gmail.com" },
 ]
 requires-python = ">=3.11"
 classifiers = [
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",

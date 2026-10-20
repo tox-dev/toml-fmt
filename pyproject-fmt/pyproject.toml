@@ -13,13 +13,13 @@ keywords = [
   "format",
   "pyproject",
 ]
-license.file = "LICENSE.txt"
+license = "MIT"
+license-files = [ "LICENSE.txt" ]
 authors = [
   { name = "Bernat Gabor", email = "gaborjbernat@gmail.com" },
 ]
 requires-python = ">=3.11"
 classifiers = [
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
