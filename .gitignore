@@ -11,3 +11,4 @@ lcov.info
 pyproject-fmt/README.rst
 target
 tox-toml-fmt/README.rst
+/uv.lock

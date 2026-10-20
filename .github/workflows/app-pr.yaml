@@ -45,7 +45,6 @@ jobs:
           case "$KIND" in
             python) allowed='pyproject.toml
           tox.toml
-          uv.lock
           pyproject-fmt/pyproject.toml
           pyproject-fmt/tox.toml
           tox-toml-fmt/pyproject.toml

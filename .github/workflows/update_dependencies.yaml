@@ -35,8 +35,6 @@ jobs:
           uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
       - name: 🔧 Fix workspace deps
         run: sed -i 's/toml-fmt-common>=.*/toml-fmt-common",/' pyproject-fmt/pyproject.toml tox-toml-fmt/pyproject.toml
-      - name: 🔒 Update lock file
-        run: uv lock --upgrade
       - name: 🎨 Run prek
         run: uvx prek run --all-files
       - name: Save the changes
@@ -53,7 +51,7 @@ jobs:
       kind: python
       branch: update-python-dependencies
       title: Update Python dependencies
-      body: Update dependency constraints and the uv lockfile from the scheduled scan.
+      body: Update dependency constraints from the scheduled scan.
     permissions:
       contents: read
   rust:
