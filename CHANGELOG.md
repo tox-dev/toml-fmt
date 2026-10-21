@@ -93,9 +93,9 @@
   formatter and failed a large part of its own test suite. ([#450](https://github.com/tox-dev/toml-fmt/issues/450),
   [#451](https://github.com/tox-dev/toml-fmt/pull/451)) by [@gaborbernat](https://github.com/gaborbernat).
 
-<a name="release-pyproject-fmt-2-29-1-other-changes"></a>
+<a name="release-pyproject-fmt-2-29-1-packaging"></a>
 
-#### Other changes
+#### Packaging
 
 - **This release's source distribution carries no toml-fmt-common, so a build from it fails on the import.**
   [2.29.2](https://github.com/tox-dev/toml-fmt/releases/tag/pyproject-fmt/2.29.2) carries it. The wheels hold their
@@ -161,9 +161,9 @@
   seconds and now take 4.8; scaling is close to linear. ([#448](https://github.com/tox-dev/toml-fmt/pull/448)) by
   [@gaborbernat](https://github.com/gaborbernat).
 
-<a name="release-pyproject-fmt-2-29-0-other-changes"></a>
+<a name="release-pyproject-fmt-2-29-0-packaging"></a>
 
-#### Other changes
+#### Packaging
 
 - **This release's source distribution names a dependency on toml-fmt-common without carrying it, and the newest release
   of that package on PyPI dates from May.** A build from the sdist therefore runs an older settings reader against this
@@ -999,9 +999,9 @@
   formatter and failed a large part of its own test suite. ([#450](https://github.com/tox-dev/toml-fmt/issues/450),
   [#451](https://github.com/tox-dev/toml-fmt/pull/451)) by [@gaborbernat](https://github.com/gaborbernat).
 
-<a name="release-tox-toml-fmt-1-10-1-other-changes"></a>
+<a name="release-tox-toml-fmt-1-10-1-packaging"></a>
 
-#### Other changes
+#### Packaging
 
 - **This release's source distribution carries no toml-fmt-common, so a build from it fails on the import.**
   [1.10.2](https://github.com/tox-dev/toml-fmt/releases/tag/tox-toml-fmt/1.10.2) carries it. The wheels hold their
@@ -1064,9 +1064,9 @@
   seconds and now take 0.12; scaling is close to linear. ([#448](https://github.com/tox-dev/toml-fmt/pull/448)) by
   [@gaborbernat](https://github.com/gaborbernat).
 
-<a name="release-tox-toml-fmt-1-10-0-other-changes"></a>
+<a name="release-tox-toml-fmt-1-10-0-packaging"></a>
 
-#### Other changes
+#### Packaging
 
 - **This release's source distribution names a dependency on toml-fmt-common without carrying it, and the newest release
   of that package on PyPI dates from May.** A build from the sdist therefore runs an older settings reader against this
