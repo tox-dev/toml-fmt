@@ -11,12 +11,13 @@ from tasks import python_versions
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from pytest_mock import MockerFixture
 
-def test_with_a_candidate_accepts_only_release_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        python_versions,
-        "fetch",
-        lambda _: [
+
+def test_with_a_candidate_accepts_only_release_candidates(mocker: MockerFixture) -> None:
+    mocker.patch(
+        "tasks.python_versions.fetch",
+        return_value=[
             {"name": "Python 3.15.0rc1"},
             {"name": "Python 3.16.0b2"},
             {"name": "Python 2.7.18rc1"},
