@@ -97,10 +97,27 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: ⬆️ Update Cargo.toml dependencies
         run: |
-          cargo install cargo-edit
+          cargo install cargo-edit --version 0.13.13 --locked
           cargo upgrade --incompatible
       - name: ⬆️ Update Cargo.lock
         run: cargo update
+      - name: Check for a compatible cargo-edit update
+        id: cargo-edit
+        run: |
+          set -euo pipefail
+          metadata=$(curl -fsSL -H 'User-Agent: toml-fmt-updater' https://crates.io/api/v1/crates/cargo-edit)
+          candidate=$(jq -ce '.versions | map({num, rust_version, yanked})' <<<"$metadata" | python3 tasks/update_cargo_edit.py candidate --rust-version "$(rustc --version | cut -d ' ' -f 2)")
+          if test -n "$candidate"; then
+            printf 'version=%s\n' "$candidate" >>"$GITHUB_OUTPUT"
+          fi
+      - name: Update the compatible cargo-edit pin
+        if: steps.cargo-edit.outputs.version != ''
+        env:
+          VERSION: ${{ steps.cargo-edit.outputs.version }}
+        run: |
+          set -euo pipefail
+          cargo install cargo-edit --version "$VERSION" --locked --root "$RUNNER_TEMP/cargo-edit-candidate"
+          python3 tasks/update_cargo_edit.py update "$VERSION"
       - name: Save the changes
         run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
