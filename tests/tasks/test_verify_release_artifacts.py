@@ -1,46 +1,12 @@
-"""Release file set and digest checks."""
-
 from __future__ import annotations
 
 import runpy
 from hashlib import sha256
 from pathlib import Path
-from typing import Final
 
 import pytest
 
 from tasks.verify_release_artifacts import main, verify_artifacts
-
-_RUST_TAGS: Final[tuple[str, ...]] = (
-    "cp311-abi3-macosx_10_12_x86_64",
-    "cp311-abi3-macosx_11_0_arm64",
-    "cp311-abi3-manylinux_2_28_aarch64",
-    "cp311-abi3-manylinux_2_28_x86_64",
-    "cp311-abi3-manylinux_2_31_riscv64",
-    "cp311-abi3-musllinux_1_2_aarch64",
-    "cp311-abi3-musllinux_1_2_x86_64",
-    "cp311-abi3-win_amd64",
-    "cp311-abi3-win_arm64",
-    "cp314-cp314t-macosx_10_12_x86_64",
-    "cp314-cp314t-macosx_11_0_arm64",
-    "cp314-cp314t-manylinux_2_28_aarch64",
-    "cp314-cp314t-manylinux_2_28_x86_64",
-    "cp314-cp314t-musllinux_1_2_aarch64",
-    "cp314-cp314t-musllinux_1_2_x86_64",
-    "cp314-cp314t-win_amd64",
-    "cp314-cp314t-win_arm64",
-    "cp315-cp315t-macosx_10_12_x86_64",
-    "cp315-cp315t-macosx_11_0_arm64",
-    "cp315-cp315t-manylinux_2_28_aarch64",
-    "cp315-cp315t-manylinux_2_28_x86_64",
-    "cp315-cp315t-musllinux_1_2_aarch64",
-    "cp315-cp315t-musllinux_1_2_x86_64",
-    "cp315-cp315t-win_amd64",
-    "cp315-cp315t-win_arm64",
-    "pp311-pypy311_pp73-macosx_10_12_x86_64",
-    "pp311-pypy311_pp73-macosx_11_0_arm64",
-    "pp311-pypy311_pp73-manylinux_2_28_x86_64",
-)
 
 
 @pytest.fixture(params=["pyproject-fmt", "tox-toml-fmt", "toml-fmt-common"])
@@ -49,7 +15,40 @@ def release_dist(tmp_path: Path, request: pytest.FixtureRequest) -> tuple[Path, 
     version = {"pyproject-fmt": "2.30.3", "tox-toml-fmt": "1.11.1", "toml-fmt-common": "1.3.5"}[package]
     prefix = f"{package.replace('-', '_')}-{version}"
     filenames = (
-        {f"{prefix}-{tag}.whl" for tag in _RUST_TAGS} | {f"{prefix}.tar.gz"}
+        {
+            f"{prefix}-{tag}.whl"
+            for tag in (
+                "cp311-abi3-macosx_10_12_x86_64",
+                "cp311-abi3-macosx_11_0_arm64",
+                "cp311-abi3-manylinux_2_28_aarch64",
+                "cp311-abi3-manylinux_2_28_x86_64",
+                "cp311-abi3-manylinux_2_31_riscv64",
+                "cp311-abi3-musllinux_1_2_aarch64",
+                "cp311-abi3-musllinux_1_2_x86_64",
+                "cp311-abi3-win_amd64",
+                "cp311-abi3-win_arm64",
+                "cp314-cp314t-macosx_10_12_x86_64",
+                "cp314-cp314t-macosx_11_0_arm64",
+                "cp314-cp314t-manylinux_2_28_aarch64",
+                "cp314-cp314t-manylinux_2_28_x86_64",
+                "cp314-cp314t-musllinux_1_2_aarch64",
+                "cp314-cp314t-musllinux_1_2_x86_64",
+                "cp314-cp314t-win_amd64",
+                "cp314-cp314t-win_arm64",
+                "cp315-cp315t-macosx_10_12_x86_64",
+                "cp315-cp315t-macosx_11_0_arm64",
+                "cp315-cp315t-manylinux_2_28_aarch64",
+                "cp315-cp315t-manylinux_2_28_x86_64",
+                "cp315-cp315t-musllinux_1_2_aarch64",
+                "cp315-cp315t-musllinux_1_2_x86_64",
+                "cp315-cp315t-win_amd64",
+                "cp315-cp315t-win_arm64",
+                "pp311-pypy311_pp73-macosx_10_12_x86_64",
+                "pp311-pypy311_pp73-macosx_11_0_arm64",
+                "pp311-pypy311_pp73-manylinux_2_28_x86_64",
+            )
+        }
+        | {f"{prefix}.tar.gz"}
         if package != "toml-fmt-common"
         else {f"{prefix}-py3-none-any.whl", f"{prefix}.tar.gz"}
     )

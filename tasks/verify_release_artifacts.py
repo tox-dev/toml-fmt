@@ -1,5 +1,3 @@
-"""Verify the files handed from the release build to PyPI."""
-
 from __future__ import annotations
 
 import argparse
@@ -22,7 +20,6 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 
 def verify_artifacts(package: str, version: str, directory: Path) -> str:
-    """Return hashes only when the distribution has every expected file."""
     if not directory.is_dir():
         msg = f"artifact directory missing: {directory}"
         raise ValueError(msg)
@@ -41,12 +38,12 @@ def verify_artifacts(package: str, version: str, directory: Path) -> str:
             "win_amd64",
             "win_arm64",
         )
-        free_threaded_platforms = tuple(platform for platform in abi3_platforms if "riscv64" not in platform)
         expected = {f"{prefix}-cp311-abi3-{platform}.whl" for platform in abi3_platforms}
         expected.update(
             f"{prefix}-{python}-{platform}.whl"
             for python in ("cp314-cp314t", "cp315-cp315t")
-            for platform in free_threaded_platforms
+            for platform in abi3_platforms
+            if "riscv64" not in platform
         )
         expected.update(
             f"{prefix}-pp311-pypy311_pp73-{platform}.whl"
