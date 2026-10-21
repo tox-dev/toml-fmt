@@ -37,8 +37,6 @@ jobs:
           uvx bump-deps-index -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
           uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
           uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
-      - name: 🔧 Fix workspace deps
-        run: sed -i 's/toml-fmt-common>=.*/toml-fmt-common",/' pyproject-fmt/pyproject.toml tox-toml-fmt/pyproject.toml
       - name: Set dependency age cutoff
         run: printf 'UV_EXCLUDE_NEWER=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
       - name: Refresh workspace lock
