@@ -10,8 +10,9 @@ name = "pyproject-fmt"
 description = "Format pyproject.toml files"
 readme = { file = "README.rst", content-type = "text/x-rst" }
 keywords = [
-  "format",
+  "formatter",
   "pyproject",
+  "toml",
 ]
 license = "MIT"
 license-files = [ "LICENSE.txt" ]
@@ -20,6 +21,8 @@ authors = [
 ]
 requires-python = ">=3.11"
 classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
@@ -29,6 +32,8 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: 3.15",
   "Programming Language :: Python :: Free Threading :: 1 - Unstable",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Utilities",
 ]
 dynamic = [
   "version",
@@ -37,6 +42,7 @@ urls."Bug Tracker" = "https://github.com/tox-dev/toml-fmt/issues"
 urls."Source Code" = "https://github.com/tox-dev/toml-fmt/tree/main/pyproject-fmt"
 urls.Changelog = "https://github.com/tox-dev/toml-fmt/blob/main/CHANGELOG.md#pyproject-fmt"
 urls.Documentation = "https://pyproject-fmt.readthedocs.io/en/latest/"
+urls.Homepage = "https://github.com/tox-dev/toml-fmt"
 scripts.pyproject-fmt = "pyproject_fmt.__main__:runner"
 
 [dependency-groups]

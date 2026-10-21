@@ -44,6 +44,9 @@ jobs:
           git apply --index "$patch"
           case "$KIND" in
             python) allowed='pyproject.toml
+          .pre-commit-config.yaml
+          pylock.toml
+          uv.lock
           tox.toml
           pyproject-fmt/pyproject.toml
           pyproject-fmt/tox.toml
@@ -72,6 +75,13 @@ jobs:
               exit 1
             fi
           done < <(git diff --cached --name-only)
+          while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
+            read -ra fields <<< "$metadata"
+            if [[ "${fields[1]}" != 100644 ]]; then
+              echo "::error::unexpected $KIND file mode: $path"
+              exit 1
+            fi
+          done < <(git diff --cached --raw --no-renames -z)
           git diff --cached --check
           echo "changed=true" >> "$GITHUB_OUTPUT"
       - id: token

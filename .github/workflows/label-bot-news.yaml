@@ -1,0 +1,16 @@
+name: Label bot news
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions: {}
+jobs:
+  label:
+    if: github.event.pull_request.user.type == 'Bot'
+    runs-on: ubuntu-26.04
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: tox-dev/github-workflows/label-bot-news@296388849cced16665b3e8b4397a22265418d3dc
+        with:
+          fragments: changelog.d/pyproject-fmt,changelog.d/tox-toml-fmt,changelog.d/toml-fmt-common

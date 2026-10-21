@@ -1,0 +1,46 @@
+name: 🚀 toml-fmt-common
+on:
+  push:
+    tags: ["toml-fmt-common/*"]
+permissions: {}
+concurrency:
+  group: release-toml-fmt-common-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.15'
+          enable-cache: false
+      - name: Read package version
+        id: version
+        run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >> "$GITHUB_OUTPUT"
+      - name: Export locked build constraints
+        run: uv export --locked --format requirements-txt --no-default-groups --only-group release --no-emit-workspace --output-file "$RUNNER_TEMP/build-constraints.txt"
+      - name: Build source and wheel distributions
+        run: uv build --python 3.15 --python-preference only-managed --build-constraints "$RUNNER_TEMP/build-constraints.txt" --sdist --wheel toml-fmt-common --out-dir dist
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: toml-fmt-common-wheels-universal
+          path: dist/*
+          if-no-files-found: error
+  publish:
+    if: github.repository == 'tox-dev/toml-fmt' && startsWith(github.ref, 'refs/tags/toml-fmt-common/')
+    needs: build
+    uses: $/.github/workflows/_publish_package.yaml
+    permissions:
+      contents: write
+      id-token: write
+    with:
+      package: toml-fmt-common
+      version: ${{ needs.build.outputs.version }}
+      artifact-pattern: toml-fmt-common-wheels-*

@@ -1,0 +1,156 @@
+name: Publish package
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      artifact-pattern:
+        required: true
+        type: string
+permissions: {}
+jobs:
+  validate-source:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.15'
+          enable-cache: false
+      - name: Check package tag
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: test "$TAG" = "$PACKAGE/$VERSION"
+      - name: Check Cargo version
+        if: inputs.package != 'toml-fmt-common'
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: test "$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)" = "$VERSION"
+      - name: Check Python package version
+        if: inputs.package == 'toml-fmt-common'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: test "$(uv version --package toml-fmt-common --short)" = "$VERSION"
+      - name: Install locked release tools
+        run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
+      - name: Check changelog release notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          .venv/bin/release-creator notes --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/notes.md"
+          grep -q '^### ' "$RUNNER_TEMP/notes.md"
+  validate-artifacts:
+    needs: validate-source
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: ${{ inputs.artifact-pattern }}
+          path: dist
+          merge-multiple: true
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install locked package checks
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: uv sync --locked --python 3.15 --package "$PACKAGE" --no-default-groups --only-group pkg-meta --no-install-workspace
+      - name: Check every distribution
+        run: |
+          .venv/bin/twine check dist/*
+          .venv/bin/check-wheel-contents --no-config dist/*.whl
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.package }}-validated-dist
+          path: dist/*
+          if-no-files-found: error
+  pypi:
+    needs: validate-artifacts
+    runs-on: ubuntu-26.04
+    environment:
+      name: release
+      url: https://pypi.org/project/${{ inputs.package }}/${{ inputs.version }}/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ inputs.package }}-validated-dist
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          skip-existing: true
+  github-release:
+    needs: pypi
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install locked release tools
+        run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
+      - name: Select previous package tag
+        id: previous
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          previous=$(git tag --list "$PACKAGE/*" | cut -d/ -f2 | .venv/bin/release-creator tags "$VERSION" --previous)
+          if [[ -n "$previous" ]]; then
+            printf 'tag=%s/%s\n' "$PACKAGE" "$previous" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read GitHub contributor metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ steps.previous.outputs.tag }}
+        run: |
+          args=(-f "tag_name=$TAG")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(-f "previous_tag_name=$PREVIOUS")
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > "$RUNNER_TEMP/generated-notes.md"
+      - name: Render package release notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ steps.previous.outputs.tag }}
+        run: |
+          args=(--changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" --artifact-url "https://pypi.org/project/$PACKAGE/$VERSION/" --generated-notes "$RUNNER_TEMP/generated-notes.md")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(--previous "$PREVIOUS")
+          fi
+          .venv/bin/release-creator notes "${args[@]}" > "$RUNNER_TEMP/release-notes.md"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --verify-tag --notes-file "$RUNNER_TEMP/release-notes.md"

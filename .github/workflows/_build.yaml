@@ -32,6 +32,7 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      maturin-version: ${{ steps.maturin.outputs.version }}
     steps:
       - name: 🦀 Setup Rust
         if: ${{ !inputs.release-build }}
@@ -46,6 +47,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Read locked maturin version
+        id: maturin
+        run: python3 -c 'import tomllib; from pathlib import Path; packages = tomllib.loads(Path("uv.lock").read_text())["package"]; print("version=v" + next(package["version"] for package in packages if package["name"] == "maturin"))' >> "$GITHUB_OUTPUT"
       - name: 🔖 Bump version
         if: ${{ !inputs.release-build }}
         run: cargo set-version -p "$PACKAGE" --bump "$RELEASE_TYPE"
@@ -116,6 +120,7 @@ jobs:
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
+          maturin-version: ${{ needs.bump.outputs.maturin-version }}
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
@@ -163,6 +168,7 @@ jobs:
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
+          maturin-version: ${{ needs.bump.outputs.maturin-version }}
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
@@ -201,6 +207,7 @@ jobs:
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
+          maturin-version: ${{ needs.bump.outputs.maturin-version }}
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
@@ -232,9 +239,11 @@ jobs:
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.15"
+      - name: Export locked build constraints
+        run: uv export --locked --format requirements-txt --no-default-groups --only-group release --no-emit-workspace --output-file "$RUNNER_TEMP/build-constraints.txt"
       - name: 📦 Build sdist
         # an sdist compiles nothing, so it goes through PEP 517 and the backend vendors toml-fmt-common
-        run: uv build --sdist --out-dir dist "$PACKAGE"
+        run: uv build --build-constraints "$RUNNER_TEMP/build-constraints.txt" --sdist --out-dir dist "$PACKAGE"
         shell: bash
         env:
           PACKAGE: ${{ inputs.package-name }}

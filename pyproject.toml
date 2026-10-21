@@ -1,4 +1,13 @@
+[dependency-groups]
+release = [
+  "maturin>=1.15,<2",
+  "prek>=0.3",
+  "release-creator>=0.4.1",
+  "uv-build>=0.13.4,<0.14",
+]
+
 [tool.uv]
+dependency-groups.release = { requires-python = ">=3.15" }
 workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
 
 [tool.ruff]
