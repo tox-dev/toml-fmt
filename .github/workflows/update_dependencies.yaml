@@ -40,7 +40,7 @@ jobs:
       - name: Refresh workspace lock
         run: uv lock --upgrade
       - name: Refresh selectable project lock
-        run: uv run --locked --python 3.15 --no-default-groups --group release release-creator locks
+        run: uvx --python 3.15 --from 'git+https://github.com/tox-dev/release-creator@d1d193f9b68d07344dd7a6a15d67970a1a2161e8' release-creator locks
       - name: 🎨 Run prek
         run: uv run --locked --python 3.15 --no-default-groups --group release prek run --all-files
       - name: Save the changes
@@ -95,3 +95,12 @@ jobs:
       body: Update Cargo manifests and the lockfile from the scheduled scan.
     permissions:
       contents: read
+  release-tools:
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@28517d3c24a52a2d7c325f3a4ffe4d93a2e786f5
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    with:
+      keep-uv-lock: true
+      check-workflow: common.yaml
