@@ -16,7 +16,7 @@ ver = metadata_version("tox-toml-fmt")
 release, version = ver, ".".join(ver.split(".")[:2])
 now = datetime.now(tz=UTC)
 project_copyright = f"2022-{now.year}, {company}"
-master_doc, source_suffix = "index", ".rst"
+master_doc, source_suffix = "index", {".rst": "restructuredtext", ".md": "markdown"}
 
 html_theme = "furo"
 html_title, html_last_updated_fmt = name, now.isoformat()
@@ -24,6 +24,7 @@ pygments_style, pygments_dark_style = "sphinx", "monokai"
 
 extensions = [
     "sphinx_llm.txt",
+    "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",

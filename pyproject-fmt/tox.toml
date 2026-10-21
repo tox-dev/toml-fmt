@@ -52,7 +52,19 @@ set_env.MATURIN_PEP517_ARGS = "--no-default-features --features extension-module
 description = "build documentation"
 base_python = [ "3.15" ]
 dependency_groups = [ "docs" ]
+allowlist_externals = [ "uvx" ]
 commands = [
+  [
+    "uvx",
+    "--python", "3.15",
+    "--from", "git+https://github.com/tox-dev/release-creator@a68e1cac50755c8d8fbb2be85fa1a35eeb78d577",
+    "release-creator", "changelog",
+    "--format", "package",
+    "--changelog", "../CHANGELOG.md",
+    "--package", "pyproject-fmt",
+    "--fragments", "../changelog.d/pyproject-fmt",
+    "--output", "docs/changelog.md",
+  ],
   [
     "sphinx-build",
     "-d",
