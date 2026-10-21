@@ -21,9 +21,19 @@ jobs:
       package: pyproject-fmt
       version: ${{ needs.build.outputs.version }}
       artifact-pattern: pyproject-fmt-wheels-*
-  pypi:
-    if: github.repository == 'tox-dev/toml-fmt' && startsWith(github.ref, 'refs/tags/pyproject-fmt/')
+  stage:
+    if: github.repository == 'tox-dev/toml-fmt'
     needs: [build, validate]
+    uses: $/.github/workflows/_reconcile_package.yaml
+    permissions:
+      contents: read
+    with:
+      package: pyproject-fmt
+      version: ${{ needs.build.outputs.version }}
+      mode: stage
+  pypi:
+    if: needs.stage.outputs.missing-count != '0'
+    needs: [build, stage]
     runs-on: ubuntu-26.04
     environment:
       name: release
@@ -40,14 +50,39 @@ jobs:
         with:
           name: pyproject-fmt-validated-manifest
           path: ${{ runner.temp }}/release-manifest
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: pyproject-fmt-missing-manifest
+          path: ${{ runner.temp }}/missing-manifest
       - name: Check uploaded distribution hashes
         working-directory: dist
         run: sha256sum --check --strict "$RUNNER_TEMP/release-manifest/dist.sha256"
       - name: Check uploaded distribution count
-        run: test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l < "$RUNNER_TEMP/release-manifest/dist.sha256")"
+        env:
+          MANIFEST: ${{ runner.temp }}/release-manifest/dist.sha256
+        run: >-
+          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l < "$MANIFEST")"
+      - uses: tox-dev/github-workflows/select-pypi-artifacts@a250ca3524857236e288764651851010939b6f71
+        with:
+          dist: dist
+          manifest: ${{ runner.temp }}/missing-manifest/pypi-missing-names.txt
+          output-dir: publish-dist
+          expected-count: ${{ needs.stage.outputs.missing-count }}
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: publish-dist
+  verify:
+    needs: [build, stage, pypi]
+    if: always() && needs.stage.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.pypi.result)
+    uses: $/.github/workflows/_reconcile_package.yaml
+    permissions:
+      contents: read
+    with:
+      package: pyproject-fmt
+      version: ${{ needs.build.outputs.version }}
+      mode: verify
   github-release:
-    needs: [build, pypi]
+    needs: [build, verify]
     uses: $/.github/workflows/_github_package_release.yaml
     permissions:
       contents: write

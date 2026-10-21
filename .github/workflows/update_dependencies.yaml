@@ -23,6 +23,7 @@ jobs:
       - name: 🐍 Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
       - name: 🧪 Install tox
         run: uv tool install tox --with tox-uv
@@ -48,7 +49,7 @@ jobs:
       - name: Refresh selectable project lock
         run: |
           uvx --python 3.15 \
-            --from 'git+https://github.com/tox-dev/release-creator@fafa26624c3b40c9cabad57442a764e76bc30475' \
+            --from 'git+https://github.com/tox-dev/release-creator@7db94b1b86ee6559f22970f605a0eef7c4bff02e' \
             release-creator locks \
             --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
