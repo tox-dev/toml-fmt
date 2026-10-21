@@ -73,6 +73,19 @@ jobs:
             echo "::error::add package changelog fragments or apply skip news"
             exit 1
           fi
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.15'
+          enable-cache: false
+      - name: Check assembled package news
+        run: |
+          set -euo pipefail
+          for package in pyproject-fmt tox-toml-fmt toml-fmt-common; do
+            fragments=(changelog.d/"$package"/*.md)
+            if [[ -f "${fragments[0]}" ]]; then
+              uv run --locked --python 3.15 --no-default-groups --group release python tasks/assemble_release.py "$package" 0.0.0
+            fi
+          done
   common:
     uses: $/.github/workflows/common.yaml
     permissions:
