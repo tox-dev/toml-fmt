@@ -14,6 +14,9 @@ on:
       body:
         required: true
         type: string
+    secrets:
+      RELEASE_APP_PRIVATE_KEY:
+        required: true
 permissions: {}
 jobs:
   open:

@@ -38,5 +38,7 @@ jobs:
       branch: update-python-versions
       title: Set the Python releases the defaults name
       body: Keep the default supported Python range aligned with published classifiers, release candidates, and supported cycles.
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read

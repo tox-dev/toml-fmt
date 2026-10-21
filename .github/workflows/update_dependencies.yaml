@@ -76,6 +76,8 @@ jobs:
       branch: update-python-dependencies
       title: Update Python dependencies
       body: Update dependency constraints from the scheduled scan.
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
   rust:
@@ -111,6 +113,8 @@ jobs:
       branch: update-rust-dependencies
       title: Update Rust dependencies
       body: Update Cargo manifests and the lockfile from the scheduled scan.
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
   release-tools:
