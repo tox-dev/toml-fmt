@@ -31,7 +31,9 @@ Choose the suffix for the effect on users: `feature` for added or removed Python
 `bugfix` for a correction, and `doc` for documentation. `security`, `performance`, `deprecation`, `removal`, and
 `packaging` are available when those changes affect users. Use `breaking` for an incompatible API or behavior change.
 The release notes omit categories with no entries. The fragment text may use Markdown links and records author credit in
-the generated changelog; GitHub notes use account handles and a contributor list.
+the generated changelog; GitHub notes use account handles and a contributor list. PR documentation builds show pending
+`pyproject-fmt` and `tox-toml-fmt` fragments under Draft on each package's changelog page. `toml-fmt-common` has no
+documentation site; its entries appear in the root changelog at release.
 
 Apply `skip news` when the change has no user-facing effect. The label can be added after opening a pull request. Bot
 pull requests without a fragment receive it automatically. A bot pull request that supplies a fragment still has that
