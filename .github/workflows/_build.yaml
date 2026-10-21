@@ -61,7 +61,7 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package-name }}
         run: |
-          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)
+          version=$(python3 tasks/cargo_version.py "$PACKAGE/Cargo.toml")
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: 🐍 Setup Python
         if: ${{ !inputs.release-build }}

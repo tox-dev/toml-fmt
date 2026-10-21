@@ -38,7 +38,7 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package }}
           VERSION: ${{ inputs.version }}
-        run: test "$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)" = "$VERSION"
+        run: test "$(python3 tasks/cargo_version.py "$PACKAGE/Cargo.toml")" = "$VERSION"
       - name: Check Python package version
         if: inputs.package == 'toml-fmt-common'
         env:
