@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    env:
+      RELEASE_CREATOR_CUTOFF: '2026-10-19T20:26:31Z'
+      UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,11 +41,26 @@ jobs:
       - name: Set dependency age cutoff
         run: printf 'UV_EXCLUDE_NEWER=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
       - name: Refresh workspace lock
-        run: uv lock --upgrade
+        run: |
+          uv lock --upgrade \
+            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
+            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
       - name: Refresh selectable project lock
-        run: uvx --python 3.15 --from 'git+https://github.com/tox-dev/release-creator@d1d193f9b68d07344dd7a6a15d67970a1a2161e8' release-creator locks
+        run: |
+          uvx --python 3.15 \
+            --from 'git+https://github.com/tox-dev/release-creator@fafa26624c3b40c9cabad57442a764e76bc30475' \
+            release-creator locks \
+            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
+            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+      - name: Install the reviewed release tools
+        run: |
+          uv sync --locked --python 3.15 --no-default-groups --group release \
+            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
+            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
       - name: 🎨 Run prek
-        run: uv run --locked --python 3.15 --no-default-groups --group release prek run --all-files
+        env:
+          UV_NO_SYNC: '1'
+        run: .venv/bin/prek run --all-files
       - name: Save the changes
         run: git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -96,7 +114,7 @@ jobs:
     permissions:
       contents: read
   release-tools:
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@28517d3c24a52a2d7c325f3a4ffe4d93a2e786f5
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@d08dd303503964c1d1a46a43f76b21c52b1639b1
     permissions:
       actions: write
       contents: write
@@ -104,3 +122,6 @@ jobs:
     with:
       keep-uv-lock: true
       check-workflow: common.yaml
+      exclude-newer-packages: |
+        release-creator=2026-10-19T20:26:31Z
+        uv-build=2026-10-20T15:11:07Z
