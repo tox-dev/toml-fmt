@@ -23,6 +23,7 @@ on:
 concurrency:
   group: tox_toml_fmt_build-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+permissions: {}
 jobs:
   changes:
     name: 🔍 changes
