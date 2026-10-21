@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pytest
+
 from tasks import python_versions
 
 if TYPE_CHECKING:
-    import pytest
+    from pathlib import Path
 
 
 def test_with_a_candidate_accepts_only_release_candidates(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -25,7 +27,15 @@ def test_with_a_candidate_accepts_only_release_candidates(monkeypatch: pytest.Mo
     assert python_versions.with_a_candidate() == {15}
 
 
-def test_written_places_match_current_source() -> None:
-    places = python_versions.written_places(15, 11)
+@pytest.mark.parametrize(
+    "index",
+    range(7),
+    ids=("cli-default", "examples", "pyproject-config", "tox-config", "configuration", "formatting", "cli-minimum"),
+)
+def test_written_places_match_expected_spelling(tmp_path: Path, index: int) -> None:
+    place = python_versions.written_places(15, 11)[index]
+    previous = python_versions.written_places(14, 10)[index].spelling
+    source = tmp_path / "source"
+    source.write_text(f"before\n{previous}\nafter\n")
 
-    assert all(place.said() == place.spelling for place in places)
+    assert python_versions.Place(source, place.pattern, place.minor, place.spelling).said() == previous
