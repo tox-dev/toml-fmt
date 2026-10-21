@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: List changed paths
-        run: git diff --diff-filter=AM --name-only "origin/$GITHUB_BASE_REF"...HEAD > "$RUNNER_TEMP/changed-paths"
+        run: git diff --diff-filter=AM --name-only "origin/$GITHUB_BASE_REF"...HEAD >"$RUNNER_TEMP/changed-paths"
       - name: Validate package fragments
         id: fragments
         run: |
@@ -30,33 +30,36 @@ jobs:
           found_any=false
           while IFS= read -r path; do
             case "$path" in
-              changelog.d/pyproject-fmt/*.md) pyproject_found=true ;;
-              changelog.d/tox-toml-fmt/*.md) tox_found=true ;;
-              changelog.d/toml-fmt-common/*.md) common_found=true ;;
-              *) continue ;;
+            changelog.d/pyproject-fmt/*.md) pyproject_found=true ;;
+            changelog.d/tox-toml-fmt/*.md) tox_found=true ;;
+            changelog.d/toml-fmt-common/*.md) common_found=true ;;
+            *) continue ;;
             esac
             found_any=true
             name=${path##*/}
             category=${name%.md}
             category=${category##*.}
             case "$category" in
-              feature|change|bugfix|doc|breaking|security|performance|deprecation|removal|packaging) ;;
-              *) echo "::error::unknown changelog category: $path"; exit 1 ;;
+            feature | change | bugfix | doc | breaking | security | performance | deprecation | removal | packaging) ;;
+            *)
+              echo "::error::unknown changelog category: $path"
+              exit 1
+              ;;
             esac
             stem=${name%.*.*}
             if ! { [[ "$stem" == +?* && "${stem#+}" != *[!a-zA-Z0-9-]* ]] ||
               [[ -n "$stem" && "$stem" != *[!0-9]* ]]; } ||
-              [[ -z $(tr -d '[:space:]' < "$path") ]]; then
+              [[ -z $(tr -d '[:space:]' <"$path") ]]; then
               echo "::error::invalid or empty changelog fragment: $path"
               exit 1
             fi
-          done < "$RUNNER_TEMP/changed-paths"
+          done <"$RUNNER_TEMP/changed-paths"
           {
             echo "pyproject=$pyproject_found"
             echo "tox=$tox_found"
             echo "common=$common_found"
             echo "any=$found_any"
-          } >> "$GITHUB_OUTPUT"
+          } >>"$GITHUB_OUTPUT"
       - name: Require affected package fragments
         env:
           SKIP_NEWS: ${{ contains(github.event.pull_request.labels.*.name, 'skip news') }}
@@ -74,15 +77,15 @@ jobs:
           common_required=false
           while IFS= read -r path; do
             case "$path" in
-              pyproject-fmt/*) pyproject_required=true ;;
-              tox-toml-fmt/*) tox_required=true ;;
-              toml-fmt-common/*) common_required=true ;;
-              common/*|toml-doc/*|tox-rules/*|Cargo.toml|Cargo.lock)
-                pyproject_required=true
-                tox_required=true
-                ;;
+            pyproject-fmt/*) pyproject_required=true ;;
+            tox-toml-fmt/*) tox_required=true ;;
+            toml-fmt-common/*) common_required=true ;;
+            common/* | toml-doc/* | tox-rules/* | Cargo.toml | Cargo.lock)
+              pyproject_required=true
+              tox_required=true
+              ;;
             esac
-          done < "$RUNNER_TEMP/changed-paths"
+          done <"$RUNNER_TEMP/changed-paths"
           if [[ "$FOUND_ANY" != true ]] ||
             [[ "$pyproject_required" == true && "$PYPROJECT_FOUND" != true ]] ||
             [[ "$tox_required" == true && "$TOX_FOUND" != true ]] ||
@@ -188,4 +191,4 @@ jobs:
         run: |
           jq -e --arg event "$EVENT_NAME" \
             'all(to_entries[]; .value.result == "success" or ($event != "pull_request" and .value.result == "skipped"))' \
-            <<< "$NEEDS_JSON"
+            <<<"$NEEDS_JSON"

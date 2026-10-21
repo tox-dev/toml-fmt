@@ -55,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           tag=$(git tag --list | uvx --python 3.15 --from 'git+https://github.com/tox-dev/release-creator@a5873f5d66c5b1ff07da6294aa2719764fa9f864' release-creator tags --package "$PACKAGE" --next "$BUMP")
-          printf 'version=%s\ntag=%s\n' "${tag#"$PACKAGE/"}" "$tag" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\ntag=%s\n' "${tag#"$PACKAGE/"}" "$tag" >>"$GITHUB_OUTPUT"
       - name: Link merged fragments and authors
         env:
           PACKAGE: ${{ inputs.package }}
@@ -92,7 +92,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          .venv/bin/release-creator notes --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/release-notes.md"
+          .venv/bin/release-creator notes --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" >"$RUNNER_TEMP/release-notes.md"
           grep -q '^### ' "$RUNNER_TEMP/release-notes.md"
       - name: Run repository hooks
         run: .venv/bin/prek run --all-files
@@ -101,10 +101,10 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          git diff HEAD --binary > "$RUNNER_TEMP/release.patch"
+          git diff HEAD --binary >"$RUNNER_TEMP/release.patch"
           test -s "$RUNNER_TEMP/release.patch"
           read -r sha _ < <(sha256sum "$RUNNER_TEMP/release.patch")
-          printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$sha" >>"$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-patch
@@ -144,17 +144,21 @@ jobs:
           set -euo pipefail
           while IFS= read -r path; do
             case "$path" in
-              CHANGELOG.md|Cargo.lock|uv.lock|"$PACKAGE/Cargo.toml"|"$PACKAGE/README.rst"|toml-fmt-common/pyproject.toml|changelog.d/"$PACKAGE"/*.md) ;;
-              *) echo "::error::unexpected release path: $path"; exit 1 ;;
+            CHANGELOG.md | Cargo.lock | uv.lock | "$PACKAGE/Cargo.toml" | "$PACKAGE/README.rst" | toml-fmt-common/pyproject.toml | changelog.d/"$PACKAGE"/*.md) ;;
+            *)
+              echo "::error::unexpected release path: $path"
+              exit 1
+              ;;
             esac
           done < <(git diff --cached --name-only)
           while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
-            read -ra fields <<< "$metadata"
+            read -ra fields <<<"$metadata"
             if [[ "${fields[1]}" == 000000 && "${fields[4]}" == D && "$path" == changelog.d/"$PACKAGE"/*.md ]]; then
               continue
             fi
             if [[ "${fields[1]}" != 100644 ]]; then
-              echo "::error::unexpected release file mode: $path"; exit 1
+              echo "::error::unexpected release file mode: $path"
+              exit 1
             fi
           done < <(git diff --cached --raw --no-renames -z)
           grep -Fq "### $VERSION (" CHANGELOG.md

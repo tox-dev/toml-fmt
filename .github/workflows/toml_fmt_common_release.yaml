@@ -24,11 +24,11 @@ jobs:
           enable-cache: false
       - name: Read package version
         id: version
-        run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >> "$GITHUB_OUTPUT"
+        run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >>"$GITHUB_OUTPUT"
       - name: Export locked build constraints
         run: |
           uv export --locked --format requirements-txt --no-default-groups \
-            --only-group release --no-emit-workspace --output-file "$RUNNER_TEMP/build-constraints.txt" > /dev/null
+            --only-group release --no-emit-workspace --output-file "$RUNNER_TEMP/build-constraints.txt" >/dev/null
       - name: Build source and wheel distributions
         run: |
           uv build --python 3.15 --python-preference only-managed \
@@ -106,7 +106,7 @@ jobs:
         env:
           MANIFEST: ${{ runner.temp }}/release-manifest/dist.sha256
         run: >-
-          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l < "$MANIFEST")"
+          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l <"$MANIFEST")"
       - uses: tox-dev/github-workflows/select-pypi-artifacts@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           dist: dist

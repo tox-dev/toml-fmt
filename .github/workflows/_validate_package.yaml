@@ -58,7 +58,7 @@ jobs:
           PACKAGE: ${{ inputs.package }}
           TAG: ${{ github.ref_name }}
         run: |
-          .venv/bin/release-creator notes --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" > "$RUNNER_TEMP/notes.md"
+          .venv/bin/release-creator notes --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" >"$RUNNER_TEMP/notes.md"
           grep -q '^### ' "$RUNNER_TEMP/notes.md"
   validate-artifacts:
     needs: validate-source

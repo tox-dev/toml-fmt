@@ -79,7 +79,7 @@ jobs:
         env:
           MANIFEST: ${{ runner.temp }}/release-manifest/dist.sha256
         run: >-
-          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l < "$MANIFEST")"
+          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l <"$MANIFEST")"
       - uses: tox-dev/github-workflows/select-pypi-artifacts@8db87d4730353b61630d66cbc592d6bed0c85d2b
         with:
           dist: dist
