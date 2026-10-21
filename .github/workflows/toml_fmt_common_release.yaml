@@ -11,8 +11,6 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: read
-    env:
-      BUILD_CONSTRAINTS: ${{ runner.temp }}/build-constraints.txt
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -30,11 +28,11 @@ jobs:
       - name: Export locked build constraints
         run: |
           uv export --locked --format requirements-txt --no-default-groups \
-            --only-group release --no-emit-workspace --output-file "$BUILD_CONSTRAINTS"
+            --only-group release --no-emit-workspace --output-file "$RUNNER_TEMP/build-constraints.txt" > /dev/null
       - name: Build source and wheel distributions
         run: |
           uv build --python 3.15 --python-preference only-managed \
-            --build-constraints "$BUILD_CONSTRAINTS" --sdist --wheel toml-fmt-common --out-dir dist
+            --build-constraints "$RUNNER_TEMP/build-constraints.txt" --sdist --wheel toml-fmt-common --out-dir dist
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: toml-fmt-common-wheels-universal
