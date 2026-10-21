@@ -34,8 +34,6 @@ jobs:
           path: ${{ runner.temp }}/maintenance
       - name: Apply the selected changes
         id: patch
-        env:
-          KIND: ${{ inputs.kind }}
         run: |
           set -euo pipefail
           patch="$RUNNER_TEMP/maintenance/changes.patch"
@@ -45,39 +43,58 @@ jobs:
           fi
           git apply --check "$patch"
           git apply --index "$patch"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Check Python maintenance paths
+        if: steps.patch.outputs.changed == 'true' && inputs.kind == 'python'
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            case "$path" in
+              pyproject.toml|.pre-commit-config.yaml|pylock.toml|uv.lock|tox.toml| \
+              pyproject-fmt/pyproject.toml|pyproject-fmt/tox.toml| \
+              tox-toml-fmt/pyproject.toml|tox-toml-fmt/tox.toml| \
+              toml-fmt-common/pyproject.toml|toml-fmt-common/tox.toml) ;;
+              *) echo "::error::unexpected Python maintenance path: $path"; exit 1 ;;
+            esac
+          done < <(git diff --cached --name-only)
+      - name: Check Rust maintenance paths
+        if: steps.patch.outputs.changed == 'true' && inputs.kind == 'rust'
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            case "$path" in
+              Cargo.toml|Cargo.lock|common/Cargo.toml|pyproject-fmt/Cargo.toml| \
+              toml-doc/Cargo.toml|tox-rules/Cargo.toml|tox-toml-fmt/Cargo.toml) ;;
+              *) echo "::error::unexpected Rust maintenance path: $path"; exit 1 ;;
+            esac
+          done < <(git diff --cached --name-only)
+      - name: Check Python version maintenance paths
+        if: steps.patch.outputs.changed == 'true' && inputs.kind == 'versions'
+        run: |
+          set -euo pipefail
+          while IFS= read -r path; do
+            case "$path" in
+              tasks/fmt_examples.py|pyproject-fmt/pyproject.toml|tox-toml-fmt/pyproject.toml| \
+              pyproject-fmt/docs/configuration.rst|pyproject-fmt/docs/formatting.rst| \
+              pyproject-fmt/src/pyproject_fmt/__main__.py) ;;
+              *) echo "::error::unexpected Python version maintenance path: $path"; exit 1 ;;
+            esac
+          done < <(git diff --cached --name-only)
+      - name: Check maintenance task kind
+        if: steps.patch.outputs.changed == 'true'
+        env:
+          KIND: ${{ inputs.kind }}
+        run: |
           case "$KIND" in
-            python) allowed='pyproject.toml
-          .pre-commit-config.yaml
-          pylock.toml
-          uv.lock
-          tox.toml
-          pyproject-fmt/pyproject.toml
-          pyproject-fmt/tox.toml
-          tox-toml-fmt/pyproject.toml
-          tox-toml-fmt/tox.toml
-          toml-fmt-common/pyproject.toml
-          toml-fmt-common/tox.toml' ;;
-            rust) allowed='Cargo.toml
-          Cargo.lock
-          common/Cargo.toml
-          pyproject-fmt/Cargo.toml
-          toml-doc/Cargo.toml
-          tox-rules/Cargo.toml
-          tox-toml-fmt/Cargo.toml' ;;
-            versions) allowed='tasks/fmt_examples.py
-          pyproject-fmt/pyproject.toml
-          tox-toml-fmt/pyproject.toml
-          pyproject-fmt/docs/configuration.rst
-          pyproject-fmt/docs/formatting.rst
-          pyproject-fmt/src/pyproject_fmt/__main__.py' ;;
+            python|rust|versions) ;;
             *) echo "::error::unknown maintenance task: $KIND"; exit 1 ;;
           esac
-          while IFS= read -r path; do
-            if ! grep -Fxq -- "$path" <<< "$allowed"; then
-              echo "::error::unexpected $KIND path: $path"
-              exit 1
-            fi
-          done < <(git diff --cached --name-only)
+      - name: Check maintenance patch file modes
+        if: steps.patch.outputs.changed == 'true'
+        env:
+          KIND: ${{ inputs.kind }}
+        run: |
+          set -euo pipefail
           while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
             read -ra fields <<< "$metadata"
             if [[ "${fields[1]}" != 100644 ]]; then
@@ -85,8 +102,9 @@ jobs:
               exit 1
             fi
           done < <(git diff --cached --raw --no-renames -z)
-          git diff --cached --check
-          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Check maintenance patch whitespace
+        if: steps.patch.outputs.changed == 'true'
+        run: git diff --cached --check
       - id: token
         if: steps.patch.outputs.changed == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
