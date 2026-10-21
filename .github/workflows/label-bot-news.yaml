@@ -1,6 +1,6 @@
 name: Label bot news
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] Reads PR metadata without checking out PR code.
     types: [opened, synchronize, reopened]
 permissions: {}
 jobs:
