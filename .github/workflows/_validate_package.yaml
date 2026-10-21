@@ -86,10 +86,41 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package }}
         run: uv sync --locked --python 3.15 --package "$PACKAGE" --no-default-groups --only-group pkg-meta --no-install-workspace
-      - name: Check every distribution
+      - name: Check distribution metadata
+        run: .venv/bin/twine check dist/*
+      - name: Check ordinary wheel contents
         run: |
-          .venv/bin/twine check dist/*
-          .venv/bin/check-wheel-contents --no-config dist/*.whl
+          for wheel in dist/*.whl; do
+            case "$wheel" in
+            *-musllinux_1_2_x86_64.whl) continue ;;
+            esac
+            .venv/bin/check-wheel-contents --no-config "$wheel"
+          done
+      - name: Check musllinux shared library wheels
+        if: inputs.package != 'toml-fmt-common'
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          module=${PACKAGE//-/_}
+          .venv/bin/check-wheel-contents --no-config --ignore W010 \
+            --toplevel "$module,$module.libs" dist/*-musllinux_1_2_x86_64.whl
+          for wheel in dist/*-musllinux_1_2_x86_64.whl; do
+            python3 - "$wheel" "$module" <<'PY'
+          import sys
+          from zipfile import ZipFile
+
+          wheel, module = sys.argv[1:]
+          with ZipFile(wheel) as archive:
+              names = archive.namelist()
+          if not any(name.startswith(f"{module}/_lib.") and name.endswith(".so") for name in names):
+              raise SystemExit(f"extension module missing: {wheel}")
+          libraries = [name for name in names if name.startswith(f"{module}.libs/")]
+          if len(libraries) != 1:
+              raise SystemExit(f"unexpected bundled libraries: {wheel}: {libraries}")
+          if not libraries[0].startswith(f"{module}.libs/libgcc_s-") or not libraries[0].endswith(".so.1"):
+              raise SystemExit(f"unexpected bundled libraries: {wheel}: {libraries}")
+          PY
+          done
       - name: Verify release artifact set and hashes
         env:
           PACKAGE: ${{ inputs.package }}

@@ -4,6 +4,7 @@ import argparse
 from hashlib import file_digest
 from pathlib import Path
 from typing import TYPE_CHECKING
+from zipfile import BadZipFile, ZipFile
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -63,11 +64,36 @@ def verify_artifacts(package: str, version: str, directory: Path) -> str:
     if any(path.is_symlink() or not path.is_file() for path in files.values()):
         msg = f"release files must be regular files: {directory}"
         raise ValueError(msg)
+    if package != "toml-fmt-common":
+        _verify_native_extensions(files, package.replace("-", "_"))
     hashes = []
     for name in sorted(files):
         with files[name].open("rb") as stream:
             hashes.append(f"{file_digest(stream, 'sha256').hexdigest()}  {name}")
     return "\n".join(hashes) + "\n"
+
+
+def _verify_native_extensions(files: dict[str, Path], module: str) -> None:
+    for name, path in files.items():
+        if not name.endswith(".whl"):
+            continue
+        suffix = ".pyd" if "-win_" in name else ".so"
+        try:
+            with ZipFile(path) as wheel:
+                if corrupt := wheel.testzip():
+                    msg = f"corrupt wheel member: {name}: {corrupt}"
+                    raise ValueError(msg)
+                extensions = [
+                    member
+                    for member in wheel.namelist()
+                    if member.startswith(f"{module}/_lib.") and member.endswith(suffix)
+                ]
+        except BadZipFile as error:
+            msg = f"invalid wheel archive: {name}"
+            raise ValueError(msg) from error
+        if len(extensions) != 1:
+            msg = f"expected one native extension in {name}: {extensions}"
+            raise ValueError(msg)
 
 
 if __name__ == "__main__":
