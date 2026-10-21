@@ -1,4 +1,4 @@
-name: Create package GitHub Release
+name: Stage or publish package GitHub Release
 on:
   workflow_call:
     inputs:
@@ -8,9 +8,29 @@ on:
       version:
         required: true
         type: string
+      phase:
+        description: Stage a draft before PyPI, or publish it after PyPI verification
+        required: true
+        type: string
+      notes-sha:
+        description: SHA256 returned by the stage call; required when publishing
+        type: string
+        default: ''
+      notes-artifact-id:
+        description: Artifact ID returned by the stage call; required when publishing
+        type: string
+        default: ''
+    outputs:
+      notes-sha:
+        description: SHA256 of the staged GitHub Release notes
+        value: ${{ jobs.notes.outputs.sha }}
+      notes-artifact-id:
+        description: Artifact ID of the staged GitHub Release notes
+        value: ${{ jobs.notes.outputs.artifact-id }}
 permissions: {}
 jobs:
   previous:
+    if: inputs.phase == 'stage'
     runs-on: ubuntu-26.04
     permissions:
       contents: read
@@ -34,15 +54,18 @@ jobs:
           PACKAGE: ${{ inputs.package }}
           VERSION: ${{ inputs.version }}
         run: |
-          previous=$(git tag --list | uvx --python 3.15 --from 'git+https://github.com/tox-dev/release-creator@7db94b1b86ee6559f22970f605a0eef7c4bff02e' release-creator tags "$VERSION" --previous --package "$PACKAGE")
+          previous=$(git tag --list | uvx --python 3.15 --from 'git+https://github.com/tox-dev/release-creator@a5873f5d66c5b1ff07da6294aa2719764fa9f864' release-creator tags "$VERSION" --previous --package "$PACKAGE")
           if [[ -n "$previous" ]]; then
             printf 'tag=%s\n' "$previous" >> "$GITHUB_OUTPUT"
           fi
   contributors:
+    if: inputs.phase == 'stage'
     needs: previous
     runs-on: ubuntu-26.04
     permissions:
       contents: write
+    outputs:
+      artifact-id: ${{ steps.metadata.outputs.artifact-id }}
     steps:
       - name: Read GitHub contributor metadata
         env:
@@ -55,18 +78,21 @@ jobs:
             args+=(-f "previous_tag_name=$PREVIOUS")
           fi
           gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > "$RUNNER_TEMP/generated-notes.md"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - id: metadata
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: package-generated-notes
+          name: package-generated-notes-${{ github.run_attempt }}
           path: ${{ runner.temp }}/generated-notes.md
           if-no-files-found: error
   notes:
+    if: inputs.phase == 'stage'
     needs: [previous, contributors]
     runs-on: ubuntu-26.04
     permissions:
       contents: read
     outputs:
       sha: ${{ steps.digest.outputs.sha }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -80,7 +106,7 @@ jobs:
         run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: package-generated-notes
+          artifact-ids: ${{ needs.contributors.outputs.artifact-id }}
           path: ${{ runner.temp }}
       - name: Render package release notes
         env:
@@ -97,12 +123,14 @@ jobs:
       - name: Record the release notes hash
         id: digest
         run: printf 'sha=%s\n' "$(sha256sum "$RUNNER_TEMP/release-notes.md" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: package-release-notes
+          name: package-release-notes-${{ github.run_attempt }}
           path: ${{ runner.temp }}/release-notes.md
           if-no-files-found: error
-  publish:
+  draft:
+    if: inputs.phase == 'stage'
     needs: notes
     runs-on: ubuntu-26.04
     permissions:
@@ -110,14 +138,14 @@ jobs:
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: package-release-notes
+          artifact-ids: ${{ needs.notes.outputs.artifact-id }}
           path: ${{ runner.temp }}
       - name: Verify the release notes hash
         env:
           NOTES_SHA: ${{ needs.notes.outputs.sha }}
         run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
-      - name: Reconcile GitHub Release
-        uses: tox-dev/github-workflows/publish-github-release@a250ca3524857236e288764651851010939b6f71
+      - name: Stage GitHub Release draft
+        uses: tox-dev/github-workflows/publish-github-release@8db87d4730353b61630d66cbc592d6bed0c85d2b
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -126,3 +154,34 @@ jobs:
           commit: ${{ github.sha }}
           title: ${{ github.ref_name }}
           notes-file: ${{ runner.temp }}/release-notes.md
+          mode: stage
+  publish:
+    if: inputs.phase == 'publish'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check staged release notes reference
+        env:
+          NOTES_SHA: ${{ inputs.notes-sha }}
+          NOTES_ARTIFACT_ID: ${{ inputs.notes-artifact-id }}
+        run: test -n "$NOTES_SHA" && test -n "$NOTES_ARTIFACT_ID"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ inputs.notes-artifact-id }}
+          path: ${{ runner.temp }}
+      - name: Verify the staged release notes hash
+        env:
+          NOTES_SHA: ${{ inputs.notes-sha }}
+        run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
+      - name: Publish the verified GitHub Release
+        uses: tox-dev/github-workflows/publish-github-release@8db87d4730353b61630d66cbc592d6bed0c85d2b
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          repository: ${{ github.repository }}
+          tag: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
+          title: ${{ github.ref_name }}
+          notes-file: ${{ runner.temp }}/release-notes.md
+          mode: publish

@@ -57,7 +57,7 @@ commands = [
   [
     "uvx",
     "--python", "3.15",
-    "--from", "git+https://github.com/tox-dev/release-creator@7db94b1b86ee6559f22970f605a0eef7c4bff02e",
+    "--from", "git+https://github.com/tox-dev/release-creator@a5873f5d66c5b1ff07da6294aa2719764fa9f864",
     "release-creator", "changelog",
     "--format", "package",
     "--changelog", "../CHANGELOG.md",

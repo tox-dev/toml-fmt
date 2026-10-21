@@ -19,7 +19,7 @@ members = [
 release = [
     { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
     { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.4.1" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", git = "https://github.com/tox-dev/release-creator?rev=a5873f5d66c5b1ff07da6294aa2719764fa9f864" },
     { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
 ]
 
@@ -610,11 +610,11 @@ wheels = [
 
 [[package]]
 name = "filelock"
-version = "4.1.1"
+version = "4.1.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/35/c8/1d457d9150ff948f2ce6ada7715e0eeebbe5d3b58a45271a1e222474bcd3/filelock-4.1.1.tar.gz", hash = "sha256:7ba0927482c5a814b0a7f391d029ccdb8010f576f0a74c0dcde1811e8bc4c1b6", size = 563430, upload-time = "2026-10-11T16:11:54.373Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/32/5f1e1408eda63bdecdb814dfd18b1109d239fb9695d51780c2e8a2816e76/filelock-4.1.2.tar.gz", hash = "sha256:c541dd91878706be3ff20e934a0b913972d4eff7a20ddfc17defd2b7328d006c", size = 565129, upload-time = "2026-10-14T14:47:34.513Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/8b/f837f52905395ba4510fe61f753c24833fb0a9c76e21267bb9f828b664a9/filelock-4.1.1-py3-none-any.whl", hash = "sha256:3f4a557945a7b0f95efeb1f432267affe5d45ac8ddde2aed1b97ebb62382c089", size = 132460, upload-time = "2026-10-11T16:11:52.753Z" },
+    { url = "https://files.pythonhosted.org/packages/1b/84/16cbc2a5a102edf4b745ca43d7b9aaa8e26d46686c8e54d70d3d1225659e/filelock-4.1.2-py3-none-any.whl", hash = "sha256:4d5dc2a1d64d6b48a5f0540814000986fd62ebd3ac9ccbb1d07d669e075db9bb", size = 132861, upload-time = "2026-10-14T14:47:33Z" },
 ]
 
 [[package]]
@@ -1715,15 +1715,13 @@ wheels = [
 
 [[package]]
 name = "release-creator"
-version = "0.4.1"
-source = { registry = "https://pypi.org/simple" }
+version = "0.4.2.dev61+ga5873f5d6"
+source = { git = "https://github.com/tox-dev/release-creator?rev=a5873f5d66c5b1ff07da6294aa2719764fa9f864#a5873f5d66c5b1ff07da6294aa2719764fa9f864" }
 dependencies = [
     { name = "mdformat" },
     { name = "mdformat-gfm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/98/3e/22a3249fecc6ee0e166ef81227a4ba8cb5c83e0bddd5e57b081050ca2bcd/release_creator-0.4.1.tar.gz", hash = "sha256:80f064352f1c0546f12e27ef643fed35e91059b095def95cb5f5baa44357a0d2", size = 63943, upload-time = "2026-10-19T20:26:30.826Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/a2/acae8a1ef434bf427f9e0726f66ddf6ee4913704e4f31891a280a712a58d/release_creator-0.4.1-py3-none-any.whl", hash = "sha256:0328c9044719b5e011312628a2b2cb818288f862e6ac0933510778e412b5e569", size = 20115, upload-time = "2026-10-19T20:26:29.56Z" },
+    { name = "packaging" },
+    { name = "tomli-w" },
 ]
 
 [[package]]
@@ -2175,6 +2173,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/b8/63a75cfb27a17c38550e44025d3a6e7be64516fd8608a3b75703bf37d81b/tomli-2.5.0-cp315-cp315t-win_amd64.whl", hash = "sha256:f3fcbc57b1791fa6cbe5d8434179d51de12be1a4811469529f47f6e7487a2571", size = 117281, upload-time = "2026-10-07T12:23:34.648Z" },
     { url = "https://files.pythonhosted.org/packages/72/01/e8c1debb2173973372934c68fc8e46170ab60ef23ed4592dff4dec6e8993/tomli-2.5.0-cp315-cp315t-win_arm64.whl", hash = "sha256:d2ba24db8a9376921b5e87b4762b9adb0f3f1deaea68f2b8b0bb2c11efb9c3e7", size = 115069, upload-time = "2026-10-07T12:23:35.77Z" },
     { url = "https://files.pythonhosted.org/packages/60/3f/3e3f8fd0919249b0200c80fbc4f9a1e70be19f9883da71dfb7f8b9ab8aca/tomli-2.5.0-py3-none-any.whl", hash = "sha256:32a7b79ac57a2e83670ce329ccf675798bc5a2094783a63676866b70503f2e2b", size = 14765, upload-time = "2026-10-07T12:23:36.875Z" },
+]
+
+[[package]]
+name = "tomli-w"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/19/75/241269d1da26b624c0d5e110e8149093c759b7a286138f4efd61a60e75fe/tomli_w-1.2.0.tar.gz", hash = "sha256:2dd14fac5a47c27be9cd4c976af5a12d87fb1f0b4512f81d69cce3b35ae25021", size = 7184, upload-time = "2025-01-15T12:07:24.262Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/18/c86eb8e0202e32dd3df50d43d7ff9854f8e0603945ff398974c1d91ac1ef/tomli_w-1.2.0-py3-none-any.whl", hash = "sha256:188306098d013b691fcadc011abd66727d3c414c571bb01b1a174ba8c983cf90", size = 6675, upload-time = "2025-01-15T12:07:22.074Z" },
 ]
 
 [[package]]

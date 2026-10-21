@@ -127,6 +127,20 @@ jobs:
         env:
           PYTHONPATH: .:tasks
         run: .venv/bin/python -m pytest -q tests/tasks
+  hook-update-cooldown:
+    name: Hook update cooldown
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: tox-dev/github-workflows/check-hook-update-cooldown@8db87d4730353b61630d66cbc592d6bed0c85d2b
+        with:
+          repository: ${{ github.repository }}
+          pull-request: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
   common:
     uses: $/.github/workflows/common.yaml
     permissions:
@@ -164,11 +178,14 @@ jobs:
   gate:
     name: Required checks pass
     if: always()
-    needs: [news, tasks, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test]
+    needs: [news, tasks, hook-update-cooldown, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test]
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - env:
           NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          jq -e 'all(to_entries[]; .value.result == "success")' <<< "$NEEDS_JSON"
+          jq -e --arg event "$EVENT_NAME" \
+            'all(to_entries[]; .value.result == "success" or ($event != "pull_request" and .value.result == "skipped"))' \
+            <<< "$NEEDS_JSON"

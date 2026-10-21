@@ -35,7 +35,7 @@ repos:
     hooks:
       - id: yamlfmt
   - repo: https://github.com/hukkin/mdformat
-    rev: 82912cdaea4fb830f751504486a7879c70526547 # 1.0.0
+    rev: 82912cdaea4fb830f751504486a7879c70526547 # frozen: 1.0.0
     hooks:
       - id: mdformat
         args: ["--wrap", "120"]

@@ -38,24 +38,28 @@ jobs:
           uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
           uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
       - name: Set dependency age cutoff
-        run: printf 'UV_EXCLUDE_NEWER=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+        id: cutoff
+        run: printf 'value=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
       - name: Refresh workspace lock
+        env:
+          UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
           uv lock --upgrade \
             --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+      - name: Make workspace lock usable without a cutoff
+        run: uv lock
       - name: Refresh selectable project lock
+        env:
+          UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
           uvx --python 3.15 \
-            --from 'git+https://github.com/tox-dev/release-creator@7db94b1b86ee6559f22970f605a0eef7c4bff02e' \
+            --from 'git+https://github.com/tox-dev/release-creator@a5873f5d66c5b1ff07da6294aa2719764fa9f864' \
             release-creator locks \
             --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
       - name: Install the reviewed release tools
-        run: |
-          uv sync --locked --python 3.15 --no-default-groups --group release \
-            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
-            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+        run: uv sync --locked --python 3.15 --no-default-groups --group release
       - name: 🎨 Run prek
         env:
           UV_NO_SYNC: '1'
@@ -117,13 +121,12 @@ jobs:
     permissions:
       contents: read
   release-tools:
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@d08dd303503964c1d1a46a43f76b21c52b1639b1
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@8db87d4730353b61630d66cbc592d6bed0c85d2b
     permissions:
       actions: write
       contents: write
       pull-requests: write
     with:
-      keep-uv-lock: true
       check-workflow: common.yaml
       exclude-newer-packages: |
         release-creator=2026-10-19T20:26:31Z

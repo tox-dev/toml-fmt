@@ -11,6 +11,13 @@ on:
       artifact-pattern:
         required: true
         type: string
+    outputs:
+      dist-artifact-id:
+        description: Artifact ID of the validated distribution set
+        value: ${{ jobs.validate-artifacts.outputs.dist-artifact-id }}
+      manifest-artifact-id:
+        description: Artifact ID of the validated SHA256 manifest
+        value: ${{ jobs.validate-artifacts.outputs.manifest-artifact-id }}
 permissions: {}
 jobs:
   validate-source:
@@ -58,6 +65,9 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: read
+    outputs:
+      dist-artifact-id: ${{ steps.dist.outputs.artifact-id }}
+      manifest-artifact-id: ${{ steps.manifest.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -85,13 +95,15 @@ jobs:
           PACKAGE: ${{ inputs.package }}
           VERSION: ${{ inputs.version }}
         run: .venv/bin/python tasks/verify_release_artifacts.py "$PACKAGE" "$VERSION" dist "$RUNNER_TEMP/dist.sha256"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - id: dist
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ inputs.package }}-validated-dist
+          name: ${{ inputs.package }}-validated-dist-${{ github.run_attempt }}
           path: dist/*
           if-no-files-found: error
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - id: manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ inputs.package }}-validated-manifest
+          name: ${{ inputs.package }}-validated-manifest-${{ github.run_attempt }}
           path: ${{ runner.temp }}/dist.sha256
           if-no-files-found: error
