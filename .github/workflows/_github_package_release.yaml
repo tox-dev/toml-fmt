@@ -1,0 +1,76 @@
+name: Create package GitHub Release
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+permissions: {}
+jobs:
+  github-release:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install locked release tools
+        run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
+      - name: Select previous package tag
+        id: previous
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          previous=$(git tag --list "$PACKAGE/*" | cut -d/ -f2 | .venv/bin/release-creator tags "$VERSION" --previous)
+          if [[ -n "$previous" ]]; then
+            printf 'tag=%s/%s\n' "$PACKAGE" "$previous" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read GitHub contributor metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ steps.previous.outputs.tag }}
+        run: |
+          args=(-f "tag_name=$TAG")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(-f "previous_tag_name=$PREVIOUS")
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > "$RUNNER_TEMP/generated-notes.md"
+      - name: Render package release notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ steps.previous.outputs.tag }}
+        run: |
+          args=(--changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" --artifact-url "https://pypi.org/project/$PACKAGE/$VERSION/" --generated-notes "$RUNNER_TEMP/generated-notes.md")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(--previous "$PREVIOUS")
+          fi
+          .venv/bin/release-creator notes "${args[@]}" > "$RUNNER_TEMP/release-notes.md"
+      - name: Create GitHub Release if absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --verify-tag --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi
+      - name: Verify GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body,isDraft,tagName > "$RUNNER_TEMP/current-release.json"
+          jq -e --arg tag "$TAG" --rawfile notes "$RUNNER_TEMP/release-notes.md" \
+            '.tagName == $tag and .isDraft == false and .body == $notes' "$RUNNER_TEMP/current-release.json"
