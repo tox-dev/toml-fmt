@@ -65,7 +65,7 @@ jobs:
           python-version: '3.15'
           enable-cache: false
       - id: reconcile
-        uses: tox-dev/github-workflows/reconcile-pypi-artifacts@9a4e76e2f4901856f2784f6c0efc89278c518b1f
+        uses: tox-dev/github-workflows/reconcile-pypi-artifacts@a32ce094895292b19eea422fc6500f1ef1ae8d5f
         with:
           project: ${{ inputs.package }}
           version: ${{ inputs.version }}
