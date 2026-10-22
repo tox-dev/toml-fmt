@@ -5,9 +5,36 @@ release = [
   "release-creator>=0.5.1",
   "uv-build>=0.13.4,<0.14",
 ]
+release-build = [
+  "maturin>=1.15,<2",
+  "uv-build>=0.13.4,<0.14",
+]
+release-check = [
+  "prek>=0.3",
+]
+release-news = [
+  "release-creator>=0.5.1",
+]
+release-notes = [
+  "release-creator>=0.5.1",
+]
+release-prepare = [
+  "prek>=0.3",
+  "release-creator>=0.5.1",
+]
+release-validate = [
+  "prek>=0.3",
+  "release-creator>=0.5.1",
+]
 
 [tool.uv]
 dependency-groups.release = { requires-python = ">=3.15" }
+dependency-groups.release-build = { requires-python = ">=3.15" }
+dependency-groups.release-check = { requires-python = ">=3.15" }
+dependency-groups.release-news = { requires-python = ">=3.15" }
+dependency-groups.release-notes = { requires-python = ">=3.15" }
+dependency-groups.release-prepare = { requires-python = ">=3.15" }
+dependency-groups.release-validate = { requires-python = ">=3.15" }
 workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
 
 [tool.ruff]

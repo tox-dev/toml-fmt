@@ -47,7 +47,7 @@ jobs:
           python-version: '3.15'
           enable-cache: false
       - name: Install locked release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
+        run: uv sync --locked --python 3.15 --no-default-groups --only-group release-notes --no-install-workspace
       - name: Select previous package tag
         id: previous
         env:
@@ -103,7 +103,7 @@ jobs:
           python-version: '3.15'
           enable-cache: false
       - name: Install locked release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
+        run: uv sync --locked --python 3.15 --no-default-groups --only-group release-notes --no-install-workspace
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           artifact-ids: ${{ needs.contributors.outputs.artifact-id }}
@@ -145,7 +145,7 @@ jobs:
           NOTES_SHA: ${{ needs.notes.outputs.sha }}
         run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
       - name: Stage GitHub Release draft
-        uses: tox-dev/github-workflows/publish-github-release@33db207c963ad07b8d2bff4099143593fd4100b2
+        uses: tox-dev/github-workflows/publish-github-release@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -175,7 +175,7 @@ jobs:
           NOTES_SHA: ${{ inputs.notes-sha }}
         run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
       - name: Publish the verified GitHub Release
-        uses: tox-dev/github-workflows/publish-github-release@33db207c963ad07b8d2bff4099143593fd4100b2
+        uses: tox-dev/github-workflows/publish-github-release@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
         env:
           GH_TOKEN: ${{ github.token }}
         with:

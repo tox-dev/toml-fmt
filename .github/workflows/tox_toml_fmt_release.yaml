@@ -80,7 +80,7 @@ jobs:
           MANIFEST: ${{ runner.temp }}/release-manifest/dist.sha256
         run: >-
           test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l <"$MANIFEST")"
-      - uses: tox-dev/github-workflows/select-pypi-artifacts@33db207c963ad07b8d2bff4099143593fd4100b2
+      - uses: tox-dev/github-workflows/select-pypi-artifacts@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
         with:
           dist: dist
           manifest: ${{ runner.temp }}/missing-manifest/pypi-missing-names.txt

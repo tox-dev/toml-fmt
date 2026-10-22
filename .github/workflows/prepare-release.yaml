@@ -47,7 +47,7 @@ jobs:
           python-version: '3.15'
           enable-cache: false
       - name: Install locked release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --group release --no-install-workspace
+        run: uv sync --locked --python 3.15 --no-default-groups --group release-prepare --no-install-workspace
       - name: Select the package version
         id: version
         env:
@@ -172,7 +172,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
-      - uses: tox-dev/github-workflows/commit-and-tag@33db207c963ad07b8d2bff4099143593fd4100b2
+      - uses: tox-dev/github-workflows/commit-and-tag@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
         with:
           version: ${{ needs.assemble.outputs.tag }}
           token: ${{ steps.token.outputs.token }}

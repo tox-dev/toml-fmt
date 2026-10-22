@@ -98,15 +98,13 @@ jobs:
           version: latest-known
           python-version: '3.15'
           enable-cache: false
-      - name: Install locked release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --group release --no-install-workspace
       - name: Check assembled package news
         run: |
           set -euo pipefail
           for package in pyproject-fmt tox-toml-fmt toml-fmt-common; do
             fragments=(changelog.d/"$package"/*.md)
             if [[ -f "${fragments[0]}" ]]; then
-              .venv/bin/python tasks/assemble_release.py "$package" 0.0.0
+              uv run --no-project --python 3.15 python tasks/assemble_release.py "$package" 0.0.0
             fi
           done
   tasks:
@@ -124,8 +122,10 @@ jobs:
           version: latest-known
           python-version: '3.15'
           enable-cache: false
-      - name: Install locked test tools
-        run: uv sync --locked --python 3.15 --package pyproject-fmt --no-default-groups --only-group test --no-install-workspace
+      - name: Install current test tools
+        run: |
+          uv venv --python 3.15 .venv
+          uv pip install --python .venv/bin/python --group pyproject-fmt/pyproject.toml:test
       - name: Test maintenance tasks
         env:
           PYTHONPATH: .:tasks
@@ -140,7 +140,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: tox-dev/github-workflows/check-hook-update-cooldown@33db207c963ad07b8d2bff4099143593fd4100b2
+      - uses: tox-dev/github-workflows/check-hook-update-cooldown@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
         with:
           repository: ${{ github.repository }}
           pull-request: ${{ github.event.pull_request.number }}

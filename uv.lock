@@ -22,9 +22,30 @@ release = [
     { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" },
     { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
 ]
+release-build = [
+    { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
+    { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
+]
+release-check = [{ name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" }]
+release-news = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" }]
+release-notes = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" }]
+release-prepare = [
+    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" },
+]
+release-validate = [
+    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" },
+]
 
 [manifest.group-requires-python]
 release = ">=3.15"
+release-build = ">=3.15"
+release-check = ">=3.15"
+release-news = ">=3.15"
+release-notes = ">=3.15"
+release-prepare = ">=3.15"
+release-validate = ">=3.15"
 
 [[package]]
 name = "accessible-pygments"

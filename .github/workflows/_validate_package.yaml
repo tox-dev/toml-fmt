@@ -52,7 +52,7 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: test "$(uv version --package toml-fmt-common --short)" = "$VERSION"
       - name: Install locked release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --only-group release --no-install-workspace
+        run: uv sync --locked --python 3.15 --no-default-groups --only-group release-notes --no-install-workspace
       - name: Check changelog release notes
         env:
           PACKAGE: ${{ inputs.package }}
