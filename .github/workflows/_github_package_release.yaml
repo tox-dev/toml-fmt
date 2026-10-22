@@ -145,7 +145,7 @@ jobs:
           NOTES_SHA: ${{ needs.notes.outputs.sha }}
         run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
       - name: Stage GitHub Release draft
-        uses: tox-dev/github-workflows/publish-github-release@a040f8eb1c335676f3f97db2010a1a39a3cea1ac
+        uses: tox-dev/github-workflows/publish-github-release@33db207c963ad07b8d2bff4099143593fd4100b2
         env:
           GH_TOKEN: ${{ github.token }}
         with:
@@ -175,7 +175,7 @@ jobs:
           NOTES_SHA: ${{ inputs.notes-sha }}
         run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
       - name: Publish the verified GitHub Release
-        uses: tox-dev/github-workflows/publish-github-release@a040f8eb1c335676f3f97db2010a1a39a3cea1ac
+        uses: tox-dev/github-workflows/publish-github-release@33db207c963ad07b8d2bff4099143593fd4100b2
         env:
           GH_TOKEN: ${{ github.token }}
         with:
