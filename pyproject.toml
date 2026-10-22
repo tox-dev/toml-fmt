@@ -2,7 +2,7 @@
 release = [
   "maturin>=1.15,<2",
   "prek>=0.3",
-  "release-creator>=0.5",
+  "release-creator>=0.5.1",
   "uv-build>=0.13.4,<0.14",
 ]
 
