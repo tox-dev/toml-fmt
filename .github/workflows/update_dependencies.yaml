@@ -11,7 +11,7 @@ jobs:
     permissions:
       contents: read
     env:
-      RELEASE_CREATOR_CUTOFF: '2026-10-19T20:26:31Z'
+      RELEASE_CREATOR_CUTOFF: '2026-10-22T06:33:00Z'
       UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
     steps:
       - name: 📥 Checkout
@@ -49,17 +49,15 @@ jobs:
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
       - name: Make workspace lock usable without a cutoff
         run: uv lock
+      - name: Install the reviewed release tools
+        run: uv sync --locked --python 3.15 --no-default-groups --group release
       - name: Refresh selectable project lock
         env:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
-          uvx --python 3.15 \
-            --from 'git+https://github.com/tox-dev/release-creator@a5873f5d66c5b1ff07da6294aa2719764fa9f864' \
-            release-creator locks \
+          .venv/bin/release-creator locks \
             --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
-      - name: Install the reviewed release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --group release
       - name: 🎨 Run prek
         env:
           UV_NO_SYNC: '1'
@@ -138,13 +136,12 @@ jobs:
     permissions:
       contents: read
   release-tools:
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@a32ce094895292b19eea422fc6500f1ef1ae8d5f
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@2b4ed19340a7ec97020f4fd0a403531845c49356
     permissions:
-      actions: write
-      contents: write
-      pull-requests: write
+      contents: read
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     with:
-      check-workflow: common.yaml
       exclude-newer-packages: |
-        release-creator=2026-10-19T20:26:31Z
+        release-creator=2026-10-22T06:33:00Z
         uv-build=2026-10-20T15:11:07Z
