@@ -1788,7 +1788,7 @@ sha256 = "3fa599046443d4ca830d06e3d180cd0a675d5871af0a68daa5623318bb4d17e3"
 
 [tool.nab]
 nab-version = "0.0.22"
-created-at = 2026-10-23 20:53:28.830570+00:00
+created-at = 2026-10-23 23:50:08.165748+00:00
 command-line = [
     "nab",
     "lock",
