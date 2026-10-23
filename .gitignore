@@ -11,5 +11,5 @@ lcov.info
 pyproject-fmt/README.rst
 target
 tox-toml-fmt/README.rst
-pyproject-fmt/docs/changelog.md
-tox-toml-fmt/docs/changelog.md
+pyproject-fmt/docs/changelog.rst
+tox-toml-fmt/docs/changelog.rst

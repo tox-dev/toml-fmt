@@ -54,12 +54,7 @@ base_python = [ "3.15" ]
 dependency_groups = [ "docs" ]
 commands = [
   [
-    "release-creator", "changelog",
-    "--format", "package",
-    "--changelog", "../CHANGELOG.md",
-    "--package", "pyproject-fmt",
-    "--fragments", "../changelog.d/pyproject-fmt",
-    "--output", "docs/changelog.md",
+    "python", "../tasks/generate_changelog.py", "pyproject-fmt",
   ],
   [
     "sphinx-build",
