@@ -29,7 +29,7 @@ jobs:
         run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >>"$GITHUB_OUTPUT"
       - name: Export locked build constraints
         id: constraints
-        uses: tox-dev/github-workflows/export-build-constraints@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
+        uses: tox-dev/github-workflows/export-build-constraints@1b7d58c3e744b505215e1cb11697a80737b0e94d
       - name: Build source and wheel distributions
         run: |
           uv build --python 3.15 --python-preference only-managed \

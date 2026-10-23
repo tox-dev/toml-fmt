@@ -52,7 +52,7 @@ jobs:
           version: latest-known
           python-version: '3.15'
           enable-cache: false
-      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
+      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@1b7d58c3e744b505215e1cb11697a80737b0e94d
         with:
           project: ${{ inputs.package }}
           version: ${{ inputs.version }}

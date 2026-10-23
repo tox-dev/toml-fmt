@@ -1616,7 +1616,7 @@ sha256 = "d0dae1f74bb273b534770cb4cccb6bb78735540afdb03c2146f4e19dcd412560"
 
 [[packages]]
 name = "release-creator"
-version = "0.6.0"
+version = "0.6.5"
 marker = "\"release-news\" in dependency_groups or \"release-notes\" in dependency_groups or \"release-prepare\" in dependency_groups or \"release-validate\" in dependency_groups"
 requires-python = ">=3.15"
 dependencies = [
@@ -1630,22 +1630,22 @@ dependencies = [
 index = "https://pypi.org/simple/"
 
 [packages.sdist]
-name = "release_creator-0.6.0.tar.gz"
-upload-time = 2026-10-23 02:44:39.588714+00:00
-url = "https://files.pythonhosted.org/packages/17/11/c0126b406a17370db72d8a08afa1a5823204e69c44938de796cc98df0d02/release_creator-0.6.0.tar.gz"
-size = 135957
+name = "release_creator-0.6.5.tar.gz"
+upload-time = 2026-10-23 19:54:49.281646+00:00
+url = "https://files.pythonhosted.org/packages/a0/da/7195823b3d0ab066f518d8bd987f88a39e0e39da33f629e021346209a7cb/release_creator-0.6.5.tar.gz"
+size = 135158
 
 [packages.sdist.hashes]
-sha256 = "58afd3cd0fc0b0e47ded23a735a1ba9189a7b0adad410628c90c96cf74457ed6"
+sha256 = "954247b06b7b9a8c196a782252e3d980d33a9e9b7f9e5aea7647ef6c758d4275"
 
 [[packages.wheels]]
-name = "release_creator-0.6.0-py3-none-any.whl"
-upload-time = 2026-10-23 02:44:37.874747+00:00
-url = "https://files.pythonhosted.org/packages/ef/91/ad1ce7d5c65892866893879fb0f407898f2d5c808bbd266ca0a82513a205/release_creator-0.6.0-py3-none-any.whl"
-size = 49478
+name = "release_creator-0.6.5-py3-none-any.whl"
+upload-time = 2026-10-23 19:54:47.716775+00:00
+url = "https://files.pythonhosted.org/packages/f1/4c/6215690fc2b48f3d927699bb16f5c8bcf26b8862e378df33a2581a45215b/release_creator-0.6.5-py3-none-any.whl"
+size = 46723
 
 [packages.wheels.hashes]
-sha256 = "4b9cd6187c87fcb7bf3aca5f58c67c90703e58875643af633661a0448756d45f"
+sha256 = "dd109f7fb64808a83833c332b8563c56bd943c4a8de79b440eab475b5ca9a73e"
 
 [[packages]]
 name = "requests"
@@ -2192,13 +2192,13 @@ sha256 = "3fa599046443d4ca830d06e3d180cd0a675d5871af0a68daa5623318bb4d17e3"
 
 [tool.nab]
 nab-version = "0.0.22"
-created-at = 2026-10-23 02:56:12.506232+00:00
+created-at = 2026-10-23 20:06:32.605707+00:00
 command-line = [
     "nab",
     "lock",
+    "--no-cache",
+    "--no-progress",
     "--groups",
-    "build",
-    "lock-tools",
     "release-build",
     "release-check",
     "release-news",
@@ -2206,6 +2206,8 @@ command-line = [
     "release-package",
     "release-prepare",
     "release-validate",
+    "build",
+    "lock-tools",
     "--output",
     "pylock.toml",
     "--upgrade",

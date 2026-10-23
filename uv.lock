@@ -1824,7 +1824,7 @@ wheels = [
 
 [[package]]
 name = "release-creator"
-version = "0.6.0"
+version = "0.6.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
@@ -1834,9 +1834,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "towncrier" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/17/11/c0126b406a17370db72d8a08afa1a5823204e69c44938de796cc98df0d02/release_creator-0.6.0.tar.gz", hash = "sha256:58afd3cd0fc0b0e47ded23a735a1ba9189a7b0adad410628c90c96cf74457ed6", size = 135957, upload-time = "2026-10-23T02:44:39.588Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a0/da/7195823b3d0ab066f518d8bd987f88a39e0e39da33f629e021346209a7cb/release_creator-0.6.5.tar.gz", hash = "sha256:954247b06b7b9a8c196a782252e3d980d33a9e9b7f9e5aea7647ef6c758d4275", size = 135158, upload-time = "2026-10-23T19:54:49.281Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/91/ad1ce7d5c65892866893879fb0f407898f2d5c808bbd266ca0a82513a205/release_creator-0.6.0-py3-none-any.whl", hash = "sha256:4b9cd6187c87fcb7bf3aca5f58c67c90703e58875643af633661a0448756d45f", size = 49478, upload-time = "2026-10-23T02:44:37.874Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/4c/6215690fc2b48f3d927699bb16f5c8bcf26b8862e378df33a2581a45215b/release_creator-0.6.5-py3-none-any.whl", hash = "sha256:dd109f7fb64808a83833c332b8563c56bd943c4a8de79b440eab475b5ca9a73e", size = 46723, upload-time = "2026-10-23T19:54:47.716Z" },
 ]
 
 [[package]]
@@ -2284,7 +2284,7 @@ lock-tools = [{ name = "nab", specifier = "==0.0.22" }]
 release = [
     { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
     { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6.5" },
     { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
 ]
 release-build = [
@@ -2292,19 +2292,19 @@ release-build = [
     { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
 ]
 release-check = [{ name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" }]
-release-news = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" }]
-release-notes = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" }]
+release-news = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6.5" }]
+release-notes = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6.5" }]
 release-package = [
     { name = "check-wheel-contents", marker = "python_full_version >= '3.15'", specifier = ">=0.6.3" },
     { name = "twine", marker = "python_full_version >= '3.15'", specifier = ">=7" },
 ]
 release-prepare = [
     { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6.5" },
 ]
 release-validate = [
     { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6.5" },
 ]
 
 [[package]]

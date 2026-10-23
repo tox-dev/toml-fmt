@@ -11,7 +11,8 @@ jobs:
     permissions:
       contents: read
     env:
-      RELEASE_CREATOR_CUTOFF: '2026-10-22T13:51:56Z'
+      NAB_CUTOFF: '2026-10-18T05:45:09Z'
+      RELEASE_CREATOR_CUTOFF: '2026-10-23T19:54:50Z'
       UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
     steps:
       - name: 📥 Checkout
@@ -45,12 +46,18 @@ jobs:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
           uv lock --upgrade \
+            --exclude-newer-package "nab=$NAB_CUTOFF" \
+            --exclude-newer-package "nab-index=$NAB_CUTOFF" \
+            --exclude-newer-package "nab-markersets=$NAB_CUTOFF" \
+            --exclude-newer-package "nab-project=$NAB_CUTOFF" \
+            --exclude-newer-package "nab-provider=$NAB_CUTOFF" \
+            --exclude-newer-package "nab-resolver=$NAB_CUTOFF" \
             --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
       - name: Make workspace lock usable without a cutoff
         run: uv lock
       - name: Install the reviewed release tools
-        uses: tox-dev/github-workflows/install-locked-tools@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
+        uses: tox-dev/github-workflows/install-locked-tools@1b7d58c3e744b505215e1cb11697a80737b0e94d
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
@@ -130,7 +137,7 @@ jobs:
     permissions:
       contents: read
   release-tools:
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@1b7d58c3e744b505215e1cb11697a80737b0e94d
     permissions:
       contents: read
     secrets:
