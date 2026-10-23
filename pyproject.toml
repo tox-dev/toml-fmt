@@ -1,8 +1,24 @@
+[project]
+name = "toml-fmt-release-tools"
+version = "0"
+requires-python = ">=3.11"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
+]
+dependencies = []
+
 [dependency-groups]
+build = [ "maturin>=1.15,<2", "uv-build>=0.13.4,<0.14" ]
+lock-tools = [ "nab==0.0.22" ]
 release = [
   "maturin>=1.15,<2",
   "prek>=0.3",
-  "release-creator>=0.5.1",
+  "release-creator>=0.6",
   "uv-build>=0.13.4,<0.14",
 ]
 release-build = [
@@ -13,18 +29,22 @@ release-check = [
   "prek>=0.3",
 ]
 release-news = [
-  "release-creator>=0.5.1",
+  "release-creator>=0.6",
 ]
 release-notes = [
-  "release-creator>=0.5.1",
+  "release-creator>=0.6",
+]
+release-package = [
+  "check-wheel-contents>=0.6.3",
+  "twine>=7",
 ]
 release-prepare = [
   "prek>=0.3",
-  "release-creator>=0.5.1",
+  "release-creator>=0.6",
 ]
 release-validate = [
   "prek>=0.3",
-  "release-creator>=0.5.1",
+  "release-creator>=0.6",
 ]
 
 [tool.uv]
@@ -33,6 +53,7 @@ dependency-groups.release-build = { requires-python = ">=3.15" }
 dependency-groups.release-check = { requires-python = ">=3.15" }
 dependency-groups.release-news = { requires-python = ">=3.15" }
 dependency-groups.release-notes = { requires-python = ">=3.15" }
+dependency-groups.release-package = { requires-python = ">=3.15" }
 dependency-groups.release-prepare = { requires-python = ">=3.15" }
 dependency-groups.release-validate = { requires-python = ">=3.15" }
 workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
@@ -103,3 +124,20 @@ ignore-words = "ignore-words.txt"
 skip = "*.snap,*/tests/data/*"
 write-changes = true
 count = true
+
+[tool.nab]
+mode = "universal"
+default-groups = []
+uploaded-prior-to = "P7D"
+decision-order = "stable"
+matrix.python = ">=3.15,<3.16"
+matrix.platforms = [ "linux_x86_64", "linux_aarch64", "macos_arm64", "windows_amd64" ]
+packages.release-creator.uploaded-prior-to = "2026-10-23T02:44:40Z"
+
+[[tool.nab.package-rules]]
+match = [ "nab", "nab-index", "nab-markersets", "nab-project", "nab-provider", "nab-resolver" ]
+uploaded-prior-to = "2026-10-19T00:00:00Z"
+
+[[tool.nab.package-rules]]
+match = [ "uv-build" ]
+uploaded-prior-to = "2026-10-21T00:00:00Z"

@@ -174,6 +174,36 @@ def test_vendor_into_sdist_content(sdist: Path, member: str, content: bytes) -> 
         assert read.read() == content
 
 
+def test_vendor_into_wheel_rebuild_is_byte_identical(
+    backend: Backend, tmp_path: Path, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
+    clock = mocker.patch("time.time", return_value=1609459201)
+    first = tmp_path / "first"
+    first.mkdir()
+    first_wheel = first / backend.build_wheel(str(first))
+    clock.return_value = 1609545601
+    second = tmp_path / "second"
+    second.mkdir()
+    second_wheel = second / backend.build_wheel(str(second))
+    assert first_wheel.read_bytes() == second_wheel.read_bytes()
+
+
+def test_vendor_into_sdist_rebuild_is_byte_identical(
+    backend: Backend, tmp_path: Path, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
+    clock = mocker.patch("time.time", return_value=1609459201)
+    first = tmp_path / "first"
+    first.mkdir()
+    first_sdist = first / backend.build_sdist(str(first))
+    clock.return_value = 1609545601
+    second = tmp_path / "second"
+    second.mkdir()
+    second_sdist = second / backend.build_sdist(str(second))
+    assert first_sdist.read_bytes() == second_sdist.read_bytes()
+
+
 def _write_common(common: Path) -> None:
     source = common / "src" / "toml_fmt_common"
     source.mkdir(parents=True)

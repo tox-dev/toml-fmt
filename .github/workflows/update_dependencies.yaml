@@ -50,18 +50,12 @@ jobs:
       - name: Make workspace lock usable without a cutoff
         run: uv lock
       - name: Install the reviewed release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --group release-prepare --no-install-workspace
-      - name: Refresh selectable project lock
-        env:
-          UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
-        run: |
-          .venv/bin/release-creator locks \
-            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
-            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+        uses: tox-dev/github-workflows/install-locked-tools@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
+        with:
+          groups: release-prepare
+          venv: ${{ runner.temp }}/release-tools
       - name: 🎨 Run prek
-        env:
-          UV_NO_SYNC: '1'
-        run: .venv/bin/prek run --all-files
+        run: '"$RUNNER_TEMP/release-tools/bin/prek" run --all-files'
       - name: Save the changes
         run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -136,16 +130,11 @@ jobs:
     permissions:
       contents: read
   release-tools:
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
     permissions:
       contents: read
     secrets:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     with:
-      check-group: release-check
-      build-requirements: |-
-        Cython>=3.0
-        setuptools>=80
-      exclude-newer-packages: |
-        release-creator=2026-10-22T13:51:56Z
-        uv-build=2026-10-20T15:11:07Z
+      lock-groups: >-
+        release-build release-check release-news release-notes release-package release-prepare release-validate build lock-tools

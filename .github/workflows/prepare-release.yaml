@@ -47,7 +47,10 @@ jobs:
           python-version: '3.15'
           enable-cache: false
       - name: Install locked release tools
-        run: uv sync --locked --python 3.15 --no-default-groups --group release-prepare --no-install-workspace
+        uses: tox-dev/github-workflows/install-locked-tools@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
+        with:
+          groups: release-prepare
+          venv: ${{ runner.temp }}/release-tools
       - name: Select the package version
         id: version
         env:
@@ -55,13 +58,18 @@ jobs:
           BUMP: ${{ inputs.bump }}
         run: |
           set -euo pipefail
-          tag=$(git tag --list | .venv/bin/release-creator tags --package "$PACKAGE" --next "$BUMP")
+          tag=$(
+            git tag --list |
+              "$RUNNER_TEMP/release-tools/bin/release-creator" tags --package "$PACKAGE" --next "$BUMP"
+          )
           printf 'version=%s\ntag=%s\n' "${tag#"$PACKAGE/"}" "$tag" >>"$GITHUB_OUTPUT"
       - name: Link merged fragments and authors
         env:
           PACKAGE: ${{ inputs.package }}
           GH_TOKEN: ${{ github.token }}
-        run: .venv/bin/release-creator fragments --directory "changelog.d/$PACKAGE" --repository "$GITHUB_REPOSITORY" --git --resolve-authors
+        run: |
+          "$RUNNER_TEMP/release-tools/bin/release-creator" fragments \
+            --directory "changelog.d/$PACKAGE" --repository "$GITHUB_REPOSITORY"
       - name: Bump the Rust distribution
         if: inputs.package != 'toml-fmt-common'
         env:
@@ -82,21 +90,23 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package }}
           VERSION: ${{ steps.version.outputs.version }}
-        run: .venv/bin/python tasks/assemble_release.py "$PACKAGE" "$VERSION"
+        run: python3 tasks/assemble_release.py "$PACKAGE" "$VERSION"
       - name: Format the assembled changelog
         run: |
-          .venv/bin/prek run mdformat --files CHANGELOG.md ||
-            .venv/bin/prek run mdformat --files CHANGELOG.md
+          "$RUNNER_TEMP/release-tools/bin/prek" run mdformat --files CHANGELOG.md ||
+            "$RUNNER_TEMP/release-tools/bin/prek" run mdformat --files CHANGELOG.md
       - name: Check the rendered GitHub notes
         env:
           PACKAGE: ${{ inputs.package }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          .venv/bin/release-creator notes --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" >"$RUNNER_TEMP/release-notes.md"
+          "$RUNNER_TEMP/release-tools/bin/release-creator" notes \
+            --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" \
+            --repository "$GITHUB_REPOSITORY" >"$RUNNER_TEMP/release-notes.md"
           grep -q '^### ' "$RUNNER_TEMP/release-notes.md"
       - name: Run repository hooks
-        run: .venv/bin/prek run --all-files
+        run: '"$RUNNER_TEMP/release-tools/bin/prek" run --all-files'
       - name: Write the validated release patch
         id: patch
         run: |
@@ -172,7 +182,7 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
-      - uses: tox-dev/github-workflows/commit-and-tag@fcba1cc52c8e8bbb8c3305ee5e4bc454b9ab0c50
+      - uses: tox-dev/github-workflows/commit-and-tag@cadf58a0dcc5d0c7853b248ab7c2b19bb93675d1
         with:
           version: ${{ needs.assemble.outputs.tag }}
           token: ${{ steps.token.outputs.token }}

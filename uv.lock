@@ -12,40 +12,9 @@ resolution-markers = [
 members = [
     "pyproject-fmt",
     "toml-fmt-common",
+    "toml-fmt-release-tools",
     "tox-toml-fmt",
 ]
-
-[manifest.dependency-groups]
-release = [
-    { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
-    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" },
-    { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
-]
-release-build = [
-    { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
-    { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
-]
-release-check = [{ name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" }]
-release-news = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" }]
-release-notes = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" }]
-release-prepare = [
-    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" },
-]
-release-validate = [
-    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5.1" },
-]
-
-[manifest.group-requires-python]
-release = ">=3.15"
-release-build = ">=3.15"
-release-check = ">=3.15"
-release-news = ">=3.15"
-release-notes = ">=3.15"
-release-prepare = ">=3.15"
-release-validate = ">=3.15"
 
 [[package]]
 name = "accessible-pygments"
@@ -179,6 +148,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/43/65/318323f98dbee45d42dff61d8f047181bc6f2268a9068cfad035a46be5af/beautifulsoup4-4.15.0.tar.gz", hash = "sha256:288e3ca7d54b06f2ac191970bc275c1939cb46d450b255bf6718b04aa37ab4f7", size = 632571, upload-time = "2026-06-07T16:44:20.453Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl", hash = "sha256:d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9", size = 109924, upload-time = "2026-06-07T16:44:21.566Z" },
+]
+
+[[package]]
+name = "build"
+version = "1.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "os_name == 'nt'" },
+    { name = "packaging" },
+    { name = "pyproject-hooks" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bd/67/4898a44ea4f3f8e213b0954ec0aa0a16971d62a6212d6ea3931e97115b99/build-1.6.1.tar.gz", hash = "sha256:51cc11666391ab6f092070437ac747002ff46f3e4113a3622177ee6b488bfc53", size = 113427, upload-time = "2026-09-10T07:56:00.417Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/9b/9fb3585dabcd73a1b2a6267f63f62649347c9e6d072c9fde365b105abb2c/build-1.6.1-py3-none-any.whl", hash = "sha256:ecd351a4be9d35a9eaaba244a7687143c9c7d4aea6ac964e7e7ddab20cbcf4e7", size = 31179, upload-time = "2026-09-10T07:55:59.148Z" },
 ]
 
 [[package]]
@@ -715,6 +698,15 @@ wheels = [
 ]
 
 [[package]]
+name = "installer"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/d3/2fab33d15004d41ae8e7b5d3e310510f7f34a7e1dd032a3e60d8b38d8fba/installer-1.1.0.tar.gz", hash = "sha256:5adc0c01ce62d809989e246987cd68944fe5df8af562d0358f65b2ab15cb5de7", size = 481257, upload-time = "2026-10-12T19:35:52.851Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/7a/63547a792a12148882205d79e07644091d5b7690f40c2bb9d41452a8bdc2/installer-1.1.0-py3-none-any.whl", hash = "sha256:f55f5728ff61d3dd54dbc5a397cf3f7307cb64b180c20b72afbebf01c9e2c8a0", size = 464466, upload-time = "2026-10-12T19:35:51.096Z" },
+]
+
+[[package]]
 name = "jaraco-classes"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1210,6 +1202,94 @@ wheels = [
 ]
 
 [[package]]
+name = "nab"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nab-index" },
+    { name = "nab-markersets" },
+    { name = "nab-project" },
+    { name = "nab-provider" },
+    { name = "nab-resolver" },
+    { name = "tomli" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/3d/e4c8f4b2890efbf2fa6eef82acf57ecc0ef39b0a1e6843d306d2053a107c/nab-0.0.22.tar.gz", hash = "sha256:a0da54ee96bf1eb1997581566620c250c8a3557139e9467ccaced2a12e9e71ac", size = 286128, upload-time = "2026-10-18T05:45:08.513Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/4b/77baa0ddb0b7578b6475b2b578fa4579207b0f97e0b3b80480e01dcb3d6f/nab-0.0.22-py3-none-any.whl", hash = "sha256:f62fcf75b28786fbf58627f6d7eaa735daefbc7f736715403bc4357acb57e7bb", size = 137802, upload-time = "2026-10-18T05:45:06.803Z" },
+]
+
+[[package]]
+name = "nab-index"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nab-provider" },
+    { name = "packaging" },
+    { name = "truststore" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/2a/83/8d2483239b7dc5ac8d9f758db1cc19d4129d0143d34c2e1ab8cd48ea71fb/nab_index-0.0.22.tar.gz", hash = "sha256:5900ea5ad298512379cfddff1a73a544590f0b04620ef58ff345f99a7c59688e", size = 110621, upload-time = "2026-10-18T05:44:43.857Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c0/58/c06ada29934a78479b989675829f26083972f38bf1e8a2503e01101cb970/nab_index-0.0.22-py3-none-any.whl", hash = "sha256:c89ffa607dfe4246dc59e9f5236d54413da3d310183ffa3298ba51a48e7c2ec7", size = 88373, upload-time = "2026-10-18T05:44:42.188Z" },
+]
+
+[[package]]
+name = "nab-markersets"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/b7/3997893dfdada9998d4dc786c10445a1361e197b4aed54ddd866c84dd538/nab_markersets-0.0.22.tar.gz", hash = "sha256:38212664f517f75d798808ecfe902bfd11fef340042ab0203100c7e06e78eea5", size = 109258, upload-time = "2026-10-18T05:44:19.58Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/9e/9744adff3a66633a811f8253faaa8b91a447c99199edba16f2790e3647ea/nab_markersets-0.0.22-py3-none-any.whl", hash = "sha256:ad268dcece034495b2ea31a70250cd43cc4f6123039a548762c7ec8826e5d3bd", size = 44360, upload-time = "2026-10-18T05:44:18.237Z" },
+]
+
+[[package]]
+name = "nab-project"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "build" },
+    { name = "installer" },
+    { name = "nab-index" },
+    { name = "nab-markersets" },
+    { name = "nab-provider" },
+    { name = "nab-resolver" },
+    { name = "packaging" },
+    { name = "pyproject-hooks" },
+    { name = "tomli" },
+    { name = "tomli-w" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/84/f5197d4044ceda9c6ee3e7aefce154ab616fec632fa1d89cdfaacc665c07/nab_project-0.0.22.tar.gz", hash = "sha256:5f7a1dee5b618149267b2b6233c3a220e45cd6f97bd5ec7f3f48fa7570e9f053", size = 774409, upload-time = "2026-10-18T05:44:55.821Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/de/c9/62affa4df6cabce48751307c4c3adfbaa8c54e402d464d015897a16a6dba/nab_project-0.0.22-py3-none-any.whl", hash = "sha256:cb09fa143105fd99a60609b3ff4830924b0d4eaf5abad48678467ec4b73e577f", size = 148262, upload-time = "2026-10-18T05:44:53.956Z" },
+]
+
+[[package]]
+name = "nab-provider"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nab-markersets" },
+    { name = "nab-resolver" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/0d/64fbadae562fefc00257c4f5ec988171d6e6b3ea4363f1da2e8886e80228/nab_provider-0.0.22.tar.gz", hash = "sha256:3f129ab7394bf5eb031152c3535ee74073e2a6b6ae081fb7f5a4d269fcf5f8a0", size = 409367, upload-time = "2026-10-18T05:44:31.579Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/67/32bda18d34f0f8ec098f8e4a0f792164ef1a4b2aa61d435d20f4645572af/nab_provider-0.0.22-py3-none-any.whl", hash = "sha256:1450c9dc58b23da1a7bde7fdb43a72b043327bd0e3ef20435254ffcb8b7eae6b", size = 339242, upload-time = "2026-10-18T05:44:29.803Z" },
+]
+
+[[package]]
+name = "nab-resolver"
+version = "0.0.22"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/bc/dcbfe5163538b1cc8421797e3f8ff77d79321cbc9943af8065e2c8ae1c09/nab_resolver-0.0.22.tar.gz", hash = "sha256:e005b225213e032858cf4aef3850961aaa1d4ea521428da731f33175ebd3b05f", size = 167648, upload-time = "2026-10-18T05:44:08.017Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/22/a8/6e30b25ae12e0c662dc9b181a7f32fa8cd22f26016f12dc1d10176f62bba/nab_resolver-0.0.22-py3-none-any.whl", hash = "sha256:6f77daa98279ef0eedb9e8f2248aee4c50e01b92b470b68886995e5056d79971", size = 58597, upload-time = "2026-10-18T05:44:06.445Z" },
+]
+
+[[package]]
 name = "nh3"
 version = "0.3.7"
 source = { registry = "https://pypi.org/simple" }
@@ -1571,7 +1651,7 @@ dev = [
 docs = [
     { name = "furo", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.19" },
     { name = "myst-parser", marker = "python_full_version >= '3.14'", specifier = ">=5.1" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
     { name = "sphinx", marker = "python_full_version >= '3.14'", specifier = ">=9.1" },
     { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.24" },
     { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.13.8" },
@@ -1602,6 +1682,15 @@ type = [
     { name = "trove-classifiers", specifier = ">=2026.9.21.13" },
     { name = "types-cachetools", specifier = ">=7.0.0.20260713" },
     { name = "types-chardet", specifier = ">=5.0.4.6" },
+]
+
+[[package]]
+name = "pyproject-hooks"
+version = "1.3.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/5d/f2ddeef4a855a102aaae5e97826a0260007522ab504421b75addfdb1517c/pyproject_hooks-1.3.3.tar.gz", hash = "sha256:defda19b854fa0d3bd4f76ea4ddcba8abd7dcfcdd585a6690ade050744fc5f43", size = 21013, upload-time = "2026-09-16T08:58:03.999Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/85/11/044d1ae1b4ec0d7af88ee5bc91e081be1022533032b906a7bdabdbb60977/pyproject_hooks-1.3.3-py3-none-any.whl", hash = "sha256:5fc53fdac9f7bd63fbcdc868fb5f90b4784d78a53a3d3388cd738b807441a20b", size = 10724, upload-time = "2026-09-16T08:58:02.96Z" },
 ]
 
 [[package]]
@@ -1738,18 +1827,19 @@ wheels = [
 
 [[package]]
 name = "release-creator"
-version = "0.5.1"
+version = "0.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "docutils" },
     { name = "mdformat" },
     { name = "mdformat-gfm" },
     { name = "packaging" },
     { name = "pyyaml" },
-    { name = "tomli-w" },
+    { name = "towncrier" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/65/d3/83211b4ebfbaf87383392aed6ef3aa98d65e0ade613a2aa0ea0f222cb6b1/release_creator-0.5.1.tar.gz", hash = "sha256:755f8d460a493789756ab1bd4bbda0dd90145699288239085dd712cba2d84251", size = 158621, upload-time = "2026-10-22T13:51:55.787Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/17/11/c0126b406a17370db72d8a08afa1a5823204e69c44938de796cc98df0d02/release_creator-0.6.0.tar.gz", hash = "sha256:58afd3cd0fc0b0e47ded23a735a1ba9189a7b0adad410628c90c96cf74457ed6", size = 135957, upload-time = "2026-10-23T02:44:39.588Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/88/fab14c09530c8691040ec040613476d645414e2db1123c35b3818d291cea/release_creator-0.5.1-py3-none-any.whl", hash = "sha256:7aa5f28c5195f6f5e0493abede9c041a58d015bc3a837feee5669cc2062d6053", size = 50983, upload-time = "2026-10-22T13:51:54.135Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/91/ad1ce7d5c65892866893879fb0f407898f2d5c808bbd266ca0a82513a205/release_creator-0.6.0-py3-none-any.whl", hash = "sha256:4b9cd6187c87fcb7bf3aca5f58c67c90703e58875643af633661a0448756d45f", size = 49478, upload-time = "2026-10-23T02:44:37.874Z" },
 ]
 
 [[package]]
@@ -2132,6 +2222,95 @@ type = [
 ]
 
 [[package]]
+name = "toml-fmt-release-tools"
+version = "0"
+source = { virtual = "." }
+
+[package.dev-dependencies]
+build = [
+    { name = "maturin" },
+    { name = "uv-build" },
+]
+lock-tools = [
+    { name = "nab" },
+]
+release = [
+    { name = "maturin", marker = "python_full_version >= '3.15'" },
+    { name = "prek", marker = "python_full_version >= '3.15'" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'" },
+    { name = "uv-build", marker = "python_full_version >= '3.15'" },
+]
+release-build = [
+    { name = "maturin", marker = "python_full_version >= '3.15'" },
+    { name = "uv-build", marker = "python_full_version >= '3.15'" },
+]
+release-check = [
+    { name = "prek", marker = "python_full_version >= '3.15'" },
+]
+release-news = [
+    { name = "release-creator", marker = "python_full_version >= '3.15'" },
+]
+release-notes = [
+    { name = "release-creator", marker = "python_full_version >= '3.15'" },
+]
+release-package = [
+    { name = "check-wheel-contents", marker = "python_full_version >= '3.15'" },
+    { name = "twine", marker = "python_full_version >= '3.15'" },
+]
+release-prepare = [
+    { name = "prek", marker = "python_full_version >= '3.15'" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'" },
+]
+release-validate = [
+    { name = "prek", marker = "python_full_version >= '3.15'" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'" },
+]
+
+[package.group-requires-python]
+release = ">=3.15"
+release-build = ">=3.15"
+release-check = ">=3.15"
+release-news = ">=3.15"
+release-notes = ">=3.15"
+release-package = ">=3.15"
+release-prepare = ">=3.15"
+release-validate = ">=3.15"
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+build = [
+    { name = "maturin", specifier = ">=1.15,<2" },
+    { name = "uv-build", specifier = ">=0.13.4,<0.14" },
+]
+lock-tools = [{ name = "nab", specifier = "==0.0.22" }]
+release = [
+    { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
+    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
+    { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
+]
+release-build = [
+    { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
+    { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.4,<0.14" },
+]
+release-check = [{ name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" }]
+release-news = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" }]
+release-notes = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" }]
+release-package = [
+    { name = "check-wheel-contents", marker = "python_full_version >= '3.15'", specifier = ">=0.6.3" },
+    { name = "twine", marker = "python_full_version >= '3.15'", specifier = ">=7" },
+]
+release-prepare = [
+    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
+]
+release-validate = [
+    { name = "prek", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
+]
+
+[[package]]
 name = "tomli"
 version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2213,6 +2392,19 @@ wheels = [
 ]
 
 [[package]]
+name = "towncrier"
+version = "26.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "jinja2" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/92/d4/e85ce614bf45b1a7fe13b82cc687819c2eaac5a1dd94b84834322095fd98/towncrier-26.9.0.tar.gz", hash = "sha256:ace9031631c718cc0709107b8755e6e31350eb8acdc877af43df3177addb9a55", size = 79338, upload-time = "2026-09-04T12:57:25.341Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/88/f9340b545dafa64de053798e760515a2736fbb60092cf9aa6b146ccf3ede/towncrier-26.9.0-py3-none-any.whl", hash = "sha256:ae4d223e6aadaff98d29b7f09e58d9c9ccf4cd3b455a2d2e0486d432cd8bf660", size = 67030, upload-time = "2026-09-04T12:57:23.986Z" },
+]
+
+[[package]]
 name = "tox-toml-fmt"
 source = { editable = "tox-toml-fmt" }
 
@@ -2278,7 +2470,7 @@ dev = [
 docs = [
     { name = "furo", marker = "python_full_version >= '3.14'", specifier = ">=2025.12.19" },
     { name = "myst-parser", marker = "python_full_version >= '3.14'", specifier = ">=5.1" },
-    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.5" },
+    { name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=0.6" },
     { name = "sphinx", marker = "python_full_version >= '3.14'", specifier = ">=9.1" },
     { name = "sphinx-argparse-cli", marker = "python_full_version >= '3.14'", specifier = ">=1.24" },
     { name = "sphinx-autodoc-typehints", marker = "python_full_version >= '3.14'", specifier = ">=3.13.8" },
@@ -2315,6 +2507,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/bf/93/af436dfaa845cab5d96f0adbc1e4f3730532d37fa249e4eb796fb1d7fc82/trove_classifiers-2026.9.21.13.tar.gz", hash = "sha256:0a9ebc8d4e2f3e8a22848c5258033035bec17a3012ac3fea16dbaa764489eb71", size = 17085, upload-time = "2026-09-21T13:29:07.301Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/30/81/0da8afb52a71d0a4f2bd3152357b1a441e393b286374802b9d3addab4ab5/trove_classifiers-2026.9.21.13-py3-none-any.whl", hash = "sha256:8b1ff4f9c191b1040b71c37f1e445ab99732911e3cd91de52838453a854d7a17", size = 14232, upload-time = "2026-09-21T13:29:06.123Z" },
+]
+
+[[package]]
+name = "truststore"
+version = "0.10.5"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/9f/c5201d42a484c061e528825fc8e2d565f5abd50a4ced6fb7d29c4ec99b2b/truststore-0.10.5.tar.gz", hash = "sha256:30d36967ccaded5cbb38d602c433f53600036c79d502f4533a49b60a03bbefcd", size = 28091, upload-time = "2026-10-12T22:27:31.808Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/e9/3a7820be2bb0fe53b6bc9c3be26d3d1158004e4c3ab953aa6840b955b1e9/truststore-0.10.5-py3-none-any.whl", hash = "sha256:9aaaedaefaf06d8b206278cf8b5012bc897f485a874503501e12d776df78951c", size = 19017, upload-time = "2026-10-12T22:27:30.377Z" },
 ]
 
 [[package]]
