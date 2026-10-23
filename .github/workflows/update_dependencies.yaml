@@ -11,8 +11,7 @@ jobs:
     permissions:
       contents: read
     env:
-      NAB_CUTOFF: '2026-10-18T05:45:09Z'
-      RELEASE_CREATOR_CUTOFF: '2026-10-23T19:54:50Z'
+      RELEASE_CREATOR_CUTOFF: '2026-10-23T21:40:06Z'
       UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
     steps:
       - name: 📥 Checkout
@@ -46,18 +45,12 @@ jobs:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
           uv lock --upgrade \
-            --exclude-newer-package "nab=$NAB_CUTOFF" \
-            --exclude-newer-package "nab-index=$NAB_CUTOFF" \
-            --exclude-newer-package "nab-markersets=$NAB_CUTOFF" \
-            --exclude-newer-package "nab-project=$NAB_CUTOFF" \
-            --exclude-newer-package "nab-provider=$NAB_CUTOFF" \
-            --exclude-newer-package "nab-resolver=$NAB_CUTOFF" \
             --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
             --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
       - name: Make workspace lock usable without a cutoff
         run: uv lock
       - name: Install the reviewed release tools
-        uses: tox-dev/github-workflows/install-locked-tools@1b7d58c3e744b505215e1cb11697a80737b0e94d
+        uses: tox-dev/github-workflows/install-locked-tools@74472c1a3602ca9b66db058ea31578865e1d208b
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
@@ -137,11 +130,11 @@ jobs:
     permissions:
       contents: read
   release-tools:
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@1b7d58c3e744b505215e1cb11697a80737b0e94d
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@74472c1a3602ca9b66db058ea31578865e1d208b
     permissions:
       contents: read
     secrets:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     with:
       lock-groups: >-
-        release-build release-check release-news release-notes release-package release-prepare release-validate build lock-tools
+        release-build release-notes release-package release-prepare build
