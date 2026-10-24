@@ -3,8 +3,36 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
+from typing import Final
 
 from fmt_examples import render_example
+
+_FMT_EXAMPLE: Final[re.Pattern[str]] = re.compile(
+    r"""
+    ^(?P<indent>\s*)  # Keep the directive's surrounding indentation.
+    \.\.\ fmt-example::\s*$
+    """,
+    re.VERBOSE,
+)
+_FMT_CONFIG: Final[re.Pattern[str]] = re.compile(
+    r"""
+    ^(?P<indent>[\t ]+)  # The option must be deeper than its directive.
+    :config:[\t ]*(?P<config>.*)$
+    """,
+    re.VERBOSE,
+)
+_PYPI_ROLE: Final[re.Pattern[str]] = re.compile(
+    r""":pypi:`(?P<target>[^`]+)`""",  # Link text is also the PyPI project path.
+    re.VERBOSE,
+)
+_GH_ROLE: Final[re.Pattern[str]] = re.compile(
+    r""":gh:`(?P<target>[^`]+)`""",  # Link text is also the GitHub path.
+    re.VERBOSE,
+)
+_DOC_REFERENCE: Final[re.Pattern[str]] = re.compile(
+    r"""^See\ :doc:`[^`]+`.*$\n?""",  # The standalone docs link has no PyPI target.
+    re.MULTILINE | re.VERBOSE,
+)
 
 
 def main(package: str) -> None:
@@ -32,15 +60,20 @@ def expand_fmt_examples(content: str, module: str) -> str:
     result: list[str] = []
     at = 0
     while at < len(lines):
-        if (match := re.match(r"^(\s*)\.\. fmt-example::\s*$", lines[at])) is None:
+        if (match := _FMT_EXAMPLE.match(lines[at])) is None:
             result.append(lines[at])
             at += 1
             continue
-        base = match.group(1)
+        base = match["indent"]
         config = ""
         at += 1
-        while at < len(lines) and (option := re.match(rf"^{base}\s+:config:\s*(.*)$", lines[at])):
-            config = option.group(1).strip()
+        while (
+            at < len(lines)
+            and (option := _FMT_CONFIG.match(lines[at]))
+            and option["indent"].startswith(base)
+            and len(option["indent"]) > len(base)
+        ):
+            config = option["config"].strip()
             at += 1
         while at < len(lines) and not lines[at].strip():
             at += 1
@@ -64,9 +97,9 @@ def _dedent(text: str) -> str:
 
 def process_rst_for_pypi(content: str) -> str:
     content = unwrap_dropdowns(content)
-    content = re.sub(r":pypi:`([^`]+)`", r"`\1 <https://pypi.org/project/\1>`_", content)
-    content = re.sub(r":gh:`([^`]+)`", r"`\1 <https://github.com/\1>`_", content)
-    content = re.sub(r"^See :doc:`[^`]+`.*$\n?", "", content, flags=re.MULTILINE)
+    content = _PYPI_ROLE.sub(r"`\g<target> <https://pypi.org/project/\g<target>>`_", content)
+    content = _GH_ROLE.sub(r"`\g<target> <https://github.com/\g<target>>`_", content)
+    content = _DOC_REFERENCE.sub("", content)
     result: list[str] = []
     skip_section = False
     skip_tab = False
@@ -134,3 +167,12 @@ if __name__ == "__main__":
         print("Usage: generate_readme.py <package>")
         sys.exit(1)
     main(package)
+
+
+__all__ = [
+    "expand_fmt_examples",
+    "main",
+    "process_rst_for_pypi",
+    "strip_main_title",
+    "unwrap_dropdowns",
+]

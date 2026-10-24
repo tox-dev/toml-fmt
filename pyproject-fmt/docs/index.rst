@@ -70,6 +70,7 @@ Python API
    self
    configuration
    formatting
+   changelog
 
 See the `configuration reference <https://pyproject-fmt.readthedocs.io/en/latest/configuration.html>`_ for settings and
 the `formatting reference <https://pyproject-fmt.readthedocs.io/en/latest/formatting.html>`_ for the rules applied to

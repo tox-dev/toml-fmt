@@ -6,13 +6,13 @@ on:
         description: Distribution to release
         required: true
         type: choice
-        options: [pyproject-fmt, tox-toml-fmt]
+        options: [pyproject-fmt, tox-toml-fmt, toml-fmt-common]
       bump:
         description: Version increment
         required: true
         type: choice
-        options: [patch, minor, major]
-        default: patch
+        options: [auto, major, minor, patch]
+        default: auto
 permissions: {}
 concurrency:
   group: prepare-toml-fmt
@@ -23,8 +23,11 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: read
+      pull-requests: read
     outputs:
-      version: ${{ steps.notes.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      patch-sha: ${{ steps.patch.outputs.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -34,64 +37,85 @@ jobs:
         with:
           cache: false
       - uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3.5.0
+        if: inputs.package != 'toml-fmt-common'
         with:
           crate: cargo-edit
+          version: 0.13.13
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: '3.15'
           enable-cache: false
-      - name: Bump the selected package
+      - name: Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-prepare
+          venv: ${{ runner.temp }}/release-tools
+      - name: Select the package version
+        id: version
         env:
           PACKAGE: ${{ inputs.package }}
           BUMP: ${{ inputs.bump }}
         run: |
-          cargo set-version -p "$PACKAGE" --bump "$BUMP"
-          uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
-      - name: Assemble its changelog entry
-        id: notes
+          set -euo pipefail
+          tag=$(
+            git tag --list |
+              "$RUNNER_TEMP/release-tools/bin/release-creator" tags --package "$PACKAGE" --next "$BUMP"
+          )
+          printf 'version=%s\ntag=%s\n' "${tag#"$PACKAGE/"}" "$tag" >>"$GITHUB_OUTPUT"
+      - name: Link merged fragments and authors
         env:
           PACKAGE: ${{ inputs.package }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          "$RUNNER_TEMP/release-tools/bin/release-creator" fragments \
+            --directory "changelog.d/$PACKAGE" --repository "$GITHUB_REPOSITORY"
+      - name: Bump the Rust distribution
+        if: inputs.package != 'toml-fmt-common'
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: cargo set-version -p "$PACKAGE" "$VERSION"
+      - name: Bump the Python distribution
+        if: inputs.package == 'toml-fmt-common'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: uv version --package toml-fmt-common "$VERSION" --no-sync
+      - name: Regenerate the Rust distribution README
+        if: inputs.package != 'toml-fmt-common'
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
+      - name: Assemble the package changelog
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: python3 tasks/assemble_release.py "$PACKAGE" "$VERSION"
+      - name: Format the assembled changelog
+        run: |
+          "$RUNNER_TEMP/release-tools/bin/prek" run mdformat --files CHANGELOG.md ||
+            "$RUNNER_TEMP/release-tools/bin/prek" run mdformat --files CHANGELOG.md
+      - name: Check the rendered GitHub notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
-          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || -n "$(git tag --list "$PACKAGE/$version")" ]]; then
-            echo "::error::invalid or existing version $PACKAGE/$version"
-            exit 1
-          fi
-          mapfile -d '' fragments < <(find "changelog.d/$PACKAGE" -maxdepth 1 -type f -name '*.md' -print0 | sort -z)
-          if (( ${#fragments[@]} == 0 )); then
-            echo "::error::no $PACKAGE news fragments to release"
-            exit 1
-          fi
-          for fragment in "${fragments[@]}"; do
-            if [[ ! "$fragment" =~ ^changelog\.d/(pyproject-fmt|tox-toml-fmt)/[0-9]+\.(feature|bugfix|doc)\.md$ || ! -s "$fragment" ]]; then
-              echo "::error::invalid or empty news fragment: $fragment"
-              exit 1
-            fi
-          done
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          PACKAGE="$PACKAGE" VERSION="$version" python - <<'PY'
-          import os
-          from datetime import UTC, datetime
-          from pathlib import Path
-
-          package = os.environ['PACKAGE']
-          version = os.environ['VERSION']
-          notes = '\n\n'.join(path.read_text().strip() for path in sorted(Path('changelog.d', package).glob('*.md')))
-          changelog = Path('CHANGELOG.md')
-          heading = f'## {package}\n\n'
-          current = changelog.read_text()
-          if heading not in current:
-              raise SystemExit(f'No changelog history for {package}')
-          entry = f'### {version} ({datetime.now(UTC):%Y-%m-%d})\n\n{notes}\n\n'
-          changelog.write_text(current.replace(heading, heading + entry, 1))
-          PY
-          git rm -- "${fragments[@]}"
-      - name: Check the release patch
+          "$RUNNER_TEMP/release-tools/bin/release-creator" notes \
+            --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" \
+            --repository "$GITHUB_REPOSITORY" >"$RUNNER_TEMP/release-notes.md"
+          grep -q '^### ' "$RUNNER_TEMP/release-notes.md"
+      - name: Run repository hooks
+        run: '"$RUNNER_TEMP/release-tools/bin/prek" run --all-files'
+      - name: Write the validated release patch
+        id: patch
         run: |
-          uvx prek run --all-files
-          git diff HEAD --binary > "$RUNNER_TEMP/release.patch"
+          set -euo pipefail
+          git diff --check
+          git diff HEAD --binary >"$RUNNER_TEMP/release.patch"
           test -s "$RUNNER_TEMP/release.patch"
+          read -r sha _ < <(sha256sum "$RUNNER_TEMP/release.patch")
+          printf 'sha=%s\n' "$sha" >>"$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-patch
@@ -112,22 +136,42 @@ jobs:
         with:
           name: release-patch
           path: ${{ runner.temp }}/release-patch
-      - name: Check and apply the release patch
+      - name: Verify the prepared source and patch
+        env:
+          PATCH_SHA: ${{ needs.assemble.outputs.patch-sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+          read -r actual _ < <(sha256sum "$RUNNER_TEMP/release-patch/release.patch")
+          test "$actual" = "$PATCH_SHA"
+          git apply --check "$RUNNER_TEMP/release-patch/release.patch"
+          git apply --index "$RUNNER_TEMP/release-patch/release.patch"
+      - name: Check release patch paths and modes
         env:
           PACKAGE: ${{ inputs.package }}
           VERSION: ${{ needs.assemble.outputs.version }}
         run: |
           set -euo pipefail
-          git fetch origin main
-          git reset --hard origin/main
-          git apply --check "$RUNNER_TEMP/release-patch/release.patch"
-          git apply --index "$RUNNER_TEMP/release-patch/release.patch"
           while IFS= read -r path; do
             case "$path" in
-              CHANGELOG.md|Cargo.lock|"$PACKAGE/Cargo.toml"|"$PACKAGE/README.rst"|changelog.d/"$PACKAGE"/*.md) ;;
-              *) echo "::error::unexpected release path: $path"; exit 1 ;;
+            CHANGELOG.md | Cargo.lock | uv.lock | "$PACKAGE/Cargo.toml" | "$PACKAGE/README.rst" | toml-fmt-common/pyproject.toml | changelog.d/"$PACKAGE"/*.md) ;;
+            *)
+              echo "::error::unexpected release path: $path"
+              exit 1
+              ;;
             esac
           done < <(git diff --cached --name-only)
+          while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
+            read -ra fields <<<"$metadata"
+            if [[ "${fields[1]}" == 000000 && "${fields[4]}" == D && "$path" == changelog.d/"$PACKAGE"/*.md ]]; then
+              continue
+            fi
+            if [[ "${fields[1]}" != 100644 ]]; then
+              echo "::error::unexpected release file mode: $path"
+              exit 1
+            fi
+          done < <(git diff --cached --raw --no-renames -z)
           grep -Fq "### $VERSION (" CHANGELOG.md
           git diff --cached --check
       - id: token
@@ -138,18 +182,10 @@ jobs:
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
           permission-contents: write
-      - name: Commit and tag the release
-        env:
-          GH_TOKEN: ${{ steps.token.outputs.token }}
-          APP_SLUG: ${{ steps.token.outputs.app-slug }}
-          PACKAGE: ${{ inputs.package }}
-          VERSION: ${{ needs.assemble.outputs.version }}
-        run: |
-          set -euo pipefail
-          app_user_id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)
-          git config user.name "${APP_SLUG}[bot]"
-          git config user.email "${app_user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
-          git commit -m "Prepare $PACKAGE/$VERSION"
-          git tag -a "$PACKAGE/$VERSION" -m "Release $PACKAGE/$VERSION"
-          gh auth setup-git --hostname github.com --force
-          git push --atomic origin HEAD:main "refs/tags/$PACKAGE/$VERSION"
+      - uses: tox-dev/github-workflows/commit-and-tag@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          version: ${{ needs.assemble.outputs.tag }}
+          token: ${{ steps.token.outputs.token }}
+          app-slug: ${{ steps.token.outputs.app-slug }}
+          message: release ${{ needs.assemble.outputs.tag }}
+          annotated: 'true'

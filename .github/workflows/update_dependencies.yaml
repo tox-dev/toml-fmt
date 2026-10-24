@@ -2,7 +2,7 @@ name: 📦 update dependencies
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 8 1,15 * *"
+    - cron: "0 8 * * 2"
 permissions: {}
 jobs:
   python:
@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    env:
+      RELEASE_CREATOR_CUTOFF: '2026-10-23T21:40:06Z'
+      UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -20,6 +23,7 @@ jobs:
       - name: 🐍 Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
       - name: 🧪 Install tox
         run: uv tool install tox --with tox-uv
@@ -33,14 +37,27 @@ jobs:
           uvx bump-deps-index -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
           uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
           uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
-      - name: 🔧 Fix workspace deps
-        run: sed -i 's/toml-fmt-common>=.*/toml-fmt-common",/' pyproject-fmt/pyproject.toml tox-toml-fmt/pyproject.toml
-      - name: 🔒 Update lock file
-        run: uv lock --upgrade
+      - name: Set dependency age cutoff
+        id: cutoff
+        run: printf 'value=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >>"$GITHUB_OUTPUT"
+      - name: Refresh workspace lock
+        env:
+          UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
+        run: |
+          uv lock --upgrade \
+            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
+            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+      - name: Make workspace lock usable without a cutoff
+        run: uv lock
+      - name: Install the reviewed release tools
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-prepare
+          venv: ${{ runner.temp }}/release-tools
       - name: 🎨 Run prek
-        run: uvx prek run --all-files
+        run: '"$RUNNER_TEMP/release-tools/bin/prek" run --all-files'
       - name: Save the changes
-        run: git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
+        run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: python-patch
@@ -53,7 +70,9 @@ jobs:
       kind: python
       branch: update-python-dependencies
       title: Update Python dependencies
-      body: Update dependency constraints and the uv lockfile from the scheduled scan.
+      body: Update dependency constraints from the scheduled scan.
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
   rust:
@@ -70,12 +89,29 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
       - name: ⬆️ Update Cargo.toml dependencies
         run: |
-          cargo install cargo-edit
+          cargo install cargo-edit --version 0.13.13 --locked
           cargo upgrade --incompatible
       - name: ⬆️ Update Cargo.lock
         run: cargo update
+      - name: Check for a compatible cargo-edit update
+        id: cargo-edit
+        run: |
+          set -euo pipefail
+          metadata=$(curl -fsSL -H 'User-Agent: toml-fmt-updater' https://crates.io/api/v1/crates/cargo-edit)
+          candidate=$(jq -ce '.versions | map({num, rust_version, yanked})' <<<"$metadata" | python3 tasks/update_cargo_edit.py candidate --rust-version "$(rustc --version | cut -d ' ' -f 2)")
+          if test -n "$candidate"; then
+            printf 'version=%s\n' "$candidate" >>"$GITHUB_OUTPUT"
+          fi
+      - name: Update the compatible cargo-edit pin
+        if: steps.cargo-edit.outputs.version != ''
+        env:
+          VERSION: ${{ steps.cargo-edit.outputs.version }}
+        run: |
+          set -euo pipefail
+          cargo install cargo-edit --version "$VERSION" --locked --root "$RUNNER_TEMP/cargo-edit-candidate"
+          python3 tasks/update_cargo_edit.py update "$VERSION"
       - name: Save the changes
-        run: git diff HEAD --binary > "$RUNNER_TEMP/changes.patch"
+        run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rust-patch
@@ -89,5 +125,16 @@ jobs:
       branch: update-rust-dependencies
       title: Update Rust dependencies
       body: Update Cargo manifests and the lockfile from the scheduled scan.
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
       contents: read
+  release-tools:
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+    permissions:
+      contents: read
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+    with:
+      lock-groups: >-
+        release-build release-notes release-package release-prepare build

@@ -1,0 +1,186 @@
+name: Stage or publish package GitHub Release
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      phase:
+        description: Stage a draft before PyPI, or publish it after PyPI verification
+        required: true
+        type: string
+      notes-sha:
+        description: SHA256 returned by the stage call; required when publishing
+        type: string
+        default: ''
+      notes-artifact-id:
+        description: Artifact ID returned by the stage call; required when publishing
+        type: string
+        default: ''
+    outputs:
+      notes-sha:
+        description: SHA256 of the staged GitHub Release notes
+        value: ${{ jobs.notes.outputs.sha }}
+      notes-artifact-id:
+        description: Artifact ID of the staged GitHub Release notes
+        value: ${{ jobs.notes.outputs.artifact-id }}
+permissions: {}
+jobs:
+  previous:
+    if: inputs.phase == 'stage'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.previous.outputs.previous }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-notes
+          venv: ${{ runner.temp }}/release-tools
+      - name: Select previous package tag
+        id: previous
+        uses: tox-dev/github-workflows/select-previous-tag@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          tag: ${{ github.ref_name }}
+  contributors:
+    if: inputs.phase == 'stage'
+    needs: previous
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    outputs:
+      artifact-id: ${{ steps.metadata.outputs.artifact-id }}
+    steps:
+      - name: Read GitHub contributor metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ needs.previous.outputs.tag }}
+        run: |
+          args=(-f "tag_name=$TAG")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(-f "previous_tag_name=$PREVIOUS")
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body >"$RUNNER_TEMP/generated-notes.md"
+      - id: metadata
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-generated-notes-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/generated-notes.md
+          if-no-files-found: error
+  notes:
+    if: inputs.phase == 'stage'
+    needs: [previous, contributors]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.digest.outputs.sha }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-notes
+          venv: ${{ runner.temp }}/release-tools
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.contributors.outputs.artifact-id }}
+          path: ${{ runner.temp }}
+      - name: Render package release notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ needs.previous.outputs.tag }}
+        run: |
+          args=(--changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" --artifact-url "https://pypi.org/project/$PACKAGE/$VERSION/" --generated-notes "$RUNNER_TEMP/generated-notes.md")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(--previous "$PREVIOUS")
+          fi
+          "$RUNNER_TEMP/release-tools/bin/release-creator" notes "${args[@]}" >"$RUNNER_TEMP/release-notes.md"
+      - name: Record the release notes hash
+        id: digest
+        run: printf 'sha=%s\n' "$(sha256sum "$RUNNER_TEMP/release-notes.md" | cut -d' ' -f1)" >>"$GITHUB_OUTPUT"
+      - id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-release-notes-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-notes.md
+          if-no-files-found: error
+  draft:
+    if: inputs.phase == 'stage'
+    needs: notes
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.notes.outputs.artifact-id }}
+          path: ${{ runner.temp }}
+      - name: Verify the release notes hash
+        env:
+          NOTES_SHA: ${{ needs.notes.outputs.sha }}
+        run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
+      - name: Stage GitHub Release draft
+        uses: tox-dev/github-workflows/publish-github-release@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          tag: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
+          title: ${{ github.ref_name }}
+          notes-file: ${{ runner.temp }}/release-notes.md
+          mode: stage
+  publish:
+    if: inputs.phase == 'publish'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check staged release notes reference
+        env:
+          NOTES_SHA: ${{ inputs.notes-sha }}
+          NOTES_ARTIFACT_ID: ${{ inputs.notes-artifact-id }}
+        run: test -n "$NOTES_SHA" && test -n "$NOTES_ARTIFACT_ID"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ inputs.notes-artifact-id }}
+          path: ${{ runner.temp }}
+      - name: Verify the staged release notes hash
+        env:
+          NOTES_SHA: ${{ inputs.notes-sha }}
+        run: printf '%s  %s\n' "$NOTES_SHA" "$RUNNER_TEMP/release-notes.md" | sha256sum --check --status
+      - name: Publish the verified GitHub Release
+        uses: tox-dev/github-workflows/publish-github-release@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          tag: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
+          title: ${{ github.ref_name }}
+          notes-file: ${{ runner.temp }}/release-notes.md
+          mode: publish

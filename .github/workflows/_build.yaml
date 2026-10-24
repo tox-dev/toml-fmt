@@ -32,6 +32,8 @@ jobs:
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
+      maturin-version: ${{ steps.maturin.outputs.version }}
+      source-date-epoch: ${{ steps.source-date-epoch.outputs.value }}
     steps:
       - name: 🦀 Setup Rust
         if: ${{ !inputs.release-build }}
@@ -41,11 +43,34 @@ jobs:
         uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3.5.0
         with:
           crate: cargo-edit
+          version: 0.13.13
       - name: 📥 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Read source timestamp
+        id: source-date-epoch
+        run: echo "value=$(git log -1 --format=%ct)" >>"$GITHUB_OUTPUT"
+      - name: 🐍 Setup Python
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        env:
+          UV_VENV_SEED: "true"
+        with:
+          version: latest-known
+          enable-cache: false
+          activate-environment: true
+          python-version: "3.15"
+      - name: Install locked build tool
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-build
+          venv: ${{ runner.temp }}/release-tools
+      - name: Read locked maturin version
+        id: maturin
+        run: |
+          version=$("$RUNNER_TEMP/release-tools/bin/maturin" --version)
+          printf 'version=v%s\n' "${version#maturin }" >>"$GITHUB_OUTPUT"
       - name: 🔖 Bump version
         if: ${{ !inputs.release-build }}
         run: cargo set-version -p "$PACKAGE" --bump "$RELEASE_TYPE"
@@ -57,17 +82,8 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package-name }}
         run: |
-          version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: 🐍 Setup Python
-        if: ${{ !inputs.release-build }}
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-        env:
-          UV_VENV_SEED: "true"
-        with:
-          enable-cache: false
-          activate-environment: true
-          python-version: "3.15"
+          version=$(python3 tasks/cargo_version.py "$PACKAGE/Cargo.toml")
+          echo "version=$version" >>"$GITHUB_OUTPUT"
       - name: 🎨 Run pre-commit
         if: ${{ !inputs.release-build }}
         uses: tox-dev/action-pre-commit-uv@4de52c139ed1a6963bcc4c30042c4ef9d75d8b11 # v1.1.0
@@ -94,6 +110,8 @@ jobs:
     name: 🐧 ${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
+    env:
+      SOURCE_DATE_EPOCH: ${{ needs.bump.outputs.source-date-epoch }}
     strategy:
       fail-fast: false
       matrix:
@@ -116,13 +134,16 @@ jobs:
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
+          maturin-version: ${{ needs.bump.outputs.maturin-version }}
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target ${{ matrix.platform.zig && '--zig' || '' }}
           manylinux: ${{ matrix.platform.manylinux || 'auto' }}
+          docker-options: --env SOURCE_DATE_EPOCH
           sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
@@ -139,6 +160,8 @@ jobs:
     name: 🪟 ${{ matrix.platform.target }}
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
+    env:
+      SOURCE_DATE_EPOCH: ${{ needs.bump.outputs.source-date-epoch }}
     strategy:
       fail-fast: false
       matrix:
@@ -157,18 +180,21 @@ jobs:
         env:
           UV_VENV_SEED: "true"
         with:
+          version: latest-known
           enable-cache: false
           activate-environment: true
           python-version: ${{ matrix.platform.python }}
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
+          maturin-version: ${{ needs.bump.outputs.maturin-version }}
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
@@ -185,6 +211,8 @@ jobs:
     name: 🍎 ${{ matrix.platform.target }}${{ matrix.platform.suffix || '' }}
     needs: [bump]
     runs-on: ${{ matrix.platform.runner }}
+    env:
+      SOURCE_DATE_EPOCH: ${{ needs.bump.outputs.source-date-epoch }}
     strategy:
       fail-fast: false
       matrix:
@@ -201,12 +229,14 @@ jobs:
       - name: 🔨 Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
+          maturin-version: ${{ needs.bump.outputs.maturin-version }}
           target: ${{ matrix.platform.target }}
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
       - name: 📦 Vendor toml-fmt-common into wheels
         # maturin build (run by maturin-action) skips PEP 517, so vendor via the backend's CLI
@@ -223,6 +253,8 @@ jobs:
     name: 📦 sdist
     needs: [bump]
     runs-on: ubuntu-24.04
+    env:
+      SOURCE_DATE_EPOCH: ${{ needs.bump.outputs.source-date-epoch }}
     steps:
       - name: 📥 Download source
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -231,13 +263,19 @@ jobs:
       - name: 📦 Setup uv
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
+          version: latest-known
           python-version: "3.15"
+      - name: Export locked build constraints
+        id: constraints
+        uses: tox-dev/github-workflows/export-build-constraints@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
       - name: 📦 Build sdist
         # an sdist compiles nothing, so it goes through PEP 517 and the backend vendors toml-fmt-common
-        run: uv build --sdist --out-dir dist "$PACKAGE"
+        run: uv build --build-constraints "$BUILD_CONSTRAINTS" --sdist --out-dir dist "$PACKAGE"
         shell: bash
         env:
+          BUILD_CONSTRAINTS: ${{ steps.constraints.outputs.path }}
           PACKAGE: ${{ inputs.package-name }}
+          UV_REQUIRE_BUILD_HASHES: "true"
       - name: 📤 Upload sdist
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

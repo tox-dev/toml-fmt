@@ -1,0 +1,146 @@
+name: Validate package release
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      artifact-pattern:
+        required: true
+        type: string
+    outputs:
+      dist-artifact-id:
+        description: Artifact ID of the validated distribution set
+        value: ${{ jobs.validate-artifacts.outputs.dist-artifact-id }}
+      manifest-artifact-id:
+        description: Artifact ID of the validated SHA256 manifest
+        value: ${{ jobs.validate-artifacts.outputs.manifest-artifact-id }}
+permissions: {}
+jobs:
+  validate-source:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: Check package tag
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: test "$TAG" = "$PACKAGE/$VERSION"
+      - name: Check Cargo version
+        if: inputs.package != 'toml-fmt-common'
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: test "$(python3 tasks/cargo_version.py "$PACKAGE/Cargo.toml")" = "$VERSION"
+      - name: Check Python package version
+        if: inputs.package == 'toml-fmt-common'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: test "$(uv version --package toml-fmt-common --short)" = "$VERSION"
+      - name: Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-notes
+          venv: ${{ runner.temp }}/release-tools
+      - name: Check changelog release notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          "$RUNNER_TEMP/release-tools/bin/release-creator" notes \
+            --changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" \
+            --repository "$GITHUB_REPOSITORY" >"$RUNNER_TEMP/notes.md"
+          grep -q '^### ' "$RUNNER_TEMP/notes.md"
+  validate-artifacts:
+    needs: validate-source
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      dist-artifact-id: ${{ steps.dist.outputs.artifact-id }}
+      manifest-artifact-id: ${{ steps.manifest.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: ${{ inputs.artifact-pattern }}
+          path: dist
+          merge-multiple: true
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install locked package checks
+        uses: tox-dev/github-workflows/install-locked-tools@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          groups: release-package
+          venv: ${{ runner.temp }}/release-tools
+      - name: Check distribution metadata
+        run: '"$RUNNER_TEMP/release-tools/bin/twine" check dist/*'
+      - name: Check ordinary wheel contents
+        run: |
+          for wheel in dist/*.whl; do
+            case "$wheel" in
+            *-musllinux_1_2_x86_64.whl) continue ;;
+            esac
+            "$RUNNER_TEMP/release-tools/bin/check-wheel-contents" --no-config "$wheel"
+          done
+      - name: Check musllinux shared library wheels
+        if: inputs.package != 'toml-fmt-common'
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          module=${PACKAGE//-/_}
+          "$RUNNER_TEMP/release-tools/bin/check-wheel-contents" --no-config --ignore W010 \
+            --toplevel "$module,$module.libs" dist/*-musllinux_1_2_x86_64.whl
+          for wheel in dist/*-musllinux_1_2_x86_64.whl; do
+            python3 - "$wheel" "$module" <<'PY'
+          import sys
+          from zipfile import ZipFile
+
+          wheel, module = sys.argv[1:]
+          with ZipFile(wheel) as archive:
+              names = archive.namelist()
+          if not any(name.startswith(f"{module}/_lib.") and name.endswith(".so") for name in names):
+              raise SystemExit(f"extension module missing: {wheel}")
+          libraries = [name for name in names if name.startswith(f"{module}.libs/")]
+          if len(libraries) != 1:
+              raise SystemExit(f"unexpected bundled libraries: {wheel}: {libraries}")
+          if not libraries[0].startswith(f"{module}.libs/libgcc_s-") or not libraries[0].endswith(".so.1"):
+              raise SystemExit(f"unexpected bundled libraries: {wheel}: {libraries}")
+          PY
+          done
+      - name: Verify release artifact set and hashes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+        run: python3 tasks/verify_release_artifacts.py "$PACKAGE" "$VERSION" dist "$RUNNER_TEMP/dist.sha256"
+      - id: dist
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.package }}-validated-dist-${{ github.run_attempt }}
+          path: dist/*
+          if-no-files-found: error
+      - id: manifest
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ inputs.package }}-validated-manifest-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/dist.sha256
+          if-no-files-found: error

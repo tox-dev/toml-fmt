@@ -1,50 +1,48 @@
 name: PR gate
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened]
 permissions: {}
 concurrency:
   group: pr-gate-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  news:
-    name: News fragment
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip news') }}
+  tasks:
+    name: Maintenance tasks
     runs-on: ubuntu-26.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
-      - name: Require a package changelog entry
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: Install current test tools
         run: |
-          pyproject_required=0
-          tox_required=0
-          pyproject_found=0
-          tox_found=0
-          while IFS= read -r path; do
-            case "$path" in
-              pyproject-fmt/*) pyproject_required=1 ;;
-              tox-toml-fmt/*) tox_required=1 ;;
-              common/*|toml-doc/*|toml-fmt-common/*|tox-rules/*|Cargo.toml|Cargo.lock)
-                pyproject_required=1
-                tox_required=1
-                ;;
-            esac
-            if [[ "$path" =~ ^changelog\.d/pyproject-fmt/[0-9]+\.(feature|bugfix|doc)\.md$ && -s "$path" ]]; then
-              pyproject_found=1
-            elif [[ "$path" =~ ^changelog\.d/tox-toml-fmt/[0-9]+\.(feature|bugfix|doc)\.md$ && -s "$path" ]]; then
-              tox_found=1
-            fi
-          done < <(git diff --name-only "origin/$GITHUB_BASE_REF"...HEAD)
-          if (( (pyproject_required && !pyproject_found) || (tox_required && !tox_found) ||
-            (!pyproject_required && !tox_required && !pyproject_found && !tox_found) )); then
-            echo "::error::add nonempty package changelog fragments or apply skip news"
-            exit 1
-          fi
+          uv venv --python 3.15 .venv
+          uv pip install --python .venv/bin/python --group pyproject-fmt/pyproject.toml:test
+      - name: Test maintenance tasks
+        env:
+          PYTHONPATH: .:tasks
+        run: .venv/bin/python -m pytest -q tests/tasks
+  hook-update-cooldown:
+    name: Hook update cooldown
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: tox-dev/github-workflows/check-hook-update-cooldown@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          release-app-client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
   common:
     uses: $/.github/workflows/common.yaml
     permissions:
@@ -82,11 +80,14 @@ jobs:
   gate:
     name: Required checks pass
     if: always()
-    needs: [news, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test]
+    needs: [tasks, hook-update-cooldown, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test]
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
       - env:
           NEEDS_JSON: ${{ toJSON(needs) }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          jq -e 'all(to_entries[]; .value.result == "success" or (.key == "news" and .value.result == "skipped"))' <<< "$NEEDS_JSON"
+          jq -e --arg event "$EVENT_NAME" \
+            'all(to_entries[]; .value.result == "success" or ($event != "pull_request" and .value.result == "skipped"))' \
+            <<<"$NEEDS_JSON"

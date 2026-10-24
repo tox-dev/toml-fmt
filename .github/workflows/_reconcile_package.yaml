@@ -1,0 +1,59 @@
+name: Reconcile package with PyPI
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      dist-artifact-id:
+        description: Validated distribution artifact ID
+        required: true
+        type: string
+      manifest-artifact-id:
+        description: Validated SHA256 manifest artifact ID
+        required: true
+        type: string
+permissions: {}
+jobs:
+  reconcile:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check validated artifact references
+        env:
+          DIST_ID: ${{ inputs.dist-artifact-id }}
+          MANIFEST_ID: ${{ inputs.manifest-artifact-id }}
+        run: test -n "$DIST_ID" && test -n "$MANIFEST_ID"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ inputs.dist-artifact-id }}
+          path: dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ inputs.manifest-artifact-id }}
+          path: ${{ runner.temp }}/release-manifest
+      - name: Check validated distribution hashes
+        working-directory: dist
+        run: sha256sum --check --strict "$RUNNER_TEMP/release-manifest/dist.sha256"
+      - name: Check validated distribution count
+        env:
+          MANIFEST: ${{ runner.temp }}/release-manifest/dist.sha256
+        run: >-
+          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq "$(wc -l <"$MANIFEST")"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - uses: tox-dev/github-workflows/reconcile-pypi-artifacts@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          project: ${{ inputs.package }}
+          version: ${{ inputs.version }}
+          dist: dist
