@@ -21,6 +21,15 @@ jobs:
           persist-credentials: false
       - name: List changed paths
         run: git diff --diff-filter=AM --name-only "origin/$GITHUB_BASE_REF"...HEAD >"$RUNNER_TEMP/changed-paths"
+      - name: Detect release lock changes
+        id: release-lock
+        run: |
+          changed=$(git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" -- pyproject.toml pylock.toml nab.toml)
+          if [[ -n "$changed" ]]; then
+            echo 'changed=true' >>"$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >>"$GITHUB_OUTPUT"
+          fi
       - name: Validate package fragments
         id: fragments
         run: |
@@ -99,6 +108,12 @@ jobs:
           version: latest-known
           python-version: '3.15'
           enable-cache: false
+      - name: Check the release lock
+        if: steps.release-lock.outputs.changed == 'true'
+        uses: tox-dev/github-workflows/refresh-release-lock@e2d5e308194a31710039f3237b7157431c0e38b5 # v2.0.0
+        with:
+          lock-groups: release-build release-notes release-package release-prepare build
+          mode: check
       - name: Check assembled package news
         run: |
           set -euo pipefail
