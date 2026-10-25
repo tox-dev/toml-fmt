@@ -21,11 +21,27 @@ directory. `tasks/` contains repository maintenance scripts.
 
 ## Development commands
 
-Add a nonempty `changelog.d/pyproject-fmt/<PR>.feature.md`, `.bugfix.md`, or `.doc.md` for a `pyproject-fmt` change. Use
-`changelog.d/tox-toml-fmt/` for `tox-toml-fmt`. A pull request affecting both packages needs an entry in each directory.
-Apply `skip news` when neither package needs a release note; the label can be added after opening the pull request.
-Release preparation folds only the selected package's entries into its section of [CHANGELOG.md](CHANGELOG.md), commits
-the new version, then pushes its tag. The tag starts the build and publish workflow.
+Add one nonempty fragment for each affected distribution: `changelog.d/pyproject-fmt/`, `changelog.d/tox-toml-fmt/`, or
+`changelog.d/toml-fmt-common/`. Use a descriptive filename such as `+support-python-315.feature.md`; release preparation
+links it to the squash-merged pull request. A numeric PR filename also works. Each fragment contains one user-facing
+change. Put separate changes in separate files, including changes in different categories. A change to a shared crate
+may need entries for both formatters.
+
+Choose the suffix for the effect on users: `feature` for added or removed Python support, `change` for changed behavior,
+`bugfix` for a correction, and `doc` for documentation. `security`, `performance`, `deprecation`, `removal`, and
+`packaging` are available when those changes affect users. Use `breaking` for an incompatible API or behavior change.
+The release notes omit categories with no entries. The fragment text may use Markdown links. Do not write credits in it:
+release preparation credits the pull request's commit authors and co-authors, and runs `release-creator contributors` to
+add a New Contributors subsection. The GitHub Release notes reuse the generated changelog. PR documentation builds show
+pending `pyproject-fmt` and `tox-toml-fmt` fragments under Draft on each package's changelog page. `toml-fmt-common` has
+no documentation site; its entries appear in the root changelog at release.
+
+Apply `skip news` when the change has no user-facing effect. The label can be added after opening a pull request. Bot
+pull requests without a fragment receive it automatically. A bot pull request that supplies a fragment still has that
+fragment checked. Release preparation folds only the selected distribution's entries into its section of
+[CHANGELOG.md](CHANGELOG.md), formats it with prek, commits the new version, and pushes its distribution-prefixed tag.
+The tag starts that distribution's build and publish workflow. All three publish through the same PyPI environment and
+create a GitHub Release after PyPI succeeds.
 
 Use Cargo from the repository root for Rust changes:
 

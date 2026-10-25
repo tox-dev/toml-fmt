@@ -13,6 +13,8 @@ Published consumers resolve new toml-fmt-common releases, so each artifact carri
 from __future__ import annotations
 
 from base64 import urlsafe_b64encode
+from datetime import UTC, datetime
+from gzip import GzipFile
 from hashlib import sha256
 from io import BytesIO
 from os import environ
@@ -24,7 +26,7 @@ from tarfile import TarInfo
 from tarfile import open as tar_open
 from tempfile import TemporaryDirectory
 from typing import TYPE_CHECKING, Final, TypeAlias
-from zipfile import ZIP_DEFLATED, ZipFile
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import maturin
 
@@ -146,9 +148,15 @@ def _rewrite(wheel: Path, changed: dict[str, bytes]) -> None:
     record.append(f"{dist_info}/RECORD,,")
     entries[f"{dist_info}/RECORD"] = ("\n".join(record) + "\n").encode()
 
+    source_epoch = _source_epoch()
+    zip_time = (
+        max(datetime.fromtimestamp(source_epoch, UTC), datetime(1980, 1, 1, tzinfo=UTC)).timetuple()[:6]
+        if source_epoch is not None
+        else None
+    )
     with ZipFile(wheel, "w", ZIP_DEFLATED) as archive:
         for name, data in entries.items():
-            archive.writestr(name, data)
+            archive.writestr(ZipInfo(name, zip_time) if zip_time else name, data, compress_type=ZIP_DEFLATED)
 
 
 def _vendor_into_sdist(sdist: Path) -> None:
@@ -162,14 +170,27 @@ def _vendor_into_sdist(sdist: Path) -> None:
     added = [(f"{root}/{_COMMON.name}/pyproject.toml", (_COMMON / "pyproject.toml").read_bytes())]
     added += [(f"{root}/{_COMMON.name}/src/{name}", data) for name, data in _common_sources()]
 
-    with tar_open(sdist, "w:gz") as archive:
+    source_epoch = _source_epoch()
+    with (
+        sdist.open("wb") as output,
+        GzipFile(filename=sdist.name, fileobj=output, mode="wb", mtime=source_epoch) as compressed,
+        tar_open(fileobj=compressed, mode="w") as archive,
+    ):
         for member, data in members:
+            if source_epoch is not None:
+                member.mtime = source_epoch
             archive.addfile(member, BytesIO(data) if member.isfile() else None)
         for name, data in added:
             info = TarInfo(name)
             info.size = len(data)
             info.mode = 0o644
+            if source_epoch is not None:
+                info.mtime = source_epoch
             archive.addfile(info, BytesIO(data))
+
+
+def _source_epoch() -> int | None:
+    return int(value) if (value := environ.get("SOURCE_DATE_EPOCH")) is not None else None
 
 
 def _own_metadata(metadata: bytes) -> bytes:
@@ -194,6 +215,10 @@ def _common_sources() -> Iterator[tuple[str, bytes]]:
             yield file.relative_to(source.parent).as_posix(), file.read_bytes()
 
 
+if __name__ == "__main__":
+    _main()
+
+
 __all__ = [
     "build_editable",
     "build_sdist",
@@ -202,7 +227,3 @@ __all__ = [
     "get_requires_for_build_sdist",
     "get_requires_for_build_wheel",
 ]
-
-
-if __name__ == "__main__":
-    _main()

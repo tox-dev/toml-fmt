@@ -1,4 +1,35 @@
+[project]
+name = "toml-fmt-release-tools"
+version = "0"
+requires-python = ">=3.11"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
+]
+dependencies = []
+
+[dependency-groups]
+build = [ "cython>=3", "maturin>=1.15,<2", "setuptools>=80", "uv-build>=0.13.4,<0.14" ]
+release-build = [
+  "maturin>=1.15,<2",
+  "uv-build>=0.13.4,<0.14",
+]
+release-notes = [
+  "release-creator>=4.1",
+]
+release-prepare = [
+  "prek>=0.3",
+  "release-creator>=4.1",
+]
+
 [tool.uv]
+dependency-groups.release-build = { requires-python = ">=3.15" }
+dependency-groups.release-notes = { requires-python = ">=3.15" }
+dependency-groups.release-prepare = { requires-python = ">=3.15" }
 workspace.members = [ "pyproject-fmt", "toml-fmt-common", "tox-toml-fmt" ]
 
 [tool.ruff]
@@ -67,3 +98,15 @@ ignore-words = "ignore-words.txt"
 skip = "*.snap,*/tests/data/*"
 write-changes = true
 count = true
+
+[tool.nab]
+mode = "universal"
+base-group = "project-runtime"
+default-groups = []
+uploaded-prior-to = "P7D"
+decision-order = "stable"
+package-rules = [ { match = [ "uv-build" ], uploaded-prior-to = "2026-10-21T00:00:00Z" } ]
+matrix.python = ">=3.15,<3.16"
+matrix.platforms = [ "linux_x86_64" ]
+# temporary, delete after 2026-11-02
+packages.release-creator.uploaded-prior-to = 2026-10-26T18:24:46Z
