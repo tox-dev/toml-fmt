@@ -2,6 +2,18 @@
 
 ## pyproject-fmt
 
+### 2.30.4 (2026-10-27)
+
+<a name="release-pyproject-fmt-2-30-4"></a>
+
+<a name="release-pyproject-fmt-2-30-4-packaging"></a>
+
+#### Packaging
+
+- Releases now run on the shared tox-dev/github-workflows pipeline, with a locked release toolchain and generated GitHub
+  Release notes ([#494](https://github.com/tox-dev/toml-fmt/pull/494)) by
+  [@gaborbernat](https://github.com/gaborbernat).
+
 ### 2.30.3 (2026-10-10)
 
 <a name="release-pyproject-fmt-2-30-3"></a>
