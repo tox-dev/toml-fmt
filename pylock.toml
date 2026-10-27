@@ -419,28 +419,28 @@ sha256 = "67deae16d11ac261a1512f18a22c0cf13418f43afc3e56cb74e58ad4422062e3"
 
 [[packages]]
 name = "setuptools"
-version = "84.0.0"
+version = "84.2.0"
 marker = "\"build\" in dependency_groups"
 requires-python = ">=3.10"
 index = "https://pypi.org/simple/"
 
 [packages.sdist]
-name = "setuptools-84.0.0.tar.gz"
-upload-time = 2026-08-08 18:27:58.365696+00:00
-url = "https://files.pythonhosted.org/packages/6d/44/f5da03a8ef95d369145c5bb53050e7877c9f3d312e128605fd9504829143/setuptools-84.0.0.tar.gz"
-size = 1168449
+name = "setuptools-84.2.0.tar.gz"
+upload-time = 2026-10-19 20:38:03.407523+00:00
+url = "https://files.pythonhosted.org/packages/63/40/e2c41d00a4bfea5548c31420a74c6cf149cc0e7c36b45c4c82202ce867aa/setuptools-84.2.0.tar.gz"
+size = 1227656
 
 [packages.sdist.hashes]
-sha256 = "f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73"
+sha256 = "6f445ca2ce864605f81e223f262b4c94ffcb9a4a63473bae0ed7be5aab0291da"
 
 [[packages.wheels]]
-name = "setuptools-84.0.0-py3-none-any.whl"
-upload-time = 2026-08-08 18:27:56.719708+00:00
-url = "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl"
-size = 818216
+name = "setuptools-84.2.0-py3-none-any.whl"
+upload-time = 2026-10-19 20:38:01.629093+00:00
+url = "https://files.pythonhosted.org/packages/dd/a2/2e1af99d56c8145aa69496026c7e5fd7b6ec759b500c3ad697e2062832dc/setuptools-84.2.0-py3-none-any.whl"
+size = 875816
 
 [packages.wheels.hashes]
-sha256 = "51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670"
+sha256 = "8cc107ac7a403105dc8d6477664171f36135fab26adf8b5e0edaebc313f39b21"
 
 [[packages]]
 name = "towncrier"
@@ -532,7 +532,7 @@ sha256 = "89ca642c5bf0101157a09366be69fad0379db1f700ae39a920e103234573670e"
 
 [tool.nab]
 nab-version = "0.0.22"
-created-at = 2026-10-26 20:08:09.312458+00:00
+created-at = 2026-10-27 13:57:43.706576+00:00
 command-line = [
     "nab",
     "lock",
@@ -540,9 +540,6 @@ command-line = [
     "--all-extras",
     "--no-cache",
     "--upgrade",
-    "pyproject.toml",
-    "--output",
-    "pylock.toml",
 ]
 input-path = "pyproject.toml"
 mode = "universal"
