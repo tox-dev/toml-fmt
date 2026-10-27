@@ -39,7 +39,7 @@ jobs:
         run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >>"$GITHUB_OUTPUT"
       - name: 📦 Export locked build constraints
         id: constraints
-        uses: tox-dev/github-workflows/export-build-constraints@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        uses: tox-dev/github-workflows/export-build-constraints@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
       - name: 🏗️ Build source and wheel distributions
         run: |
           uv build --python 3.15 --python-preference only-managed \
@@ -100,7 +100,7 @@ jobs:
           artifact-ids: ${{ needs.notes.outputs.artifact-id }}
           path: ${{ runner.temp }}
       - name: 🚀 Publish GitHub release
-        uses: tox-dev/github-workflows/publish-github-release@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        uses: tox-dev/github-workflows/publish-github-release@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
         env:
           GH_TOKEN: ${{ github.token }}
         with:
