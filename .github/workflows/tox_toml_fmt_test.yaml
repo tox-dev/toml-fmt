@@ -11,16 +11,16 @@ permissions:
   contents: read
 jobs:
   changes:
-    name: 🔍 changes
+    name: 🧭 Detect changes
     runs-on: ubuntu-26.04
     outputs:
       run: ${{ github.event_name != 'pull_request' || steps.filter.outputs.run == 'true' }}
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: 🔍 Check for changes
+      - name: 🧭 Detect changed paths
         if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
@@ -37,77 +37,77 @@ jobs:
               - 'rust-toolchain.toml'
               - '.github/workflows/tox_toml_fmt_test.yaml'
   clippy:
-    name: 📎 clippy
+    name: 🧹 clippy
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: 🦀 Setup Rust
+      - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           components: clippy
-      - name: 📎 Run Clippy
+      - name: 🧹 Run Clippy
         run: cargo clippy -p tox-toml-fmt -p tox-rules --locked --all-targets -- -D warnings
   fmt:
-    name: 🎨 fmt
+    name: 🧹 fmt
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: 🦀 Setup Rust
+      - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           components: rustfmt
-      - name: 🎨 Check formatting
+      - name: 🧹 Check formatting
         run: cargo fmt -p tox-toml-fmt -p tox-rules --check
   build:
-    name: 🔨 build
+    name: 🏗️ build
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: 🦀 Setup Rust
+      - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
-      - name: 🔨 Build
+      - name: 🏗️ Build
         run: cargo build -p tox-toml-fmt --locked
   test:
-    name: ✅ test
+    name: 🧪 test
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
     environment: test
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: 🦀 Setup Rust
+      - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
         with:
           components: llvm-tools-preview
-      - name: 📦 Install cargo-llvm-cov and cargo-nextest
+      - name: 🦀 Install cargo-llvm-cov and cargo-nextest
         uses: taiki-e/install-action@1168f6810a3cb30a3514bf5756a3b7f0422c6df8 # v2.87.28
         with:
           tool: cargo-llvm-cov,cargo-nextest
-      - name: ✅ Run tests with coverage
+      - name: 🧪 Run tests with coverage
         run: cargo llvm-cov nextest -p tox-toml-fmt --no-default-features --locked --fail-under-lines 100 --codecov --output-path coverage.json
-      - name: 📤 Upload coverage
+      - name: 📊 Upload coverage
         id: formatter-coverage
         background: true
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
@@ -118,17 +118,18 @@ jobs:
           flags: tox-toml-fmt
       # the tox rules are a crate of their own, so they prove their own coverage rather than leaning
       # on the formatter that ships them
-      - name: ✅ Run the tox rule tests with coverage
+      - name: 🧪 Run the tox rule tests with coverage
         run: cargo llvm-cov nextest -p tox-rules --no-default-features --locked --fail-under-lines 100 --codecov --output-path tox-rules.json
-      - wait: formatter-coverage
-      - name: 📤 Upload the tox rule coverage
+      - name: ⏳ Wait for formatter coverage upload
+        wait: formatter-coverage
+      - name: 📊 Upload the tox rule coverage
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: tox-rules.json
           flags: tox-rules
   py:
-    name: 🐍 ${{ matrix.py }} @ ${{ matrix.os }}
+    name: 🧪 ${{ matrix.py }} @ ${{ matrix.os }}
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ${{ matrix.os }}
@@ -141,38 +142,39 @@ jobs:
       run:
         working-directory: tox-toml-fmt
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: latest-known
           python-version: "3.15"
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
-      - name: 🔧 Install tox
+      - name: 📦 Install tox
         run: uv tool install --python-preference only-managed --python 3.15 tox --with tox-uv
       - name: 🐍 Install Python ${{ matrix.py }}
         if: matrix.py != '3.15'
         run: uv python install --python-preference only-managed ${{ matrix.py }}
-      - name: 🦀 Setup Rust
+      - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
-      - name: 📝 Generate README.rst
+      - name: 📖 Generate README.rst
         run: tox run -e readme
         working-directory: tox-toml-fmt
-      - name: 📝 Generate pyproject-fmt README.rst
+      - name: 📖 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
-      - name: 🔧 Setup test suite
+      - name: 📦 Set up test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.py }}
-      - name: ✅ Run tests
+      - name: 🧪 Run test suite
         run: tox run --skip-pkg-install -e ${{ matrix.py }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
   check:
-    name: 🔎 ${{ matrix.env }}
+    name: 🔍 ${{ matrix.env }}
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-24.04
@@ -184,41 +186,42 @@ jobs:
       run:
         working-directory: tox-toml-fmt
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: 📦 Setup uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
+          version: latest-known
           python-version: "3.15"
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: 🔧 Install tox
+      - name: 📦 Install tox
         run: uv tool install --python-preference only-managed --python 3.15 tox --with tox-uv
-      - name: 🦀 Setup Rust
+      - name: 🦀 Install Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
-      - name: 📝 Generate README.rst
+      - name: 📖 Generate README.rst
         run: tox run -e readme
         working-directory: tox-toml-fmt
-      - name: 📝 Generate pyproject-fmt README.rst
+      - name: 📖 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
-      - name: 🔧 Setup test suite
+      - name: 📦 Set up test suite
         run: tox run -vv --notest --skip-missing-interpreters false -e ${{ matrix.env }}
-      - name: ✅ Run tests
+      - name: 🧪 Run test suite
         run: tox run --skip-pkg-install -e ${{ matrix.env }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
   all-pass:
-    name: ✅ tox-toml-fmt
+    name: 🚦 tox-toml-fmt
     if: always()
     needs: [changes, clippy, fmt, build, test, py, check]
     runs-on: ubuntu-26.04
     steps:
-      - name: Decide whether all jobs passed or were skipped
+      - name: 🚦 Decide whether all jobs passed or were skipped
         run: |
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             echo "Some jobs failed or were canceled"

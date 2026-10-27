@@ -1,0 +1,135 @@
+name: 📝 Changelog
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  news:
+    name: 📝 News fragment
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 🧭 List changed paths
+        run: git diff --diff-filter=AM --name-only "origin/$GITHUB_BASE_REF"...HEAD >"$RUNNER_TEMP/changed-paths"
+      - name: 🧭 Detect release lock changes
+        id: release-lock
+        run: |
+          changed=$(git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" -- pyproject.toml pylock.toml nab.toml)
+          if [[ -n "$changed" ]]; then
+            echo 'changed=true' >>"$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >>"$GITHUB_OUTPUT"
+          fi
+      - name: 🧭 Detect changelog changes
+        id: changelog
+        run: |
+          if [[ -n $(git diff --name-only "origin/$GITHUB_BASE_REF...HEAD" -- changelog.d) ]]; then
+            echo 'changed=true' >>"$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >>"$GITHUB_OUTPUT"
+          fi
+      - name: 🔍 Validate package fragments
+        id: fragments
+        run: |
+          set -euo pipefail
+          pyproject_found=false
+          tox_found=false
+          common_found=false
+          found_any=false
+          while IFS= read -r path; do
+            case "$path" in
+            changelog.d/pyproject-fmt/*.md) pyproject_found=true ;;
+            changelog.d/tox-toml-fmt/*.md) tox_found=true ;;
+            changelog.d/toml-fmt-common/*.md) common_found=true ;;
+            *) continue ;;
+            esac
+            found_any=true
+            name=${path##*/}
+            category=${name%.md}
+            category=${category##*.}
+            case "$category" in
+            feature | change | bugfix | doc | breaking | security | performance | deprecation | removal | packaging) ;;
+            *)
+              echo "::error::unknown changelog category: $path"
+              exit 1
+              ;;
+            esac
+            stem=${name%.*.*}
+            if ! { [[ "$stem" == +?* && "${stem#+}" != *[!a-zA-Z0-9-]* ]] ||
+              [[ -n "$stem" && "$stem" != *[!0-9]* ]]; } ||
+              [[ -z $(tr -d '[:space:]' <"$path") ]]; then
+              echo "::error::invalid or empty changelog fragment: $path"
+              exit 1
+            fi
+          done <"$RUNNER_TEMP/changed-paths"
+          {
+            echo "pyproject=$pyproject_found"
+            echo "tox=$tox_found"
+            echo "common=$common_found"
+            echo "any=$found_any"
+          } >>"$GITHUB_OUTPUT"
+      - name: 🔍 Require affected package fragments
+        env:
+          SKIP_NEWS: ${{ contains(github.event.pull_request.labels.*.name, 'skip news') }}
+          BOT_AUTHOR: ${{ github.event.pull_request.user.type == 'Bot' }}
+          PYPROJECT_FOUND: ${{ steps.fragments.outputs.pyproject }}
+          TOX_FOUND: ${{ steps.fragments.outputs.tox }}
+          COMMON_FOUND: ${{ steps.fragments.outputs.common }}
+          FOUND_ANY: ${{ steps.fragments.outputs.any }}
+        run: |
+          if [[ "$SKIP_NEWS" == true || "$BOT_AUTHOR" == true ]]; then
+            exit 0
+          fi
+          pyproject_required=false
+          tox_required=false
+          common_required=false
+          while IFS= read -r path; do
+            case "$path" in
+            pyproject-fmt/*) pyproject_required=true ;;
+            tox-toml-fmt/*) tox_required=true ;;
+            toml-fmt-common/*) common_required=true ;;
+            common/* | toml-doc/* | tox-rules/* | Cargo.toml | Cargo.lock)
+              pyproject_required=true
+              tox_required=true
+              ;;
+            esac
+          done <"$RUNNER_TEMP/changed-paths"
+          if [[ "$FOUND_ANY" != true ]] ||
+            [[ "$pyproject_required" == true && "$PYPROJECT_FOUND" != true ]] ||
+            [[ "$tox_required" == true && "$TOX_FOUND" != true ]] ||
+            [[ "$common_required" == true && "$COMMON_FOUND" != true ]]; then
+            echo '::error::add package changelog fragments or apply skip news'
+            exit 1
+          fi
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: 🔒 Check the release lock
+        if: steps.release-lock.outputs.changed == 'true'
+        uses: tox-dev/github-workflows/refresh-release-lock@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          mode: check
+      - name: 🔍 Check assembled package news
+        if: steps.changelog.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          for package in pyproject-fmt tox-toml-fmt toml-fmt-common; do
+            fragments=(changelog.d/"$package"/*.md)
+            if [[ -f "${fragments[0]}" ]]; then
+              uv run --no-project --python 3.15 python tasks/assemble_release.py "$package" 0.0.0
+            fi
+          done

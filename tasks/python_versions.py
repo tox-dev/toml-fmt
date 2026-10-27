@@ -32,6 +32,32 @@ from trove_classifiers import classifiers
 
 _ROOT: Final[Path] = Path(__file__).resolve().parents[1]
 _MAJOR: Final[int] = 3
+_RELEASE_CANDIDATE: Final[re.Pattern[str]] = re.compile(
+    rf"""
+    ^Python\ {_MAJOR}\.(?P<minor>\d+)\.\d+rc\d+$  # Published release-candidate names.
+    """,
+    re.VERBOSE,
+)
+_DEFAULT_PYTHON: Final[re.Pattern[str]] = re.compile(
+    r"""default=\(\d+,\ \d+\)""",  # Default tuple in the formatter's CLI.
+    re.VERBOSE,
+)
+_EXAMPLE_PYTHON: Final[re.Pattern[str]] = re.compile(
+    r""""max_supported_python":\ \(\d+,\ \d+\)""",  # Python tuple in generated examples.
+    re.VERBOSE,
+)
+_TOML_PYTHON: Final[re.Pattern[str]] = re.compile(
+    r'''max_supported_python\ =\ "\d+\.\d+"''',  # TOML setting in both package configs and docs.
+    re.VERBOSE,
+)
+_DOC_PYTHON: Final[re.Pattern[str]] = re.compile(
+    r"""``max_supported_python``\ \(here\ ``\d+\.\d+``\)""",  # Rendered example wording.
+    re.VERBOSE,
+)
+_MIN_PYTHON: Final[re.Pattern[str]] = re.compile(
+    r"""_MIN_SUPPORTED_PYTHON:\ Final\[tuple\[int,\ int\]\]\ =\ \(_PYTHON_MAJOR,\ \d+\)""",
+    re.VERBOSE,  # Runtime floor in the formatter's CLI.
+)
 
 
 def main(*, check: bool) -> None:
@@ -63,8 +89,7 @@ def newest_candidate() -> int:
 def with_a_candidate() -> set[int]:
     """The releases Python has published a candidate for."""
     released = fetch("https://www.python.org/api/v2/downloads/release/?is_published=true")
-    named = re.compile(rf"^Python {_MAJOR}\.(\d+)\.\d+rc\d+$")
-    return {int(found[1]) for release in released if (found := named.match(release["name"]))}
+    return {int(found["minor"]) for release in released if (found := _RELEASE_CANDIDATE.match(release["name"]))}
 
 
 def with_a_classifier() -> set[int]:
@@ -91,30 +116,30 @@ def fetch(url: str) -> list[dict[str, str]]:
 def written_places(newest: int, oldest: int) -> list[Place]:
     """Every file that spells either release, the newest ones first."""
     spelled = [
-        ("pyproject-fmt/src/pyproject_fmt/__main__.py", r"default=\(\d+, \d+\)", f"default=({_MAJOR}, {newest})"),
+        ("pyproject-fmt/src/pyproject_fmt/__main__.py", _DEFAULT_PYTHON, f"default=({_MAJOR}, {newest})"),
         (
             "tasks/fmt_examples.py",
-            r'"max_supported_python": \(\d+, \d+\)',
+            _EXAMPLE_PYTHON,
             f'"max_supported_python": ({_MAJOR}, {newest})',
         ),
         (
             "pyproject-fmt/pyproject.toml",
-            r'max_supported_python = "\d+\.\d+"',
+            _TOML_PYTHON,
             f'max_supported_python = "{_MAJOR}.{newest}"',
         ),
         (
             "tox-toml-fmt/pyproject.toml",
-            r'max_supported_python = "\d+\.\d+"',
+            _TOML_PYTHON,
             f'max_supported_python = "{_MAJOR}.{newest}"',
         ),
         (
             "pyproject-fmt/docs/configuration.rst",
-            r'max_supported_python = "\d+\.\d+"',
+            _TOML_PYTHON,
             f'max_supported_python = "{_MAJOR}.{newest}"',
         ),
         (
             "pyproject-fmt/docs/formatting.rst",
-            r"``max_supported_python`` \(here ``\d+\.\d+``\)",
+            _DOC_PYTHON,
             f"``max_supported_python`` (here ``{_MAJOR}.{newest}``)",
         ),
     ]
@@ -122,7 +147,7 @@ def written_places(newest: int, oldest: int) -> list[Place]:
     places.append(
         Place(
             _ROOT / "pyproject-fmt/src/pyproject_fmt/__main__.py",
-            r"_MIN_SUPPORTED_PYTHON: Final\[tuple\[int, int\]\] = \(_PYTHON_MAJOR, \d+\)",
+            _MIN_PYTHON,
             oldest,
             f"_MIN_SUPPORTED_PYTHON: Final[tuple[int, int]] = (_PYTHON_MAJOR, {oldest})",
         )
@@ -135,13 +160,13 @@ class Place:
     """One spelling of a release, in the file that writes it."""
 
     path: Path
-    pattern: str
+    pattern: re.Pattern[str]
     minor: int
     spelling: str
 
     def said(self) -> str:
         """What the file writes there, which a run holds against the spelling it should write."""
-        found = re.search(self.pattern, self.path.read_text(encoding="utf-8"))
+        found = self.pattern.search(self.path.read_text(encoding="utf-8"))
         if found is None:
             print(f"{self.path.relative_to(_ROOT)}: nothing matches {self.pattern}")
             sys.exit(1)
@@ -153,3 +178,15 @@ class Place:
 
 if __name__ == "__main__":
     main(check="--check" in sys.argv[1:])
+
+
+__all__ = [
+    "Place",
+    "fetch",
+    "main",
+    "newest_candidate",
+    "oldest_supported",
+    "with_a_candidate",
+    "with_a_classifier",
+    "written_places",
+]

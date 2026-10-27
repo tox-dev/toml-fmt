@@ -1,0 +1,110 @@
+name: 🚀 toml-fmt-common
+on:
+  push:
+    tags: ["toml-fmt-common/*"]
+permissions: {}
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  notes:
+    name: 📝 Render GitHub Release notes
+    uses: $/.github/workflows/_release_notes.yaml
+    permissions:
+      contents: read
+    with:
+      package: toml-fmt-common
+  build:
+    name: 🏗️ Build distributions
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ⚙️ Set source timestamp
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >>"$GITHUB_ENV"
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: ⚙️ Read package version
+        id: version
+        run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >>"$GITHUB_OUTPUT"
+      - name: 📦 Export locked build constraints
+        id: constraints
+        uses: tox-dev/github-workflows/export-build-constraints@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+      - name: 🏗️ Build source and wheel distributions
+        run: |
+          uv build --python 3.15 --python-preference only-managed \
+            --build-constraints "$BUILD_CONSTRAINTS" --sdist --wheel toml-fmt-common --out-dir dist
+        env:
+          BUILD_CONSTRAINTS: ${{ steps.constraints.outputs.path }}
+          UV_REQUIRE_BUILD_HASHES: "true"
+      - name: 📤 Upload distributions
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: toml-fmt-common-wheels-universal
+          path: dist/*
+          if-no-files-found: error
+  pypi:
+    name: 🚀 Publish to PyPI
+    if: github.repository == 'tox-dev/toml-fmt'
+    needs: build
+    runs-on: ubuntu-26.04
+    environment:
+      name: release
+      url: https://pypi.org/project/toml-fmt-common/${{ needs.build.outputs.version }}/
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: 📩 Download distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: toml-fmt-common-wheels-*
+          path: dist
+          merge-multiple: true
+      - name: 🚀 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist
+  verify:
+    name: 🔍 Verify PyPI distributions
+    needs:
+      - build
+      - pypi
+    uses: $/.github/workflows/_reconcile_package.yaml
+    permissions:
+      contents: read
+    with:
+      package: toml-fmt-common
+      version: ${{ needs.build.outputs.version }}
+      artifact-pattern: toml-fmt-common-wheels-*
+  github-release:
+    name: 🚀 Publish GitHub Release
+    needs: [build, verify, notes]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: 📩 Download release notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.notes.outputs.artifact-id }}
+          path: ${{ runner.temp }}
+      - name: 🚀 Publish GitHub release
+        uses: tox-dev/github-workflows/publish-github-release@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          tag: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
+          title: ${{ github.ref_name }}
+          notes-file: ${{ runner.temp }}/release-notes.md

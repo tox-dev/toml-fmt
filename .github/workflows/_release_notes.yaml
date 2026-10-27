@@ -1,0 +1,61 @@
+name: 📝 Render package GitHub Release notes
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+    outputs:
+      artifact-id:
+        description: Artifact ID of the rendered GitHub Release notes
+        value: ${{ jobs.notes.outputs.artifact-id }}
+permissions: {}
+jobs:
+  notes:
+    name: 📝 Render GitHub Release notes
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: latest-known
+          python-version: '3.15'
+          enable-cache: false
+      - name: 📦 Install locked release tools
+        uses: tox-dev/github-workflows/install-locked-tools@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          groups: release-notes
+          venv: ${{ runner.temp }}/release-tools
+      - name: 🏷️ Select previous package tag
+        id: previous
+        uses: tox-dev/github-workflows/select-previous-tag@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        with:
+          tag: ${{ github.ref_name }}
+      - name: 📝 Render package release notes
+        env:
+          PACKAGE: ${{ inputs.package }}
+          TAG: ${{ github.ref_name }}
+          PREVIOUS: ${{ steps.previous.outputs.previous }}
+        run: |
+          set -euo pipefail
+          args=(--changelog CHANGELOG.md --package "$PACKAGE" --tag "$TAG" --repository "$GITHUB_REPOSITORY" --artifact-url "https://pypi.org/project/$PACKAGE/${TAG#"$PACKAGE/"}/")
+          if [[ -n "$PREVIOUS" ]]; then
+            args+=(--previous "$PREVIOUS")
+          fi
+          "$RUNNER_TEMP/release-tools/bin/release-creator" notes "${args[@]}" >"$RUNNER_TEMP/release-notes.md"
+      - name: 📤 Upload release notes
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-release-notes-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-notes.md
+          if-no-files-found: error

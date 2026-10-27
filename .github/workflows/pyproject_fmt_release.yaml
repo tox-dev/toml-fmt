@@ -4,75 +4,74 @@ on:
     tags: ["pyproject-fmt/*"]
 permissions: {}
 concurrency:
-  group: release-pyproject-fmt-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  notes:
+    name: 📝 Render GitHub Release notes
+    uses: $/.github/workflows/_release_notes.yaml
+    permissions:
+      contents: read
+    with:
+      package: pyproject-fmt
   build:
+    name: 🏗️ Build distributions
     uses: $/.github/workflows/pyproject_fmt_build.yaml
     permissions:
       contents: read
       pull-requests: read
-  release:
-    name: 🚀 release
-    if: github.repository == 'tox-dev/toml-fmt' && startsWith(github.ref, 'refs/tags/pyproject-fmt/')
-    needs: [build]
-    runs-on: ubuntu-24.04
+  pypi:
+    name: 🚀 Publish to PyPI
+    if: github.repository == 'tox-dev/toml-fmt'
+    needs: build
+    runs-on: ubuntu-26.04
     environment:
       name: release
-      url: https://pypi.org/project/pyproject-fmt/${{ needs.build.outputs.version }}
+      url: https://pypi.org/project/pyproject-fmt/${{ needs.build.outputs.version }}/
     permissions:
+      contents: read
       id-token: write
-      contents: write
     steps:
-      - name: 📥 Checkout release tag
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: 📝 Require release notes
-        env:
-          PACKAGE: pyproject-fmt
-          VERSION: ${{ needs.build.outputs.version }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          source_version=$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$PACKAGE/Cargo.toml" | head -n 1)
-          if [[ "$TAG" != "$PACKAGE/$VERSION" || "$VERSION" != "$source_version" ]]; then
-            echo "::error::$TAG does not match the $PACKAGE source version $source_version"
-            exit 1
-          fi
-          awk -v project="$PACKAGE" -v version="$VERSION" '
-            $0 == "## " project { in_project = 1; next }
-            in_project && /^## / { exit }
-            in_project && /^### / {
-              if (found) exit
-              found = index($0, "### " version " (") == 1
-              next
-            }
-            found { print }
-          ' CHANGELOG.md > "$RUNNER_TEMP/release-notes.md"
-          if [[ ! -s "$RUNNER_TEMP/release-notes.md" ]]; then
-            echo "::error::$TAG has no changelog entry"
-            exit 1
-          fi
-          printf '\n[PyPI release](https://pypi.org/project/%s/%s/)\n' "$PACKAGE" "$VERSION" >> "$RUNNER_TEMP/release-notes.md"
-          previous=$(git tag --list "$PACKAGE/*" | sort -V | awk -v tag="$TAG" '$0 == tag { print previous; exit } { previous = $0 }')
-          if [[ -n "$previous" ]]; then
-            printf '\n**Full Changelog**: https://github.com/%s/compare/%s...%s\n' "$GITHUB_REPOSITORY" "${previous//\//%2F}" "${TAG//\//%2F}" >> "$RUNNER_TEMP/release-notes.md"
-          else
-            printf '\n**Full Changelog**: https://github.com/%s/commits/%s\n' "$GITHUB_REPOSITORY" "${TAG//\//%2F}" >> "$RUNNER_TEMP/release-notes.md"
-          fi
-      - name: 📥 Download wheels
+      - name: 📩 Download distributions
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: pyproject-fmt-wheels-*
           path: dist
-          merge-multiple: "true"
+          merge-multiple: true
       - name: 🚀 Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
-          skip-existing: true
-      - name: 📢 Create GitHub release
+          packages-dir: dist
+  verify:
+    name: 🔍 Verify PyPI distributions
+    needs:
+      - build
+      - pypi
+    uses: $/.github/workflows/_reconcile_package.yaml
+    permissions:
+      contents: read
+    with:
+      package: pyproject-fmt
+      version: ${{ needs.build.outputs.version }}
+      artifact-pattern: pyproject-fmt-wheels-*
+  github-release:
+    name: 🚀 Publish GitHub Release
+    needs: [build, verify, notes]
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write
+    steps:
+      - name: 📩 Download release notes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.notes.outputs.artifact-id }}
+          path: ${{ runner.temp }}
+      - name: 🚀 Publish GitHub release
+        uses: tox-dev/github-workflows/publish-github-release@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --verify-tag --notes-file "$RUNNER_TEMP/release-notes.md"
+        with:
+          tag: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
+          title: ${{ github.ref_name }}
+          notes-file: ${{ runner.temp }}/release-notes.md

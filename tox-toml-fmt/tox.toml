@@ -4,6 +4,7 @@ skip_missing_interpreters = true
 
 [env_run_base]
 runner = "uv-venv-lock-runner"
+uv_sync_locked = false
 description = "run pytest under {env_name}"
 default_base_python = [ "3.15" ]
 package = "wheel"
@@ -52,6 +53,9 @@ description = "build documentation"
 base_python = [ "3.15" ]
 dependency_groups = [ "docs" ]
 commands = [
+  [
+    "python", "../tasks/generate_changelog.py", "tox-toml-fmt",
+  ],
   [
     "sphinx-build",
     "-d",
