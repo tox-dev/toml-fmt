@@ -946,6 +946,18 @@
 
 ## tox-toml-fmt
 
+### 1.11.2 (2026-10-27)
+
+<a name="release-tox-toml-fmt-1-11-2"></a>
+
+<a name="release-tox-toml-fmt-1-11-2-packaging"></a>
+
+#### Packaging
+
+- Releases now run on the shared tox-dev/github-workflows pipeline, with a locked release toolchain and generated GitHub
+  Release notes ([#494](https://github.com/tox-dev/toml-fmt/pull/494)) by
+  [@gaborbernat](https://github.com/gaborbernat).
+
 ### 1.11.1 (2026-10-10)
 
 <a name="release-tox-toml-fmt-1-11-1"></a>
