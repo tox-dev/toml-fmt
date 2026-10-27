@@ -37,7 +37,7 @@ jobs:
           python-version: '3.15'
           enable-cache: false
       - name: 🔍 Verify PyPI artifacts
-        uses: tox-dev/github-workflows/reconcile-pypi-artifacts@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
+        uses: tox-dev/github-workflows/reconcile-pypi-artifacts@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
         with:
           project: ${{ inputs.package }}
           version: ${{ inputs.version }}

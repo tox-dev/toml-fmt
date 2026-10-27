@@ -63,7 +63,7 @@ jobs:
           activate-environment: true
           python-version: "3.15"
       - name: 📦 Install locked build tool
-        uses: tox-dev/github-workflows/install-locked-tools@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
+        uses: tox-dev/github-workflows/install-locked-tools@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
         with:
           groups: release-build
           venv: ${{ runner.temp }}/release-tools
@@ -274,7 +274,7 @@ jobs:
           python-version: "3.15"
       - name: 📦 Export locked build constraints
         id: constraints
-        uses: tox-dev/github-workflows/export-build-constraints@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
+        uses: tox-dev/github-workflows/export-build-constraints@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
       - name: 🏗️ Build sdist
         # an sdist compiles nothing, so it goes through PEP 517 and the backend vendors toml-fmt-common
         run: uv build --build-constraints "$BUILD_CONSTRAINTS" --sdist --out-dir dist "$PACKAGE"
