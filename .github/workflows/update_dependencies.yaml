@@ -50,7 +50,7 @@ jobs:
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+        uses: tox-dev/github-workflows/install-locked-tools@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
@@ -135,7 +135,7 @@ jobs:
       contents: read
   release-tools:
     name: 🔀 Upgrade release tools
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@259a3d3fb578d00517ffb73341fdd463259b0b2f # 6.0.1
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@29d4d5e6900db30502d7249043b59c18284a9777 # 6.2.0
     permissions:
       contents: read
     secrets:
