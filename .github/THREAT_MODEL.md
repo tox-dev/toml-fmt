@@ -8,8 +8,9 @@ SECURITY.md wins and we fix this file.
 
 toml-fmt reads each TOML file named on the command line or standard input, parses it with the Rust `toml_parser` crate,
 and writes the formatted text back to the same path, to standard output, or reports a diff with `--check`. It runs no
-code from the file, makes no network requests, and touches no other file. It typically runs as a pre-commit hook, often
-on pre-commit.ci or in CI against content from pull requests.
+code from the file, makes no network requests, and reads no other file except the `--config` file or a
+`pyproject-fmt.toml` or `tox-toml-fmt.toml` in the file's directory or a parent, and writes only the named file. It
+typically runs as a pre-commit hook, often on pre-commit.ci or in CI against content from pull requests.
 
 Both tools normalize content as well as layout: pyproject-fmt sorts and normalizes dependency specifiers and
 classifiers. A normalization that changes which package or version a specifier selects is a correctness bug.
@@ -48,10 +49,10 @@ An attacker who controls any of these already has what toml-fmt could give them:
 
 ## Untrusted inputs
 
-| Input                                              | Comes from                         | What toml-fmt guarantees                                                             |
-| -------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------ |
-| Contents of each TOML file                         | Anyone who can open a pull request | Treated as data: parsed and printed, never evaluated or used to choose another path. |
-| `[tool.pyproject-fmt]` and `[tox-toml-fmt]` tables | The repository being formatted     | Only change layout choices such as width, indentation and ordering.                  |
+| Input                                                                                               | Comes from                         | What toml-fmt guarantees                                                                |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------- |
+| Contents of each TOML file                                                                          | Anyone who can open a pull request | Treated as data: parsed and printed, never evaluated or used to choose another path.    |
+| `[tool.pyproject-fmt]` and `[tox-toml-fmt]` tables, and `pyproject-fmt.toml` or `tox-toml-fmt.toml` | The repository being formatted     | Choose formatting and normalization options only; they never select a path or run code. |
 
 ## Threats and controls
 
@@ -64,19 +65,25 @@ An attacker who controls any of these already has what toml-fmt could give them:
 ## Release chain
 
 Releases run on the shared [tox-dev/github-workflows](https://github.com/tox-dev/github-workflows) pipeline. A release
-App, not a person, pushes the release commit and tag; the build installs its tools hash-checked from `pylock.toml` with
-a seven-day upload cooldown; PyPI receives the files through
+App, not a person, pushes the release commit and tag; the build installs its tools from a hash-checked `pylock.toml`
+resolved with a seven-day upload cooldown by default; PyPI receives the files through
 [trusted publishing](https://docs.pypi.org/trusted-publishers/) with attestations, and the GitHub Release is immutable.
 Every workflow pins third-party actions to a commit SHA.
 
 ## Vulnerability or bug
 
-| Report                                                                         | Verdict             | Why                                       |
-| ------------------------------------------------------------------------------ | ------------------- | ----------------------------------------- |
-| A crafted `pyproject.toml` makes pyproject-fmt write another file              | Vulnerability       | Content must never choose an output path. |
-| A 1 KB file with deep nesting hangs the Rust parser                            | Vulnerability       | Small-input hang in CI.                   |
-| pyproject-fmt reorders `dependencies` so a marker applies to the wrong package | Bug                 | Changes meaning; fix it in the open.      |
-| `[tool.pyproject-fmt] column_width = 1` produces ugly output                   | Not a vulnerability | Settings only change layout.              |
+| Report                                                                         | Verdict             | Why                                                   |
+| ------------------------------------------------------------------------------ | ------------------- | ----------------------------------------------------- |
+| A crafted `pyproject.toml` makes pyproject-fmt write another file              | Vulnerability       | Content must never choose an output path.             |
+| A 1 KB file with deep nesting hangs the Rust parser                            | Vulnerability       | Small-input hang in CI.                               |
+| pyproject-fmt reorders `dependencies` so a marker applies to the wrong package | Bug                 | Changes meaning; fix it in the open.                  |
+| `[tool.pyproject-fmt] column_width = 1` produces ugly output                   | Not a vulnerability | Settings are the repository's own formatting choices. |
+
+## Severity
+
+- **High:** formatting an untrusted TOML file executes code, reads or writes another file, or makes a network request.
+- **Medium:** a small input hangs the formatter or exhausts memory.
+- **Low:** an uncaught exception, panic or crash on malformed input instead of a clean error.
 
 ## Accepted risks
 

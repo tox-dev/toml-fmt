@@ -38,11 +38,12 @@ and publish no advisory. Classify by who supplies the dangerous input, not by ho
 - Formatting an untrusted TOML file, for example one from a pull request in CI, executing code, reading or writing any
   file other than the one named, or making a network request.
 - A small input that makes the formatter hang or exhaust memory.
+- An uncaught exception, panic or crash on malformed input instead of a clean error, rated Low.
 
 **Out of scope**
 
 - Output that changes what a file means, or drops content: a correctness bug we want reported in the open.
 - A named path that is a symlink: the formatter reads and rewrites its target, as the caller asked.
-- Malformed input that fails with an error.
+- Malformed input that fails with a clean error.
 
 If you cannot tell which side a finding falls on, report it privately and we will decide.
