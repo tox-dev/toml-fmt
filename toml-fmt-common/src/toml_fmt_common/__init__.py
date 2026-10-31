@@ -600,7 +600,7 @@ _RESET: Final[str] = "\u001b[0m"
 
 
 def _color_diff(diff: Iterable[str]) -> Iterable[str]:
-    if "NO_COLOR" in os.environ:  # https://no-color.org
+    if os.environ.get("NO_COLOR"):  # https://no-color.org
         yield from diff
         return
     for line in diff:
