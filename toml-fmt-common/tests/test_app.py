@@ -128,8 +128,14 @@ _RESET: Final[str] = "\x1b[0m"
     ],
 )
 def test_a_formatted_file_is_written_back_and_the_change_printed(
-    capsys: pytest.CaptureFixture[str], tmp_path: Path, start: str, added: list[str], hunk: str
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    start: str,
+    added: list[str],
+    hunk: str,
 ) -> None:
+    monkeypatch.delenv("NO_COLOR", raising=False)
     dumb = tmp_path / "dumb.toml"
     dumb.write_text(start)
 
@@ -151,26 +157,42 @@ def test_a_formatted_file_is_written_back_and_the_change_printed(
     ]
 
 
-def test_no_color_leaves_the_diff_uncolored(
-    capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    ("no_color", "colors"),
+    [
+        pytest.param("", (_RED, _GREEN, _RESET), id="empty-enables-color"),
+        pytest.param("1", ("", "", ""), id="one-disables-color"),
+        pytest.param("0", ("", "", ""), id="zero-disables-color"),
+        pytest.param("false", ("", "", ""), id="false-disables-color"),
+    ],
+)
+def test_no_color_controls_diff_color(
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    no_color: str,
+    colors: tuple[str, str, str],
 ) -> None:
-    monkeypatch.setenv("NO_COLOR", "1")  # https://no-color.org
+    monkeypatch.setenv("NO_COLOR", no_color)  # https://no-color.org
     dumb = tmp_path / "dumb.toml"
     dumb.write_text("[start.sub]\nextra = 'B'")
 
-    assert run(Dumb(), ["E", str(dumb)]) == 1
+    assert run(Dumb(), ["E", str(dumb), "--check"]) == 1
 
-    out, _ = capsys.readouterr()
+    red, green, reset = colors
+    out, err = capsys.readouterr()
+    assert not err
+    assert dumb.read_text() == "[start.sub]\nextra = 'B'"
     assert out.splitlines() == [
-        f"--- {dumb}",
-        "",
-        f"+++ {dumb}",
-        "",
+        f"{red}--- {dumb}",
+        reset,
+        f"{green}+++ {dumb}",
+        reset,
         "@@ -1,2 +1,3 @@",
         "",
         " [start.sub]",
         " extra = 'B'",
-        "+extras = 'B'",
+        f"{green}+extras = 'B'{reset}",
     ]
 
 
@@ -208,6 +230,7 @@ def test_dumb_format_already_good(
 def test_dumb_format_via_folder(
     capsys: pytest.CaptureFixture[str], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.delenv("NO_COLOR", raising=False)
     monkeypatch.chdir(tmp_path)
     dumb = tmp_path / "dumb.toml"
     dumb.write_text("")
