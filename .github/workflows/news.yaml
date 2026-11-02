@@ -2,11 +2,9 @@ name: 📝 Changelog
 on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   news:
     name: 📝 News fragment
@@ -14,6 +12,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      pull-requests: read
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,14 +80,17 @@ jobs:
           } >>"$GITHUB_OUTPUT"
       - name: 🔍 Require affected package fragments
         env:
-          SKIP_NEWS: ${{ contains(github.event.pull_request.labels.*.name, 'skip news') }}
+          GH_TOKEN: ${{ github.token }}
+          PULL: ${{ github.event.pull_request.number }}
           BOT_AUTHOR: ${{ github.event.pull_request.user.type == 'Bot' }}
           PYPROJECT_FOUND: ${{ steps.fragments.outputs.pyproject }}
           TOX_FOUND: ${{ steps.fragments.outputs.tox }}
           COMMON_FOUND: ${{ steps.fragments.outputs.common }}
           FOUND_ANY: ${{ steps.fragments.outputs.any }}
         run: |
-          if [[ "$SKIP_NEWS" == true || "$BOT_AUTHOR" == true ]]; then
+          # The event lists the labels at opening; `gh pr create --label` adds them a moment later.
+          skip_news=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PULL" --jq 'any(.labels[]; .name == "skip news")')
+          if [[ "$skip_news" == true || "$BOT_AUTHOR" == true ]]; then
             exit 0
           fi
           pyproject_required=false
@@ -120,7 +122,7 @@ jobs:
           enable-cache: false
       - name: 🔒 Check the release lock
         if: steps.release-lock.outputs.changed == 'true'
-        uses: tox-dev/github-workflows/refresh-release-lock@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
+        uses: tox-dev/github-workflows/refresh-release-lock@99024bcb5749b178c5514f86acfcf1e80c865e75 # 6.3.0
         with:
           mode: check
       - name: 🔍 Check assembled package news
