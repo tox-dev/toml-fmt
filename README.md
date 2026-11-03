@@ -1,5 +1,8 @@
 # Python TOML formatters
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/tox-dev/toml-fmt/badge)](https://scorecard.dev/viewer/?uri=github.com/tox-dev/toml-fmt)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16257/badge)](https://www.bestpractices.dev/projects/16257)
+
 This repository contains two comment-preserving TOML formatters:
 
 - `pyproject-fmt` formats `pyproject.toml`. See its [PyPI package](https://pypi.org/project/pyproject-fmt),
