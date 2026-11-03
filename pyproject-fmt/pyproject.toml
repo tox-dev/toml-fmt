@@ -53,13 +53,13 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
-  "pytest>=9.1.1",
+  "pytest>=9.2",
   "pytest-cov>=7.1",
-  "pytest-mock>=3.16",
+  "pytest-mock>=3.17",
   "trove-classifiers>=2026.9.21.13",
 ]
 type = [
-  "mypy==2.4",
+  "mypy==2.4.1",
   "types-cachetools>=7.0.0.20260713",
   "types-chardet>=5.0.4.6",
   { include-group = "test" },
@@ -69,7 +69,7 @@ docs = [
   "pypandoc-binary>=1.17; python_version>='3.14'",
   "release-creator>=0.6.7; python_version>='3.15'",
   "sphinx>=9.1; python_version>='3.14'",
-  "sphinx-argparse-cli>=1.24; python_version>='3.14'",
+  "sphinx-argparse-cli>=1.24.1; python_version>='3.14'",
   "sphinx-autodoc-typehints>=3.13.8; python_version>='3.14'",
   "sphinx-copybutton>=0.5.2; python_version>='3.14'",
   "sphinx-design>=0.7; python_version>='3.14'",
@@ -77,12 +77,12 @@ docs = [
   "sphinx-llm>=1.1",
 ]
 fix = [
-  "pre-commit-uv>=4.4",
+  "pre-commit-uv>=4.4.1",
 ]
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=7",
-  "uv>=0.13.1",
+  "uv>=0.13.7",
 ]
 
 [tool.maturin]
