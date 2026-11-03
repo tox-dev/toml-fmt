@@ -44,18 +44,18 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
-  "pytest>=9.1.1",
+  "pytest>=9.2",
   "pytest-cov>=7.1",
-  "pytest-mock>=3.16",
+  "pytest-mock>=3.17",
 ]
 type = [
-  "mypy==2.4",
+  "mypy==2.4.1",
   { include-group = "test" },
 ]
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=7",
-  "uv>=0.13.1",
+  "uv>=0.13.7",
 ]
 
 [tool.uv]
