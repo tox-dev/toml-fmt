@@ -2241,7 +2241,7 @@ release-prepare = ">=3.15"
 
 [package.metadata.requires-dev]
 build = [
-    { name = "cython", specifier = ">=3.3.1" },
+    { name = "cython", specifier = ">=3" },
     { name = "maturin", specifier = ">=1.15,<2" },
     { name = "setuptools", specifier = ">=84.2.1" },
     { name = "uv-build", specifier = ">=0.13.4,<0.14" },
