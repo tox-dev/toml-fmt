@@ -7,6 +7,8 @@ from shutil import copy2
 from sys import modules
 from tarfile import DIRTYPE, TarInfo
 from tarfile import open as tar_open
+from time import gmtime, localtime, time
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Final, NamedTuple, Protocol, TypeAlias, cast
 from zipfile import ZipFile
 
@@ -14,6 +16,7 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
+    from unittest.mock import Mock
 
     from pytest_mock import MockerFixture
 
@@ -174,10 +177,9 @@ def test_vendor_into_sdist_content(sdist: Path, member: str, content: bytes) -> 
 
 
 def test_vendor_into_wheel_rebuild_is_byte_identical(
-    backend: Backend, tmp_path: Path, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+    backend: Backend, tmp_path: Path, clock: Mock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
-    clock = mocker.patch("time.time", return_value=1609459201)
     first = tmp_path / "first"
     first.mkdir()
     first_wheel = first / backend.build_wheel(str(first), None, None)
@@ -188,11 +190,18 @@ def test_vendor_into_wheel_rebuild_is_byte_identical(
     assert first_wheel.read_bytes() == second_wheel.read_bytes()
 
 
+@pytest.fixture
+def clock(mocker: MockerFixture) -> Mock:
+    clock: Mock = mocker.create_autospec(time, return_value=1609459201)
+    mocker.patch("zipfile.time", SimpleNamespace(gmtime=gmtime, localtime=localtime, time=clock))
+    mocker.patch("gzip.time", SimpleNamespace(time=clock))
+    return clock
+
+
 def test_vendor_into_sdist_rebuild_is_byte_identical(
-    backend: Backend, tmp_path: Path, mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+    backend: Backend, tmp_path: Path, clock: Mock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
-    clock = mocker.patch("time.time", return_value=1609459201)
     first = tmp_path / "first"
     first.mkdir()
     first_sdist = first / backend.build_sdist(str(first), None)
