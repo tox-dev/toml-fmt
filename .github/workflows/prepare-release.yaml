@@ -18,173 +18,34 @@ concurrency:
   group: prepare-toml-fmt
   cancel-in-progress: false
 jobs:
-  assemble:
-    name: 🏷️ Assemble release
+  prepare:
+    name: 🏷️ Prepare release
     if: github.repository == 'tox-dev/toml-fmt'
-    runs-on: ubuntu-26.04
+    uses: tox-dev/github-workflows/.github/workflows/prepare-release-creator.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     permissions:
       contents: read
       pull-requests: read
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-      tag: ${{ steps.version.outputs.tag }}
-      patch-sha: ${{ steps.patch.outputs.sha }}
-    steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
-        with:
-          cache: false
-      - name: 🦀 Install cargo-edit
-        uses: baptiste0928/cargo-install@8195d4f734a149db85385bb4102b42efcd373759 # v3.5.0
-        if: inputs.package != 'toml-fmt-common'
-        with:
-          crate: cargo-edit
-          version: 0.13.13
-      - name: 🐍 Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          version: latest-known
-          python-version: '3.15'
-          enable-cache: false
-      - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
-        with:
-          groups: release-prepare
-          venv: ${{ runner.temp }}/release-tools
-      - name: 🏷️ Select the package version
-        id: version
-        env:
-          PACKAGE: ${{ inputs.package }}
-          BUMP: ${{ inputs.bump }}
-        run: |
-          set -euo pipefail
-          tag=$(
-            git tag --list |
-              "$RUNNER_TEMP/release-tools/bin/release-creator" tags --package "$PACKAGE" --next "$BUMP"
-          )
-          printf 'version=%s\ntag=%s\n' "${tag#"$PACKAGE/"}" "$tag" >>"$GITHUB_OUTPUT"
-      - name: 📝 Link merged fragments and authors
-        env:
-          PACKAGE: ${{ inputs.package }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          "$RUNNER_TEMP/release-tools/bin/release-creator" fragments \
-            --directory "changelog.d/$PACKAGE" --repository "$GITHUB_REPOSITORY"
-      - name: 🏷️ Bump the Rust distribution
-        if: inputs.package != 'toml-fmt-common'
-        env:
-          PACKAGE: ${{ inputs.package }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: cargo set-version -p "$PACKAGE" "$VERSION"
-      - name: 🏷️ Bump the Python distribution
-        if: inputs.package == 'toml-fmt-common'
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: uv version --package toml-fmt-common "$VERSION" --no-sync
-      - name: 📖 Generate README.rst
-        if: inputs.package != 'toml-fmt-common'
-        env:
-          PACKAGE: ${{ inputs.package }}
-        run: uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
-      - name: 📝 Assemble the package changelog
-        env:
-          PACKAGE: ${{ inputs.package }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: python3 tasks/assemble_release.py "$PACKAGE" "$VERSION"
-      - name: 📝 Add new contributors to the changelog
-        env:
-          PACKAGE: ${{ inputs.package }}
-          VERSION: ${{ steps.version.outputs.version }}
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          "$RUNNER_TEMP/release-tools/bin/release-creator" contributors --changelog CHANGELOG.md --version "$VERSION" --package "$PACKAGE" --repository "$GITHUB_REPOSITORY"
-      - name: 🧹 Format the assembled changelog
-        run: |
-          "$RUNNER_TEMP/release-tools/bin/prek" run mdformat --files CHANGELOG.md ||
-            "$RUNNER_TEMP/release-tools/bin/prek" run mdformat --files CHANGELOG.md
-      - name: 📝 Write the validated release patch
-        id: patch
-        run: |
-          set -euo pipefail
-          git diff HEAD --binary >"$RUNNER_TEMP/release.patch"
-          read -r sha _ < <(sha256sum "$RUNNER_TEMP/release.patch")
-          printf 'sha=%s\n' "$sha" >>"$GITHUB_OUTPUT"
-      - name: 📤 Upload release patch
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: release-patch
-          path: ${{ runner.temp }}/release.patch
-          if-no-files-found: error
-  push:
-    name: ⬆️ Push release commit and tag
-    needs: assemble
-    runs-on: ubuntu-26.04
-    environment: release-auth
-    permissions:
-      contents: read
-    steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: 📩 Download release patch
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: release-patch
-          path: ${{ runner.temp }}/release-patch
-      - name: 🔍 Verify the prepared source and patch
-        env:
-          PATCH_SHA: ${{ needs.assemble.outputs.patch-sha }}
-        run: |
-          set -euo pipefail
-          read -r actual _ < <(sha256sum "$RUNNER_TEMP/release-patch/release.patch")
-          test "$actual" = "$PATCH_SHA"
-          git apply --index "$RUNNER_TEMP/release-patch/release.patch"
-      - name: 🔍 Check release patch paths and modes
-        env:
-          PACKAGE: ${{ inputs.package }}
-          VERSION: ${{ needs.assemble.outputs.version }}
-        run: |
-          set -euo pipefail
-          while IFS= read -r path; do
-            case "$path" in
-            CHANGELOG.md | Cargo.lock | uv.lock | "$PACKAGE/Cargo.toml" | "$PACKAGE/README.rst" | toml-fmt-common/pyproject.toml | changelog.d/"$PACKAGE"/*.md) ;;
-            *)
-              echo "::error::unexpected release path: $path"
-              exit 1
-              ;;
-            esac
-          done < <(git diff --cached --name-only)
-          while IFS= read -r -d '' metadata && IFS= read -r -d '' path; do
-            read -ra fields <<<"$metadata"
-            if [[ "${fields[1]}" == 000000 && "${fields[4]}" == D && "$path" == changelog.d/"$PACKAGE"/*.md ]]; then
-              continue
-            fi
-            if [[ "${fields[1]}" != 100644 ]]; then
-              echo "::error::unexpected release file mode: $path"
-              exit 1
-            fi
-          done < <(git diff --cached --raw --no-renames -z)
-      - name: 🔑 Create release App token
-        id: token
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
-        with:
-          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          owner: ${{ github.repository_owner }}
-          repositories: ${{ github.event.repository.name }}
-          permission-contents: write
-      - name: 🏷️ Commit and tag release
-        uses: tox-dev/github-workflows/commit-and-tag@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
-        with:
-          version: ${{ needs.assemble.outputs.tag }}
-          token: ${{ steps.token.outputs.token }}
-          app-slug: ${{ steps.token.outputs.app-slug }}
-          message: release ${{ needs.assemble.outputs.tag }}
-          annotated: 'true'
+    with:
+      bump: ${{ inputs.bump }}
+      package: ${{ inputs.package }}
+      tag-format: "{package}/{version}"
+      annotated: true
+      cargo-set-version: ${{ inputs.package != 'toml-fmt-common' }}
+      cargo-set-version-args: -p {package}
+      assemble-command: |
+        if [[ "$PACKAGE" == toml-fmt-common ]]; then
+          uv version --package toml-fmt-common "$VERSION" --no-sync
+        else
+          uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
+        fi
+        python3 tasks/assemble_release.py "$PACKAGE" "$VERSION"
+      release-paths: |
+        CHANGELOG.md
+        Cargo.lock
+        uv.lock
+        toml-fmt-common/pyproject.toml
+        {package}/Cargo.toml
+        {package}/README.rst
+        changelog.d/{package}/*
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
