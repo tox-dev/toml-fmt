@@ -1,6 +1,11 @@
 name: 🔀 update dependencies
 on:
   workflow_dispatch:
+    inputs:
+      exclude-newer-package:
+        description: Newline-separated name=date cutoffs that let a package's newer release into this run past the seven day cooldown
+        type: string
+        default: ""
   schedule:
     - cron: "0 8 * * 2"
 permissions: {}
@@ -11,6 +16,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      changed: ${{ steps.patch.outputs.changed }}
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
@@ -44,21 +50,39 @@ jobs:
       - name: 🔒 Refresh workspace lock
         env:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
+          EXPEDITE: ${{ inputs.exclude-newer-package }}
         run: |
-          uv lock --upgrade
+          set -euo pipefail
+          expedite=()
+          while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+              expedite+=(--exclude-newer-package "$line")
+            fi
+          done <<<"$EXPEDITE"
+          uv lock --upgrade "${expedite[@]}"
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@211c2575e3dc9cce9a3e0dc1e2fdcd4a13f40abd # 6.5.3
+        uses: tox-dev/github-workflows/install-locked-tools@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
       - name: 🧹 Run repository hooks
         run: '"$RUNNER_TEMP/release-tools/bin/prek" run --all-files'
       - name: 📝 Save the changes
-        run: git diff HEAD --binary >"$RUNNER_TEMP/maintenance.patch"
+        id: patch
+        run: |
+          set -euo pipefail
+          if git diff --quiet HEAD; then
+            echo 'changed=false' >>"$GITHUB_OUTPUT"
+            echo 'Maintenance patch skipped: no tracked file changed'
+            exit 0
+          fi
+          git diff HEAD --binary >"$RUNNER_TEMP/maintenance.patch"
+          echo 'changed=true' >>"$GITHUB_OUTPUT"
       - name: 📤 Upload maintenance patch
         id: upload
+        if: steps.patch.outputs.changed == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: maintenance-patch
@@ -67,7 +91,8 @@ jobs:
   python-pr:
     name: 🔀 Open Python dependencies PR
     needs: python
-    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@211c2575e3dc9cce9a3e0dc1e2fdcd4a13f40abd # 6.5.3
+    if: needs.python.outputs.changed == 'true'
+    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
     with:
       artifact-id: ${{ needs.python.outputs.artifact-id }}
       allowed-paths: |
@@ -92,7 +117,7 @@ jobs:
       contents: read
   release-tools:
     name: 🔀 Upgrade release tools
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@211c2575e3dc9cce9a3e0dc1e2fdcd4a13f40abd # 6.5.3
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
     permissions:
       contents: read
     secrets:
