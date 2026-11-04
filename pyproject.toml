@@ -105,8 +105,5 @@ base-group = "project-runtime"
 default-groups = []
 uploaded-prior-to = "P7D"
 decision-order = "stable"
-package-rules = [ { match = [ "uv-build" ], uploaded-prior-to = "2026-10-21T00:00:00Z" } ]
 matrix.python = ">=3.15,<3.16"
 matrix.platforms = [ "linux_x86_64" ]
-# temporary, delete after 2026-11-02
-packages.release-creator.uploaded-prior-to = 2026-10-26T18:24:46Z

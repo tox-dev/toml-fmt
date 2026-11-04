@@ -7,13 +7,29 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  version:
+    name: 🏷️ Read release version
+    runs-on: ubuntu-26.04
+    permissions: {}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 🏷️ Strip the package prefix from the tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: printf 'version=%s\n' "${TAG#pyproject-fmt/}" >>"$GITHUB_OUTPUT"
   notes:
     name: 📝 Render GitHub Release notes
-    uses: $/.github/workflows/_release_notes.yaml
+    needs: version
+    uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
     permissions:
       contents: read
     with:
+      tag: ${{ github.ref_name }}
+      changelog: CHANGELOG.md
       package: pyproject-fmt
+      artifact-url: https://pypi.org/project/pyproject-fmt/${{ needs.version.outputs.version }}/
   build:
     name: 🏗️ Build distributions
     uses: $/.github/workflows/pyproject_fmt_build.yaml
@@ -23,11 +39,11 @@ jobs:
   pypi:
     name: 🚀 Publish to PyPI
     if: github.repository == 'tox-dev/toml-fmt'
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-26.04
     environment:
       name: release
-      url: https://pypi.org/project/pyproject-fmt/${{ needs.build.outputs.version }}/
+      url: https://pypi.org/project/pyproject-fmt/${{ needs.version.outputs.version }}/
     permissions:
       contents: read
       id-token: write
@@ -42,36 +58,15 @@ jobs:
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           packages-dir: dist
-  verify:
-    name: 🔍 Verify PyPI distributions
-    needs:
-      - build
-      - pypi
-    uses: $/.github/workflows/_reconcile_package.yaml
-    permissions:
-      contents: read
-    with:
-      package: pyproject-fmt
-      version: ${{ needs.build.outputs.version }}
-      artifact-pattern: pyproject-fmt-wheels-*
   github-release:
     name: 🚀 Publish GitHub Release
-    needs: [build, verify, notes]
-    runs-on: ubuntu-26.04
+    needs: [version, build, pypi, notes]
+    uses: tox-dev/github-workflows/.github/workflows/github-release.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
     permissions:
       contents: write
-    steps:
-      - name: 📩 Download release notes
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          artifact-ids: ${{ needs.notes.outputs.artifact-id }}
-          path: ${{ runner.temp }}
-      - name: 🚀 Publish GitHub release
-        uses: tox-dev/github-workflows/publish-github-release@57a765127aae73adf7d0e24a7fe0f067f2d3ea3e # 6.2.1
-        env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          tag: ${{ github.ref_name }}
-          commit: ${{ github.sha }}
-          title: ${{ github.ref_name }}
-          notes-file: ${{ runner.temp }}/release-notes.md
+    with:
+      project: pyproject-fmt
+      version: ${{ needs.version.outputs.version }}
+      tag: ${{ github.ref_name }}
+      artifact-pattern: pyproject-fmt-wheels-*
+      notes-artifact-id: ${{ needs.notes.outputs.artifact-id }}
