@@ -88,7 +88,6 @@ jobs:
       - name: 🧹 Run pre-commit
         if: ${{ !inputs.release-build }}
         uses: tox-dev/action-pre-commit-uv@ae5b217f46f65d48b20a76b902d7950c745171af # v1.1.1
-        continue-on-error: true
       - name: 📖 Generate README.rst
         if: ${{ !inputs.release-build }}
         run: uv run --project "$PACKAGE" python tasks/generate_readme.py "$PACKAGE"
