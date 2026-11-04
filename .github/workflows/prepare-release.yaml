@@ -21,7 +21,7 @@ jobs:
   prepare:
     name: 🏷️ Prepare release
     if: github.repository == 'tox-dev/toml-fmt'
-    uses: tox-dev/github-workflows/.github/workflows/prepare-release-creator.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
+    uses: tox-dev/github-workflows/.github/workflows/prepare-release-creator.yaml@211c2575e3dc9cce9a3e0dc1e2fdcd4a13f40abd # 6.5.3
     permissions:
       contents: read
       pull-requests: read
