@@ -969,6 +969,25 @@
 
 ## tox-toml-fmt
 
+### 1.11.3 (2026-11-04)
+
+<a name="release-tox-toml-fmt-1-11-3"></a>
+
+<a name="release-tox-toml-fmt-1-11-3-fixed"></a>
+
+#### Fixed
+
+- Keep diff colors enabled when `NO_COLOR` is set to an empty string, as specified by the NO_COLOR convention
+  ([#503](https://github.com/tox-dev/toml-fmt/pull/503)) by [@zombieli](https://github.com/zombieli) and
+  [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-tox-toml-fmt-1-11-3-new-contributors"></a>
+
+#### New Contributors
+
+- [@zombieli](https://github.com/zombieli) made their first contribution in
+  [#503](https://github.com/tox-dev/toml-fmt/pull/503)
+
 ### 1.11.2 (2026-10-27)
 
 <a name="release-tox-toml-fmt-1-11-2"></a>
