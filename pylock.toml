@@ -515,13 +515,14 @@ sha256 = "901eace6d2dd25ebb917d0ce5db18e5c537e1504c905cf32f0d006c12098b05d"
 
 [tool.nab]
 nab-version = "0.0.23"
-created-at = 2026-11-04 01:11:22.188963+00:00
+created-at = 2026-11-04 15:42:41.449352+00:00
 command-line = [
     "nab",
     "lock",
     "--all-groups",
     "--all-extras",
     "--no-cache",
+    "--upgrade",
 ]
 input-path = "pyproject.toml"
 mode = "universal"
