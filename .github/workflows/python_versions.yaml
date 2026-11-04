@@ -2,7 +2,7 @@ name: 🔀 python versions
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "47 5 * * *"
 permissions: {}
 jobs:
   bump:
