@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -25,22 +27,31 @@ jobs:
       - name: 🧹 Run prek
         run: uvx prek run --all-files
       - name: 📝 Save the changes
-        run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
-      - name: 📤 Upload versions patch
+        run: git diff HEAD --binary >"$RUNNER_TEMP/maintenance.patch"
+      - name: 📤 Upload maintenance patch
+        id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: versions-patch
-          path: ${{ runner.temp }}/changes.patch
+          name: maintenance-patch
+          path: ${{ runner.temp }}/maintenance.patch
           if-no-files-found: error
   bump-pr:
     name: 🔀 Open Python versions PR
     needs: bump
-    uses: $/.github/workflows/app-pr.yaml
+    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     with:
-      kind: versions
+      artifact-id: ${{ needs.bump.outputs.artifact-id }}
+      allowed-paths: |
+        tasks/fmt_examples.py
+        pyproject-fmt/pyproject.toml
+        tox-toml-fmt/pyproject.toml
+        pyproject-fmt/docs/configuration.rst
+        pyproject-fmt/docs/formatting.rst
+        pyproject-fmt/src/pyproject_fmt/__main__.py
       branch: update-python-versions
       title: Set the Python releases the defaults name
       body: Keep the default supported Python range aligned with published classifiers, release candidates, and supported cycles.
+      labels: skip news
     secrets:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
