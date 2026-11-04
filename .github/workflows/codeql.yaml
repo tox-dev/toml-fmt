@@ -13,7 +13,7 @@ permissions: {}
 jobs:
   analyze:
     name: 🛡️ Analyze
-    uses: tox-dev/github-workflows/.github/workflows/codeql.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+    uses: tox-dev/github-workflows/.github/workflows/codeql.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
     permissions:
       contents: read
       security-events: write

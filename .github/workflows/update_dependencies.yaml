@@ -49,7 +49,7 @@ jobs:
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools
-        uses: tox-dev/github-workflows/install-locked-tools@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+        uses: tox-dev/github-workflows/install-locked-tools@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
         with:
           groups: release-prepare
           venv: ${{ runner.temp }}/release-tools
@@ -67,7 +67,7 @@ jobs:
   python-pr:
     name: 🔀 Open Python dependencies PR
     needs: python
-    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
     with:
       artifact-id: ${{ needs.python.outputs.artifact-id }}
       allowed-paths: |
@@ -92,7 +92,7 @@ jobs:
       contents: read
   release-tools:
     name: 🔀 Upgrade release tools
-    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
+    uses: tox-dev/github-workflows/.github/workflows/upgrade-release-tools.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
     permissions:
       contents: read
     secrets:
