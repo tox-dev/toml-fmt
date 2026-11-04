@@ -369,7 +369,7 @@ sha256 = "c139c494fb1d9826688f8107d1514fa2a58f8f4a0f0527b68e7970fa50a8b723"
 
 [[packages]]
 name = "release-creator"
-version = "4.2.0"
+version = "4.3.0"
 marker = "\"release-notes\" in dependency_groups or \"release-prepare\" in dependency_groups"
 requires-python = ">=3.15"
 dependencies = [
@@ -383,22 +383,22 @@ dependencies = [
 index = "https://pypi.org/simple/"
 
 [packages.sdist]
-name = "release_creator-4.2.0.tar.gz"
-upload-time = 2026-10-26 22:39:33.566239+00:00
-url = "https://files.pythonhosted.org/packages/0c/c2/6ff369a01a8fff3e4845e2a6989164b71b1662cba8e104ae9f0a2925ca43/release_creator-4.2.0.tar.gz"
-size = 163102
+name = "release_creator-4.3.0.tar.gz"
+upload-time = 2026-10-27 20:03:26.545249+00:00
+url = "https://files.pythonhosted.org/packages/fb/d0/b8c33b59ffcf10db85d503f9a42a7ac0f87e3b9eb2883c379d26d08aa91b/release_creator-4.3.0.tar.gz"
+size = 164625
 
 [packages.sdist.hashes]
-sha256 = "5affc1e7a935aa816dfa16c03200b17f93f7d17d201e6a913c50e1e9e32bad2f"
+sha256 = "3a74e4f7f0c1643bd976eae1dfbe5a502aefde98723e1aa4a17083b0416d8282"
 
 [[packages.wheels]]
-name = "release_creator-4.2.0-py3-none-any.whl"
-upload-time = 2026-10-26 22:39:32.212020+00:00
-url = "https://files.pythonhosted.org/packages/a5/c2/b1be3e0bff91e390890f3bc8e2d9307a1c2841bb3452798d013f2a2b741d/release_creator-4.2.0-py3-none-any.whl"
-size = 53089
+name = "release_creator-4.3.0-py3-none-any.whl"
+upload-time = 2026-10-27 20:03:24.840699+00:00
+url = "https://files.pythonhosted.org/packages/c4/35/cb402853dd142441cbfca66439332ff190edb76dc2111bae3bf52fa67ed8/release_creator-4.3.0-py3-none-any.whl"
+size = 53455
 
 [packages.wheels.hashes]
-sha256 = "fe3048e7bc31ee0d757985bbc256290fc40b1ca4c76be574b6730752cbb5831f"
+sha256 = "8d5a60d4b90fb772c73f106cce25c4dec9a658ef483b4223a5af4a9f4a6d5429"
 
 [[packages]]
 name = "setuptools"
