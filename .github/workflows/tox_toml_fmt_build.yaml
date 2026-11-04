@@ -75,7 +75,7 @@ jobs:
     name: 🏗️ Build distributions
     needs: changes
     if: ${{ needs.changes.outputs.run == 'true' }}
-    uses: tox-dev/github-workflows/.github/workflows/build-maturin-wheels.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
+    uses: tox-dev/github-workflows/.github/workflows/build-maturin-wheels.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
     with:
       package-name: tox-toml-fmt
       package-path: tox-toml-fmt

@@ -38,7 +38,7 @@ jobs:
   bump-pr:
     name: 🔀 Open Python versions PR
     needs: bump
-    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
+    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
     with:
       artifact-id: ${{ needs.bump.outputs.artifact-id }}
       allowed-paths: |

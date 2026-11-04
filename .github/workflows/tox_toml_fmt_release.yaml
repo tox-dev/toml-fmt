@@ -22,7 +22,7 @@ jobs:
   notes:
     name: 📝 Render GitHub Release notes
     needs: version
-    uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
+    uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
     permissions:
       contents: read
     with:
@@ -61,7 +61,7 @@ jobs:
   github-release:
     name: 🚀 Publish GitHub Release
     needs: [version, build, pypi, notes]
-    uses: tox-dev/github-workflows/.github/workflows/github-release.yaml@e406a30296cdc06197691769fd40843ddd8c7eb0 # 6.5.1
+    uses: tox-dev/github-workflows/.github/workflows/github-release.yaml@2c1f5e4ceda37c41eb8367b5cbeaa741aa60a566 # 6.5.2
     permissions:
       contents: write
     with:
