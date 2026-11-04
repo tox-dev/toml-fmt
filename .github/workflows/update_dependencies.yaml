@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    env:
-      RELEASE_CREATOR_CUTOFF: '2026-10-26T18:24:46Z'
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,7 +43,7 @@ jobs:
         env:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
-          uv lock --upgrade --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF"
+          uv lock --upgrade
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools
