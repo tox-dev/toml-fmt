@@ -9,6 +9,7 @@ concurrency:
 jobs:
   notes:
     name: 📝 Render GitHub Release notes
+    needs: build
     uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     permissions:
       contents: read
@@ -16,7 +17,7 @@ jobs:
       tag: ${{ github.ref_name }}
       changelog: CHANGELOG.md
       package: toml-fmt-common
-      artifact-url: https://pypi.org/project/toml-fmt-common/${{ replace(github.ref_name, 'toml-fmt-common/', '') }}/
+      artifact-url: https://pypi.org/project/toml-fmt-common/${{ needs.build.outputs.version }}/
   build:
     name: 🏗️ Build distributions
     runs-on: ubuntu-26.04

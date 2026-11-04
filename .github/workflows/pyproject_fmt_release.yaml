@@ -7,8 +7,21 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  version:
+    name: 🏷️ Read release version
+    runs-on: ubuntu-26.04
+    permissions: {}
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: 🏷️ Strip the package prefix from the tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: printf 'version=%s\n' "${TAG#pyproject-fmt/}" >>"$GITHUB_OUTPUT"
   notes:
     name: 📝 Render GitHub Release notes
+    needs: version
     uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     permissions:
       contents: read
@@ -16,7 +29,7 @@ jobs:
       tag: ${{ github.ref_name }}
       changelog: CHANGELOG.md
       package: pyproject-fmt
-      artifact-url: https://pypi.org/project/pyproject-fmt/${{ replace(github.ref_name, 'pyproject-fmt/', '') }}/
+      artifact-url: https://pypi.org/project/pyproject-fmt/${{ needs.version.outputs.version }}/
   build:
     name: 🏗️ Build distributions
     uses: $/.github/workflows/pyproject_fmt_build.yaml
@@ -26,11 +39,11 @@ jobs:
   pypi:
     name: 🚀 Publish to PyPI
     if: github.repository == 'tox-dev/toml-fmt'
-    needs: build
+    needs: [version, build]
     runs-on: ubuntu-26.04
     environment:
       name: release
-      url: https://pypi.org/project/pyproject-fmt/${{ replace(github.ref_name, 'pyproject-fmt/', '') }}/
+      url: https://pypi.org/project/pyproject-fmt/${{ needs.version.outputs.version }}/
     permissions:
       contents: read
       id-token: write
@@ -47,13 +60,13 @@ jobs:
           packages-dir: dist
   github-release:
     name: 🚀 Publish GitHub Release
-    needs: [build, pypi, notes]
+    needs: [version, build, pypi, notes]
     uses: tox-dev/github-workflows/.github/workflows/github-release.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     permissions:
       contents: write
     with:
       project: pyproject-fmt
-      version: ${{ replace(github.ref_name, 'pyproject-fmt/', '') }}
+      version: ${{ needs.version.outputs.version }}
       tag: ${{ github.ref_name }}
       artifact-pattern: pyproject-fmt-wheels-*
       notes-artifact-id: ${{ needs.notes.outputs.artifact-id }}
