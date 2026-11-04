@@ -1,6 +1,11 @@
 name: 🔀 update dependencies
 on:
   workflow_dispatch:
+    inputs:
+      exclude-newer-package:
+        description: Newline-separated name=date cutoffs that let a package's newer release into this run past the seven day cooldown
+        type: string
+        default: ""
   schedule:
     - cron: "0 8 * * 2"
 permissions: {}
@@ -44,8 +49,16 @@ jobs:
       - name: 🔒 Refresh workspace lock
         env:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
+          EXPEDITE: ${{ inputs.exclude-newer-package }}
         run: |
-          uv lock --upgrade
+          set -euo pipefail
+          expedite=()
+          while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+              expedite+=(--exclude-newer-package "$line")
+            fi
+          done <<<"$EXPEDITE"
+          uv lock --upgrade "${expedite[@]}"
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools
