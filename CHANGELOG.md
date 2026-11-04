@@ -2,6 +2,10 @@
 
 ## pyproject-fmt
 
+### 2.30.6 (2026-11-04)
+
+<a name="release-pyproject-fmt-2-30-6"></a>
+
 ### 2.30.5 (2026-11-04)
 
 <a name="release-pyproject-fmt-2-30-5"></a>
