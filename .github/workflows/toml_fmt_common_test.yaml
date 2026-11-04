@@ -9,7 +9,7 @@ on:
     - cron: "0 8 * * *"
 concurrency:
   group: toml_fmt_common_test-${{ github.ref }}
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
