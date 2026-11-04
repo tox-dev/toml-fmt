@@ -12,7 +12,6 @@ jobs:
       contents: read
     env:
       RELEASE_CREATOR_CUTOFF: '2026-10-26T18:24:46Z'
-      UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,22 +30,22 @@ jobs:
         run: |
           tox r -e readme -c pyproject-fmt
           tox r -e readme -c tox-toml-fmt
-      - name: 📦 Bump dependencies
-        run: |
-          uvx bump-deps-index -i https://pypi.org/simple -f pyproject.toml tox.toml
-          uvx bump-deps-index -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
-          uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
-          uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
       - name: ⚙️ Set dependency age cutoff
         id: cutoff
         run: printf 'value=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >>"$GITHUB_OUTPUT"
+      - name: 📦 Bump dependencies
+        env:
+          CUTOFF: ${{ steps.cutoff.outputs.value }}
+        run: |
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f pyproject.toml tox.toml
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
       - name: 🔒 Refresh workspace lock
         env:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
-          uv lock --upgrade \
-            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
-            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+          uv lock --upgrade --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF"
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools

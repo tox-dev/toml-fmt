@@ -473,28 +473,28 @@ sha256 = "ae4d223e6aadaff98d29b7f09e58d9c9ccf4cd3b455a2d2e0486d432cd8bf660"
 
 [[packages]]
 name = "uv-build"
-version = "0.13.4"
+version = "0.13.6"
 marker = "\"build\" in dependency_groups or \"release-build\" in dependency_groups"
 requires-python = ">=3.8"
 index = "https://pypi.org/simple/"
 
 [packages.sdist]
-name = "uv_build-0.13.4.tar.gz"
-upload-time = 2026-10-20 15:11:06.462752+00:00
-url = "https://files.pythonhosted.org/packages/4a/43/4322239e0113e8228d20c2b8d7851e245b55b9f3ce410a83ad659bc772f7/uv_build-0.13.4.tar.gz"
-size = 464427
+name = "uv_build-0.13.6.tar.gz"
+upload-time = 2026-10-27 00:45:23.129719+00:00
+url = "https://files.pythonhosted.org/packages/8f/98/8b9e028aa5d00f4c6f48183f3a2d9d343cd3adeb21bbd6dcc24916cd1538/uv_build-0.13.6.tar.gz"
+size = 470673
 
 [packages.sdist.hashes]
-sha256 = "93399c547230b849cf725775b0c1c990927c02ddea503e7504736c84c54be9d8"
+sha256 = "8a03355d73117d136dbf6a34e20429755598a73d752dc6ae3aa5894942b6fd4b"
 
 [[packages.wheels]]
-name = "uv_build-0.13.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
-upload-time = 2026-10-20 15:10:51.242025+00:00
-url = "https://files.pythonhosted.org/packages/75/56/6aa66ee1a54d5f6cf2b79b7d116fa7861947f35e3e96a0d3ffe214bc1219/uv_build-0.13.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
-size = 1339330
+name = "uv_build-0.13.6-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+upload-time = 2026-10-27 00:45:09.462059+00:00
+url = "https://files.pythonhosted.org/packages/de/43/b2fb76e750ad2b0e3d229f96e066c62bd237db4f85f542b15476345ab82d/uv_build-0.13.6-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+size = 1336304
 
 [packages.wheels.hashes]
-sha256 = "849366bcc37792fe1a8a7ef29df6b9330f22d50dac1b61708920cd99a220efde"
+sha256 = "b23bbf1393acb47c1bd434f79daa91c158a14a504894485b5a9948f68d63170b"
 
 [[packages]]
 name = "wcwidth"
@@ -532,7 +532,7 @@ sha256 = "901eace6d2dd25ebb917d0ce5db18e5c537e1504c905cf32f0d006c12098b05d"
 
 [tool.nab]
 nab-version = "0.0.23"
-created-at = 2026-11-03 15:50:37.796218+00:00
+created-at = 2026-11-04 01:11:22.188963+00:00
 command-line = [
     "nab",
     "lock",
