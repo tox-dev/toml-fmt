@@ -28,3 +28,13 @@ updates:
       - skip news
     cooldown:
       default-days: 7
+  - package-ecosystem: cargo
+    directory: /
+    patterns:
+      - '*'
+    multi-ecosystem-group: dependencies
+    labels:
+      - dependencies
+      - skip news
+    cooldown:
+      default-days: 7

@@ -10,9 +10,8 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    env:
-      RELEASE_CREATOR_CUTOFF: '2026-10-26T18:24:46Z'
-      UV_BUILD_CUTOFF: '2026-10-20T15:11:07Z'
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - name: 📥 Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,22 +30,22 @@ jobs:
         run: |
           tox r -e readme -c pyproject-fmt
           tox r -e readme -c tox-toml-fmt
-      - name: 📦 Bump dependencies
-        run: |
-          uvx bump-deps-index -i https://pypi.org/simple -f pyproject.toml tox.toml
-          uvx bump-deps-index -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
-          uvx bump-deps-index -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
-          uvx bump-deps-index -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
       - name: ⚙️ Set dependency age cutoff
         id: cutoff
         run: printf 'value=%s\n' "$(date --utc --date='7 days ago' '+%Y-%m-%dT%H:%M:%SZ')" >>"$GITHUB_OUTPUT"
+      - name: 📦 Bump dependencies
+        env:
+          CUTOFF: ${{ steps.cutoff.outputs.value }}
+        run: |
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f pyproject.toml tox.toml
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f pyproject-fmt/pyproject.toml pyproject-fmt/tox.toml
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f tox-toml-fmt/pyproject.toml tox-toml-fmt/tox.toml
+          uvx 'bump-deps-index>=1.18' --exclude-newer "$CUTOFF" -i https://pypi.org/simple -f toml-fmt-common/pyproject.toml toml-fmt-common/tox.toml
       - name: 🔒 Refresh workspace lock
         env:
           UV_EXCLUDE_NEWER: ${{ steps.cutoff.outputs.value }}
         run: |
-          uv lock --upgrade \
-            --exclude-newer-package "release-creator=$RELEASE_CREATOR_CUTOFF" \
-            --exclude-newer-package "uv-build=$UV_BUILD_CUTOFF"
+          uv lock --upgrade
       - name: 🔒 Make workspace lock usable without a cutoff
         run: uv lock
       - name: 📦 Install locked release tools
@@ -57,78 +56,36 @@ jobs:
       - name: 🧹 Run repository hooks
         run: '"$RUNNER_TEMP/release-tools/bin/prek" run --all-files'
       - name: 📝 Save the changes
-        run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
-      - name: 📤 Upload Python patch
+        run: git diff HEAD --binary >"$RUNNER_TEMP/maintenance.patch"
+      - name: 📤 Upload maintenance patch
+        id: upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: python-patch
-          path: ${{ runner.temp }}/changes.patch
+          name: maintenance-patch
+          path: ${{ runner.temp }}/maintenance.patch
           if-no-files-found: error
   python-pr:
     name: 🔀 Open Python dependencies PR
     needs: python
-    uses: $/.github/workflows/app-pr.yaml
+    uses: tox-dev/github-workflows/.github/workflows/open-maintenance-pr.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     with:
-      kind: python
+      artifact-id: ${{ needs.python.outputs.artifact-id }}
+      allowed-paths: |
+        pyproject.toml
+        .pre-commit-config.yaml
+        pylock.toml
+        uv.lock
+        tox.toml
+        pyproject-fmt/pyproject.toml
+        pyproject-fmt/tox.toml
+        tox-toml-fmt/pyproject.toml
+        tox-toml-fmt/tox.toml
+        toml-fmt-common/pyproject.toml
+        toml-fmt-common/tox.toml
       branch: update-python-dependencies
       title: Update Python dependencies
       body: Update dependency constraints from the scheduled scan.
-    secrets:
-      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-    permissions:
-      contents: read
-  rust:
-    name: 📦 Bump Rust dependencies
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - name: 📥 Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
-      - name: 📦 Update Cargo.toml dependencies
-        run: |
-          cargo install cargo-edit --version 0.13.13 --locked
-          cargo upgrade --incompatible
-      - name: 🔒 Update Cargo.lock
-        run: cargo update
-      - name: 🔍 Check for a compatible cargo-edit update
-        id: cargo-edit
-        run: |
-          set -euo pipefail
-          metadata=$(curl -fsSL -H 'User-Agent: toml-fmt-updater' https://crates.io/api/v1/crates/cargo-edit)
-          candidate=$(jq -ce '.versions | map({num, rust_version, yanked})' <<<"$metadata" | python3 tasks/update_cargo_edit.py candidate --rust-version "$(rustc --version | cut -d ' ' -f 2)")
-          if test -n "$candidate"; then
-            printf 'version=%s\n' "$candidate" >>"$GITHUB_OUTPUT"
-          fi
-      - name: 📦 Update the compatible cargo-edit pin
-        if: steps.cargo-edit.outputs.version != ''
-        env:
-          VERSION: ${{ steps.cargo-edit.outputs.version }}
-        run: |
-          set -euo pipefail
-          cargo install cargo-edit --version "$VERSION" --locked --root "$RUNNER_TEMP/cargo-edit-candidate"
-          python3 tasks/update_cargo_edit.py update "$VERSION"
-      - name: 📝 Save the changes
-        run: git diff HEAD --binary >"$RUNNER_TEMP/changes.patch"
-      - name: 📤 Upload Rust patch
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: rust-patch
-          path: ${{ runner.temp }}/changes.patch
-          if-no-files-found: error
-  rust-pr:
-    name: 🔀 Open Rust dependencies PR
-    needs: rust
-    uses: $/.github/workflows/app-pr.yaml
-    with:
-      kind: rust
-      branch: update-rust-dependencies
-      title: Update Rust dependencies
-      body: Update Cargo manifests and the lockfile from the scheduled scan.
+      labels: skip news
     secrets:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
     permissions:
