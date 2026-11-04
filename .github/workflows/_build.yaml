@@ -54,7 +54,7 @@ jobs:
         id: source-date-epoch
         run: echo "value=$(git log -1 --format=%ct)" >>"$GITHUB_OUTPUT"
       - name: 🐍 Set up Python
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         env:
           UV_VENV_SEED: "true"
         with:
@@ -143,7 +143,7 @@ jobs:
           docker-options: --env SOURCE_DATE_EPOCH
           sccache: ${{ !inputs.release-build }}
       - name: 🐍 Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           ignore-empty-workdir: true
           version: latest-known
@@ -179,7 +179,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.bump.outputs.source-artifact-id }}
       - name: 🐍 Set up Python
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         env:
           UV_VENV_SEED: "true"
         with:
@@ -196,7 +196,7 @@ jobs:
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter || '3.15' }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
       - name: 🐍 Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           ignore-empty-workdir: true
           version: latest-known
@@ -239,7 +239,7 @@ jobs:
           args: -m ${{ inputs.package-name }}/Cargo.toml --locked --release --out dist --interpreter ${{ matrix.platform.interpreter }} ${{ matrix.platform.extra || '' }} --target-dir target
           sccache: ${{ !inputs.release-build }}
       - name: 🐍 Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           ignore-empty-workdir: true
           version: latest-known
@@ -267,7 +267,7 @@ jobs:
         with:
           artifact-ids: ${{ needs.bump.outputs.source-artifact-id }}
       - name: 🐍 Install uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           ignore-empty-workdir: true
           version: latest-known
