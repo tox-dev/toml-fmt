@@ -13,11 +13,7 @@ on:
       - "Cargo.lock"
       - "rust-toolchain.toml"
       - ".github/workflows/tox_toml_fmt_build.yaml"
-      - ".github/workflows/_build.yaml"
   workflow_call:
-    outputs:
-      version:
-        value: ${{ jobs.build.outputs.version }}
   schedule:
     - cron: "0 8 * * *"
 concurrency:
@@ -53,15 +49,39 @@ jobs:
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
               - '.github/workflows/tox_toml_fmt_build.yaml'
-              - '.github/workflows/_build.yaml'
+  pre-commit:
+    name: 🧹 Run pre-commit
+    needs: changes
+    if: ${{ needs.changes.outputs.run == 'true' && !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: 📥 Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: 🦀 Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - name: 🐍 Install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: latest-known
+          python-version: "3.15"
+          enable-cache: false
+      - name: 🧹 Run pre-commit
+        uses: tox-dev/action-pre-commit-uv@ae5b217f46f65d48b20a76b902d7950c745171af # v1.1.1
   build:
     name: 🏗️ Build distributions
     needs: changes
-    uses: $/.github/workflows/_build.yaml
+    if: ${{ needs.changes.outputs.run == 'true' }}
+    uses: tox-dev/github-workflows/.github/workflows/build-maturin-wheels.yaml@bceb5c005e19823dc8835f536f53f172ae223927 # 6.5.0
     with:
       package-name: tox-toml-fmt
-      run: ${{ needs.changes.outputs.run }}
-      release-build: ${{ startsWith(github.ref, 'refs/tags/') }}
+      package-path: tox-toml-fmt
+      matrix: >-
+        [ {"os": "ubuntu-24.04", "target": "x86_64", "artifact": "linux-x86_64", "manylinux": "2_28", "python": "3.15 3.14t pypy3.11"}, {"os": "ubuntu-24.04", "target": "x86_64-unknown-linux-musl", "artifact": "linux-x86_64-musl", "manylinux": "musllinux_1_2", "python": "3.15 3.14t"}, {"os": "ubuntu-24.04", "target": "aarch64", "artifact": "linux-aarch64", "manylinux": "2_28", "python": "3.15 3.14t", "args": "--zig"}, {"os": "ubuntu-24.04", "target": "aarch64-unknown-linux-musl", "artifact": "linux-aarch64-musl", "manylinux": "musllinux_1_2", "python": "3.15 3.14t", "args": "--zig"}, {"os": "ubuntu-24.04", "target": "riscv64gc-unknown-linux-gnu", "artifact": "linux-riscv64gc", "manylinux": "2_31"}, {"os": "ubuntu-24.04", "target": "x86_64", "artifact": "linux-x86_64-315t", "manylinux": "2_28", "python": "3.15t", "args": "--no-default-features --features extension-module"}, {"os": "ubuntu-24.04", "target": "x86_64-unknown-linux-musl", "artifact": "linux-x86_64-musl-315t", "manylinux": "musllinux_1_2", "python": "3.15t", "args": "--no-default-features --features extension-module"}, {"os": "ubuntu-24.04", "target": "aarch64", "artifact": "linux-aarch64-315t", "manylinux": "2_28", "python": "3.15t", "args": "--no-default-features --features extension-module --zig"}, {"os": "ubuntu-24.04", "target": "aarch64-unknown-linux-musl", "artifact": "linux-aarch64-musl-315t", "manylinux": "musllinux_1_2", "python": "3.15t", "args": "--no-default-features --features extension-module --zig"}, {"os": "windows-2025", "target": "x64", "artifact": "windows-x64", "python": "3.15 3.14t"}, {"os": "windows-11-arm", "target": "aarch64", "artifact": "windows-aarch64", "python": "3.15 3.14t"}, {"os": "windows-2025", "target": "x64", "artifact": "windows-x64-315t", "python": "3.15t", "args": "--no-default-features --features extension-module"}, {"os": "windows-11-arm", "target": "aarch64", "artifact": "windows-aarch64-315t", "python": "3.15t", "args": "--no-default-features --features extension-module"}, {"os": "macos-15", "target": "x86_64", "artifact": "macos-x86_64", "python": "3.15 3.14t pypy3.11"}, {"os": "macos-15", "target": "aarch64", "artifact": "macos-aarch64", "python": "3.15 3.14t pypy3.11"}, {"os": "macos-15", "target": "x86_64", "artifact": "macos-x86_64-315t", "python": "3.15t", "args": "--no-default-features --features extension-module"}, {"os": "macos-15", "target": "aarch64", "artifact": "macos-aarch64-315t", "python": "3.15t", "args": "--no-default-features --features extension-module"} ]
+      pre-build-command: ${{ !startsWith(github.ref, 'refs/tags/') && 'cargo set-version -p tox-toml-fmt --bump patch' || '' }}
+      post-build-command: uv run --no-project tox-toml-fmt/build_backend.py dist
     permissions:
       contents: read
-      pull-requests: read
