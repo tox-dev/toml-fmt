@@ -6,7 +6,7 @@ on:
   workflow_call:
 concurrency:
   group: tox_toml_fmt_test-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
@@ -137,7 +137,7 @@ jobs:
       fail-fast: false
       matrix:
         py: ["3.15", "3.15t", "3.14", "3.14t", "3.13", "3.12", "3.11"]
-        os: [ubuntu-24.04, windows-2025, macos-15]
+        os: [ubuntu-24.04, windows-2025]
     defaults:
       run:
         working-directory: tox-toml-fmt

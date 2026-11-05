@@ -14,8 +14,6 @@ on:
       - "rust-toolchain.toml"
       - ".github/workflows/tox_toml_fmt_build.yaml"
   workflow_call:
-  schedule:
-    - cron: "0 8 * * *"
 concurrency:
   group: tox_toml_fmt_build-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -75,7 +73,7 @@ jobs:
     name: 🏗️ Build distributions
     needs: changes
     if: ${{ needs.changes.outputs.run == 'true' }}
-    uses: tox-dev/github-workflows/.github/workflows/build-maturin-wheels.yaml@211c2575e3dc9cce9a3e0dc1e2fdcd4a13f40abd # 6.5.3
+    uses: tox-dev/github-workflows/.github/workflows/build-maturin-wheels.yaml@13381289334b15375958be7f7438f3c3d860e575 # 6.5.5
     with:
       package-name: tox-toml-fmt
       package-path: tox-toml-fmt
