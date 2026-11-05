@@ -13,16 +13,16 @@ classifiers = [
 dependencies = []
 
 [dependency-groups]
-build = [ "cython>=3", "maturin>=1.15,<2", "setuptools>=84.2.1", "uv-build>=0.13.4,<0.14" ]
+build = [ "cython>=3.3", "maturin>=1.15,<2", "setuptools>=84.2.1", "uv-build>=0.13.6,<0.14" ]
 release-build = [
   "maturin>=1.15,<2",
-  "uv-build>=0.13.4,<0.14",
+  "uv-build>=0.13.6,<0.14",
 ]
 release-notes = [
   "release-creator>=4.1",
 ]
 release-prepare = [
-  "prek>=0.3",
+  "prek>=0.5.7",
   "release-creator>=4.1",
 ]
 

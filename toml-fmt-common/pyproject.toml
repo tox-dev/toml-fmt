@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "uv_build"
-requires = [ "uv-build<0.14,>=0.13.4" ]
+requires = [ "uv-build<0.14,>=0.13.6" ]
 
 [project]
 name = "toml-fmt-common"
