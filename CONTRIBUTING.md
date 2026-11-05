@@ -241,3 +241,7 @@ tox run -e docs -c tox-toml-fmt/tox.toml
 
 Run the checks for each changed layer. A shared Rust change needs the workspace tests and both formatter tox suites. A
 documentation change needs both README generation and the affected docs build. Keep commits limited to one concern.
+
+## Tests
+
+Add a test for every new feature and bug fix. A change without a test needs a reason in the pull request description.
