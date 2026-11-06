@@ -13,20 +13,31 @@ on:
         type: choice
         options: [auto, major, minor, patch]
         default: auto
+  workflow_call:
+    inputs:
+      package:
+        description: Distribution whose release to assemble
+        type: string
+        required: true
+      dry-run:
+        description: Assemble the release without pushing, for the pull request gate
+        type: boolean
+        required: true
 permissions: {}
 concurrency:
-  group: prepare-toml-fmt
+  group: prepare-toml-fmt${{ inputs.dry-run && format('-dry-run-{0}-{1}', inputs.package, github.ref) || '' }}
   cancel-in-progress: false
 jobs:
   prepare:
     name: 🏷️ Prepare release
     if: github.repository == 'tox-dev/toml-fmt'
-    uses: tox-dev/github-workflows/.github/workflows/prepare-release-creator.yaml@211c2575e3dc9cce9a3e0dc1e2fdcd4a13f40abd # 6.5.3
+    uses: tox-dev/github-workflows/.github/workflows/prepare-release-creator.yaml@2a3b863f4563ce9891d2cee1ed381b6f82654836 # 6.6.0
     permissions:
       contents: read
       pull-requests: read
     with:
-      bump: ${{ inputs.bump }}
+      bump: ${{ inputs.bump || 'auto' }}
+      dry-run: ${{ inputs.dry-run == true }}
       package: ${{ inputs.package }}
       tag-format: "{package}/{version}"
       annotated: true

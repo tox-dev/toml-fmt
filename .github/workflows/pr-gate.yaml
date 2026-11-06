@@ -74,10 +74,23 @@ jobs:
     uses: $/.github/workflows/tox_toml_fmt_test.yaml
     permissions:
       contents: read
+  release:
+    name: 🏷️ Release dry run ${{ matrix.package }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [pyproject-fmt, tox-toml-fmt]
+    uses: $/.github/workflows/prepare-release.yaml
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      package: ${{ matrix.package }}
+      dry-run: true
   gate:
     name: 🚦 Required checks pass
     if: always()
-    needs: [tasks, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test]
+    needs: [tasks, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test, release]
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
