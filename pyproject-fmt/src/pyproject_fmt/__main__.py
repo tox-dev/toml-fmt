@@ -26,7 +26,6 @@ class _PyProjectFmtNamespace(FmtNamespace):
 class _PyProjectFormatter(TOMLFormatter[_PyProjectFmtNamespace]):
     # Bind the shared CLI to the pyproject-fmt Rust extension.
     def __init__(self) -> None:
-        # Start with the namespace argparse fills for each input.
         super().__init__(_PyProjectFmtNamespace())
 
     @property

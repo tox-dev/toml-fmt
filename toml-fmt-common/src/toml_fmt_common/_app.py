@@ -59,7 +59,6 @@ _NAMESPACE_T = TypeVar("_NAMESPACE_T", bound=FmtNamespace)
 class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
     # Supply tool-specific hooks to the shared CLI.
     def __init__(self, opt: _NAMESPACE_T) -> None:
-        # Start with the namespace argparse fills for each input.
         self.opt: _NAMESPACE_T = opt
 
     @property
@@ -93,10 +92,6 @@ class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
         #
         # A second reader of an older TOML would drop a file's own configuration on a value it cannot
         # read, and format the file as though none had been written.
-        #
-        # :return: the settings, or ``None`` where the text writes no such table
-        # :raises SyntaxError: if the text is not a TOML document
-        # :raises ValueError: if a setting is written in a form no setting takes
         raise NotImplementedError
 
     @staticmethod

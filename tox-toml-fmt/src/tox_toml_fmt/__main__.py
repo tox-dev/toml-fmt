@@ -29,7 +29,6 @@ class _ToxTOMLNamespace(FmtNamespace):
 class _ToxTOMLFormatter(TOMLFormatter[_ToxTOMLNamespace]):
     # Bind the shared CLI to the tox-toml-fmt Rust extension.
     def __init__(self) -> None:
-        # Start with the namespace argparse fills for each input.
         super().__init__(_ToxTOMLNamespace())
 
     @property
