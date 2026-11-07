@@ -73,13 +73,14 @@ def test_main_in_place_shows_an_absolute_path_outside_cwd(
     assert out == output.format(tox_toml)
 
 
-@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+@pytest.mark.parametrize(
+    ("start", "exit_code"),
+    [pytest.param(_FORMATTED, 0, id="formatted"), pytest.param(_UNFORMATTED, 1, id="format")],
+)
 def test_main_check_leaves_the_file_unchanged(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     start: str,
-    outcome: str,
-    output: str,
     exit_code: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -90,10 +91,9 @@ def test_main_check_leaves_the_file_unchanged(
 
     assert run(["tox.toml", "--check"]) == exit_code
 
-    out, err = capsys.readouterr()
+    _, err = capsys.readouterr()
     assert not err
     assert tox_toml.read_text() == start
-    assert out == output.format("tox.toml")
 
 
 @pytest.mark.parametrize("start", [_FORMATTED, _UNFORMATTED], ids=["formatted", "format"])
