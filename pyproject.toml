@@ -62,7 +62,7 @@ lint.per-file-ignores."**/build_backend.py" = [
   "print",                        # the CLI reports what it patched
   "undocumented-public-function", # the build-backend hooks are PEP 517 contract, documented at module level
 ]
-lint.per-file-ignores."**/src/toml_fmt_common/__init__.py" = [
+lint.per-file-ignores."**/src/toml_fmt_common/_app.py" = [
   "print", # the CLI reports what it formatted on stdout
 ]
 lint.per-file-ignores."**/tests/**/*.py" = [
