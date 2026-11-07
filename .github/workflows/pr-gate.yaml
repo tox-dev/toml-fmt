@@ -87,10 +87,15 @@ jobs:
     with:
       package: ${{ matrix.package }}
       dry-run: true
+  hooks:
+    name: 🧹 Hooks under the cooldown
+    uses: tox-dev/github-workflows/.github/workflows/cooled-hooks.yaml@e1361e2efa1e9dd9705bb9be719d923cd9154707 # 6.7.1
+    permissions:
+      contents: read
   gate:
     name: 🚦 Required checks pass
     if: always()
-    needs: [tasks, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test, release]
+    needs: [tasks, common, toml-doc, shared-build, shared-test, pyproject-build, pyproject-test, tox-build, tox-test, release, hooks]
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     steps:
