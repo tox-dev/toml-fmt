@@ -16,7 +16,7 @@ def test_build_parser_uses_program_name() -> None:
 
 _FORMATTED: Final[str] = 'requires = [ "tox>=4.22" ]\n'
 _UNFORMATTED: Final[str] = "requires = ['tox>=4.22']\n"
-_CASES: Final = [
+_CASES: Final[list[pytest.ParameterSet]] = [
     pytest.param(_FORMATTED, _FORMATTED, "no change for {0}\n", 0, id="formatted"),
     pytest.param(
         _UNFORMATTED,

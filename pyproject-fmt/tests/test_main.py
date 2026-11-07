@@ -42,7 +42,7 @@ def test_the_default_max_supported_python_trails_the_newest_classifier_by_one() 
 _FORMATTED: Final[str] = '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n'
 _UNFORMATTED: Final[str] = '[build-system]\nrequires = ["hatchling>=0.14.0"]'
 _REFORMATTED: Final[str] = '[build-system]\nrequires = [ "hatchling>=0.14" ]\n'
-_CASES: Final = [
+_CASES: Final[list[pytest.ParameterSet]] = [
     pytest.param(_FORMATTED, _FORMATTED, "no change for {0}\n", 0, id="formatted"),
     pytest.param(
         _UNFORMATTED,

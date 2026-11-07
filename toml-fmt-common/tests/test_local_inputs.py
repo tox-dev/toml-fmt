@@ -22,7 +22,7 @@ def _load() -> tuple[Mapping[str, tuple[str, ...]], Callable[[str, list[str]], b
     return module._LOCAL_INPUTS, module._affects
 
 
-LOCAL_INPUTS, affects = _load()
+_LOCAL_INPUTS, _AFFECTS = _load()
 
 
 @pytest.mark.parametrize("project", ["pyproject-fmt", "tox-toml-fmt"], ids=["pyproject-fmt", "tox-toml-fmt"])
@@ -39,7 +39,7 @@ LOCAL_INPUTS, affects = _load()
     ],
 )
 def test_local_inputs_shared_by_both_wheels(project: str, path: str, reaches: bool) -> None:
-    assert affects(project, [path]) is reaches
+    assert _AFFECTS(project, [path]) is reaches
 
 
 @pytest.mark.parametrize(
@@ -53,7 +53,7 @@ def test_local_inputs_shared_by_both_wheels(project: str, path: str, reaches: bo
     ],
 )
 def test_local_inputs_per_package(project: str, path: str, reaches: bool) -> None:
-    assert affects(project, [path]) is reaches
+    assert _AFFECTS(project, [path]) is reaches
 
 
 @pytest.mark.parametrize(
@@ -66,12 +66,12 @@ def test_local_inputs_per_package(project: str, path: str, reaches: bool) -> Non
     ],
 )
 def test_local_inputs_of_the_python_library(path: str, reaches: bool) -> None:
-    assert affects("toml-fmt-common", [path]) is reaches
+    assert _AFFECTS("toml-fmt-common", [path]) is reaches
 
 
 def test_every_project_the_changelog_accepts_has_ownership() -> None:
     # The changelog reads its choices from the same mapping, so neither can name what the other does not.
-    assert set(LOCAL_INPUTS) == {"pyproject-fmt", "tox-toml-fmt", "toml-fmt-common"}
+    assert set(_LOCAL_INPUTS) == {"pyproject-fmt", "tox-toml-fmt", "toml-fmt-common"}
 
 
 @pytest.mark.parametrize(
@@ -82,7 +82,7 @@ def test_every_project_the_changelog_accepts_has_ownership() -> None:
     ],
 )
 def test_affects_reads_every_changed_file(changed: list[str], reaches: bool) -> None:
-    assert affects("tox-toml-fmt", changed) is reaches
+    assert _AFFECTS("tox-toml-fmt", changed) is reaches
 
 
 @pytest.mark.parametrize("kind", ["build", "test"], ids=["build", "test"])
@@ -91,7 +91,7 @@ def test_every_workflow_watches_exactly_the_local_inputs(project: str, kind: str
     # A wheel rebuilds when what it ships changes, and watches nothing it does not ship.
     workflow = (_ROOT / ".github" / "workflows" / f"{project.replace('-', '_')}_{kind}.yaml").read_text()
 
-    assert _watched(workflow) == set(LOCAL_INPUTS[project])
+    assert _watched(workflow) == set(_LOCAL_INPUTS[project])
 
 
 def _watched(workflow: str) -> set[str]:
