@@ -9,7 +9,7 @@ import pypandoc
 from release_creator.changelog.preview import render_preview
 
 
-def main(package: str) -> None:
+def _main(package: str) -> None:
     lines = render_preview(Path("../CHANGELOG.md"), package, Path("../changelog.d") / package).splitlines()
     anchors: dict[int, str] = {}
     for index, line in enumerate(lines):
@@ -39,7 +39,7 @@ def main(package: str) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    _main(sys.argv[1])
 
 
 __all__ = []

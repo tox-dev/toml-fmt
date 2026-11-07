@@ -60,8 +60,18 @@ _MIN_PYTHON: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def main(*, check: bool) -> None:
-    places = written_places(_newest_candidate(), _oldest_supported())
+def _main(*, check: bool) -> None:
+    # The newest release both PyPI and Python itself have got to: a classifier naming it, and a
+    # release candidate published.
+    #
+    # A release still in alpha or beta is one whose own behavior is still moving, so a project saying
+    # it runs there says more than it knows. A candidate PyPI publishes no classifier for is one no
+    # project can name, since an upload carrying an unknown classifier is turned away.
+    prefix = f"Programming Language :: Python :: {_MAJOR}."
+    classified = {
+        int(minor) for name in classifiers if name.startswith(prefix) and (minor := name.removeprefix(prefix)).isdigit()
+    }
+    places = written_places(max(with_a_candidate() & classified), _oldest_supported())
     drifted = [(place, said) for place in places if (said := place.said()) != place.spelling]
     if not drifted:
         print(f"the defaults name {_MAJOR}.{places[-1].minor} through {_MAJOR}.{places[0].minor}")
@@ -74,28 +84,10 @@ def main(*, check: bool) -> None:
         place.write(said)
 
 
-def _newest_candidate() -> int:
-    # The newest release both PyPI and Python itself have got to: a classifier naming it, and a
-    # release candidate published.
-    #
-    # A release still in alpha or beta is one whose own behavior is still moving, so a project saying
-    # it runs there says more than it knows. A candidate PyPI publishes no classifier for is one no
-    # project can name, since an upload carrying an unknown classifier is turned away.
-    return max(with_a_candidate() & _with_a_classifier())
-
-
 def with_a_candidate() -> set[int]:
     # The releases Python has published a candidate for.
     released = fetch("https://www.python.org/api/v2/downloads/release/?is_published=true")
     return {int(found["minor"]) for release in released if (found := _RELEASE_CANDIDATE.match(release["name"]))}
-
-
-def _with_a_classifier() -> set[int]:
-    # The releases PyPI publishes a classifier for.
-    prefix = f"Programming Language :: Python :: {_MAJOR}."
-    return {
-        int(minor) for name in classifiers if name.startswith(prefix) and (minor := name.removeprefix(prefix)).isdigit()
-    }
 
 
 def _oldest_supported() -> int:
@@ -177,7 +169,7 @@ class Place:
 
 
 if __name__ == "__main__":
-    main(check="--check" in sys.argv[1:])
+    _main(check="--check" in sys.argv[1:])
 
 
 __all__ = [

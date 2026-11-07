@@ -62,8 +62,8 @@ def run(*command: str, at: Path | None = None) -> None:
 
 if __name__ == "__main__":
     try:
-        _, package = sys.argv
+        _, _PACKAGE = sys.argv
     except ValueError:
         print("Usage: check_sdist.py <package>")
         sys.exit(1)
-    main(package)
+    main(_PACKAGE)

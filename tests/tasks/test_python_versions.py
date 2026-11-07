@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 def test_with_a_candidate_accepts_only_release_candidates(mocker: MockerFixture) -> None:
     mocker.patch(
         "tasks.python_versions.fetch",
+        autospec=True,
         return_value=[
             {"name": "Python 3.15.0rc1"},
             {"name": "Python 3.16.0b2"},
