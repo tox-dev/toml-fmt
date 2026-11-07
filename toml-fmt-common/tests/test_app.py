@@ -57,7 +57,7 @@ class Dumb(TOMLFormatter[DumpNamespace]):
     @staticmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
         parser.add_argument("extra", help="extra value")
-        parser.add_argument("-t", "--tuple-magic", default=(), type=lambda t: tuple(t.split(".")))
+        parser.add_argument("-t", "--tuple-magic", default=(), type=lambda text: tuple(text.split(".")))
         parser.add_argument("--loud", action="store_true", help="enable verbose output")
 
     @staticmethod
@@ -142,7 +142,7 @@ def test_a_formatted_file_is_written_back_and_the_change_printed(
     exit_code = run(Dumb(), ["E", str(dumb)])
 
     assert exit_code == 1
-    assert dumb.read_text() == start + "\n" + "\n".join(added)
+    assert dumb.read_text() == "\n".join([start, *added])
     out, err = capsys.readouterr()
     assert not err
     assert out.splitlines() == [
@@ -270,7 +270,7 @@ def test_every_input_is_formatted_after_an_earlier_one_is_rejected(tmp_path: Pat
     for path in (first, second):
         path.parent.mkdir()
         path.write_text("ok = 1")
-    mocker.patch.object(Dumb, "format", side_effect=[ValueError("bad version"), "ok = 2"])
+    mocker.patch.object(Dumb, "format", autospec=True, side_effect=[ValueError("bad version"), "ok = 2"])
 
     assert run(Dumb(), ["E", str(first), str(second), "--no-print-diff"]) == 1
 
@@ -335,7 +335,7 @@ def test_a_path_the_run_cannot_use_is_named_in_the_error(
     assert not out
 
 
-@pytest.mark.parametrize("mode", ["--check", "--stdout"])
+@pytest.mark.parametrize("mode", ["--check", "--stdout"], ids=["check", "stdout"])
 def test_a_read_only_path_is_fine_for_a_run_that_writes_nothing(
     capsys: pytest.CaptureFixture[str], target: Path, monkeypatch: pytest.MonkeyPatch, mode: str
 ) -> None:
@@ -550,7 +550,7 @@ def test_format_rejection_reported(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     (tmp_path / "dumb.toml").write_text("ok = 1")
-    mocker.patch.object(Dumb, "format", side_effect=ValueError("bad version"))
+    mocker.patch.object(Dumb, "format", autospec=True, side_effect=ValueError("bad version"))
 
     assert run(Dumb(), ["E", "dumb.toml"]) == 1
 
@@ -564,7 +564,7 @@ def test_format_rejection_reported_for_stdin(
     mocker: MockerFixture,
 ) -> None:
     mocker.patch("sys.stdin", StringIO("ok = 1"))
-    mocker.patch.object(Dumb, "format", side_effect=ValueError("bad version"))
+    mocker.patch.object(Dumb, "format", autospec=True, side_effect=ValueError("bad version"))
 
     assert run(Dumb(), ["E", "-"]) == 1
 
@@ -650,10 +650,16 @@ def test_a_setting_written_in_a_form_no_setting_takes(tmp_path: Path, capsys: py
     assert dumb.read_text() == start
 
 
+def test_a_flag_the_file_turns_on_is_read(tmp_path: Path) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("[start.sub]\nextra = 'B'\nloud = true\n")
+
+    assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 1
+
+
 @pytest.mark.parametrize(
     ("setting", "message"),
     [
-        pytest.param("loud = true", None, id="a-flag-the-file-turns-on"),
         pytest.param('loud = "yes"', "is not written as bool", id="a-flag-written-as-text"),
         pytest.param("indent = true", "is not written as int", id="a-count-written-as-a-flag"),
         pytest.param("louder = true", "unknown setting", id="a-setting-of-no-name"),
@@ -664,14 +670,11 @@ def test_a_setting_read_against_the_type_its_flag_takes(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     setting: str,
-    message: str | None,
+    message: str,
 ) -> None:
     dumb = tmp_path / "dumb.toml"
     dumb.write_text(f"[start.sub]\nextra = 'B'\n{setting}\n")
 
-    if message is None:
-        assert run(Dumb(), ["E", str(dumb), "--no-print-diff"]) == 1
-        return
     with pytest.raises(SystemExit):
         run(Dumb(), ["E", str(dumb)])
     assert message in capsys.readouterr().err
