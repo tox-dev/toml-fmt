@@ -28,16 +28,6 @@ _BACKEND: Final[Path] = Path(__file__).parents[1] / "build_backend.py"
 _MODULE: Final[str] = "pyproject_fmt"
 _WHEEL: Final[str] = f"{_MODULE}-0-py3-none-any.whl"
 _SDIST: Final[str] = f"{_MODULE}-0.tar.gz"
-_METADATA: Final[str] = """\
-Metadata-Version: 2.4
-Name: pyproject-fmt
-Version: 0
-Description-Content-Type: text/markdown
-
-# pyproject-fmt
-
-Format your TOML.
-"""
 _SDIST_HELD: Final[bytes] = b'[project]\nname = "pyproject-fmt"\n'
 
 
@@ -237,7 +227,19 @@ def _write_wheel(
 ) -> str:
     with ZipFile(Path(wheel_directory) / _WHEEL, "w") as archive:
         archive.writestr(f"{_MODULE}/__main__.py", "import toml_fmt_common\n")
-        archive.writestr(f"{_MODULE}-0.dist-info/METADATA", _METADATA)
+        archive.writestr(
+            f"{_MODULE}-0.dist-info/METADATA",
+            """\
+Metadata-Version: 2.4
+Name: pyproject-fmt
+Version: 0
+Description-Content-Type: text/markdown
+
+# pyproject-fmt
+
+Format your TOML.
+""",
+        )
         archive.writestr(f"{_MODULE}-0.dist-info/RECORD", "")
     return _WHEEL
 
