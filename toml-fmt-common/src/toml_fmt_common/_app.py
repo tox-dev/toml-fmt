@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from importlib.metadata import version
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final, Generic, NamedTuple, Protocol, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Final, Generic, NamedTuple, Protocol, TypeAlias, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 class ArgumentGroup(Protocol):
     # Expose the argument-group operation formatter plugins use.
-    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Action:
+    def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
         # Register one argument and return its parser action.
         ...
 
@@ -346,7 +346,7 @@ class _ArgumentRecorder:
     group: ArgumentGroup
     actions: list[Action] = field(default_factory=list)
 
-    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Action:
+    def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
         action = self.group.add_argument(*name_or_flags, **kwargs)
         self.actions.append(action)
         return action
