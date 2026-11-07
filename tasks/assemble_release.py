@@ -69,7 +69,8 @@ def assemble(root: Path, package: str, version: str, date: str) -> None:
                 *items,
                 "",
             ))
-    changelog.write_text(history.replace(heading, heading + "\n".join(release) + "\n", 1), encoding="utf-8")
+    section = "".join(f"{line}\n" for line in release)
+    changelog.write_text(history.replace(heading, f"{heading}{section}", 1), encoding="utf-8")
     for fragment in fragments:
         fragment.unlink()
 

@@ -176,7 +176,7 @@ def _rewrite(wheel: Path, changed: dict[str, bytes]) -> None:
         digest = urlsafe_b64encode(sha256(data).digest()).rstrip(b"=").decode()
         record.append(f"{name},sha256={digest},{len(data)}")
     record.append(f"{dist_info}/RECORD,,")
-    entries[f"{dist_info}/RECORD"] = ("\n".join(record) + "\n").encode()
+    entries[f"{dist_info}/RECORD"] = "".join(f"{line}\n" for line in record).encode()
 
     source_epoch = _source_epoch()
     zip_time = (
