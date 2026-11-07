@@ -26,10 +26,9 @@ if TYPE_CHECKING:
 
 
 class ArgumentGroup(Protocol):
-    """Expose the argument-group operation formatter plugins use."""
-
+    # Expose the argument-group operation formatter plugins use.
     def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
-        """Register one argument and return its parser action."""
+        # Register one argument and return its parser action.
         ...
 
 
@@ -37,8 +36,7 @@ TomlValue: TypeAlias = "bool | int | float | str | Sequence[TomlValue] | Mapping
 
 
 class FmtNamespace(Namespace):
-    """Give argparse fields the types shared by both formatters."""
-
+    # Give argparse fields the types shared by both formatters.
     inputs: list[Path | None]
     stdout: bool
     check: bool
@@ -59,71 +57,66 @@ _NAMESPACE_T = TypeVar("_NAMESPACE_T", bound=FmtNamespace)
 
 
 class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
-    """Supply tool-specific hooks to the shared CLI."""
-
+    # Supply tool-specific hooks to the shared CLI.
     def __init__(self, opt: _NAMESPACE_T) -> None:
-        """Start with the namespace argparse fills for each input."""
+        # Start with the namespace argparse fills for each input.
         self.opt: _NAMESPACE_T = opt
 
     @property
     @abstractmethod
     def prog(self) -> str:
-        """Match the distribution name used for version lookup."""
+        # Match the distribution name used for version lookup.
         raise NotImplementedError
 
     @property
     @abstractmethod
     def filename(self) -> str:
-        """Constrain positional paths and configuration discovery."""
-        raise NotImplementedError
-
-    @staticmethod
-    @abstractmethod
-    def add_format_flags(parser: ArgumentGroup) -> None:
-        """Add options that the shared settings do not cover."""
+        # Constrain positional paths and configuration discovery.
         raise NotImplementedError
 
     @property
     @abstractmethod
     def override_cli_from_section(self) -> tuple[str, ...]:
-        """Keep per-file overrides beside the tool configuration they control."""
+        # Keep per-file overrides beside the tool configuration they control.
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def add_format_flags(parser: ArgumentGroup) -> None:
+        # Add options that the shared settings do not cover.
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
-        """
-        Read the settings the text writes under a table, with the parser that reads the file itself.
-
-        A second reader of an older TOML would drop a file's own configuration on a value it cannot
-        read, and format the file as though none had been written.
-
-        :return: the settings, or ``None`` where the text writes no such table
-        :raises SyntaxError: if the text is not a TOML document
-        :raises ValueError: if a setting is written in a form no setting takes
-        """
+        # Read the settings the text writes under a table, with the parser that reads the file itself.
+        #
+        # A second reader of an older TOML would drop a file's own configuration on a value it cannot
+        # read, and format the file as though none had been written.
+        #
+        # :return: the settings, or ``None`` where the text writes no such table
+        # :raises SyntaxError: if the text is not a TOML document
+        # :raises ValueError: if a setting is written in a form no setting takes
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def format(text: str, opt: _NAMESPACE_T) -> str:
-        """Keep CLI state outside the TOML rewriting layer."""
+        # Keep CLI state outside the TOML rewriting layer.
         raise NotImplementedError
 
 
 def run(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str] | None = None) -> int:
-    """
-    Parse one option set per input and return 1 after a change or rejection.
-
-    A supplied argument list supports embedding; the console script falls back to ``sys.argv``.
-    """
+    # Parse one option set per input and return 1 after a change or rejection.
+    #
+    # A supplied argument list supports embedding; the console script falls back to ``sys.argv``.
     configs = _cli_args(formatter, sys.argv[1:] if args is None else args)
     # collect first: any() over a generator stops at the first changed input and leaves the rest unformatted
     results = [_handle_one(formatter, config) for config in configs]
     return int(any(results))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class _Config(Generic[_NAMESPACE_T]):
     toml_filename: Path | None
     toml: str
@@ -213,7 +206,7 @@ def _read_input(parser: ArgumentParser, path: Path | None) -> tuple[str, str]:
 _NON_FORMAT_KEYS: Final[frozenset[str]] = frozenset({"inputs", "stdout", "check", "no_print_diff", "config"})
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class _Constraints:
     conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
     allowed: Mapping[str, Iterable[TomlValue]]
@@ -221,7 +214,7 @@ class _Constraints:
 
 
 def _accepted_types(parser: ArgumentParser, opt: _NAMESPACE_T) -> Mapping[str, type]:
-    """Infer plugin settings from defaults because formatters can add flags outside ``SHARED_SETTINGS``."""
+    # Infer plugin settings from defaults because formatters can add flags outside ``SHARED_SETTINGS``.
     named = {setting.name(): setting.takes for setting in SHARED_SETTINGS}
     return {key: named.get(key) or _written_as(parser.get_default(key)) for key in vars(opt).keys() - _NON_FORMAT_KEYS}
 
@@ -279,11 +272,9 @@ def _load_shared_config(
 def build_cli(
     formatter: TOMLFormatter[_NAMESPACE_T],
 ) -> tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]:
-    """
-    Build the parser without reading arguments, for documentation and embedding.
-
-    The conversion mapping applies the same readers to settings loaded from TOML.
-    """
+    # Build the parser without reading arguments, for documentation and embedding.
+    #
+    # The conversion mapping applies the same readers to settings loaded from TOML.
     parser, type_conversion, _ = _make_cli(formatter)
     return parser, type_conversion
 
@@ -329,7 +320,7 @@ def _make_cli(
     # ArgumentError, so a fresh resolve of toml-fmt-common doesn't break them
     # (tox-dev/toml-fmt#355).
     format_group = _ArgumentRecorder(
-        cast("ArgumentGroup", parser.add_argument_group("formatting behavior", conflict_handler="resolve"))
+        group=cast("ArgumentGroup", parser.add_argument_group("formatting behavior", conflict_handler="resolve"))
     )
     for setting in SHARED_SETTINGS:
         setting.add_to(format_group)
@@ -349,7 +340,7 @@ def _make_cli(
     return parser, type_conversion, format_group.actions
 
 
-@dataclass
+@dataclass(kw_only=True, frozen=True, slots=True)
 class _ArgumentRecorder:
     group: ArgumentGroup
     actions: list[Action] = field(default_factory=list)
@@ -360,12 +351,11 @@ class _ArgumentRecorder:
         return action
 
 
-_COUNT_LIMIT: Final[int] = 10_000
 # A larger count asks the formatter to allocate a string no line can hold.
 
 
 def count_argument(value: TomlValue) -> int:
-    """Reject booleans and counts outside 0 through 10,000."""
+    # Reject booleans and counts outside 0 through 10,000.
     # `True` is an integer to Python, and a file that writes one there names no count
     if isinstance(value, bool) or not isinstance(value, (str, int)):
         msg = f"invalid count: {value!r}"
@@ -378,14 +368,15 @@ def count_argument(value: TomlValue) -> int:
     if count < 0:
         msg = f"invalid count: {count}, must not be negative"
         raise ArgumentTypeError(msg)
-    if count > _COUNT_LIMIT:
-        msg = f"invalid count: {count}, must be at most {_COUNT_LIMIT}"
+    count_limit: int = 10_000
+    if count > count_limit:
+        msg = f"invalid count: {count}, must be at most {count_limit}"
         raise ArgumentTypeError(msg)
     return count
 
 
 def spacing_argument(value: TomlValue) -> str:
-    r"""Accept strings because TOML settings may spell newlines as ``\n``."""
+    # Accept strings because TOML settings may spell newlines as ``\n``.
     if not isinstance(value, str):
         msg = f"invalid spacing: {value!r}"
         raise ArgumentTypeError(msg)
@@ -393,7 +384,7 @@ def spacing_argument(value: TomlValue) -> str:
 
 
 def list_argument(value: TomlValue) -> list[str]:
-    """Accept CLI comma lists and TOML string arrays through one reader."""
+    # Accept CLI comma lists and TOML string arrays through one reader.
     if isinstance(value, str):
         return [name for part in _split_outside_quotes(value) if (name := part.strip())]
     read = [item for item in value if isinstance(item, str)] if isinstance(value, Sequence) else []
@@ -404,7 +395,7 @@ def list_argument(value: TomlValue) -> list[str]:
 
 
 def _split_outside_quotes(value: str) -> Iterator[str]:
-    """Split on the commas between names, since a name TOML quotes may hold one of its own."""
+    # Split on the commas between names, since a name TOML quotes may hold one of its own.
     quote: str | None = None
     escaped = False
     start = 0
@@ -425,20 +416,8 @@ def _split_outside_quotes(value: str) -> Iterator[str]:
     yield value[start:]
 
 
-_ESCAPES: Final[Mapping[str, str]] = {
-    "b": "\b",
-    "e": "\x1b",
-    "t": "\t",
-    "n": "\n",
-    "f": "\f",
-    "r": "\r",
-    '"': '"',
-    "\\": "\\",
-}
-
-
 def name_list_argument(value: TomlValue) -> list[str]:
-    """Preserve commas and spaces inside TOML-quoted names."""
+    # Preserve commas and spaces inside TOML-quoted names.
     if not isinstance(value, str):
         return list_argument(value)
     return [name for part in _split_outside_quotes(value) if (name := _read_name(part.strip()))]
@@ -452,6 +431,16 @@ def _read_name(name: str) -> str:
         return body
     read: list[str] = []
     rest = iter(range(len(body)))
+    escapes: Mapping[str, str] = {
+        "b": "\b",
+        "e": "\x1b",
+        "t": "\t",
+        "n": "\n",
+        "f": "\f",
+        "r": "\r",
+        '"': '"',
+        "\\": "\\",
+    }
     for at in rest:
         if body[at] != "\\":
             read.append(body[at])
@@ -468,15 +457,14 @@ def _read_name(name: str) -> str:
             for _ in range(3):
                 next(rest, None)
             continue
-        read.append(_ESCAPES[escape])
+        read.append(escapes[escape])
         next(rest, None)
     return "".join(read)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Setting:
-    """One formatting setting, named once for the command line and for the file that may hold it."""
-
+    # One formatting setting, named once for the command line and for the file that may hold it.
     flag: str
     help: str
     takes: type
@@ -486,11 +474,11 @@ class Setting:
     metavar: str | None = None
 
     def name(self) -> str:
-        """Use argparse's destination spelling for TOML settings."""
+        # Use argparse's destination spelling for TOML settings.
         return self.flag.removeprefix("--").replace("-", "_")
 
     def add_to(self, parser: ArgumentGroup) -> None:
-        """Keep parser defaults and TOML conversion metadata on one declaration."""
+        # Keep parser defaults and TOML conversion metadata on one declaration.
         action = parser.add_argument(self.flag, default=self.default, help=self.help)
         if self.convert is not None:
             action.type = self.convert
@@ -502,37 +490,63 @@ class Setting:
 
 # One declaration keeps CLI and file settings under the same constraints.
 SHARED_SETTINGS: Final[tuple[Setting, ...]] = (
-    Setting("--column-width", "max column width in the TOML file", int, 120, count_argument, metavar="count"),
-    Setting("--indent", "number of spaces to use for indentation", int, 2, count_argument, metavar="count"),
     Setting(
-        "--table-format",
-        "table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
-        str,
-        "short",
+        flag="--column-width",
+        help="max column width in the TOML file",
+        takes=int,
+        default=120,
+        convert=count_argument,
+        metavar="count",
+    ),
+    Setting(
+        flag="--indent",
+        help="number of spaces to use for indentation",
+        takes=int,
+        default=2,
+        convert=count_argument,
+        metavar="count",
+    ),
+    Setting(
+        flag="--table-format",
+        help="table format: 'short' collapses sub-tables, 'long' expands to [table.subtable]",
+        takes=str,
+        default="short",
         choices=("short", "long"),
     ),
     Setting(
-        "--sub-table-spacing",
-        r"extra newlines between sub-tables in the same group (e.g. '\n' for one blank line, empty for compact)",
-        str,
-        "",
-        spacing_argument,
+        flag="--sub-table-spacing",
+        help=r"extra newlines between sub-tables in the same group (e.g. '\n' for one blank line, empty for compact)",
+        takes=str,
+        default="",
+        convert=spacing_argument,
     ),
     Setting(
-        "--separate-root-table",
-        r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
-        str,
-        "\n",
-        spacing_argument,
+        flag="--separate-root-table",
+        help=r"extra newlines between root table groups (e.g. '\n' for one blank line, '\n\n' for two)",
+        takes=str,
+        default="\n",
+        convert=spacing_argument,
     ),
-    Setting("--expand-tables", "comma-separated list of tables to force expand", list, [], list_argument),
-    Setting("--collapse-tables", "comma-separated list of tables to force collapse", list, [], list_argument),
     Setting(
-        "--skip-wrap-for-keys",
-        "comma-separated list of key patterns to skip string wrapping (supports wildcards like '*.parse')",
-        list,
-        [],
-        list_argument,
+        flag="--expand-tables",
+        help="comma-separated list of tables to force expand",
+        takes=list,
+        default=[],
+        convert=list_argument,
+    ),
+    Setting(
+        flag="--collapse-tables",
+        help="comma-separated list of tables to force collapse",
+        takes=list,
+        default=[],
+        convert=list_argument,
+    ),
+    Setting(
+        flag="--skip-wrap-for-keys",
+        help="comma-separated list of key patterns to skip string wrapping (supports wildcards like '*.parse')",
+        takes=list,
+        default=[],
+        convert=list_argument,
     ),
 )
 
@@ -594,20 +608,18 @@ def _handle_one(formatter: TOMLFormatter[_NAMESPACE_T], config: _Config[_NAMESPA
     return changed
 
 
-_GREEN: Final[str] = "\u001b[32m"
-_RED: Final[str] = "\u001b[31m"
-_RESET: Final[str] = "\u001b[0m"
-
-
 def _color_diff(diff: Iterable[str]) -> Iterable[str]:
     if os.environ.get("NO_COLOR"):  # https://no-color.org
         yield from diff
         return
+    green: str = "\u001b[32m"
+    red: str = "\u001b[31m"
+    reset: str = "\u001b[0m"
     for line in diff:
         if line.startswith("+"):
-            yield f"{_GREEN}{line}{_RESET}"
+            yield f"{green}{line}{reset}"
         elif line.startswith("-"):
-            yield f"{_RED}{line}{_RESET}"
+            yield f"{red}{line}{reset}"
         else:
             yield line
 

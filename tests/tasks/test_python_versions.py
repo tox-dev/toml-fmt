@@ -1,5 +1,3 @@
-"""Python release names and checked-in settings."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -39,4 +37,7 @@ def test_written_places_match_expected_spelling(tmp_path: Path, index: int) -> N
     source = tmp_path / "source"
     source.write_text(f"before\n{previous}\nafter\n")
 
-    assert python_versions.Place(source, place.pattern, place.minor, place.spelling).said() == previous
+    assert (
+        python_versions.Place(path=source, pattern=place.pattern, minor=place.minor, spelling=place.spelling).said()
+        == previous
+    )

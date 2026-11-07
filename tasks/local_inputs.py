@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 #: The local inputs of each wheel, its Rust and Python dependencies included. A parser or shared tox
 #: fix ships in the wheel whether or not the wrapper changed, so a commit touching one belongs in
 #: that package's changelog and has to rebuild it. The build workflows filter on the same paths.
-LOCAL_INPUTS: Final[dict[str, tuple[str, ...]]] = {
+_LOCAL_INPUTS: Final[dict[str, tuple[str, ...]]] = {
     "pyproject-fmt": (
         "toml-doc/",
         "common/",
@@ -34,12 +34,9 @@ LOCAL_INPUTS: Final[dict[str, tuple[str, ...]]] = {
 }
 
 
-def affects(project: str, changed_files: Iterable[str]) -> bool:
-    """Match changes to the package whose artifact includes them."""
-    return any(file_path.startswith(LOCAL_INPUTS[project]) for file_path in changed_files)
+def _affects(project: str, changed_files: Iterable[str]) -> bool:
+    # Match changes to the package whose artifact includes them.
+    return any(file_path.startswith(_LOCAL_INPUTS[project]) for file_path in changed_files)
 
 
-__all__ = [
-    "LOCAL_INPUTS",
-    "affects",
-]
+__all__ = []

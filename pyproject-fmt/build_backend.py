@@ -57,33 +57,6 @@ def build_wheel(
     return _built(maturin.build_wheel, wheel_directory, config_settings, metadata_directory, _vendor_into_wheel)
 
 
-def build_sdist(sdist_directory: str, config_settings: _ConfigSettings | None = None) -> str:
-    name = maturin.build_sdist(sdist_directory, config_settings)
-    if _common_is_present():
-        _vendor_into_sdist(Path(sdist_directory) / name)
-    return name
-
-
-def build_editable(
-    wheel_directory: str,
-    config_settings: _ConfigSettings | None = None,
-    metadata_directory: str | None = None,
-) -> str:
-    return _built(maturin.build_editable, wheel_directory, config_settings, metadata_directory, _link_common_into_wheel)
-
-
-def get_requires_for_build_wheel(config_settings: _ConfigSettings | None = None) -> list[str]:
-    return maturin.get_requires_for_build_wheel(config_settings)
-
-
-def get_requires_for_build_sdist(config_settings: _ConfigSettings | None = None) -> list[str]:
-    return maturin.get_requires_for_build_sdist(config_settings)
-
-
-def get_requires_for_build_editable(config_settings: _ConfigSettings | None = None) -> list[str]:
-    return maturin.get_requires_for_build_editable(config_settings)
-
-
 def _built(
     build: Callable[[str, _ConfigSettings | None, str | None], str],
     wheel_directory: str,
@@ -101,62 +74,11 @@ def _built(
         return name
 
 
-def _common_is_present() -> bool:
-    return (_COMMON / "src" / _VENDOR).is_dir()
-
-
-def _main() -> None:
-    target = Path(argv[1])
-    if not _common_is_present():
-        print(f"no toml-fmt-common sources under {_COMMON}")
-        raise SystemExit(1)
-    if not (wheels := sorted(target.glob("*.whl")) if target.is_dir() else [target]):
-        print(f"no wheels found in {target}")
-        raise SystemExit(1)
-    for wheel in wheels:
-        _vendor_into_wheel(wheel)
-        print(f"vendored toml-fmt-common into {wheel.name}")
-
-
-def _vendor_into_wheel(wheel: Path) -> None:
-    vendor_path = f"{_MODULE}/_vendor/"
-    changed = {f"{vendor_path}__init__.py": b""} | {f"{vendor_path}{name}": data for name, data in _common_sources()}
-    with ZipFile(wheel) as source:
-        if (entry := f"{_MODULE}/__main__.py") in source.namelist():
-            spelled = sub(rf"\b{_VENDOR}\b", f"{_MODULE}._vendor.{_VENDOR}", source.read(entry).decode())
-            changed[entry] = spelled.encode()
-    _rewrite(wheel, changed)
-
-
-def _link_common_into_wheel(wheel: Path) -> None:
-    # an editable install reads the package from the source tree, where the import stays unvendored
-    _rewrite(wheel, {f"{_MODULE}_{_VENDOR}.pth": f"{_COMMON / 'src'}\n".encode()})
-
-
-def _rewrite(wheel: Path, changed: dict[str, bytes]) -> None:
-    with ZipFile(wheel) as source:
-        names = source.namelist()
-        dist_info = next(n for n in names if n.endswith(".dist-info/METADATA")).split("/")[0]
-        entries = {name: source.read(name) for name in names if not name.endswith("/RECORD")}
-    entries.update(changed)
-    entries[f"{dist_info}/METADATA"] = _own_metadata(entries[f"{dist_info}/METADATA"])
-
-    record = []
-    for name, data in entries.items():
-        digest = urlsafe_b64encode(sha256(data).digest()).rstrip(b"=").decode()
-        record.append(f"{name},sha256={digest},{len(data)}")
-    record.append(f"{dist_info}/RECORD,,")
-    entries[f"{dist_info}/RECORD"] = ("\n".join(record) + "\n").encode()
-
-    source_epoch = _source_epoch()
-    zip_time = (
-        max(datetime.fromtimestamp(source_epoch, UTC), datetime(1980, 1, 1, tzinfo=UTC)).timetuple()[:6]
-        if source_epoch is not None
-        else None
-    )
-    with ZipFile(wheel, "w", ZIP_DEFLATED) as archive:
-        for name, data in entries.items():
-            archive.writestr(ZipInfo(name, zip_time) if zip_time else name, data, compress_type=ZIP_DEFLATED)
+def build_sdist(sdist_directory: str, config_settings: _ConfigSettings | None = None) -> str:
+    name = maturin.build_sdist(sdist_directory, config_settings)
+    if _common_is_present():
+        _vendor_into_sdist(Path(sdist_directory) / name)
+    return name
 
 
 def _vendor_into_sdist(sdist: Path) -> None:
@@ -189,6 +111,84 @@ def _vendor_into_sdist(sdist: Path) -> None:
             archive.addfile(info, BytesIO(data))
 
 
+def build_editable(
+    wheel_directory: str,
+    config_settings: _ConfigSettings | None = None,
+    metadata_directory: str | None = None,
+) -> str:
+    return _built(maturin.build_editable, wheel_directory, config_settings, metadata_directory, _link_common_into_wheel)
+
+
+def _link_common_into_wheel(wheel: Path) -> None:
+    # an editable install reads the package from the source tree, where the import stays unvendored
+    _rewrite(wheel, {f"{_MODULE}_{_VENDOR}.pth": f"{_COMMON / 'src'}\n".encode()})
+
+
+def get_requires_for_build_wheel(config_settings: _ConfigSettings | None = None) -> list[str]:
+    return maturin.get_requires_for_build_wheel(config_settings)
+
+
+def get_requires_for_build_sdist(config_settings: _ConfigSettings | None = None) -> list[str]:
+    return maturin.get_requires_for_build_sdist(config_settings)
+
+
+def get_requires_for_build_editable(config_settings: _ConfigSettings | None = None) -> list[str]:
+    return maturin.get_requires_for_build_editable(config_settings)
+
+
+def _common_is_present() -> bool:
+    return (_COMMON / "src" / _VENDOR).is_dir()
+
+
+def _main() -> None:
+    target = Path(argv[1])
+    if not _common_is_present():
+        print(f"no toml-fmt-common sources under {_COMMON}")
+        raise SystemExit(1)
+    if not (wheels := sorted(target.glob("*.whl")) if target.is_dir() else [target]):
+        print(f"no wheels found in {target}")
+        raise SystemExit(1)
+    for wheel in wheels:
+        _vendor_into_wheel(wheel)
+        print(f"vendored toml-fmt-common into {wheel.name}")
+
+
+def _vendor_into_wheel(wheel: Path) -> None:
+    vendor_path = f"{_MODULE}/_vendor/"
+    changed = {f"{vendor_path}__init__.py": b""} | {f"{vendor_path}{name}": data for name, data in _common_sources()}
+    with ZipFile(wheel) as source:
+        if (entry := f"{_MODULE}/__main__.py") in source.namelist():
+            spelled = sub(rf"\b{_VENDOR}\b", f"{_MODULE}._vendor.{_VENDOR}", source.read(entry).decode())
+            changed[entry] = spelled.encode()
+    _rewrite(wheel, changed)
+
+
+def _rewrite(wheel: Path, changed: dict[str, bytes]) -> None:
+    with ZipFile(wheel) as source:
+        names = source.namelist()
+        dist_info = next(n for n in names if n.endswith(".dist-info/METADATA")).split("/")[0]
+        entries = {name: source.read(name) for name in names if not name.endswith("/RECORD")}
+    entries.update(changed)
+    entries[f"{dist_info}/METADATA"] = _own_metadata(entries[f"{dist_info}/METADATA"])
+
+    record = []
+    for name, data in entries.items():
+        digest = urlsafe_b64encode(sha256(data).digest()).rstrip(b"=").decode()
+        record.append(f"{name},sha256={digest},{len(data)}")
+    record.append(f"{dist_info}/RECORD,,")
+    entries[f"{dist_info}/RECORD"] = ("\n".join(record) + "\n").encode()
+
+    source_epoch = _source_epoch()
+    zip_time = (
+        max(datetime.fromtimestamp(source_epoch, UTC), datetime(1980, 1, 1, tzinfo=UTC)).timetuple()[:6]
+        if source_epoch is not None
+        else None
+    )
+    with ZipFile(wheel, "w", ZIP_DEFLATED) as archive:
+        for name, data in entries.items():
+            archive.writestr(ZipInfo(name, zip_time) if zip_time else name, data, compress_type=ZIP_DEFLATED)
+
+
 def _source_epoch() -> int | None:
     return int(value) if (value := environ.get("SOURCE_DATE_EPOCH")) is not None else None
 
@@ -219,11 +219,4 @@ if __name__ == "__main__":
     _main()
 
 
-__all__ = [
-    "build_editable",
-    "build_sdist",
-    "build_wheel",
-    "get_requires_for_build_editable",
-    "get_requires_for_build_sdist",
-    "get_requires_for_build_wheel",
-]
+__all__ = []

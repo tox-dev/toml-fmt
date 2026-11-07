@@ -288,8 +288,7 @@ def test_dumb_stdin(capsys: pytest.CaptureFixture[str], mocker: MockerFixture) -
     assert out.splitlines() == ["ok = 1", "extras = 'E'"]
 
 
-def _leave_missing(_path: Path) -> None:
-    """Leave the requested path absent."""
+def _leave_missing(_path: Path) -> None: ...
 
 
 def _write_unreadable(path: Path) -> None:
@@ -304,7 +303,7 @@ def _write_read_only(path: Path) -> None:
 
 @pytest.fixture
 def target(tmp_path: Path) -> Iterator[Path]:
-    """A path the run is pointed at, restored to a mode the fixture can clean up."""
+    # A path the run is pointed at, restored to a mode the fixture can clean up.
     path = tmp_path / "dumb.toml"
     yield path
     if path.exists():
@@ -385,8 +384,7 @@ def test_config_flag_nonexistent(capsys: pytest.CaptureFixture[str], tmp_path: P
 
 
 def test_config_auto_discovery(tmp_path: Path) -> None:
-    config_file = tmp_path / "toml-fmt-common.toml"
-    config_file.write_text("extra = 'DISCOVERED'")
+    (tmp_path / "toml-fmt-common.toml").write_text("extra = 'DISCOVERED'")
     sub = tmp_path / "sub"
     sub.mkdir()
     dumb = sub / "dumb.toml"
@@ -407,8 +405,7 @@ def test_config_auto_discovery_not_found(tmp_path: Path) -> None:
 
 
 def test_config_per_file_overrides_shared(tmp_path: Path) -> None:
-    config_file = tmp_path / "toml-fmt-common.toml"
-    config_file.write_text("extra = 'SHARED'")
+    (tmp_path / "toml-fmt-common.toml").write_text("extra = 'SHARED'")
     dumb = tmp_path / "dumb.toml"
     dumb.write_text("[start.sub]\nextra = 'IN_FILE'")
 
@@ -419,8 +416,7 @@ def test_config_per_file_overrides_shared(tmp_path: Path) -> None:
 
 def test_config_stdin_uses_cwd(mocker: MockerFixture, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
-    config_file = tmp_path / "toml-fmt-common.toml"
-    config_file.write_text("extra = 'CWD_CONFIG'")
+    (tmp_path / "toml-fmt-common.toml").write_text("extra = 'CWD_CONFIG'")
     mocker.patch("sys.stdin", StringIO("ok = 1"))
 
     exit_code = run(Dumb(), ["E", "-"])
@@ -634,7 +630,7 @@ def test_a_count_reads_what_it_is_given() -> None:
     ],
 )
 def test_a_target_the_settings_reader_cannot_read(tmp_path: Path, written: str) -> None:
-    """The formatter is the one that reports on a file this reader cannot get the settings out of."""
+    # The formatter is the one that reports on a file this reader cannot get the settings out of.
     dumb = tmp_path / "dumb.toml"
     dumb.write_text(written)
 
@@ -786,7 +782,7 @@ def test_a_target_that_is_not_utf_8(tmp_path: Path, capsys: pytest.CaptureFixtur
 
 
 def test_a_carriage_return_toml_does_not_read(tmp_path: Path) -> None:
-    """A `\r` not followed by `\n` is a syntax error, which normalizing it away would hide."""
+    # A `\r` not followed by `\n` is a syntax error, which normalizing it away would hide.
     dumb = tmp_path / "dumb.toml"
     dumb.write_bytes(b"[start.sub]\rextra = 'B'\n")
 

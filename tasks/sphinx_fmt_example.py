@@ -12,6 +12,12 @@ if TYPE_CHECKING:
     from sphinx.application import Sphinx
 
 
+def setup(app: Sphinx) -> dict[str, bool]:
+    app.add_config_value("fmt_example_module", "", "env")
+    app.add_directive("fmt-example", _FmtExample)
+    return {"parallel_read_safe": True, "parallel_write_safe": True}
+
+
 class _FmtExample(Directive):
     has_content = True
     option_spec: ClassVar = {"config": directives.unchanged}
@@ -24,12 +30,4 @@ class _FmtExample(Directive):
         return [node]
 
 
-def setup(app: Sphinx) -> dict[str, bool]:
-    app.add_config_value("fmt_example_module", "", "env")
-    app.add_directive("fmt-example", _FmtExample)
-    return {"parallel_read_safe": True, "parallel_write_safe": True}
-
-
-__all__ = [
-    "setup",
-]
+__all__ = []

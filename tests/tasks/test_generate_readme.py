@@ -1,5 +1,3 @@
-"""PyPI README rendering from Sphinx source."""
-
 from __future__ import annotations
 
 import runpy

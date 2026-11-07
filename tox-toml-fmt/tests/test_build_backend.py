@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     BuildSdist: TypeAlias = Callable[[str, ConfigSettings | None], str]
 
 _BACKEND: Final[Path] = Path(__file__).parents[1] / "build_backend.py"
-_DISTRIBUTION: Final[str] = "tox-toml-fmt"
 _MODULE: Final[str] = "tox_toml_fmt"
 _WHEEL: Final[str] = f"{_MODULE}-0-py3-none-any.whl"
 _SDIST: Final[str] = f"{_MODULE}-0.tar.gz"
@@ -72,7 +71,8 @@ def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
     package = tmp_path / "package"
     package.mkdir()
     copy2(_BACKEND, package / "build_backend.py")
-    (package / "pyproject.toml").write_text(f'[project]\nname = "{_DISTRIBUTION}"\n', encoding="utf-8", newline="")
+    distribution: str = "tox-toml-fmt"
+    (package / "pyproject.toml").write_text(f'[project]\nname = "{distribution}"\n', encoding="utf-8", newline="")
     _write_common(package / "toml-fmt-common")
 
     maturin = mocker.MagicMock(

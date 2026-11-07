@@ -46,16 +46,16 @@ def main(package: str) -> None:
     processed = process_rst_for_pypi(read(index_path))
 
     if (config_path := docs_dir / "configuration.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(config_path)))
+        processed += f"\n\n{process_rst_for_pypi(_strip_main_title(read(config_path)))}"
 
     if (formatting_path := docs_dir / "formatting.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(formatting_path)))
+        processed += f"\n\n{process_rst_for_pypi(_strip_main_title(read(formatting_path)))}"
 
-    (docs_dir.parent / "README.rst").write_text(processed.rstrip() + "\n", encoding="utf-8")
+    (docs_dir.parent / "README.rst").write_text(f"{processed.rstrip()}\n", encoding="utf-8")
 
 
 def expand_fmt_examples(content: str, module: str) -> str:
-    """Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to."""
+    # Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to.
     lines = content.splitlines()
     result: list[str] = []
     at = 0
@@ -81,8 +81,7 @@ def expand_fmt_examples(content: str, module: str) -> str:
         while at < len(lines) and (not lines[at].strip() or lines[at].startswith(f"{base} ")):
             body.append(lines[at])
             at += 1
-        before = "\n".join(line[len(base) :] for line in body).strip("\n")
-        rendered = render_example(module, _dedent(before), config)
+        rendered = render_example(module, _dedent("\n".join(line[len(base) :] for line in body).strip("\n")), config)
         result.extend((f"{base}.. code-block:: toml", ""))
         result.extend(f"{base}   {line}" if line else "" for line in rendered.splitlines())
         result.append("")
@@ -96,7 +95,7 @@ def _dedent(text: str) -> str:
 
 
 def process_rst_for_pypi(content: str) -> str:
-    content = unwrap_dropdowns(content)
+    content = _unwrap_dropdowns(content)
     content = _PYPI_ROLE.sub(r"`\g<target> <https://pypi.org/project/\g<target>>`_", content)
     content = _GH_ROLE.sub(r"`\g<target> <https://github.com/\g<target>>`_", content)
     content = _DOC_REFERENCE.sub("", content)
@@ -131,8 +130,8 @@ def process_rst_for_pypi(content: str) -> str:
     return "\n".join(result).rstrip()
 
 
-def unwrap_dropdowns(content: str) -> str:
-    """Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive."""
+def _unwrap_dropdowns(content: str) -> str:
+    # Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive.
     result: list[str] = []
     in_dropdown = False
     for line in content.splitlines():
@@ -151,7 +150,7 @@ def unwrap_dropdowns(content: str) -> str:
     return "\n".join(result)
 
 
-def strip_main_title(content: str) -> str:
+def _strip_main_title(content: str) -> str:
     lines = content.splitlines()
     match lines:
         case [_, underline, *body] if underline and set(underline) == {"="}:
@@ -169,10 +168,4 @@ if __name__ == "__main__":
     main(package)
 
 
-__all__ = [
-    "expand_fmt_examples",
-    "main",
-    "process_rst_for_pypi",
-    "strip_main_title",
-    "unwrap_dropdowns",
-]
+__all__ = []

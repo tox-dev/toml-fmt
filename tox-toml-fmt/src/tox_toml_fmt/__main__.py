@@ -22,31 +22,32 @@ if TYPE_CHECKING:
 
 
 class _ToxTOMLNamespace(FmtNamespace):
-    """Give tox-specific argparse fields concrete types."""
-
+    # Give tox-specific argparse fields concrete types.
     pin_envs: list[str]
 
 
 class _ToxTOMLFormatter(TOMLFormatter[_ToxTOMLNamespace]):
-    """Bind the shared CLI to the tox-toml-fmt Rust extension."""
-
+    # Bind the shared CLI to the tox-toml-fmt Rust extension.
     def __init__(self) -> None:
-        """Start with the namespace argparse fills for each input."""
+        # Start with the namespace argparse fills for each input.
         super().__init__(_ToxTOMLNamespace())
 
     @property
     def prog(self) -> str:
-        """Match the distribution name used for version lookup."""
+        # Match the distribution name used for version lookup.
         return "tox-toml-fmt"
 
     @property
     def filename(self) -> str:
-        """Restrict positional directories to ``tox.toml``."""
         return "tox.toml"
+
+    @property
+    def override_cli_from_section(self) -> tuple[str, ...]:
+        return ("tox-toml-fmt",)
 
     @staticmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
-        """Add tox environment options outside the shared formatter settings."""
+        # Add tox environment options outside the shared formatter settings.
         parser.add_argument(
             "--pin-env",
             type=name_list_argument,
@@ -55,19 +56,14 @@ class _ToxTOMLFormatter(TOMLFormatter[_ToxTOMLNamespace]):
             help="environments whose tables are written first (comma separated)",
         )
 
-    @property
-    def override_cli_from_section(self) -> tuple[str, ...]:
-        """Keep per-file overrides under ``tox-toml-fmt``."""
-        return ("tox-toml-fmt",)
-
     @staticmethod
     def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
-        """Use the Rust parser so TOML 1.1 settings remain visible."""
+        # Use the Rust parser so TOML 1.1 settings remain visible.
         return settings_in(text, list(path))
 
     @staticmethod
     def format(text: str, opt: _ToxTOMLNamespace) -> str:
-        """Keep Python responsible for CLI state and Rust responsible for TOML edits."""
+        # Keep Python responsible for CLI state and Rust responsible for TOML edits.
         settings = Settings(
             column_width=opt.column_width,
             indent=opt.indent,
@@ -83,16 +79,14 @@ class _ToxTOMLFormatter(TOMLFormatter[_ToxTOMLNamespace]):
 
 
 def runner(args: Sequence[str] | None = None) -> int:
-    """
-    Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
-
-    Return 1 after a change or rejection, and 0 when inputs match.
-    """
+    # Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
+    #
+    # Return 1 after a change or rejection, and 0 when inputs match.
     return run(_ToxTOMLFormatter(), args)
 
 
 def build_parser() -> ArgumentParser:
-    """Build the parser without reading arguments, for documentation tooling."""
+    # Build the parser without reading arguments, for documentation tooling.
     return build_cli(_ToxTOMLFormatter())[0]
 
 

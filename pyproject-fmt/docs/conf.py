@@ -15,10 +15,10 @@ company, name = "tox-dev", "pyproject-fmt"
 ver = metadata_version("pyproject-fmt")
 release, version = ver, ".".join(ver.split(".")[:2])
 now = datetime.now(tz=UTC)
-project_copyright = f"2022-{now.year}, {company}"
+project_copyright: Final[str] = f"2022-{now.year}, {company}"
 master_doc, source_suffix = "index", ".rst"
 
-html_theme = "furo"
+html_theme: Final[str] = "furo"
 html_title, html_last_updated_fmt = name, now.isoformat()
 pygments_style, pygments_dark_style = "sphinx", "monokai"
 
@@ -34,7 +34,7 @@ extensions = [
     "sphinx_design",
     "sphinx_fmt_example",
 ]
-fmt_example_module = "pyproject_fmt"
+fmt_example_module: Final[str] = "pyproject_fmt"
 
 exclude_patterns = ["_build", "changelog/*", "_draft.rst"]
 autoclass_content, autodoc_member_order, autodoc_typehints = "class", "bysource", "none"
@@ -49,7 +49,7 @@ extlinks = {
     "gh": ("https://github.com/%s", "%s"),
 }
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
-nitpicky = True
+nitpicky: Final[bool] = True
 nitpick_ignore = []
 # anchors that resolve in a browser but linkcheck cannot verify: GitHub renders README heading ids with a
 # user-content- prefix added client-side, and pyright's docs are a single-page app with hash-routed sections
