@@ -3,6 +3,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 from textwrap import dedent
+from typing import Final
 
 import pytest
 from trove_classifiers import classifiers
@@ -38,94 +39,127 @@ def test_the_default_max_supported_python_trails_the_newest_classifier_by_one() 
     )
 
 
-@pytest.mark.parametrize(
-    "in_place",
-    [
-        True,
-        False,
-    ],
-    ids=("in_place", "print"),
-)
-@pytest.mark.parametrize(
-    "check",
-    [
-        True,
-        False,
-    ],
-    ids=["check", "no_check"],
-)
-@pytest.mark.parametrize(
-    "cwd",
-    [
-        True,
-        False,
-    ],
-    ids=["cwd", "absolute"],
-)
-@pytest.mark.parametrize(
-    ("start", "outcome", "output"),
-    [
-        pytest.param(
-            '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n',
-            '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n',
-            "no change for {0}\n",
-            id="formatted",
-        ),
-        pytest.param(
-            '[build-system]\nrequires = ["hatchling>=0.14.0"]',
-            '[build-system]\nrequires = [ "hatchling>=0.14" ]\n',
-            "--- {0}\n\n+++ {0}\n\n@@ -1,2 +1,2 @@\n\n [build-system]\n-requires = "
-            '["hatchling>=0.14.0"]\n+requires = [ "hatchling>=0.14" ]\n',
-            id="format",
-        ),
-    ],
-)
-def test_main(
+_FORMATTED: Final[str] = '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n'
+_UNFORMATTED: Final[str] = '[build-system]\nrequires = ["hatchling>=0.14.0"]'
+_REFORMATTED: Final[str] = '[build-system]\nrequires = [ "hatchling>=0.14" ]\n'
+_CASES: Final = [
+    pytest.param(_FORMATTED, _FORMATTED, "no change for {0}\n", 0, id="formatted"),
+    pytest.param(
+        _UNFORMATTED,
+        _REFORMATTED,
+        "--- {0}\n\n+++ {0}\n\n@@ -1,2 +1,2 @@\n\n [build-system]\n-requires = "
+        '["hatchling>=0.14.0"]\n+requires = [ "hatchling>=0.14" ]\n',
+        1,
+        id="format",
+    ),
+]
+
+
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_in_place(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
-    in_place: bool,
     start: str,
     outcome: str,
     output: str,
+    exit_code: int,
     monkeypatch: pytest.MonkeyPatch,
-    cwd: bool,
-    check: bool,
 ) -> None:
     monkeypatch.setenv("NO_COLOR", "1")
-    if cwd:
-        monkeypatch.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
     pyproject_toml = tmp_path / "pyproject.toml"
     pyproject_toml.write_text(start)
-    args = [str(pyproject_toml)]
-    if not in_place:
-        args.append("--stdout")
 
-    if check:
-        args.append("--check")
-
-        if not in_place:
-            with pytest.raises(SystemExit):
-                run(args)
-            assert pyproject_toml.read_text() == start
-            return
-
-    result = run(args)
-    assert result == (0 if start == outcome else 1)
+    assert run(["pyproject.toml"]) == exit_code
 
     out, err = capsys.readouterr()
     assert not err
-
-    if check:
-        assert pyproject_toml.read_text() == start
-    elif in_place:
-        output = output.format("pyproject.toml" if cwd else str(tmp_path / "pyproject.toml"))
-        assert pyproject_toml.read_text() == outcome
-        assert out == output
-    else:
-        assert out == outcome
+    assert pyproject_toml.read_text() == outcome
+    assert out == output.format("pyproject.toml")
 
 
-@pytest.mark.parametrize("indent", [0, 2, 4])
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_in_place_shows_an_absolute_path_outside_cwd(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    output: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml)]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert pyproject_toml.read_text() == outcome
+    assert out == output.format(pyproject_toml)
+
+
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_check_leaves_the_file_unchanged(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    output: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.chdir(tmp_path)
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    assert run(["pyproject.toml", "--check"]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert pyproject_toml.read_text() == start
+    assert out == output.format("pyproject.toml")
+
+
+@pytest.mark.parametrize("start", [_FORMATTED, _UNFORMATTED], ids=["formatted", "format"])
+def test_main_check_refuses_stdout(tmp_path: Path, start: str) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml), "--stdout", "--check"])
+    assert pyproject_toml.read_text() == start
+
+
+@pytest.mark.parametrize(
+    ("start", "outcome", "exit_code"),
+    [
+        pytest.param(_FORMATTED, _FORMATTED, 0, id="formatted"),
+        pytest.param(_UNFORMATTED, _REFORMATTED, 1, id="format"),
+    ],
+)
+def test_main_prints_to_stdout(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml), "--stdout"]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert out == outcome
+
+
+@pytest.mark.parametrize("indent", [0, 2, 4], ids=["zero", "two", "four"])
 def test_indent(tmp_path: Path, indent: int) -> None:
 
     expected = f"""\
@@ -700,28 +734,31 @@ def test_a_selector_that_names_no_table(tmp_path: Path, capsys: pytest.CaptureFi
     assert pyproject_toml.read_text() == start
 
 
-@pytest.mark.parametrize("through", ["cli", "file", "neither"], ids=["command-line", "configuration", "control"])
+@pytest.mark.parametrize(
+    ("config", "args", "child"),
+    [
+        pytest.param("\n[tool.pyproject-fmt]\nexpand_tables = [ 'tool.\"a,b\"' ]\n", [], True, id="configuration"),
+        pytest.param("", ["--expand-tables", 'tool."a,b"'], True, id="command-line"),
+        pytest.param("", [], False, id="control"),
+    ],
+)
 def test_a_quoted_selector_names_the_same_table_either_way(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
-    through: str,
+    config: str,
+    args: list[str],
+    child: bool,
 ) -> None:
     # A name TOML quotes may hold a comma of its own, which separates nothing.
     pyproject_toml = tmp_path / "pyproject.toml"
     held = '[project]\nname = "My_Package"\n\n[tool."a,b".child]\nx = 1\n'
-    pyproject_toml.write_text(held)
-    if through == "cli":
-        assert run([str(pyproject_toml), "--no-print-diff", "--expand-tables", 'tool."a,b"']) == 1
-    elif through == "file":
-        pyproject_toml.write_text(f"{held}\n[tool.pyproject-fmt]\nexpand_tables = [ 'tool.\"a,b\"' ]\n")
-        assert run([str(pyproject_toml), "--no-print-diff"]) == 1
-    else:
-        assert run([str(pyproject_toml), "--no-print-diff"]) == 1
+    pyproject_toml.write_text(f"{held}{config}")
+    assert run([str(pyproject_toml), "--no-print-diff", *args]) == 1
 
     assert not capsys.readouterr().err
     written = pyproject_toml.read_text()
     # the formatter ran: the project name is written the way a distribution name is spelled
     assert 'name = "my-package"' in written
     # the selector is what holds the table open, so without one it folds into its parent
-    assert ('[tool."a,b".child]' in written) is (through != "neither")
-    assert ('[tool."a,b"]' in written) is (through == "neither")
+    assert ('[tool."a,b".child]' in written) is child
+    assert ('[tool."a,b"]' in written) is (not child)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 from textwrap import dedent
+from typing import Final
 
 import pytest
 
@@ -13,93 +14,125 @@ def test_build_parser_uses_program_name() -> None:
     assert build_parser().prog == "tox-toml-fmt"
 
 
-@pytest.mark.parametrize(
-    "in_place",
-    [
-        True,
-        False,
-    ],
-    ids=("in_place", "print"),
-)
-@pytest.mark.parametrize(
-    "check",
-    [
-        True,
-        False,
-    ],
-    ids=["check", "no_check"],
-)
-@pytest.mark.parametrize(
-    "cwd",
-    [
-        True,
-        False,
-    ],
-    ids=["cwd", "absolute"],
-)
-@pytest.mark.parametrize(
-    ("start", "outcome", "output"),
-    [
-        pytest.param(
-            'requires = [ "tox>=4.22" ]\n',
-            'requires = [ "tox>=4.22" ]\n',
-            "no change for {0}\n",
-            id="formatted",
-        ),
-        pytest.param(
-            "requires = ['tox>=4.22']\n",
-            'requires = [ "tox>=4.22" ]\n',
-            "--- {0}\n\n+++ {0}\n\n@@ -1 +1 @@\n\n-requires = ['tox>=4.22']\n+requires = [ \"tox>=4.22\" ]\n",
-            id="format",
-        ),
-    ],
-)
-def test_main(
+_FORMATTED: Final[str] = 'requires = [ "tox>=4.22" ]\n'
+_UNFORMATTED: Final[str] = "requires = ['tox>=4.22']\n"
+_CASES: Final = [
+    pytest.param(_FORMATTED, _FORMATTED, "no change for {0}\n", 0, id="formatted"),
+    pytest.param(
+        _UNFORMATTED,
+        _FORMATTED,
+        "--- {0}\n\n+++ {0}\n\n@@ -1 +1 @@\n\n-requires = ['tox>=4.22']\n+requires = [ \"tox>=4.22\" ]\n",
+        1,
+        id="format",
+    ),
+]
+
+
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_in_place(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
-    in_place: bool,
     start: str,
     outcome: str,
     output: str,
+    exit_code: int,
     monkeypatch: pytest.MonkeyPatch,
-    cwd: bool,
-    check: bool,
 ) -> None:
     monkeypatch.setenv("NO_COLOR", "1")
-    if cwd:
-        monkeypatch.chdir(tmp_path)
-    pyproject_toml = tmp_path / "tox.toml"
-    pyproject_toml.write_text(start)
-    args = [str(pyproject_toml)]
-    if not in_place:
-        args.append("--stdout")
+    monkeypatch.chdir(tmp_path)
+    tox_toml = tmp_path / "tox.toml"
+    tox_toml.write_text(start)
 
-    if check:
-        args.append("--check")
-
-        if not in_place:
-            with pytest.raises(SystemExit):
-                run(args)
-            assert pyproject_toml.read_text() == start
-            return
-
-    result = run(args)
-    assert result == (0 if start == outcome else 1)
+    assert run(["tox.toml"]) == exit_code
 
     out, err = capsys.readouterr()
     assert not err
-
-    if check:
-        assert pyproject_toml.read_text() == start
-    elif in_place:
-        output = output.format("tox.toml" if cwd else str(tmp_path / "tox.toml"))
-        assert pyproject_toml.read_text() == outcome
-        assert out == output
-    else:
-        assert out == outcome
+    assert tox_toml.read_text() == outcome
+    assert out == output.format("tox.toml")
 
 
-@pytest.mark.parametrize("indent", [0, 2, 4])
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_in_place_shows_an_absolute_path_outside_cwd(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    output: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    tox_toml = tmp_path / "tox.toml"
+    tox_toml.write_text(start)
+
+    assert run([str(tox_toml)]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert tox_toml.read_text() == outcome
+    assert out == output.format(tox_toml)
+
+
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_check_leaves_the_file_unchanged(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    output: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.chdir(tmp_path)
+    tox_toml = tmp_path / "tox.toml"
+    tox_toml.write_text(start)
+
+    assert run(["tox.toml", "--check"]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert tox_toml.read_text() == start
+    assert out == output.format("tox.toml")
+
+
+@pytest.mark.parametrize("start", [_FORMATTED, _UNFORMATTED], ids=["formatted", "format"])
+def test_main_check_refuses_stdout(tmp_path: Path, start: str) -> None:
+    tox_toml = tmp_path / "tox.toml"
+    tox_toml.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run([str(tox_toml), "--stdout", "--check"])
+    assert tox_toml.read_text() == start
+
+
+@pytest.mark.parametrize(
+    ("start", "outcome", "exit_code"),
+    [
+        pytest.param(_FORMATTED, _FORMATTED, 0, id="formatted"),
+        pytest.param(_UNFORMATTED, _FORMATTED, 1, id="format"),
+    ],
+)
+def test_main_prints_to_stdout(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    tox_toml = tmp_path / "tox.toml"
+    tox_toml.write_text(start)
+
+    assert run([str(tox_toml), "--stdout"]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert out == outcome
+
+
+@pytest.mark.parametrize("indent", [0, 2, 4], ids=["zero", "two", "four"])
 def test_indent(tmp_path: Path, indent: int) -> None:
 
     expected = f"""\
@@ -359,15 +392,15 @@ def test_a_selector_that_names_no_table(tmp_path: Path, capsys: pytest.CaptureFi
 
 
 @pytest.mark.parametrize(
-    ("held", "first"),
+    ("held", "first", "second"),
     [
-        pytest.param(["--pin-env", '"a,b"'], '[env."a,b"]', id="pinned"),
-        pytest.param([], '[env."a,b"]', id="by-name"),
-        pytest.param(["--pin-env", "z"], "[env.z]", id="pinned-past-the-name"),
+        pytest.param(["--pin-env", '"a,b"'], '[env."a,b"]', "[env.z]", id="pinned"),
+        pytest.param([], '[env."a,b"]', "[env.z]", id="by-name"),
+        pytest.param(["--pin-env", "z"], "[env.z]", '[env."a,b"]', id="pinned-past-the-name"),
     ],
 )
 def test_a_pinned_environment_may_hold_a_comma(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], held: list[str], first: str
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], held: list[str], first: str, second: str
 ) -> None:
     # A pin names one environment, and a name TOML quotes may hold a comma of its own.
     tox_toml = tmp_path / "tox.toml"
@@ -377,5 +410,4 @@ def test_a_pinned_environment_may_hold_a_comma(
 
     assert not capsys.readouterr().err
     written = tox_toml.read_text()
-    second = "[env.z]" if first == '[env."a,b"]' else '[env."a,b"]'
     assert written.index(first) < written.index(second)
