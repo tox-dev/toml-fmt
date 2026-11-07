@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from importlib.metadata import version
 from pathlib import Path
-from typing import TYPE_CHECKING, Final, Generic, Protocol, TypeAlias, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Final, Generic, NamedTuple, Protocol, TypeAlias, TypeVar, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 class ArgumentGroup(Protocol):
     # Expose the argument-group operation formatter plugins use.
-    def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
+    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Action:
         # Register one argument and return its parser action.
         ...
 
@@ -116,77 +116,69 @@ def run(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str] | None = Non
     return int(any(results))
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _Config(Generic[_NAMESPACE_T]):
-    toml_filename: Path | None
-    toml: str
-    stdout: bool
-    check: bool
-    no_print_diff: bool
-    opt: _NAMESPACE_T
-    eol: str
-
-
-def _check_write_permission(parser: ArgumentParser, opt: FmtNamespace) -> None:
-    if opt.stdout or opt.check:
-        return
-    for toml_path in opt.inputs:
-        if toml_path is not None and not os.access(toml_path, os.W_OK):
-            parser.error(f"argument inputs: cannot write path {toml_path}")
-
-
 def _cli_args(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str]) -> list[_Config[_NAMESPACE_T]]:
     parser, type_conversion, actions = _make_cli(formatter)
     parser.parse_args(namespace=formatter.opt, args=args)
     if (explicit_config := formatter.opt.config) is not None and not explicit_config.is_file():
         parser.error(f"config file does not exist: {explicit_config}")
-    _check_write_permission(parser, formatter.opt)
+    if not (formatter.opt.stdout or formatter.opt.check):
+        for toml_path in formatter.opt.inputs:
+            if toml_path is not None and not os.access(toml_path, os.W_OK):
+                parser.error(f"argument inputs: cannot write path {toml_path}")
+    # Infer plugin settings from defaults because formatters can add flags outside ``SHARED_SETTINGS``.
+    named = {setting.name(): setting.takes for setting in SHARED_SETTINGS}
     constraints = _Constraints(
         conversion=type_conversion,
         # a value read from a file has to be one the command line would have accepted
         allowed={action.dest: action.choices for action in actions if action.choices},
-        accepts=_accepted_types(parser, formatter.opt),
+        accepts={
+            key: named.get(key) or _written_as(parser.get_default(key))
+            for key in vars(formatter.opt).keys() - _NON_FORMAT_KEYS
+        },
     )
-    configs = []
-    for toml_path in formatter.opt.inputs:
-        raw, eol = _read_input(parser, toml_path)
-        source = _display_name(toml_path)
-        try:
-            config = formatter.settings_in(raw, formatter.override_cli_from_section)
-        except SyntaxError:
-            # the formatter reads the same source next and reports on it in its own words, against
-            # the file rather than against one setting
-            config = None
-        except (TypeError, ValueError) as exc:
-            parser.error(f"{source}: {exc}")
-        override_opt = deepcopy(formatter.opt)
-        if explicit_config is not None:
-            shared = _load_shared_config(parser, formatter, explicit_config)
-            _apply_config(parser, override_opt, shared, str(explicit_config), constraints)
-        elif found := _find_config_file(formatter.prog, toml_path.parent if toml_path is not None else Path.cwd()):
-            _apply_config(
-                parser,
-                override_opt,
-                _load_shared_config(parser, formatter, found),
-                str(found),
-                constraints,
-            )
-        if config is not None:
-            _apply_config(parser, override_opt, config, source, constraints)
+    return [_config_of(parser, formatter, constraints, toml_path) for toml_path in formatter.opt.inputs]
 
-        configs.append(
-            _Config(
-                toml_filename=toml_path,
-                toml=raw,
-                stdout=formatter.opt.stdout,
-                check=formatter.opt.check,
-                no_print_diff=formatter.opt.no_print_diff,
-                opt=override_opt,
-                eol=eol,
-            )
+
+def _config_of(
+    parser: ArgumentParser,
+    formatter: TOMLFormatter[_NAMESPACE_T],
+    constraints: _Constraints,
+    toml_path: Path | None,
+) -> _Config[_NAMESPACE_T]:
+    explicit_config = formatter.opt.config
+    raw, eol = _read_input(parser, toml_path)
+    source = _display_name(toml_path)
+    try:
+        config = formatter.settings_in(raw, formatter.override_cli_from_section)
+    except SyntaxError:
+        # the formatter reads the same source next and reports on it in its own words, against
+        # the file rather than against one setting
+        config = None
+    except (TypeError, ValueError) as exc:
+        parser.error(f"{source}: {exc}")
+    override_opt = deepcopy(formatter.opt)
+    if explicit_config is not None:
+        shared = _load_shared_config(parser, formatter, explicit_config)
+        _apply_config(parser, override_opt, shared, str(explicit_config), constraints)
+    elif found := _find_config_file(formatter.prog, toml_path.parent if toml_path is not None else Path.cwd()):
+        _apply_config(
+            parser,
+            override_opt,
+            _load_shared_config(parser, formatter, found),
+            str(found),
+            constraints,
         )
-
-    return configs
+    if config is not None:
+        _apply_config(parser, override_opt, config, source, constraints)
+    return _Config(
+        toml_filename=toml_path,
+        toml=raw,
+        stdout=formatter.opt.stdout,
+        check=formatter.opt.check,
+        no_print_diff=formatter.opt.no_print_diff,
+        opt=override_opt,
+        eol=eol,
+    )
 
 
 def _read_input(parser: ArgumentParser, path: Path | None) -> tuple[str, str]:
@@ -203,6 +195,17 @@ def _read_input(parser: ArgumentParser, path: Path | None) -> tuple[str, str]:
     return raw.replace("\r\n", "\n"), "\r\n" if crlf > raw.count("\n") - crlf else "\n"
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _Config(Generic[_NAMESPACE_T]):
+    toml_filename: Path | None
+    toml: str
+    stdout: bool
+    check: bool
+    no_print_diff: bool
+    opt: _NAMESPACE_T
+    eol: str
+
+
 _NON_FORMAT_KEYS: Final[frozenset[str]] = frozenset({"inputs", "stdout", "check", "no_print_diff", "config"})
 
 
@@ -211,12 +214,6 @@ class _Constraints:
     conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
     allowed: Mapping[str, Iterable[TomlValue]]
     accepts: Mapping[str, type]
-
-
-def _accepted_types(parser: ArgumentParser, opt: _NAMESPACE_T) -> Mapping[str, type]:
-    # Infer plugin settings from defaults because formatters can add flags outside ``SHARED_SETTINGS``.
-    named = {setting.name(): setting.takes for setting in SHARED_SETTINGS}
-    return {key: named.get(key) or _written_as(parser.get_default(key)) for key in vars(opt).keys() - _NON_FORMAT_KEYS}
 
 
 def _written_as(default: TomlValue) -> type:
@@ -279,9 +276,13 @@ def build_cli(
     return parser, type_conversion
 
 
-def _make_cli(
-    formatter: TOMLFormatter[_NAMESPACE_T],
-) -> tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]], Sequence[Action]]:
+class _Cli(NamedTuple):
+    parser: ArgumentParser
+    type_conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
+    actions: Sequence[Action]
+
+
+def _make_cli(formatter: TOMLFormatter[_NAMESPACE_T]) -> _Cli:
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter,
         prog=formatter.prog,
@@ -337,7 +338,7 @@ def _make_cli(
         type=partial(_toml_path_creator, formatter.filename),
         help=msg,
     )
-    return parser, type_conversion, format_group.actions
+    return _Cli(parser, type_conversion, format_group.actions)
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)
@@ -345,7 +346,7 @@ class _ArgumentRecorder:
     group: ArgumentGroup
     actions: list[Action] = field(default_factory=list)
 
-    def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
+    def add_argument(self, *name_or_flags: str, **kwargs: Any) -> Action:
         action = self.group.add_argument(*name_or_flags, **kwargs)
         self.actions.append(action)
         return action
@@ -626,7 +627,9 @@ def _color_diff(diff: Iterable[str]) -> Iterable[str]:
 
 # Releases through 1.3.2 import the old name; removing it breaks their next dependency resolve
 # (tox-dev/toml-fmt#355).
-_build_cli: Final = build_cli
+_build_cli: Final[
+    Callable[[TOMLFormatter[FmtNamespace]], tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]]
+] = build_cli
 
 __all__ = [
     "SHARED_SETTINGS",
@@ -637,7 +640,9 @@ __all__ = [
     "TomlValue",
     "_build_cli",
     "build_cli",
+    "count_argument",
     "list_argument",
     "name_list_argument",
     "run",
+    "spacing_argument",
 ]
