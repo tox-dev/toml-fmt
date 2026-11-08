@@ -16,9 +16,8 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
-    from unittest.mock import Mock
 
-    from pytest_mock import MockerFixture
+    from pytest_mock import MockerFixture, MockType
 
     ConfigSettings: TypeAlias = Mapping[str, str | list[str]]
     BuildWheel: TypeAlias = Callable[[str, ConfigSettings | None, str | None], str]
@@ -167,7 +166,7 @@ def test_vendor_into_sdist_content(sdist: Path, member: str, content: bytes) -> 
 
 
 def test_vendor_into_wheel_rebuild_is_byte_identical(
-    backend: Backend, tmp_path: Path, clock: Mock, monkeypatch: pytest.MonkeyPatch
+    backend: Backend, tmp_path: Path, clock: MockType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
     first = tmp_path / "first"
@@ -181,15 +180,15 @@ def test_vendor_into_wheel_rebuild_is_byte_identical(
 
 
 @pytest.fixture
-def clock(mocker: MockerFixture) -> Mock:
-    clock: Mock = mocker.create_autospec(time, return_value=1609459201)
+def clock(mocker: MockerFixture) -> MockType:
+    clock: MockType = mocker.create_autospec(time, return_value=1609459201)
     mocker.patch("zipfile.time", SimpleNamespace(gmtime=gmtime, localtime=localtime, time=clock))
     mocker.patch("gzip.time", SimpleNamespace(time=clock))
     return clock
 
 
 def test_vendor_into_sdist_rebuild_is_byte_identical(
-    backend: Backend, tmp_path: Path, clock: Mock, monkeypatch: pytest.MonkeyPatch
+    backend: Backend, tmp_path: Path, clock: MockType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
     first = tmp_path / "first"
