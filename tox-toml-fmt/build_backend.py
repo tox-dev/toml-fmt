@@ -194,8 +194,10 @@ def _source_epoch() -> int | None:
 
 
 def _own_metadata(metadata: bytes) -> bytes:
-    dependency_block = search(r"(?ms)^dependencies = \[(.*?)\]", (_COMMON / "pyproject.toml").read_text())
-    if not (dependencies := findall(r'"([^"]*)"', dependency_block.group(1)) if dependency_block else []):
+    dependency_block = search(
+        r"(?ms)^dependencies = \[(?P<dependencies>.*?)\]", (_COMMON / "pyproject.toml").read_text()
+    )
+    if not (dependencies := findall(r'"([^"]*)"', dependency_block["dependencies"]) if dependency_block else []):
         return metadata
     # Requires-Dist belongs in the header block; everything past the first blank line is the description
     headers, separator, description = metadata.decode().partition("\n\n")
