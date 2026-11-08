@@ -522,7 +522,7 @@ def test_shared_args_config_file(formatting: tuple[Dumb, Path], tmp_path: Path) 
 
 def test_build_cli_underscore_alias_preserved() -> None:
     # Releases through 1.3.2 import the old name (tox-dev/toml-fmt#355).
-    assert vars(toml_fmt_common)["_build_cli"] is build_cli
+    assert toml_fmt_common.__dict__["_build_cli"] is build_cli
 
 
 class LegacyDumb(Dumb):
