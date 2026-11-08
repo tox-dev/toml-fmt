@@ -8,7 +8,6 @@ from tempfile import TemporaryDirectory
 from typing import Final
 
 _ROOT: Final[Path] = Path(__file__).resolve().parents[1]
-_CARRIED: Final[str] = "toml-fmt-common/src/toml_fmt_common/__init__.py"
 
 
 def main(package: str) -> None:
@@ -26,9 +25,10 @@ def build_sdist(package: str, at: Path) -> Path:
 
 
 def carries_common(sdist: Path) -> None:
+    carried: str = "toml-fmt-common/src/toml_fmt_common/__init__.py"
     with tar_open(sdist) as tar:
-        if not [name for name in tar.getnames() if name.endswith(_CARRIED)]:
-            print(f"{sdist.name} holds no {_CARRIED}")
+        if not [name for name in tar.getnames() if name.endswith(carried)]:
+            print(f"{sdist.name} holds no {carried}")
             sys.exit(1)
 
 
@@ -62,8 +62,8 @@ def run(*command: str, at: Path | None = None) -> None:
 
 if __name__ == "__main__":
     try:
-        _, package = sys.argv
+        _, _PACKAGE = sys.argv
     except ValueError:
         print("Usage: check_sdist.py <package>")
         sys.exit(1)
-    main(package)
+    main(_PACKAGE)

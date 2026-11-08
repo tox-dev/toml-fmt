@@ -41,7 +41,7 @@ _DEFAULTS: Final[Mapping[str, Mapping[str, _Setting]]] = {
 
 
 def render_example(module: str, before: str, config: str = "") -> str:
-    """Use live formatter output in docs; omit labels when the input needs no change."""
+    # Use live formatter output in docs; omit labels when the input needs no change.
     before = before.strip("\n")
     after = _format_example(module, before, config).strip("\n")
     if after == before:
@@ -49,7 +49,7 @@ def render_example(module: str, before: str, config: str = "") -> str:
     return f"# Before\n{before}\n\n# After\n{after}"
 
 
-def _format_example(module: str, before: str, config: str = "") -> str:
+def _format_example(module: str, before: str, config: str) -> str:
     lib = importlib.import_module(f"{module}._lib")
     defaults = dict(_DEFAULTS[module])
     defaults.update(_parse_config(config, defaults))

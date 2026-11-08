@@ -12,39 +12,38 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-_MINOR_LIMIT: Final[int] = 255
 _PYTHON_MAJOR: Final[int] = 3
 _MIN_SUPPORTED_PYTHON: Final[tuple[int, int]] = (_PYTHON_MAJOR, 11)
 
 
 class _PyProjectFmtNamespace(FmtNamespace):
-    """Give project-specific argparse fields concrete types."""
-
+    # Give project-specific argparse fields concrete types.
     keep_full_version: bool
     max_supported_python: tuple[int, int]
     generate_python_version_classifiers: bool
 
 
 class _PyProjectFormatter(TOMLFormatter[_PyProjectFmtNamespace]):
-    """Bind the shared CLI to the pyproject-fmt Rust extension."""
-
+    # Bind the shared CLI to the pyproject-fmt Rust extension.
     def __init__(self) -> None:
-        """Start with the namespace argparse fills for each input."""
         super().__init__(_PyProjectFmtNamespace())
 
     @property
     def prog(self) -> str:
-        """Match the distribution name used for version lookup."""
+        # Match the distribution name used for version lookup.
         return "pyproject-fmt"
 
     @property
     def filename(self) -> str:
-        """Restrict positional directories to ``pyproject.toml``."""
         return "pyproject.toml"
+
+    @property
+    def override_cli_from_section(self) -> tuple[str, ...]:
+        return "tool", "pyproject-fmt"
 
     @staticmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
-        """Add project metadata options outside the shared formatter settings."""
+        # Add project metadata options outside the shared formatter settings.
         msg = "retain redundant .0 components in dependency versions"
         parser.add_argument("--keep-full-version", action="store_true", help=msg)
         msg = "retain Python version classifiers instead of deriving them from requires-python"
@@ -63,19 +62,14 @@ class _PyProjectFormatter(TOMLFormatter[_PyProjectFmtNamespace]):
             help="latest Python version the project supports (e.g. 3.14)",
         )
 
-    @property
-    def override_cli_from_section(self) -> tuple[str, ...]:
-        """Keep per-file overrides under ``tool.pyproject-fmt``."""
-        return "tool", "pyproject-fmt"
-
     @staticmethod
     def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
-        """Use the Rust parser so TOML 1.1 settings remain visible."""
+        # Use the Rust parser so TOML 1.1 settings remain visible.
         return settings_in(text, list(path))
 
     @staticmethod
     def format(text: str, opt: _PyProjectFmtNamespace) -> str:
-        """Keep Python responsible for CLI state and Rust responsible for TOML edits."""
+        # Keep Python responsible for CLI state and Rust responsible for TOML edits.
         settings = Settings(
             column_width=opt.column_width,
             indent=opt.indent,
@@ -105,10 +99,11 @@ def _version_argument(got: str) -> tuple[int, int]:
         msg = f"invalid version: {got} due {exc!r}, must be e.g. 3.14"
         raise ArgumentTypeError(msg) from exc
     # the classifiers this generates name Python 3, and the formatter holds a minor as a byte
-    if major != _PYTHON_MAJOR or not 0 <= minor <= _MINOR_LIMIT:
+    minor_limit: int = 255
+    if major != _PYTHON_MAJOR or not 0 <= minor <= minor_limit:
         msg = (
             f"invalid version: {got}, must name a Python {_PYTHON_MAJOR} minor "
-            f"from {_PYTHON_MAJOR}.0 to {_PYTHON_MAJOR}.{_MINOR_LIMIT}"
+            f"from {_PYTHON_MAJOR}.0 to {_PYTHON_MAJOR}.{minor_limit}"
         )
         raise ArgumentTypeError(msg)
     # A window that ends before it starts names no release and would empty the classifier set.
@@ -120,15 +115,21 @@ def _version_argument(got: str) -> tuple[int, int]:
 
 def runner(args: Sequence[str] | None = None) -> int:
     """
-    Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
+    Format the named files, or ``sys.argv`` when args is None; return 1 after a change or rejection.
 
-    Return 1 after a change or rejection, and 0 when inputs match.
+    :param args: the command line arguments, or ``None`` to read ``sys.argv``.
+    :returns: 1 when a file changed or was rejected, otherwise 0.
     """
+    # Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
     return run(_PyProjectFormatter(), args)
 
 
 def build_parser() -> ArgumentParser:
-    """Build the parser without reading arguments, for documentation tooling."""
+    """
+    Return the CLI argument parser, built without reading arguments, for documentation tooling.
+
+    :returns: the argument parser of the command line interface.
+    """
     return build_cli(_PyProjectFormatter())[0]
 
 

@@ -16,29 +16,17 @@ import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
-    from unittest.mock import Mock
 
-    from pytest_mock import MockerFixture
+    from pytest_mock import MockerFixture, MockType
 
     ConfigSettings: TypeAlias = Mapping[str, str | list[str]]
     BuildWheel: TypeAlias = Callable[[str, ConfigSettings | None, str | None], str]
     BuildSdist: TypeAlias = Callable[[str, ConfigSettings | None], str]
 
 _BACKEND: Final[Path] = Path(__file__).parents[1] / "build_backend.py"
-_DISTRIBUTION: Final[str] = "pyproject-fmt"
 _MODULE: Final[str] = "pyproject_fmt"
 _WHEEL: Final[str] = f"{_MODULE}-0-py3-none-any.whl"
 _SDIST: Final[str] = f"{_MODULE}-0.tar.gz"
-_METADATA: Final[str] = """\
-Metadata-Version: 2.4
-Name: pyproject-fmt
-Version: 0
-Description-Content-Type: text/markdown
-
-# pyproject-fmt
-
-Format your TOML.
-"""
 _SDIST_HELD: Final[bytes] = b'[project]\nname = "pyproject-fmt"\n'
 
 
@@ -72,7 +60,8 @@ def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
     package = tmp_path / "package"
     package.mkdir()
     copy2(_BACKEND, package / "build_backend.py")
-    (package / "pyproject.toml").write_text(f'[project]\nname = "{_DISTRIBUTION}"\n', encoding="utf-8", newline="")
+    distribution: str = "pyproject-fmt"
+    (package / "pyproject.toml").write_text(f'[project]\nname = "{distribution}"\n', encoding="utf-8", newline="")
     _write_common(package / "toml-fmt-common")
 
     maturin = mocker.MagicMock(
@@ -178,7 +167,7 @@ def test_vendor_into_sdist_content(sdist: Path, member: str, content: bytes) -> 
 
 
 def test_vendor_into_wheel_rebuild_is_byte_identical(
-    backend: Backend, tmp_path: Path, clock: Mock, monkeypatch: pytest.MonkeyPatch
+    backend: Backend, tmp_path: Path, clock: MockType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
     first = tmp_path / "first"
@@ -192,15 +181,15 @@ def test_vendor_into_wheel_rebuild_is_byte_identical(
 
 
 @pytest.fixture
-def clock(mocker: MockerFixture) -> Mock:
-    clock: Mock = mocker.create_autospec(time, return_value=1609459201)
+def clock(mocker: MockerFixture) -> MockType:
+    clock: MockType = mocker.create_autospec(time, return_value=1609459201)
     mocker.patch("zipfile.time", SimpleNamespace(gmtime=gmtime, localtime=localtime, time=clock))
     mocker.patch("gzip.time", SimpleNamespace(time=clock))
     return clock
 
 
 def test_vendor_into_sdist_rebuild_is_byte_identical(
-    backend: Backend, tmp_path: Path, clock: Mock, monkeypatch: pytest.MonkeyPatch
+    backend: Backend, tmp_path: Path, clock: MockType, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1609459200")
     first = tmp_path / "first"
@@ -237,7 +226,19 @@ def _write_wheel(
 ) -> str:
     with ZipFile(Path(wheel_directory) / _WHEEL, "w") as archive:
         archive.writestr(f"{_MODULE}/__main__.py", "import toml_fmt_common\n")
-        archive.writestr(f"{_MODULE}-0.dist-info/METADATA", _METADATA)
+        archive.writestr(
+            f"{_MODULE}-0.dist-info/METADATA",
+            """\
+Metadata-Version: 2.4
+Name: pyproject-fmt
+Version: 0
+Description-Content-Type: text/markdown
+
+# pyproject-fmt
+
+Format your TOML.
+""",
+        )
         archive.writestr(f"{_MODULE}-0.dist-info/RECORD", "")
     return _WHEEL
 

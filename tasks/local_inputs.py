@@ -35,11 +35,7 @@ LOCAL_INPUTS: Final[dict[str, tuple[str, ...]]] = {
 
 
 def affects(project: str, changed_files: Iterable[str]) -> bool:
-    """Match changes to the package whose artifact includes them."""
     return any(file_path.startswith(LOCAL_INPUTS[project]) for file_path in changed_files)
 
 
-__all__ = [
-    "LOCAL_INPUTS",
-    "affects",
-]
+__all__ = []

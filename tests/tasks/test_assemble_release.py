@@ -1,5 +1,3 @@
-"""Release assembly in the shared changelog."""
-
 from __future__ import annotations
 
 import runpy

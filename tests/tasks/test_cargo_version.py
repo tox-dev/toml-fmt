@@ -1,5 +1,3 @@
-"""Read the version from Cargo package metadata."""
-
 from __future__ import annotations
 
 import tomllib

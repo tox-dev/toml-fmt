@@ -50,13 +50,19 @@ lint.ignore = [
   "multi-line-summary-first-line",             # `multi-line-summary-first-line` (D212) and `multi-line-summary-second-line` (D213) are incompatible
   "non-empty-init-module",                     # toml-fmt-common exposes its API from __init__.py
   "single-line-implicit-string-concatenation", # Conflict with formatter
+  "undocumented-magic-method",                 # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-class",                 # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-function",              # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-init",                  # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-method",                # undocumented-public-api (simplint SMP903) covers the public API instead
+  "undocumented-public-nested-class",          # undocumented-public-api (simplint SMP903) covers the public API instead
 ]
 lint.per-file-ignores."**/build_backend.py" = [
   "implicit-namespace-package",   # is not a namespace
   "print",                        # the CLI reports what it patched
   "undocumented-public-function", # the build-backend hooks are PEP 517 contract, documented at module level
 ]
-lint.per-file-ignores."**/src/toml_fmt_common/__init__.py" = [
+lint.per-file-ignores."**/src/toml_fmt_common/_app.py" = [
   "print", # the CLI reports what it formatted on stdout
 ]
 lint.per-file-ignores."**/tests/**/*.py" = [
@@ -107,3 +113,6 @@ uploaded-prior-to = "P7D"
 decision-order = "stable"
 matrix.python = ">=3.15,<3.16"
 matrix.platforms = [ "linux_x86_64" ]
+
+[tool.simplint]
+docstring-style = "rst"

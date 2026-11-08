@@ -1,12 +1,10 @@
-"""Python release names and checked-in settings."""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 import pytest
 
-from tasks import python_versions
+from tasks.python_versions import Place, with_a_candidate, written_places
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -17,6 +15,7 @@ if TYPE_CHECKING:
 def test_with_a_candidate_accepts_only_release_candidates(mocker: MockerFixture) -> None:
     mocker.patch(
         "tasks.python_versions.fetch",
+        autospec=True,
         return_value=[
             {"name": "Python 3.15.0rc1"},
             {"name": "Python 3.16.0b2"},
@@ -25,7 +24,7 @@ def test_with_a_candidate_accepts_only_release_candidates(mocker: MockerFixture)
         ],
     )
 
-    assert python_versions.with_a_candidate() == {15}
+    assert with_a_candidate() == {15}
 
 
 @pytest.mark.parametrize(
@@ -34,9 +33,9 @@ def test_with_a_candidate_accepts_only_release_candidates(mocker: MockerFixture)
     ids=("cli-default", "examples", "pyproject-config", "tox-config", "configuration", "formatting", "cli-minimum"),
 )
 def test_written_places_match_expected_spelling(tmp_path: Path, index: int) -> None:
-    place = python_versions.written_places(15, 11)[index]
-    previous = python_versions.written_places(14, 10)[index].spelling
+    place = written_places(15, 11)[index]
+    previous = written_places(14, 10)[index].spelling
     source = tmp_path / "source"
     source.write_text(f"before\n{previous}\nafter\n")
 
-    assert python_versions.Place(source, place.pattern, place.minor, place.spelling).said() == previous
+    assert Place(path=source, pattern=place.pattern, minor=place.minor, spelling=place.spelling).said() == previous

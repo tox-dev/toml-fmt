@@ -3,6 +3,7 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 from textwrap import dedent
+from typing import Final
 
 import pytest
 from trove_classifiers import classifiers
@@ -15,18 +16,16 @@ def test_build_parser_uses_program_name() -> None:
 
 
 def test_the_default_max_supported_python_names_a_published_classifier() -> None:
-    """PyPI turns away an upload naming a classifier it does not publish, so the default writes none."""
+    # PyPI turns away an upload naming a classifier it does not publish, so the default writes none.
     major, minor = build_parser().get_default("max_supported_python")
 
     assert f"Programming Language :: Python :: {major}.{minor}" in classifiers
 
 
 def test_the_default_max_supported_python_trails_the_newest_classifier_by_one() -> None:
-    """
-    A classifier is published while its release is still in beta, so the newest one runs a release
-    ahead of the newest that ships. Two ahead says a release has shipped that the default leaves out,
-    which is what asks for the bump.
-    """
+    # A classifier is published while its release is still in beta, so the newest one runs a release
+    # ahead of the newest that ships. Two ahead says a release has shipped that the default leaves out,
+    # which is what asks for the bump.
     major, minor = build_parser().get_default("max_supported_python")
     published = max(
         int(held)
@@ -40,102 +39,128 @@ def test_the_default_max_supported_python_trails_the_newest_classifier_by_one() 
     )
 
 
-@pytest.mark.parametrize(
-    "in_place",
-    [
-        True,
-        False,
-    ],
-    ids=("in_place", "print"),
-)
-@pytest.mark.parametrize(
-    "check",
-    [
-        True,
-        False,
-    ],
-    ids=["check", "no_check"],
-)
-@pytest.mark.parametrize(
-    "cwd",
-    [
-        True,
-        False,
-    ],
-    ids=["cwd", "absolute"],
-)
-@pytest.mark.parametrize(
-    ("start", "outcome", "output"),
-    [
-        pytest.param(
-            '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n',
-            '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n',
-            "no change for {0}\n",
-            id="formatted",
-        ),
-        pytest.param(
-            '[build-system]\nrequires = ["hatchling>=0.14.0"]',
-            '[build-system]\nrequires = [ "hatchling>=0.14" ]\n',
-            "--- {0}\n\n+++ {0}\n\n@@ -1,2 +1,2 @@\n\n [build-system]\n-requires = "
-            '["hatchling>=0.14.0"]\n+requires = [ "hatchling>=0.14" ]\n',
-            id="format",
-        ),
-    ],
-)
-def test_main(
+_FORMATTED: Final[str] = '[build-system]\nrequires = [\n  "hatchling>=0.14",\n]\n'
+_UNFORMATTED: Final[str] = '[build-system]\nrequires = ["hatchling>=0.14.0"]'
+_REFORMATTED: Final[str] = '[build-system]\nrequires = [ "hatchling>=0.14" ]\n'
+_CASES: Final[list[pytest.ParameterSet]] = [
+    pytest.param(_FORMATTED, _FORMATTED, "no change for {0}\n", 0, id="formatted"),
+    pytest.param(
+        _UNFORMATTED,
+        _REFORMATTED,
+        "--- {0}\n\n+++ {0}\n\n@@ -1,2 +1,2 @@\n\n [build-system]\n-requires = "
+        '["hatchling>=0.14.0"]\n+requires = [ "hatchling>=0.14" ]\n',
+        1,
+        id="format",
+    ),
+]
+
+
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_in_place(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
-    in_place: bool,
     start: str,
     outcome: str,
     output: str,
+    exit_code: int,
     monkeypatch: pytest.MonkeyPatch,
-    cwd: bool,
-    check: bool,
 ) -> None:
     monkeypatch.setenv("NO_COLOR", "1")
-    if cwd:
-        monkeypatch.chdir(tmp_path)
+    monkeypatch.chdir(tmp_path)
     pyproject_toml = tmp_path / "pyproject.toml"
     pyproject_toml.write_text(start)
-    args = [str(pyproject_toml)]
-    if not in_place:
-        args.append("--stdout")
 
-    if check:
-        args.append("--check")
-
-        if not in_place:
-            with pytest.raises(SystemExit):
-                run(args)
-            assert pyproject_toml.read_text() == start
-            return
-
-    result = run(args)
-    assert result == (0 if start == outcome else 1)
+    assert run(["pyproject.toml"]) == exit_code
 
     out, err = capsys.readouterr()
     assert not err
-
-    if check:
-        assert pyproject_toml.read_text() == start
-    elif in_place:
-        name = "pyproject.toml" if cwd else str(tmp_path / "pyproject.toml")
-        output = output.format(name)
-        assert pyproject_toml.read_text() == outcome
-        assert out == output
-    else:
-        assert out == outcome
+    assert pyproject_toml.read_text() == outcome
+    assert out == output.format("pyproject.toml")
 
 
-@pytest.mark.parametrize("indent", [0, 2, 4])
+@pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
+def test_main_in_place_shows_an_absolute_path_outside_cwd(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    output: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml)]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert pyproject_toml.read_text() == outcome
+    assert out == output.format(pyproject_toml)
+
+
+@pytest.mark.parametrize(
+    ("start", "exit_code"),
+    [pytest.param(_FORMATTED, 0, id="formatted"), pytest.param(_UNFORMATTED, 1, id="format")],
+)
+def test_main_check_leaves_the_file_unchanged(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.chdir(tmp_path)
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    assert run(["pyproject.toml", "--check"]) == exit_code
+
+    _, err = capsys.readouterr()
+    assert not err
+    assert pyproject_toml.read_text() == start
+
+
+@pytest.mark.parametrize("start", [_FORMATTED, _UNFORMATTED], ids=["formatted", "format"])
+def test_main_check_refuses_stdout(tmp_path: Path, start: str) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    with pytest.raises(SystemExit):
+        run([str(pyproject_toml), "--stdout", "--check"])
+    assert pyproject_toml.read_text() == start
+
+
+@pytest.mark.parametrize(
+    ("start", "outcome", "exit_code"),
+    [
+        pytest.param(_FORMATTED, _FORMATTED, 0, id="formatted"),
+        pytest.param(_UNFORMATTED, _REFORMATTED, 1, id="format"),
+    ],
+)
+def test_main_prints_to_stdout(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    start: str,
+    outcome: str,
+    exit_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("NO_COLOR", "1")
+    pyproject_toml = tmp_path / "pyproject.toml"
+    pyproject_toml.write_text(start)
+
+    assert run([str(pyproject_toml), "--stdout"]) == exit_code
+
+    out, err = capsys.readouterr()
+    assert not err
+    assert out == outcome
+
+
+@pytest.mark.parametrize("indent", [0, 2, 4], ids=["zero", "two", "four"])
 def test_indent(tmp_path: Path, indent: int) -> None:
-    start = """\
-    [build-system]
-    requires = [
-        "A",
-    ]
-    """
 
     expected = f"""\
     [build-system]
@@ -144,9 +169,14 @@ def test_indent(tmp_path: Path, indent: int) -> None:
     ]
     """
     pyproject_toml = tmp_path / "pyproject.toml"
+    start = """\
+    [build-system]
+    requires = [
+        "A",
+    ]
+    """
     pyproject_toml.write_text(dedent(start))
-    args = [str(pyproject_toml), "--indent", str(indent)]
-    run(args)
+    run([str(pyproject_toml), "--indent", str(indent)])
     output = pyproject_toml.read_text()
     assert output == dedent(expected)
 
@@ -222,6 +252,7 @@ def test_a_carriage_return_toml_does_not_read(tmp_path: Path, capsys: pytest.Cap
 
 
 def test_keep_full_version_cli(tmp_path: Path) -> None:
+    pyproject_toml = tmp_path / "pyproject.toml"
     start = """\
     [build-system]
     requires = [
@@ -240,15 +271,14 @@ def test_keep_full_version_cli(tmp_path: Path) -> None:
       "b==2.0.0",
     ]
     """
-    pyproject_toml = tmp_path / "pyproject.toml"
     pyproject_toml.write_text(dedent(start).replace('"a==1.0.0"', '"A==1.0.0"'))
-    args = [str(pyproject_toml), "--keep-full-version", "--max-supported-python", "3.11"]
-    run(args)
+    run([str(pyproject_toml), "--keep-full-version", "--max-supported-python", "3.11"])
     output = pyproject_toml.read_text()
     assert output == dedent(start)
 
 
 def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    filename = tmp_path / "pyproject.toml"
     txt = """
     [project]
     keywords = [
@@ -270,10 +300,10 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     keep_full_version = true
     max_supported_python = "3.11"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     run([str(filename)])
 
+    got = filename.read_text()
     expected = """\
     [project]
     keywords = [
@@ -296,7 +326,6 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
     keep_full_version = true
     max_supported_python = "3.11"
     """
-    got = filename.read_text()
     assert got == dedent(expected)
     out, err = capsys.readouterr()
     assert out
@@ -304,11 +333,11 @@ def test_pyproject_toml_config(tmp_path: Path, capsys: pytest.CaptureFixture[str
 
 
 def test_pyproject_fmt_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    filename = tmp_path / "pyproject.toml"
     txt = """
     [project]
     requires-python = "==3.12"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--no-print-diff", "--column-width", "120"])
 
@@ -331,6 +360,7 @@ def test_pyproject_fmt_api_changed(tmp_path: Path, capsys: pytest.CaptureFixture
 
 
 def test_pyproject_fmt_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     requires-python = "==3.12"
@@ -339,7 +369,6 @@ def test_pyproject_fmt_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixtu
       "Programming Language :: Python :: 3.12",
     ]
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--no-print-diff"])
 
@@ -355,6 +384,7 @@ def test_pyproject_fmt_api_no_change(tmp_path: Path, capsys: pytest.CaptureFixtu
 
 
 def test_no_generate_python_version_classifiers(tmp_path: Path) -> None:
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     requires-python = "==3.12"
@@ -363,7 +393,6 @@ def test_no_generate_python_version_classifiers(tmp_path: Path) -> None:
       "Programming Language :: Python :: 3.12",
     ]
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--no-print-diff", "--no-generate-python-version-classifiers"])
 
@@ -383,14 +412,14 @@ def test_no_generate_python_version_classifiers(tmp_path: Path) -> None:
 
 
 def test_table_format_long_expands_sub_tables(tmp_path: Path) -> None:
-    """Test that --table-format long expands sub-tables to [table.subtable] format."""
+    # Test that --table-format long expands sub-tables to [table.subtable] format.
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     name = "myproject"
     urls.homepage = "https://example.com"
     urls.repository = "https://github.com/example"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--table-format", "long", "--no-generate-python-version-classifiers"])
 
@@ -406,7 +435,8 @@ def test_table_format_long_expands_sub_tables(tmp_path: Path) -> None:
 
 
 def test_table_format_short_collapses_sub_tables(tmp_path: Path) -> None:
-    """Test that --table-format short collapses [table.subtable] to dotted keys."""
+    # Test that --table-format short collapses [table.subtable] to dotted keys.
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     name = "myproject"
@@ -415,7 +445,6 @@ def test_table_format_short_collapses_sub_tables(tmp_path: Path) -> None:
     homepage = "https://example.com"
     repository = "https://github.com/example"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--table-format", "short", "--no-generate-python-version-classifiers"])
 
@@ -430,7 +459,8 @@ def test_table_format_short_collapses_sub_tables(tmp_path: Path) -> None:
 
 
 def test_table_format_config_in_pyproject_toml(tmp_path: Path) -> None:
-    """Test that table_format can be configured via pyproject.toml."""
+    # Test that table_format can be configured via pyproject.toml.
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     name = "myproject"
@@ -439,7 +469,6 @@ def test_table_format_config_in_pyproject_toml(tmp_path: Path) -> None:
     [tool.pyproject-fmt]
     table_format = "long"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--no-generate-python-version-classifiers"])
 
@@ -452,14 +481,14 @@ def test_table_format_config_in_pyproject_toml(tmp_path: Path) -> None:
 
 
 def test_expand_tables_override(tmp_path: Path) -> None:
-    """Test that --expand-tables overrides the default table format."""
+    # Test that --expand-tables overrides the default table format.
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     name = "myproject"
     urls.homepage = "https://example.com"
     scripts.main = "pkg:main"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     # Use short format but expand project tables
     res = run([
@@ -479,7 +508,7 @@ def test_expand_tables_override(tmp_path: Path) -> None:
 
 
 def test_collapse_tables_override(tmp_path: Path) -> None:
-    """Test that --collapse-tables overrides expand-tables."""
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     name = "myproject"
@@ -487,7 +516,6 @@ def test_collapse_tables_override(tmp_path: Path) -> None:
     [project.urls]
     homepage = "https://example.com"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     # Use long format, set expand, but collapse overrides
     res = run([
@@ -510,7 +538,8 @@ def test_collapse_tables_override(tmp_path: Path) -> None:
 
 
 def test_pyproject_fmt_self_config_normalized(tmp_path: Path) -> None:
-    """The tool.pyproject-fmt table is key-ordered and its list values sorted and deduplicated."""
+    # The tool.pyproject-fmt table is key-ordered and its list values sorted and deduplicated.
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     name = "myproject"
@@ -522,7 +551,6 @@ def test_pyproject_fmt_self_config_normalized(tmp_path: Path) -> None:
     expand_tables = ["tool.ruff", "tool.black", "tool.ruff"]
     keep_full_version = true
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
     res = run([str(filename), "--no-generate-python-version-classifiers"])
 
@@ -543,11 +571,11 @@ def test_pyproject_fmt_self_config_normalized(tmp_path: Path) -> None:
 
 
 def test_invalid_project_version(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     version = "1.9.xyz"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
 
     assert run([str(filename)]) == 1
@@ -559,11 +587,11 @@ def test_invalid_project_version(tmp_path: Path, capsys: pytest.CaptureFixture[s
 
 
 def test_project_version_kept_verbatim(tmp_path: Path) -> None:
+    filename = tmp_path / "pyproject.toml"
     txt = """\
     [project]
     version = "2026.08.10"
     """
-    filename = tmp_path / "pyproject.toml"
     filename.write_text(dedent(txt))
 
     assert run([str(filename), "--no-print-diff", "--no-generate-python-version-classifiers"]) == 0
@@ -572,7 +600,7 @@ def test_project_version_kept_verbatim(tmp_path: Path) -> None:
 
 
 def test_settings_are_read_beside_a_value_only_toml_1_1_reads(tmp_path: Path) -> None:
-    """A file the formatter reads is one its own settings are read from, TOML 1.1 values included."""
+    # A file the formatter reads is one its own settings are read from, TOML 1.1 values included.
     pyproject_toml = tmp_path / "pyproject.toml"
     pyproject_toml.write_text(
         'when = 12:30\n\n[project]\nname = "demo"\ndescription = "one two three four five six seven"\n'
@@ -613,17 +641,16 @@ def test_settings_are_read_from_a_file_that_opens_with_a_byte_order_mark(tmp_pat
 
 
 def test_a_value_nested_deeper_than_a_python_reader_goes(tmp_path: Path) -> None:
-    """Reading the settings must reach as far into a document as the formatter does."""
+    # Reading the settings must reach as far into a document as the formatter does.
     pyproject_toml = tmp_path / "pyproject.toml"
-    start = f"a = {'[' * 200}1{']' * 200}\n"
-    pyproject_toml.write_text(start)
+    pyproject_toml.write_text(f"a = {'[' * 200}1{']' * 200}\n")
 
     assert run([str(pyproject_toml)]) == 1
     assert pyproject_toml.read_text().startswith("a = [\n  [\n")
 
 
 def test_a_value_nested_deeper_than_the_formatter_reads(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """A value past what a stack holds is reported, and the file is left as its author wrote it."""
+    # A value past what a stack holds is reported, and the file is left as its author wrote it.
     pyproject_toml = tmp_path / "pyproject.toml"
     start = f"a = {'[' * 12_000}1{']' * 12_000}\n"
     pyproject_toml.write_text(start)
@@ -635,7 +662,7 @@ def test_a_value_nested_deeper_than_the_formatter_reads(tmp_path: Path, capsys: 
 
 
 def test_every_python_environment_runs_the_tests() -> None:
-    """A Python environment that defines no command of its own passes without running a test."""
+    # A Python environment that defines no command of its own passes without running a test.
     config = tomllib.loads((Path(__file__).parent.parent / "tox.toml").read_text(encoding="utf-8"))
 
     assert config["env_run_base"]["commands"][0][0] == "pytest"
@@ -656,7 +683,7 @@ def test_every_python_environment_runs_the_tests() -> None:
     ],
 )
 def test_a_setting_is_read_however_the_file_writes_its_table(tmp_path: Path, settings: str) -> None:
-    """TOML maps dotted and explicit table spellings to one path; settings follow that path."""
+    # TOML maps dotted and explicit table spellings to one path; settings follow that path.
     pyproject_toml = tmp_path / "pyproject.toml"
     # a dotted key writes its own table, so it stands before the first header rather than under it
     pyproject_toml.write_text(
@@ -669,7 +696,7 @@ def test_a_setting_is_read_however_the_file_writes_its_table(tmp_path: Path, set
 
 
 def test_settings_under_a_repeated_table_are_no_settings(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """A table the file repeats is a list of them, and what its elements write is no one table."""
+    # A table the file repeats is a list of them, and what its elements write is no one table.
     pyproject_toml = tmp_path / "pyproject.toml"
     start = '[project]\nname = "x"\n\n[[tool]]\npyproject-fmt = { column_width = 30 }\n'
     pyproject_toml.write_text(start)
@@ -685,7 +712,7 @@ def test_the_first_setting_the_formatter_cannot_hold_is_the_one_reported(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """Report the first invalid setting in source order."""
+    # Report the first invalid setting in source order.
     pyproject_toml = tmp_path / "pyproject.toml"
     pyproject_toml.write_text('[project]\nname = "x"\n\n[tool.pyproject-fmt]\nz_bad = 1\na_bad = 2\n')
 
@@ -696,7 +723,7 @@ def test_the_first_setting_the_formatter_cannot_hold_is_the_one_reported(
 
 
 def test_a_selector_that_names_no_table(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    """A setting that names a table TOML cannot read asks for nothing, and is told so."""
+    # A setting that names a table TOML cannot read asks for nothing, and is told so.
     pyproject_toml = tmp_path / "pyproject.toml"
     start = '[project]\nname = "x"\n\n[tool.pyproject-fmt]\nexpand_tables = [ "project.\\"urls" ]\n'
     pyproject_toml.write_text(start)
@@ -707,28 +734,31 @@ def test_a_selector_that_names_no_table(tmp_path: Path, capsys: pytest.CaptureFi
     assert pyproject_toml.read_text() == start
 
 
-@pytest.mark.parametrize("through", ["cli", "file", "neither"], ids=["command-line", "configuration", "control"])
+@pytest.mark.parametrize(
+    ("config", "args", "child"),
+    [
+        pytest.param("\n[tool.pyproject-fmt]\nexpand_tables = [ 'tool.\"a,b\"' ]\n", [], True, id="configuration"),
+        pytest.param("", ["--expand-tables", 'tool."a,b"'], True, id="command-line"),
+        pytest.param("", [], False, id="control"),
+    ],
+)
 def test_a_quoted_selector_names_the_same_table_either_way(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
-    through: str,
+    config: str,
+    args: list[str],
+    child: bool,
 ) -> None:
-    """A name TOML quotes may hold a comma of its own, which separates nothing."""
+    # A name TOML quotes may hold a comma of its own, which separates nothing.
     pyproject_toml = tmp_path / "pyproject.toml"
     held = '[project]\nname = "My_Package"\n\n[tool."a,b".child]\nx = 1\n'
-    pyproject_toml.write_text(held)
-    if through == "cli":
-        assert run([str(pyproject_toml), "--no-print-diff", "--expand-tables", 'tool."a,b"']) == 1
-    elif through == "file":
-        pyproject_toml.write_text(f"{held}\n[tool.pyproject-fmt]\nexpand_tables = [ 'tool.\"a,b\"' ]\n")
-        assert run([str(pyproject_toml), "--no-print-diff"]) == 1
-    else:
-        assert run([str(pyproject_toml), "--no-print-diff"]) == 1
+    pyproject_toml.write_text(f"{held}{config}")
+    assert run([str(pyproject_toml), "--no-print-diff", *args]) == 1
 
     assert not capsys.readouterr().err
     written = pyproject_toml.read_text()
     # the formatter ran: the project name is written the way a distribution name is spelled
     assert 'name = "my-package"' in written
     # the selector is what holds the table open, so without one it folds into its parent
-    assert ('[tool."a,b".child]' in written) is (through != "neither")
-    assert ('[tool."a,b"]' in written) is (through == "neither")
+    assert ('[tool."a,b".child]' in written) is child
+    assert ('[tool."a,b"]' in written) is (not child)

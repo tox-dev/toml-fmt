@@ -21,7 +21,9 @@ def main(argv: Sequence[str] | None = None) -> None:
 
 
 def assemble(root: Path, package: str, version: str, date: str) -> None:
-    """Write a package release from its merged fragments."""
+    # Write a package release from its merged fragments.
+    fragments = sorted((root / "changelog.d" / package).glob("*.md"))
+    sections: dict[str, list[str]] = {}
     names = {
         "feature": "Added",
         "change": "Changes",
@@ -34,8 +36,6 @@ def assemble(root: Path, package: str, version: str, date: str) -> None:
         "removal": "Removed",
         "packaging": "Packaging",
     }
-    fragments = sorted((root / "changelog.d" / package).glob("*.md"))
-    sections: dict[str, list[str]] = {}
     for fragment in fragments:
         stem, separator, category = fragment.stem.rpartition(".")
         if (
@@ -50,7 +50,7 @@ def assemble(root: Path, package: str, version: str, date: str) -> None:
         if not content or "\n\n" in content or content.startswith(("- ", "# ")):
             msg = f"expected one nonempty paragraph in {fragment}"
             raise ValueError(msg)
-        sections.setdefault(names[category], []).append("- " + " ".join(line.strip() for line in content.splitlines()))
+        sections.setdefault(names[category], []).append(f"- {' '.join(line.strip() for line in content.splitlines())}")
     changelog = root / "CHANGELOG.md"
     history = changelog.read_text(encoding="utf-8")
     heading = f"## {package}\n\n"
@@ -69,7 +69,8 @@ def assemble(root: Path, package: str, version: str, date: str) -> None:
                 *items,
                 "",
             ))
-    changelog.write_text(history.replace(heading, heading + "\n".join(release) + "\n", 1), encoding="utf-8")
+    section = "".join(f"{line}\n" for line in release)
+    changelog.write_text(history.replace(heading, f"{heading}{section}", 1), encoding="utf-8")
     for fragment in fragments:
         fragment.unlink()
 

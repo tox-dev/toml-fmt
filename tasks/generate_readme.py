@@ -35,27 +35,27 @@ _DOC_REFERENCE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def main(package: str) -> None:
+def _main(package: str) -> None:
     docs_dir = Path(package) / "docs"
     if not (index_path := docs_dir / "index.rst").exists():
         return
 
     def read(path: Path) -> str:
-        return expand_fmt_examples(path.read_text(encoding="utf-8"), package.replace("-", "_"))
+        return _expand_fmt_examples(path.read_text(encoding="utf-8"), package.replace("-", "_"))
 
-    processed = process_rst_for_pypi(read(index_path))
+    processed = _process_rst_for_pypi(read(index_path))
 
     if (config_path := docs_dir / "configuration.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(config_path)))
+        processed += f"\n\n{_process_rst_for_pypi(_strip_main_title(read(config_path)))}"
 
     if (formatting_path := docs_dir / "formatting.rst").exists():
-        processed += "\n\n" + process_rst_for_pypi(strip_main_title(read(formatting_path)))
+        processed += f"\n\n{_process_rst_for_pypi(_strip_main_title(read(formatting_path)))}"
 
-    (docs_dir.parent / "README.rst").write_text(processed.rstrip() + "\n", encoding="utf-8")
+    (docs_dir.parent / "README.rst").write_text(f"{processed.rstrip()}\n", encoding="utf-8")
 
 
-def expand_fmt_examples(content: str, module: str) -> str:
-    """Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to."""
+def _expand_fmt_examples(content: str, module: str) -> str:
+    # Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to.
     lines = content.splitlines()
     result: list[str] = []
     at = 0
@@ -81,8 +81,7 @@ def expand_fmt_examples(content: str, module: str) -> str:
         while at < len(lines) and (not lines[at].strip() or lines[at].startswith(f"{base} ")):
             body.append(lines[at])
             at += 1
-        before = "\n".join(line[len(base) :] for line in body).strip("\n")
-        rendered = render_example(module, _dedent(before), config)
+        rendered = render_example(module, _dedent("\n".join(line[len(base) :] for line in body).strip("\n")), config)
         result.extend((f"{base}.. code-block:: toml", ""))
         result.extend(f"{base}   {line}" if line else "" for line in rendered.splitlines())
         result.append("")
@@ -95,20 +94,23 @@ def _dedent(text: str) -> str:
     return "\n".join(line[pad:] if line.strip() else "" for line in text.splitlines())
 
 
-def process_rst_for_pypi(content: str) -> str:
-    content = unwrap_dropdowns(content)
+def _process_rst_for_pypi(content: str) -> str:
+    content = _unwrap_dropdowns(content)
     content = _PYPI_ROLE.sub(r"`\g<target> <https://pypi.org/project/\g<target>>`_", content)
     content = _GH_ROLE.sub(r"`\g<target> <https://github.com/\g<target>>`_", content)
     content = _DOC_REFERENCE.sub("", content)
+    return "\n".join(_drop_tabs(_drop_sections(content.splitlines()))).rstrip()
+
+
+def _drop_sections(lines: list[str]) -> list[str]:
+    # The generated command-line and configuration sections are not part of the README.
     result: list[str] = []
     skip_section = False
-    skip_tab = False
-    lines = content.splitlines()
-    for i, line in enumerate(lines):
+    for index, line in enumerate(lines):
         if (
             any(s in line for s in ("Command line interface", "Configuration via file"))
-            and i + 1 < len(lines)
-            and (next_line := lines[i + 1])
+            and index + 1 < len(lines)
+            and (next_line := lines[index + 1])
             and all(c in "-~=" for c in next_line)
         ):
             skip_section = True
@@ -117,6 +119,15 @@ def process_rst_for_pypi(content: str) -> str:
             if line and all(c in "-~=" for c in line):
                 skip_section = False
             continue
+        result.append(line)
+    return result
+
+
+def _drop_tabs(lines: list[str]) -> list[str]:
+    # Drop the tab, automodule, toctree and argparse directives with their bodies; PyPI's renderer shows none of them.
+    result: list[str] = []
+    skip_tab = False
+    for line in lines:
         if line.startswith(".. tab:: uv"):
             continue
         if line.startswith((".. tab::", ".. automodule::", ".. toctree::", ".. sphinx_argparse_cli::")):
@@ -128,11 +139,11 @@ def process_rst_for_pypi(content: str) -> str:
             else:
                 continue
         result.append(line)
-    return "\n".join(result).rstrip()
+    return result
 
 
-def unwrap_dropdowns(content: str) -> str:
-    """Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive."""
+def _unwrap_dropdowns(content: str) -> str:
+    # Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive.
     result: list[str] = []
     in_dropdown = False
     for line in content.splitlines():
@@ -151,7 +162,7 @@ def unwrap_dropdowns(content: str) -> str:
     return "\n".join(result)
 
 
-def strip_main_title(content: str) -> str:
+def _strip_main_title(content: str) -> str:
     lines = content.splitlines()
     match lines:
         case [_, underline, *body] if underline and set(underline) == {"="}:
@@ -162,17 +173,11 @@ def strip_main_title(content: str) -> str:
 
 if __name__ == "__main__":
     try:
-        _, package = sys.argv
+        _, _PACKAGE = sys.argv
     except ValueError:
         print("Usage: generate_readme.py <package>")
         sys.exit(1)
-    main(package)
+    _main(_PACKAGE)
 
 
-__all__ = [
-    "expand_fmt_examples",
-    "main",
-    "process_rst_for_pypi",
-    "strip_main_title",
-    "unwrap_dropdowns",
-]
+__all__ = []
