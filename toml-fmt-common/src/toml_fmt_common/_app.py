@@ -127,8 +127,7 @@ def _cli_args(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str]) -> li
         # a value read from a file has to be one the command line would have accepted
         allowed={action.dest: action.choices for action in actions if action.choices},
         accepts={
-            key: named.get(key) or _written_as(parser.get_default(key))
-            for key in vars(formatter.opt).keys() - _NON_FORMAT_KEYS
+            key: named.get(key) or _written_as(parser.get_default(key)) for key in {action.dest for action in actions}
         },
     )
     return [_config_of(parser, formatter, constraints, toml_path) for toml_path in formatter.opt.inputs]
@@ -155,14 +154,19 @@ def _config_of(
     if explicit_config is not None:
         shared = _load_shared_config(parser, formatter, explicit_config)
         _apply_config(parser, override_opt, shared, str(explicit_config), constraints)
-    elif found := _find_config_file(formatter.prog, toml_path.parent if toml_path is not None else Path.cwd()):
-        _apply_config(
-            parser,
-            override_opt,
-            _load_shared_config(parser, formatter, found),
-            str(found),
-            constraints,
-        )
+    else:
+        start = (toml_path.parent if toml_path is not None else Path.cwd()).resolve()
+        if found := next(
+            (path for path in (directory / f"{formatter.prog}.toml" for directory in (start, *start.parents)) if path.is_file()),
+            None,
+        ):
+            _apply_config(
+                parser,
+                override_opt,
+                _load_shared_config(parser, formatter, found),
+                str(found),
+                constraints,
+            )
     if config is not None:
         _apply_config(parser, override_opt, config, source, constraints)
     return _Config(
@@ -201,9 +205,6 @@ class _Config(Generic[_NAMESPACE_T]):
     eol: str
 
 
-_NON_FORMAT_KEYS: Final[frozenset[str]] = frozenset({"inputs", "stdout", "check", "no_print_diff", "config"})
-
-
 @dataclass(frozen=True, slots=True, kw_only=True)
 class _Constraints:
     conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
@@ -224,9 +225,8 @@ def _apply_config(
     source: str,
     constraints: _Constraints,
 ) -> None:
-    known = set(vars(opt).keys()) - _NON_FORMAT_KEYS
     for key, raw in config.items():
-        if key not in known:
+        if key not in constraints.accepts:
             parser.error(f"{source}: {key}: unknown setting")
         wants = constraints.accepts[key]
         # Python treats `True` as an integer; flags reject other integers.
@@ -240,16 +240,6 @@ def _apply_config(
             choices = ", ".join(repr(choice) for choice in constraints.allowed[key])
             parser.error(f"{source}: {key}: invalid choice: {value!r} (choose from {choices})")
         setattr(opt, key, value)
-
-
-def _find_config_file(prog: str, start: Path) -> Path | None:
-    current = start.resolve()
-    while True:
-        if (candidate := current / f"{prog}.toml").is_file():
-            return candidate
-        if (parent := current.parent) == current:
-            return None
-        current = parent
 
 
 def _load_shared_config(
