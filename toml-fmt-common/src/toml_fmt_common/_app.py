@@ -29,7 +29,13 @@ class ArgumentGroup(Protocol):
     """The argument-group operations formatter plugins use to add their flags."""
 
     def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
-        """Register one argument and return its parser action."""
+        """
+        Register one argument and return its parser action.
+
+        :param name_or_flags: the option strings, or the positional name, of the argument.
+        :param kwargs: the keyword arguments of :meth:`argparse.ArgumentParser.add_argument`.
+        :returns: the parser action that the argument creates.
+        """
         ...
 
 
@@ -38,7 +44,23 @@ TomlValue: TypeAlias = "bool | int | float | str | Sequence[TomlValue] | Mapping
 
 
 class FmtNamespace(Namespace):
-    """The options both formatters parse, typed for the attributes the shared CLI reads."""
+    """
+    The options both formatters parse, typed for the attributes the shared CLI reads.
+
+    :ivar inputs: files to format, where ``None`` is standard input.
+    :ivar stdout: write to standard output.
+    :ivar check: fail instead of writing.
+    :ivar no_print_diff: hide diffs in check mode.
+    :ivar config: shared configuration file, if given.
+    :ivar column_width: maximum line width.
+    :ivar indent: spaces per indentation level.
+    :ivar table_format: ``short`` or ``long`` tables.
+    :ivar sub_table_spacing: newlines between sub-tables.
+    :ivar separate_root_table: newlines between root table groups.
+    :ivar expand_tables: tables always expanded.
+    :ivar collapse_tables: tables always collapsed.
+    :ivar skip_wrap_for_keys: key patterns never wrapped.
+    """
 
     inputs: list[Path | None]
     stdout: bool
@@ -60,7 +82,11 @@ _NAMESPACE_T = TypeVar("_NAMESPACE_T", bound=FmtNamespace)
 
 
 class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
-    """Supply the tool-specific parts of the shared CLI: the names, the extra flags and the TOML reader."""
+    """
+    Supply the tool-specific parts of the shared CLI: the names, the extra flags and the TOML reader.
+
+    :param opt: the options namespace the shared CLI parses into.
+    """
 
     def __init__(self, opt: _NAMESPACE_T) -> None:
         self.opt: _NAMESPACE_T = opt
@@ -86,13 +112,23 @@ class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
     @staticmethod
     @abstractmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
-        """Add the options that the shared settings do not cover."""
+        """
+        Add the options that the shared settings do not cover.
+
+        :param parser: the argument group the shared settings were added to.
+        """
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
-        """Return the settings the text writes under path, read with the parser that reads the file itself."""
+        """
+        Return the settings the text writes under path, read with the parser that reads the file itself.
+
+        :param text: the TOML document to read.
+        :param path: the table names that lead to the settings.
+        :returns: the settings, or ``None`` when the document writes none under that table.
+        """
         # A second reader of an older TOML would drop a file's own configuration on a value it cannot
         # read, and format the file as though none had been written.
         raise NotImplementedError
@@ -100,12 +136,24 @@ class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
     @staticmethod
     @abstractmethod
     def format(text: str, opt: _NAMESPACE_T) -> str:
-        """Return the text rewritten with the settings in opt."""
+        """
+        Return the text rewritten with the settings in opt.
+
+        :param text: the TOML document to rewrite.
+        :param opt: the options to rewrite the document with.
+        :returns: the rewritten document.
+        """
         raise NotImplementedError
 
 
 def run(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str] | None = None) -> int:
-    """Format each input with its own options and return 1 after a change or rejection."""
+    """
+    Format each input with its own options and return 1 after a change or rejection.
+
+    :param formatter: the formatter that supplies the tool-specific parts of the CLI.
+    :param args: the command line arguments, or ``None`` to read ``sys.argv``.
+    :returns: 1 when an input changed or was rejected, otherwise 0.
+    """
     # A supplied argument list supports embedding; the console script falls back to ``sys.argv``.
     configs = _cli_args(formatter, sys.argv[1:] if args is None else args)
     # collect first: any() over a generator stops at the first changed input and leaves the rest unformatted
@@ -315,7 +363,12 @@ class _Constraints:
 def build_cli(
     formatter: TOMLFormatter[_NAMESPACE_T],
 ) -> tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]:
-    """Return the shared CLI parser, built without reading arguments, and the readers of its settings."""
+    """
+    Return the shared CLI parser, built without reading arguments, and the readers of its settings.
+
+    :param formatter: the formatter that supplies the tool-specific parts of the CLI.
+    :returns: the parser, and the reader that converts each setting's TOML value to its command line type.
+    """
     # The conversion mapping applies the same readers to settings loaded from TOML.
     parser, type_conversion, _ = _make_cli(formatter)
     return parser, type_conversion
@@ -417,7 +470,13 @@ def _toml_path_creator(filename: str, argument: str) -> Path | None:
 
 # A larger count asks the formatter to allocate a string no line can hold.
 def count_argument(value: TomlValue) -> int:
-    """Return the count a CLI or TOML value names, rejecting booleans and counts outside 0 through 10,000."""
+    """
+    Return the count a CLI or TOML value names, rejecting booleans and counts outside 0 through 10,000.
+
+    :param value: the count as written on the command line or in a file.
+    :returns: the count.
+    :raises ArgumentTypeError: when the value is not a count in range.
+    """
     # `True` is an integer to Python, and a file that writes one there names no count
     if isinstance(value, bool) or not isinstance(value, (str, int)):
         msg = f"invalid count: {value!r}"
@@ -438,7 +497,13 @@ def count_argument(value: TomlValue) -> int:
 
 
 def spacing_argument(value: TomlValue) -> str:
-    """Return the spacing with the escaped newlines a TOML file writes turned into real ones."""
+    """
+    Return the spacing with the escaped newlines a TOML file writes turned into real ones.
+
+    :param value: the spacing as written on the command line or in a file.
+    :returns: the spacing with real newlines.
+    :raises ArgumentTypeError: when the value is not a string.
+    """
     # Accept strings because TOML settings may spell newlines as ``\n``.
     if not isinstance(value, str):
         msg = f"invalid spacing: {value!r}"
@@ -447,7 +512,13 @@ def spacing_argument(value: TomlValue) -> str:
 
 
 def list_argument(value: TomlValue) -> list[str]:
-    """Return the names in a comma list or a TOML array, rejecting any entry that is not a string."""
+    """
+    Return the names in a comma list or a TOML array, rejecting any entry that is not a string.
+
+    :param value: the names as written on the command line or in a file.
+    :returns: the names.
+    :raises ArgumentTypeError: when the value is neither a string nor an array of strings.
+    """
     if isinstance(value, str):
         return [name for part in _split_outside_quotes(value) if (name := part.strip())]
     read = [item for item in value if isinstance(item, str)] if isinstance(value, Sequence) else []
@@ -480,7 +551,12 @@ def _split_outside_quotes(value: str) -> Iterator[str]:
 
 
 def name_list_argument(value: TomlValue) -> list[str]:
-    """Return the names in a comma list, keeping commas and spaces inside TOML-quoted names."""
+    """
+    Return the names in a comma list, keeping commas and spaces inside TOML-quoted names.
+
+    :param value: the names as written on the command line or in a file.
+    :returns: the names.
+    """
     if not isinstance(value, str):
         return list_argument(value)
     return [name for part in _split_outside_quotes(value) if (name := _read_name(part.strip()))]
@@ -527,7 +603,17 @@ def _read_name(name: str) -> str:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Setting:
-    """One formatting setting, named once for the command line and for the file that may hold it."""
+    """
+    One formatting setting, named once for the command line and for the file that may hold it.
+
+    :param flag: the command line flag, such as ``--column-width``.
+    :param help: the help text shown for the flag.
+    :param takes: the Python type the setting holds.
+    :param default: the value used when no source sets the setting.
+    :param convert: the reader that turns a TOML value into the setting's type, if any.
+    :param choices: the values the setting accepts, if it is restricted.
+    :param metavar: the placeholder shown for the value in the help text, if any.
+    """
 
     flag: str
     help: str
@@ -538,11 +624,19 @@ class Setting:
     metavar: str | None = None
 
     def name(self) -> str:
-        """Return the argparse destination of the flag, which is also the TOML key."""
+        """
+        Return the argparse destination of the flag, which is also the TOML key.
+
+        :returns: the flag without its leading dashes, with dashes replaced by underscores.
+        """
         return self.flag.removeprefix("--").replace("-", "_")
 
     def add_to(self, parser: ArgumentGroup) -> None:
-        """Register the flag on the parser with its default, its help and its conversion for TOML values."""
+        """
+        Register the flag on the parser with its default, its help and its conversion for TOML values.
+
+        :param parser: the argument group to add the flag to.
+        """
         action = parser.add_argument(self.flag, default=self.default, help=self.help)
         if self.convert is not None:
             action.type = self.convert
