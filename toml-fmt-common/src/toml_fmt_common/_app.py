@@ -26,17 +26,20 @@ if TYPE_CHECKING:
 
 
 class ArgumentGroup(Protocol):
-    # Expose the argument-group operation formatter plugins use.
+    """The argument-group operations formatter plugins use to add their flags."""
+
     def add_argument(self, *name_or_flags: str, **kwargs: object) -> Action:
-        # Register one argument and return its parser action.
+        """Register one argument and return its parser action."""
         ...
 
 
+#: A value read from TOML: a scalar, an array of values, or a table of them.
 TomlValue: TypeAlias = "bool | int | float | str | Sequence[TomlValue] | Mapping[str, TomlValue]"
 
 
 class FmtNamespace(Namespace):
-    # Give argparse fields the types shared by both formatters.
+    """The options both formatters parse, typed for the attributes the shared CLI reads."""
+
     inputs: list[Path | None]
     stdout: bool
     check: bool
@@ -57,39 +60,39 @@ _NAMESPACE_T = TypeVar("_NAMESPACE_T", bound=FmtNamespace)
 
 
 class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
-    # Supply tool-specific hooks to the shared CLI.
+    """Supply the tool-specific parts of the shared CLI: the names, the extra flags and the TOML reader."""
+
     def __init__(self, opt: _NAMESPACE_T) -> None:
         self.opt: _NAMESPACE_T = opt
 
     @property
     @abstractmethod
     def prog(self) -> str:
-        # Match the distribution name used for version lookup.
+        """The distribution name, used to look up the version and to name the program."""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def filename(self) -> str:
-        # Constrain positional paths and configuration discovery.
+        """The file name a directory argument resolves to, such as ``pyproject.toml``."""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def override_cli_from_section(self) -> tuple[str, ...]:
-        # Keep per-file overrides beside the tool configuration they control.
+        """The table of a TOML file whose settings apply to that file and override the command line."""
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def add_format_flags(parser: ArgumentGroup) -> None:
-        # Add options that the shared settings do not cover.
+        """Add the options that the shared settings do not cover."""
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
     def settings_in(text: str, path: Sequence[str]) -> dict[str, TomlValue] | None:
-        # Read the settings the text writes under a table, with the parser that reads the file itself.
-        #
+        """Return the settings the text writes under path, read with the parser that reads the file itself."""
         # A second reader of an older TOML would drop a file's own configuration on a value it cannot
         # read, and format the file as though none had been written.
         raise NotImplementedError
@@ -97,13 +100,12 @@ class TOMLFormatter(ABC, Generic[_NAMESPACE_T]):
     @staticmethod
     @abstractmethod
     def format(text: str, opt: _NAMESPACE_T) -> str:
-        # Keep CLI state outside the TOML rewriting layer.
+        """Return the text rewritten with the settings in opt."""
         raise NotImplementedError
 
 
 def run(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str] | None = None) -> int:
-    # Parse one option set per input and return 1 after a change or rejection.
-    #
+    """Format each input with its own options and return 1 after a change or rejection."""
     # A supplied argument list supports embedding; the console script falls back to ``sys.argv``.
     configs = _cli_args(formatter, sys.argv[1:] if args is None else args)
     # collect first: any() over a generator stops at the first changed input and leaves the rest unformatted
@@ -313,8 +315,7 @@ class _Constraints:
 def build_cli(
     formatter: TOMLFormatter[_NAMESPACE_T],
 ) -> tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]:
-    # Build the parser without reading arguments, for documentation and embedding.
-    #
+    """Return the shared CLI parser, built without reading arguments, and the readers of its settings."""
     # The conversion mapping applies the same readers to settings loaded from TOML.
     parser, type_conversion, _ = _make_cli(formatter)
     return parser, type_conversion
@@ -416,7 +417,7 @@ def _toml_path_creator(filename: str, argument: str) -> Path | None:
 
 # A larger count asks the formatter to allocate a string no line can hold.
 def count_argument(value: TomlValue) -> int:
-    # Reject booleans and counts outside 0 through 10,000.
+    """Return the count a CLI or TOML value names, rejecting booleans and counts outside 0 through 10,000."""
     # `True` is an integer to Python, and a file that writes one there names no count
     if isinstance(value, bool) or not isinstance(value, (str, int)):
         msg = f"invalid count: {value!r}"
@@ -437,6 +438,7 @@ def count_argument(value: TomlValue) -> int:
 
 
 def spacing_argument(value: TomlValue) -> str:
+    """Return the spacing with the escaped newlines a TOML file writes turned into real ones."""
     # Accept strings because TOML settings may spell newlines as ``\n``.
     if not isinstance(value, str):
         msg = f"invalid spacing: {value!r}"
@@ -445,7 +447,7 @@ def spacing_argument(value: TomlValue) -> str:
 
 
 def list_argument(value: TomlValue) -> list[str]:
-    # Accept CLI comma lists and TOML string arrays through one reader.
+    """Return the names in a comma list or a TOML array, rejecting any entry that is not a string."""
     if isinstance(value, str):
         return [name for part in _split_outside_quotes(value) if (name := part.strip())]
     read = [item for item in value if isinstance(item, str)] if isinstance(value, Sequence) else []
@@ -478,7 +480,7 @@ def _split_outside_quotes(value: str) -> Iterator[str]:
 
 
 def name_list_argument(value: TomlValue) -> list[str]:
-    # Preserve commas and spaces inside TOML-quoted names.
+    """Return the names in a comma list, keeping commas and spaces inside TOML-quoted names."""
     if not isinstance(value, str):
         return list_argument(value)
     return [name for part in _split_outside_quotes(value) if (name := _read_name(part.strip()))]
@@ -525,7 +527,8 @@ def _read_name(name: str) -> str:
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class Setting:
-    # One formatting setting, named once for the command line and for the file that may hold it.
+    """One formatting setting, named once for the command line and for the file that may hold it."""
+
     flag: str
     help: str
     takes: type
@@ -535,11 +538,11 @@ class Setting:
     metavar: str | None = None
 
     def name(self) -> str:
-        # Use argparse's destination spelling for TOML settings.
+        """Return the argparse destination of the flag, which is also the TOML key."""
         return self.flag.removeprefix("--").replace("-", "_")
 
     def add_to(self, parser: ArgumentGroup) -> None:
-        # Keep parser defaults and TOML conversion metadata on one declaration.
+        """Register the flag on the parser with its default, its help and its conversion for TOML values."""
         action = parser.add_argument(self.flag, default=self.default, help=self.help)
         if self.convert is not None:
             action.type = self.convert
@@ -549,7 +552,7 @@ class Setting:
             action.metavar = self.metavar
 
 
-# One declaration keeps CLI and file settings under the same constraints.
+#: One declaration keeps CLI and file settings under the same constraints.
 SHARED_SETTINGS: Final[tuple[Setting, ...]] = (
     Setting(
         flag="--column-width",
@@ -612,6 +615,8 @@ SHARED_SETTINGS: Final[tuple[Setting, ...]] = (
 )
 
 
+#: Alias for releases through 1.3.2, which import the old name; removing it breaks their next
+#: dependency resolve (tox-dev/toml-fmt#355).
 _build_cli: Final[
     Callable[[TOMLFormatter[FmtNamespace]], tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]]
 ] = build_cli

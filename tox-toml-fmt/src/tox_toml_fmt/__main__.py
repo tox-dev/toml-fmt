@@ -78,14 +78,13 @@ class _ToxTOMLFormatter(TOMLFormatter[_ToxTOMLNamespace]):
 
 
 def runner(args: Sequence[str] | None = None) -> int:
+    """Format the named files, or ``sys.argv`` when args is None; return 1 after a change or rejection."""
     # Use a supplied argument list for embedding; the console entry reads ``sys.argv``.
-    #
-    # Return 1 after a change or rejection, and 0 when inputs match.
     return run(_ToxTOMLFormatter(), args)
 
 
 def build_parser() -> ArgumentParser:
-    # Build the parser without reading arguments, for documentation tooling.
+    """Return the CLI argument parser, built without reading arguments, for documentation tooling."""
     return build_cli(_ToxTOMLFormatter())[0]
 
 
