@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parents[2] / "tasks"))
 
 company, name = "tox-dev", "pyproject-fmt"
 ver: Final[str] = metadata_version("pyproject-fmt")
-release, version = ver, ".".join(ver.split(".")[:2])
+release, version = ver, ".".join(ver.split(".")[:2])  # simplint: ignore[SMP530]  # one Sphinx config per package
 now: Final[datetime] = datetime.now(tz=UTC)
 project_copyright: Final[str] = f"2022-{now.year}, {company}"
 master_doc, source_suffix = "index", ".rst"
@@ -36,7 +36,11 @@ extensions: Final[list[str]] = [
 ]
 fmt_example_module: Final[str] = "pyproject_fmt"
 
-exclude_patterns: Final[list[str]] = ["_build", "changelog/*", "_draft.rst"]
+exclude_patterns: Final[list[str]] = [  # simplint: ignore[SMP530]  # one Sphinx config per package
+    "_build",
+    "changelog/*",
+    "_draft.rst",
+]
 autoclass_content, autodoc_member_order, autodoc_typehints = "class", "bysource", "none"
 autodoc_default_options: Final[dict[str, bool | str]] = {
     "member-order": "bysource",

@@ -30,7 +30,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 import maturin
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # simplint: ignore[SMP530]  # each artifact carries its own copy; PEP 517 runs it before install
     from collections.abc import Callable, Iterator, Mapping
 
     _ConfigSettings: TypeAlias = Mapping[str, str | list[str]]
