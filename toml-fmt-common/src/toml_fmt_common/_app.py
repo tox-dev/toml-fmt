@@ -133,6 +133,12 @@ def _cli_args(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str]) -> li
     return [_config_of(parser, formatter, constraints, toml_path) for toml_path in formatter.opt.inputs]
 
 
+def _written_as(default: TomlValue) -> type:
+    if isinstance(default, bool):
+        return bool
+    return list if isinstance(default, list) else str
+
+
 def _config_of(
     parser: ArgumentParser,
     formatter: TOMLFormatter[_NAMESPACE_T],
@@ -157,7 +163,11 @@ def _config_of(
     else:
         start = (toml_path.parent if toml_path is not None else Path.cwd()).resolve()
         if found := next(
-            (path for path in (directory / f"{formatter.prog}.toml" for directory in (start, *start.parents)) if path.is_file()),
+            (
+                path
+                for path in (directory / f"{formatter.prog}.toml" for directory in (start, *start.parents))
+                if path.is_file()
+            ),
             None,
         ):
             _apply_config(
@@ -194,28 +204,22 @@ def _read_input(parser: ArgumentParser, path: Path | None) -> tuple[str, str]:
     return raw.replace("\r\n", "\n"), "\r\n" if crlf > raw.count("\n") - crlf else "\n"
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _Config(Generic[_NAMESPACE_T]):
-    toml_filename: Path | None
-    toml: str
-    stdout: bool
-    check: bool
-    no_print_diff: bool
-    opt: _NAMESPACE_T
-    eol: str
+def _display_name(path: Path | None) -> str:
+    if path is None:
+        return "<stdin>"
+    try:
+        return str(path.relative_to(Path.cwd()))
+    except ValueError:
+        return str(path)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
-class _Constraints:
-    conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
-    allowed: Mapping[str, Iterable[TomlValue]]
-    accepts: Mapping[str, type]
-
-
-def _written_as(default: TomlValue) -> type:
-    if isinstance(default, bool):
-        return bool
-    return list if isinstance(default, list) else str
+def _load_shared_config(
+    parser: ArgumentParser, formatter: TOMLFormatter[_NAMESPACE_T], path: Path
+) -> dict[str, TomlValue]:
+    try:
+        return formatter.settings_in(path.read_text(encoding="utf-8"), ()) or {}
+    except (SyntaxError, TypeError, ValueError, UnicodeDecodeError) as exc:
+        parser.error(f"{path}: {exc}")
 
 
 def _apply_config(
@@ -242,13 +246,68 @@ def _apply_config(
         setattr(opt, key, value)
 
 
-def _load_shared_config(
-    parser: ArgumentParser, formatter: TOMLFormatter[_NAMESPACE_T], path: Path
-) -> dict[str, TomlValue]:
+def _handle_one(formatter: TOMLFormatter[_NAMESPACE_T], config: _Config[_NAMESPACE_T]) -> bool:
     try:
-        return formatter.settings_in(path.read_text(encoding="utf-8"), ()) or {}
-    except (SyntaxError, TypeError, ValueError, UnicodeDecodeError) as exc:
-        parser.error(f"{path}: {exc}")
+        formatted = formatter.format(config.toml, config.opt)
+    except ValueError as exc:  # the formatter rejected the content, e.g. an invalid project.version
+        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)
+        return True
+    before = config.toml
+    changed = before != formatted
+    if config.toml_filename is None or config.stdout:
+        print(formatted, end="")
+        return changed
+
+    if changed and not config.check:
+        config.toml_filename.write_text(formatted, encoding="utf-8", newline=config.eol)
+    if config.no_print_diff:
+        return changed
+    name = _display_name(config.toml_filename)
+    if changed:
+        print(
+            "\n".join(
+                _color_diff(
+                    difflib.unified_diff(before.splitlines(), formatted.splitlines(), fromfile=name, tofile=name)
+                )
+            )
+        )
+    else:
+        print(f"no change for {name}")
+    return changed
+
+
+def _color_diff(diff: Iterable[str]) -> Iterable[str]:
+    if os.environ.get("NO_COLOR"):  # https://no-color.org
+        yield from diff
+        return
+    green: str = "\u001b[32m"
+    red: str = "\u001b[31m"
+    reset: str = "\u001b[0m"
+    for line in diff:
+        if line.startswith("+"):
+            yield f"{green}{line}{reset}"
+        elif line.startswith("-"):
+            yield f"{red}{line}{reset}"
+        else:
+            yield line
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _Config(Generic[_NAMESPACE_T]):
+    toml_filename: Path | None
+    toml: str
+    stdout: bool
+    check: bool
+    no_print_diff: bool
+    opt: _NAMESPACE_T
+    eol: str
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)
+class _Constraints:
+    conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
+    allowed: Mapping[str, Iterable[TomlValue]]
+    accepts: Mapping[str, type]
 
 
 def build_cli(
@@ -337,9 +396,25 @@ class _ArgumentRecorder:
         return action
 
 
+def _toml_path_creator(filename: str, argument: str) -> Path | None:
+    if argument == "-":
+        return None
+    path = Path(argument).absolute()
+    if path.is_dir():
+        path /= filename
+    if not path.exists():
+        msg = "path does not exist"
+        raise ArgumentTypeError(msg)
+    if not path.is_file():
+        msg = "path is not a file"
+        raise ArgumentTypeError(msg)
+    if not os.access(path, os.R_OK):
+        msg = "cannot read path"
+        raise ArgumentTypeError(msg)
+    return path
+
+
 # A larger count asks the formatter to allocate a string no line can hold.
-
-
 def count_argument(value: TomlValue) -> int:
     # Reject booleans and counts outside 0 through 10,000.
     # `True` is an integer to Python, and a file that writes one there names no count
@@ -537,81 +612,6 @@ SHARED_SETTINGS: Final[tuple[Setting, ...]] = (
 )
 
 
-def _toml_path_creator(filename: str, argument: str) -> Path | None:
-    if argument == "-":
-        return None
-    path = Path(argument).absolute()
-    if path.is_dir():
-        path /= filename
-    if not path.exists():
-        msg = "path does not exist"
-        raise ArgumentTypeError(msg)
-    if not path.is_file():
-        msg = "path is not a file"
-        raise ArgumentTypeError(msg)
-    if not os.access(path, os.R_OK):
-        msg = "cannot read path"
-        raise ArgumentTypeError(msg)
-    return path
-
-
-def _display_name(path: Path | None) -> str:
-    if path is None:
-        return "<stdin>"
-    try:
-        return str(path.relative_to(Path.cwd()))
-    except ValueError:
-        return str(path)
-
-
-def _handle_one(formatter: TOMLFormatter[_NAMESPACE_T], config: _Config[_NAMESPACE_T]) -> bool:
-    try:
-        formatted = formatter.format(config.toml, config.opt)
-    except ValueError as exc:  # the formatter rejected the content, e.g. an invalid project.version
-        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)
-        return True
-    before = config.toml
-    changed = before != formatted
-    if config.toml_filename is None or config.stdout:
-        print(formatted, end="")
-        return changed
-
-    if changed and not config.check:
-        config.toml_filename.write_text(formatted, encoding="utf-8", newline=config.eol)
-    if config.no_print_diff:
-        return changed
-    name = _display_name(config.toml_filename)
-    if changed:
-        print(
-            "\n".join(
-                _color_diff(
-                    difflib.unified_diff(before.splitlines(), formatted.splitlines(), fromfile=name, tofile=name)
-                )
-            )
-        )
-    else:
-        print(f"no change for {name}")
-    return changed
-
-
-def _color_diff(diff: Iterable[str]) -> Iterable[str]:
-    if os.environ.get("NO_COLOR"):  # https://no-color.org
-        yield from diff
-        return
-    green: str = "\u001b[32m"
-    red: str = "\u001b[31m"
-    reset: str = "\u001b[0m"
-    for line in diff:
-        if line.startswith("+"):
-            yield f"{green}{line}{reset}"
-        elif line.startswith("-"):
-            yield f"{red}{line}{reset}"
-        else:
-            yield line
-
-
-# Releases through 1.3.2 import the old name; removing it breaks their next dependency resolve
-# (tox-dev/toml-fmt#355).
 _build_cli: Final[
     Callable[[TOMLFormatter[FmtNamespace]], tuple[ArgumentParser, Mapping[str, Callable[[TomlValue], TomlValue]]]]
 ] = build_cli
