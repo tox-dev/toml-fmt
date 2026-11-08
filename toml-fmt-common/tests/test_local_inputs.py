@@ -19,7 +19,7 @@ def _load() -> tuple[Mapping[str, tuple[str, ...]], Callable[[str, list[str]], b
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module._LOCAL_INPUTS, module._affects
+    return module.LOCAL_INPUTS, module.affects
 
 
 _LOCAL_INPUTS, _AFFECTS = _load()
