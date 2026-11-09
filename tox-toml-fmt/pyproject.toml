@@ -129,3 +129,6 @@ paths.source = [
 report.fail_under = 100
 html.show_contexts = true
 html.skip_covered = false
+
+[tool.python-sbom]
+supplier = { name = "tox-dev", url = [ "https://github.com/tox-dev" ] }
