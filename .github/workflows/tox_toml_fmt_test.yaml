@@ -115,6 +115,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
           disable_search: true
+          fail_ci_if_error: true
           flags: tox-toml-fmt
       # the tox rules are a crate of their own, so they prove their own coverage rather than leaning
       # on the formatter that ships them
@@ -127,6 +128,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: tox-rules.json
+          disable_search: true
+          fail_ci_if_error: true
           flags: tox-rules
   py:
     name: 🧪 ${{ matrix.py }} @ ${{ matrix.os }}
