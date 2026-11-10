@@ -78,7 +78,9 @@ jobs:
         uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: toml-fmt-common/.tox/${{ matrix.env }}
+          files: toml-fmt-common/.tox/coverage.${{ matrix.env }}.xml
+          disable_search: true
+          fail_ci_if_error: true
           flags: python-${{ matrix.env }}
   all-pass:
     name: 🚦 toml-fmt-common
