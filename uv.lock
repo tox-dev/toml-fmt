@@ -748,6 +748,15 @@ wheels = [
 ]
 
 [[package]]
+name = "installer"
+version = "1.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/d3/2fab33d15004d41ae8e7b5d3e310510f7f34a7e1dd032a3e60d8b38d8fba/installer-1.1.0.tar.gz", hash = "sha256:5adc0c01ce62d809989e246987cd68944fe5df8af562d0358f65b2ab15cb5de7", size = 481257, upload-time = "2026-10-12T19:35:52.851Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/7a/63547a792a12148882205d79e07644091d5b7690f40c2bb9d41452a8bdc2/installer-1.1.0-py3-none-any.whl", hash = "sha256:f55f5728ff61d3dd54dbc5a397cf3f7307cb64b180c20b72afbebf01c9e2c8a0", size = 464466, upload-time = "2026-10-12T19:35:51.096Z" },
+]
+
+[[package]]
 name = "jaraco-classes"
 version = "3.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1269,6 +1278,15 @@ wheels = [
 ]
 
 [[package]]
+name = "packageurl-python"
+version = "0.17.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/d6/3b5a4e3cfaef7a53869a26ceb034d1ff5e5c27c814ce77260a96d50ab7bb/packageurl_python-0.17.6.tar.gz", hash = "sha256:1252ce3a102372ca6f86eb968e16f9014c4ba511c5c37d95a7f023e2ca6e5c25", size = 50618, upload-time = "2025-11-24T15:20:17.998Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b1/2f/c7277b7615a93f51b5fbc1eacfc1b75e8103370e786fd8ce2abf6e5c04ab/packageurl_python-0.17.6-py3-none-any.whl", hash = "sha256:31a85c2717bc41dd818f3c62908685ff9eebcb68588213745b14a6ee9e7df7c9", size = 36776, upload-time = "2025-11-24T15:20:16.962Z" },
+]
+
+[[package]]
 name = "packaging"
 version = "26.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1686,6 +1704,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a3/0b/908da9ef8a14b600fc188eee8d63ede071996114613721153f6fc9ea3cd5/python_discovery-1.6.7.tar.gz", hash = "sha256:7f7c28568c8ec3d988d8bddbdbec8e65f08e8767e52f734e18b8b498549b9b70", size = 117807, upload-time = "2026-10-28T06:24:21.878Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/57/e4/1c7c388e874222c28afb92fe3ebfeebe55555276523ba7aab0a82a10b2b5/python_discovery-1.6.7-py3-none-any.whl", hash = "sha256:5422f67e5f533bb02d7b73de1c422ed74037536fd869e05156c07565926ec68e", size = 39156, upload-time = "2026-10-28T06:24:20.462Z" },
+]
+
+[[package]]
+name = "python-sbom"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "installer" },
+    { name = "packageurl-python" },
+    { name = "packaging" },
+    { name = "zipremove" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/81/57e5304f00f89c972896ab280d90ba26326e8ac98cabe5754a1963ba646c/python_sbom-0.3.0.tar.gz", hash = "sha256:e046b69a82d81abcde0e6ad0ec077e86e62ca918269761246bc3b4a319338b67", size = 289184, upload-time = "2026-11-09T23:17:56.721Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/af/6909675e95bbfdb001dd4a89e2c8c3ed39f8a92ed416c61230da9cd2a0bb/python_sbom-0.3.0-py3-none-any.whl", hash = "sha256:3c2f20d544850ed4a6431159b906f705143b4cfcd70b4d3500f500dc79672bd1", size = 204986, upload-time = "2026-11-09T23:17:55.189Z" },
 ]
 
 [[package]]
@@ -2221,6 +2254,7 @@ build = [
 ]
 release-build = [
     { name = "maturin", marker = "python_full_version >= '3.15'" },
+    { name = "python-sbom", marker = "python_full_version >= '3.15'" },
     { name = "uv-build", marker = "python_full_version >= '3.15'" },
 ]
 release-notes = [
@@ -2247,6 +2281,7 @@ build = [
 ]
 release-build = [
     { name = "maturin", marker = "python_full_version >= '3.15'", specifier = ">=1.15,<2" },
+    { name = "python-sbom", marker = "python_full_version >= '3.15'", specifier = ">=0.3" },
     { name = "uv-build", marker = "python_full_version >= '3.15'", specifier = ">=0.13.6,<0.14" },
 ]
 release-notes = [{ name = "release-creator", marker = "python_full_version >= '3.15'", specifier = ">=4.1" }]
@@ -2561,4 +2596,13 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/18/05/ba1458dee0ac485b2a01071c1b88f5199fe878a485df482e10e1ef2205cc/zipp-4.1.2.tar.gz", hash = "sha256:cf474b90b07ea932637e17c6b9479de2b2882900b0d311bdaf4f5c000a15a97f", size = 27864, upload-time = "2026-10-21T18:57:04.743Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b8/44/7bd2007260da11cccca29ba2d4c345f1287aa663db38ee7cefeabf6386a5/zipp-4.1.2-py3-none-any.whl", hash = "sha256:b30cb6cd253122169c47de245ca24a86bac2a5d3802ba15bf7ba6414eb9e144d", size = 10581, upload-time = "2026-10-21T18:57:03.79Z" },
+]
+
+[[package]]
+name = "zipremove"
+version = "0.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/30/47d65b9213f52df8a51f603cb0a2e5ef02c22172a8a17805e46c3beabb0d/zipremove-0.10.0.tar.gz", hash = "sha256:3c5957c115447b54299d3a23128764b59c4558fc98c4b878ff2dbc5db8a62021", size = 25448, upload-time = "2026-07-17T15:50:45.516Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0a/e4/2225c1890ce6e239ca23efabb80a3481229a14a2deaa489f5e89723a5aa6/zipremove-0.10.0-py3-none-any.whl", hash = "sha256:04e15df7083642d5b791e51f597cffef8a92d770ecf5160c529b5a7b53b40100", size = 11280, upload-time = "2026-07-17T15:50:44.653Z" },
 ]
