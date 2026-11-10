@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           components: clippy
       - name: 🧹 Run Clippy
@@ -61,7 +61,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           components: rustfmt
       - name: 🧹 Check formatting
@@ -78,7 +78,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
       - name: 🏗️ Build
         run: cargo build -p toml-doc --locked
   test:
@@ -94,11 +94,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           components: llvm-tools-preview
       - name: 🦀 Install cargo-llvm-cov and cargo-nextest
-        uses: taiki-e/install-action@v2.88.0
+        uses: taiki-e/install-action@v2.90.0
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: 🧪 Run tests with coverage

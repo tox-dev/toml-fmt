@@ -64,7 +64,7 @@ jobs:
         if: startsWith(matrix.env, '3.') && matrix.env != '3.15'
         run: uv python install --python-preference only-managed ${{ matrix.env }}
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           cache: false
       - name: 📦 Set up test suite
