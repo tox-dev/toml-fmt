@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           components: clippy
       - name: 🧹 Run Clippy
@@ -65,7 +65,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           components: rustfmt
       - name: 🧹 Check formatting
@@ -82,7 +82,7 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
       - name: 🏗️ Build
         run: cargo build -p pyproject-fmt --locked
   test:
@@ -98,11 +98,11 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
         with:
           components: llvm-tools-preview
       - name: 🦀 Install cargo-llvm-cov and cargo-nextest
-        uses: taiki-e/install-action@v2.88.0
+        uses: taiki-e/install-action@v2.90.0
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: 🧪 Run tests with coverage
@@ -145,7 +145,7 @@ jobs:
         if: matrix.py != '3.15'
         run: uv python install --python-preference only-managed ${{ matrix.py }}
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
       - name: 📖 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
@@ -187,7 +187,7 @@ jobs:
       - name: 📦 Install tox
         run: uv tool install --python-preference only-managed --python 3.15 tox --with tox-uv
       - name: 🦀 Install Rust toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v2.0.0
+        uses: actions-rust-lang/setup-rust-toolchain@v2.0.1
       - name: 📖 Generate README.rst
         run: tox run -e readme
         working-directory: pyproject-fmt
