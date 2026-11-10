@@ -108,6 +108,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.json
+          disable_search: true
+          fail_ci_if_error: true
           flags: toml-doc
   all-pass:
     name: 🚦 toml-doc
