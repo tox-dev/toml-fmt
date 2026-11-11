@@ -70,3 +70,26 @@ jobs:
       tag: ${{ github.ref_name }}
       artifact-pattern: pyproject-fmt-wheels-*
       notes-artifact-id: ${{ needs.notes.outputs.artifact-id }}
+  pre-commit-mirror:
+    name: 🪞 Update the pre-commit mirror
+    if: github.repository == 'tox-dev/toml-fmt'
+    needs: [version, github-release]
+    runs-on: ubuntu-26.04
+    environment: release-auth
+    permissions: {}
+    steps:
+      - name: 🔑 Create release App token
+        id: token
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: pyproject-fmt
+          permission-contents: write
+      # The mirror reads the newest version from PyPI, so it starts once the release is published there.
+      - name: 🪞 Start the mirror
+        run: gh api "repos/${GITHUB_REPOSITORY_OWNER}/pyproject-fmt/dispatches" -f event_type=release -f "client_payload[version]=${VERSION}"
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          VERSION: ${{ needs.version.outputs.version }}
