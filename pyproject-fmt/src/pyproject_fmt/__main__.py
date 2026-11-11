@@ -5,8 +5,9 @@ from __future__ import annotations
 from argparse import ArgumentParser, ArgumentTypeError
 from typing import TYPE_CHECKING, Final
 
-from pyproject_fmt._lib import Settings, format_toml, settings_in
 from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, TomlValue, build_cli, run
+
+from ._lib import Settings, format_toml, settings_in
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
