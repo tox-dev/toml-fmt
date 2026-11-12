@@ -64,8 +64,7 @@ def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
     (package / "pyproject.toml").write_text(f'[project]\nname = "{distribution}"\n', encoding="utf-8", newline="")
     _write_common(package / "toml-fmt-common")
 
-    maturin = mocker.MagicMock(
-        spec=Maturin,
+    maturin = SimpleNamespace(
         build_wheel=mocker.create_autospec(Maturin.build_wheel, side_effect=_write_wheel),
         build_editable=mocker.create_autospec(Maturin.build_editable, side_effect=_write_wheel),
         build_sdist=mocker.create_autospec(Maturin.build_sdist, side_effect=_write_sdist),

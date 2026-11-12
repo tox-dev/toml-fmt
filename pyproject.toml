@@ -55,6 +55,7 @@ lint.ignore = [
   "undocumented-public-init",                  # undocumented-public-api (simplint) covers the public API instead
   "undocumented-public-method",                # undocumented-public-api (simplint) covers the public API instead
   "undocumented-public-nested-class",          # undocumented-public-api (simplint) covers the public API instead
+  "unnecessary-regular-expression-compile",    # conflicts with simplint inline-regex
 ]
 lint.per-file-ignores."**/build_backend.py" = [
   "implicit-namespace-package", # is not a namespace

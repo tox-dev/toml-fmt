@@ -29,8 +29,18 @@ def test_with_a_candidate_accepts_only_release_candidates(mocker: MockerFixture)
 
 @pytest.mark.parametrize(
     "index",
-    range(7),
-    ids=("cli-default", "examples", "pyproject-config", "tox-config", "configuration", "formatting", "cli-minimum"),
+    [
+        pytest.param(index, id=label)
+        for index, label in enumerate((
+            "cli-default",
+            "examples",
+            "pyproject-config",
+            "tox-config",
+            "configuration",
+            "formatting",
+            "cli-minimum",
+        ))
+    ],
 )
 def test_written_places_match_expected_spelling(tmp_path: Path, index: int) -> None:
     place = written_places(15, 11)[index]

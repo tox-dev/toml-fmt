@@ -25,7 +25,9 @@ def _load() -> tuple[Mapping[str, tuple[str, ...]], Callable[[str, list[str]], b
 _LOCAL_INPUTS, _AFFECTS = _load()
 
 
-@pytest.mark.parametrize("project", ["pyproject-fmt", "tox-toml-fmt"], ids=["pyproject-fmt", "tox-toml-fmt"])
+@pytest.mark.parametrize(
+    "project", [pytest.param("pyproject-fmt", id="pyproject-fmt"), pytest.param("tox-toml-fmt", id="tox-toml-fmt")]
+)
 @pytest.mark.parametrize(
     ("path", "reaches"),
     [
@@ -85,8 +87,10 @@ def test_affects_reads_every_changed_file(changed: list[str], reaches: bool) -> 
     assert _AFFECTS("tox-toml-fmt", changed) is reaches
 
 
-@pytest.mark.parametrize("kind", ["build", "test"], ids=["build", "test"])
-@pytest.mark.parametrize("project", ["pyproject-fmt", "tox-toml-fmt"], ids=["pyproject-fmt", "tox-toml-fmt"])
+@pytest.mark.parametrize("kind", [pytest.param("build", id="build"), pytest.param("test", id="test")])
+@pytest.mark.parametrize(
+    "project", [pytest.param("pyproject-fmt", id="pyproject-fmt"), pytest.param("tox-toml-fmt", id="tox-toml-fmt")]
+)
 def test_every_workflow_watches_exactly_the_local_inputs(project: str, kind: str) -> None:
     # A wheel rebuilds when what it ships changes, and watches nothing it does not ship.
     workflow = (_ROOT / ".github" / "workflows" / f"{project.replace('-', '_')}_{kind}.yaml").read_text()

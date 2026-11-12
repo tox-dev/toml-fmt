@@ -335,7 +335,7 @@ def test_a_path_the_run_cannot_use_is_named_in_the_error(
     assert not out
 
 
-@pytest.mark.parametrize("mode", ["--check", "--stdout"], ids=["check", "stdout"])
+@pytest.mark.parametrize("mode", [pytest.param("--check", id="check"), pytest.param("--stdout", id="stdout")])
 def test_a_read_only_path_is_fine_for_a_run_that_writes_nothing(
     capsys: pytest.CaptureFixture[str], target: Path, monkeypatch: pytest.MonkeyPatch, mode: str
 ) -> None:
