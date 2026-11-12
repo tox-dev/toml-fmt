@@ -9,7 +9,7 @@ from ._app import (
     Setting,
     TOMLFormatter,
     TomlValue,
-    _build_cli,
+    _build_cli,  # simplint: ignore[private-import-path]  # older formatter releases still import this alias
     build_cli,
     count_argument,
     list_argument,
