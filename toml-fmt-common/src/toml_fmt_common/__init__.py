@@ -9,13 +9,15 @@ from ._app import (
     Setting,
     TOMLFormatter,
     TomlValue,
-    _build_cli,  # simplint: ignore[private-import-path]  # older formatter releases still import this alias
     build_cli,
     count_argument,
     list_argument,
     name_list_argument,
     run,
     spacing_argument,
+)
+from ._app import (
+    build_cli as _build_cli,  # releases through 1.3.2 import the old name (tox-dev/toml-fmt#355)
 )
 
 __all__ = [

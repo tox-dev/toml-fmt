@@ -722,7 +722,6 @@ __all__ = [
     "Setting",
     "TOMLFormatter",
     "TomlValue",
-    "_build_cli",
     "build_cli",
     "count_argument",
     "list_argument",
