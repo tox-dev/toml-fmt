@@ -50,10 +50,10 @@ def render_example(module: str, before: str, config: str = "") -> str:
 
 
 def _format_example(module: str, before: str, config: str) -> str:
-    lib = importlib.import_module(f"{module}._lib")
+    formatter = importlib.import_module(module)
     defaults = dict(_DEFAULTS[module])
     defaults.update(_parse_config(config, defaults))
-    return lib.format_toml(before, lib.Settings(**defaults))
+    return formatter.format_example(before, defaults)
 
 
 def _parse_config(config: str, defaults: Mapping[str, _Setting]) -> dict[str, _Setting]:

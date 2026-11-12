@@ -63,6 +63,7 @@ Python API
 
 .. automodule:: pyproject_fmt
    :members:
+   :exclude-members: format_example
 
 .. toctree::
    :hidden:

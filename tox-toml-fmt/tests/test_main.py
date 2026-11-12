@@ -7,7 +7,7 @@ from typing import Final
 
 import pytest
 
-from tox_toml_fmt import build_parser, run
+from tox_toml_fmt import build_parser, format_example, run
 
 
 def test_build_parser_uses_program_name() -> None:
@@ -26,6 +26,26 @@ _CASES: Final[list[pytest.ParameterSet]] = [
         id="format",
     ),
 ]
+
+
+def test_format_example_uses_docs_settings() -> None:
+    assert (
+        format_example(
+            _UNFORMATTED,
+            {
+                "column_width": 120,
+                "indent": 2,
+                "table_format": "short",
+                "sub_table_spacing": "",
+                "separate_root_table": "\n",
+                "expand_tables": (),
+                "collapse_tables": (),
+                "skip_wrap_for_keys": (),
+                "pin_envs": (),
+            },
+        )
+        == _FORMATTED
+    )
 
 
 @pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
