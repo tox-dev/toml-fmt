@@ -38,4 +38,7 @@ def affects(project: str, changed_files: Iterable[str]) -> bool:
     return any(file_path.startswith(LOCAL_INPUTS[project]) for file_path in changed_files)
 
 
-__all__ = []
+__all__ = [
+    "LOCAL_INPUTS",
+    "affects",
+]

@@ -30,4 +30,6 @@ class _FmtExample(Directive):
         return [node]
 
 
-__all__ = []
+__all__ = [
+    "setup",
+]

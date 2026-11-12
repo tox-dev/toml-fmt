@@ -12,6 +12,7 @@ import toml_fmt_common
 from toml_fmt_common import (
     ArgumentGroup,
     FmtNamespace,
+    Setting,
     TOMLFormatter,
     TomlValue,
     build_cli,
@@ -33,6 +34,7 @@ class DumpNamespace(FmtNamespace):
     extra: str
     tuple_magic: tuple[str, ...]
     loud: bool
+    config_only: str
 
 
 class Dumb(TOMLFormatter[DumpNamespace]):
@@ -40,6 +42,7 @@ class Dumb(TOMLFormatter[DumpNamespace]):
 
     def __init__(self) -> None:
         super().__init__(DumpNamespace())
+        self.opt.config_only = "default"
         Dumb.last_format_opt = None
 
     @property
@@ -89,6 +92,18 @@ class Dumb(TOMLFormatter[DumpNamespace]):
             f"extras = {opt.extra!r}",
             *([f"magic = {','.join(opt.tuple_magic)!r}"] if opt.tuple_magic else []),
         ])
+
+
+def test_setting_preserves_positional_fields() -> None:
+    assert Setting("--indent", "help", int, 2).__dict__ == {
+        "flag": "--indent",
+        "help": "help",
+        "takes": int,
+        "default": 2,
+        "convert": None,
+        "choices": None,
+        "metavar": None,
+    }
 
 
 def test_dumb_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -432,6 +447,19 @@ def test_config_shared_custom_type(tmp_path: Path) -> None:
     exit_code = run(Dumb(), ["E", str(dumb), "--config", str(config_file)])
     assert exit_code == 1
     assert dumb.read_text() == "\nextras = 'E'\nmagic = '1,2,3'"
+
+
+def test_config_only_namespace_setting(tmp_path: Path) -> None:
+    config_file = tmp_path / "toml-fmt-common.toml"
+    config_file.write_text("config_only = 'configured'")
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+    formatter = Dumb()
+
+    run(formatter, ["E", str(dumb), "--config", str(config_file)])
+
+    assert formatter.last_format_opt is not None
+    assert formatter.last_format_opt.config_only == "configured"
 
 
 def test_shared_args_in_help(capsys: pytest.CaptureFixture[str]) -> None:

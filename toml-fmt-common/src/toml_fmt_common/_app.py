@@ -170,14 +170,15 @@ def _cli_args(formatter: TOMLFormatter[_NAMESPACE_T], args: Sequence[str]) -> li
         for toml_path in formatter.opt.inputs:
             if toml_path is not None and not os.access(toml_path, os.W_OK):
                 parser.error(f"argument inputs: cannot write path {toml_path}")
-    # Infer plugin settings from defaults because formatters can add flags outside ``SHARED_SETTINGS``.
+    # Plugins can provide settings in the namespace without exposing them as CLI flags.
     named = {setting.name(): setting.takes for setting in SHARED_SETTINGS}
     constraints = _Constraints(
         conversion=type_conversion,
-        # a value read from a file has to be one the command line would have accepted
+        # CLI choice restrictions also apply to file settings.
         allowed={action.dest: action.choices for action in actions if action.choices},
         accepts={
-            key: named.get(key) or _written_as(parser.get_default(key)) for key in {action.dest for action in actions}
+            key: named.get(key) or _written_as(parser.get_default(key))
+            for key in formatter.opt.__dict__.keys() - {"inputs", "stdout", "check", "no_print_diff", "config"}
         },
     )
     return [_config_of(parser, formatter, constraints, toml_path) for toml_path in formatter.opt.inputs]
@@ -601,7 +602,7 @@ def _read_name(name: str) -> str:
     return "".join(read)
 
 
-@dataclass(frozen=True, slots=True, kw_only=True)
+@dataclass(frozen=True)
 class Setting:
     """
     One formatting setting, named once for the command line and for the file that may hold it.

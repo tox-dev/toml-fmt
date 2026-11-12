@@ -35,26 +35,26 @@ _DOC_REFERENCE: Final[re.Pattern[str]] = re.compile(
 )
 
 
-def _main(package: str) -> None:
+def main(package: str) -> None:
     docs_dir = Path(package) / "docs"
     if not (index_path := docs_dir / "index.rst").exists():
         return
 
     def read(path: Path) -> str:
-        return _expand_fmt_examples(path.read_text(encoding="utf-8"), package.replace("-", "_"))
+        return expand_fmt_examples(path.read_text(encoding="utf-8"), package.replace("-", "_"))
 
-    processed = _process_rst_for_pypi(read(index_path))
+    processed = process_rst_for_pypi(read(index_path))
 
     if (config_path := docs_dir / "configuration.rst").exists():
-        processed += f"\n\n{_process_rst_for_pypi(_strip_main_title(read(config_path)))}"
+        processed += f"\n\n{process_rst_for_pypi(strip_main_title(read(config_path)))}"
 
     if (formatting_path := docs_dir / "formatting.rst").exists():
-        processed += f"\n\n{_process_rst_for_pypi(_strip_main_title(read(formatting_path)))}"
+        processed += f"\n\n{process_rst_for_pypi(strip_main_title(read(formatting_path)))}"
 
     (docs_dir.parent / "README.rst").write_text(f"{processed.rstrip()}\n", encoding="utf-8")
 
 
-def _expand_fmt_examples(content: str, module: str) -> str:
+def expand_fmt_examples(content: str, module: str) -> str:
     # Replace ``.. fmt-example::`` directives with the static ``code-block`` they render to.
     lines = content.splitlines()
     result: list[str] = []
@@ -94,8 +94,8 @@ def _dedent(text: str) -> str:
     return "\n".join(line[pad:] if line.strip() else "" for line in text.splitlines())
 
 
-def _process_rst_for_pypi(content: str) -> str:
-    content = _unwrap_dropdowns(content)
+def process_rst_for_pypi(content: str) -> str:
+    content = unwrap_dropdowns(content)
     content = _PYPI_ROLE.sub(r"`\g<target> <https://pypi.org/project/\g<target>>`_", content)
     content = _GH_ROLE.sub(r"`\g<target> <https://github.com/\g<target>>`_", content)
     content = _DOC_REFERENCE.sub("", content)
@@ -142,7 +142,7 @@ def _drop_tabs(lines: list[str]) -> list[str]:
     return result
 
 
-def _unwrap_dropdowns(content: str) -> str:
+def unwrap_dropdowns(content: str) -> str:
     # Drop ``.. dropdown::`` directives and dedent their bodies; PyPI's renderer has no such directive.
     result: list[str] = []
     in_dropdown = False
@@ -162,7 +162,7 @@ def _unwrap_dropdowns(content: str) -> str:
     return "\n".join(result)
 
 
-def _strip_main_title(content: str) -> str:
+def strip_main_title(content: str) -> str:
     lines = content.splitlines()
     match lines:
         case [_, underline, *body] if underline and set(underline) == {"="}:
@@ -177,7 +177,13 @@ if __name__ == "__main__":
     except ValueError:
         print("Usage: generate_readme.py <package>")
         sys.exit(1)
-    _main(_PACKAGE)
+    main(_PACKAGE)
 
 
-__all__ = []
+__all__ = [
+    "expand_fmt_examples",
+    "main",
+    "process_rst_for_pypi",
+    "strip_main_title",
+    "unwrap_dropdowns",
+]

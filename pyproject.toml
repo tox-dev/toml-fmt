@@ -118,3 +118,14 @@ packages.python-sbom.uploaded-prior-to = 2026-11-09T23:18:00Z
 
 [tool.simplint]
 docstring-style = "rst"
+# Keep exports from before simplint adoption available to external callers.
+per-file-ignores."pyproject-fmt/toxfile.py" = [ "SMP402" ]
+per-file-ignores."tasks/generate_changelog.py" = [ "SMP402" ]
+per-file-ignores."tasks/generate_readme.py" = [ "SMP402" ]
+per-file-ignores."tasks/local_inputs.py" = [ "SMP402" ]
+# Place keeps the positional constructor and __dict__ it had before simplint adoption.
+per-file-ignores."tasks/python_versions.py" = [ "SMP402", "SMP702", "SMP703" ]
+per-file-ignores."tasks/sphinx_fmt_example.py" = [ "SMP402" ]
+per-file-ignores."tox-toml-fmt/toxfile.py" = [ "SMP402" ]
+# Setting's constructor and instance layout are part of the shared library API.
+per-file-ignores."toml-fmt-common/src/toml_fmt_common/_app.py" = [ "SMP702", "SMP703" ]
