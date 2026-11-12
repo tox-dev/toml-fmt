@@ -300,12 +300,14 @@ def _handle_one(formatter: TOMLFormatter[_NAMESPACE_T], config: _Config[_NAMESPA
     try:
         formatted = formatter.format(config.toml, config.opt)
     except ValueError as exc:  # the formatter rejected the content, e.g. an invalid project.version
-        print(f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr)
+        print(  # ruff: ignore[print]  # the CLI reports rejected input on stderr
+            f"{_display_name(config.toml_filename)}: {exc}", file=sys.stderr
+        )
         return True
     before = config.toml
     changed = before != formatted
     if config.toml_filename is None or config.stdout:
-        print(formatted, end="")
+        print(formatted, end="")  # ruff: ignore[print]  # the CLI writes formatted output to stdout
         return changed
 
     if changed and not config.check:
@@ -314,7 +316,7 @@ def _handle_one(formatter: TOMLFormatter[_NAMESPACE_T], config: _Config[_NAMESPA
         return changed
     name = _display_name(config.toml_filename)
     if changed:
-        print(
+        print(  # ruff: ignore[print]  # the CLI shows changes as a diff
             "\n".join(
                 _color_diff(
                     difflib.unified_diff(before.splitlines(), formatted.splitlines(), fromfile=name, tofile=name)
@@ -322,7 +324,7 @@ def _handle_one(formatter: TOMLFormatter[_NAMESPACE_T], config: _Config[_NAMESPA
             )
         )
     else:
-        print(f"no change for {name}")
+        print(f"no change for {name}")  # ruff: ignore[print]  # the CLI reports unchanged input
     return changed
 
 
