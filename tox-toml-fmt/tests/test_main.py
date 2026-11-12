@@ -116,7 +116,7 @@ def test_main_check_leaves_the_file_unchanged(
     assert tox_toml.read_text() == start
 
 
-@pytest.mark.parametrize("start", [_FORMATTED, _UNFORMATTED], ids=["formatted", "format"])
+@pytest.mark.parametrize("start", [pytest.param(_FORMATTED, id="formatted"), pytest.param(_UNFORMATTED, id="format")])
 def test_main_check_refuses_stdout(tmp_path: Path, start: str) -> None:
     tox_toml = tmp_path / "tox.toml"
     tox_toml.write_text(start)
@@ -152,7 +152,7 @@ def test_main_prints_to_stdout(
     assert out == outcome
 
 
-@pytest.mark.parametrize("indent", [0, 2, 4], ids=["zero", "two", "four"])
+@pytest.mark.parametrize("indent", [pytest.param(0, id="zero"), pytest.param(2, id="two"), pytest.param(4, id="four")])
 def test_indent(tmp_path: Path, indent: int) -> None:
 
     expected = f"""\

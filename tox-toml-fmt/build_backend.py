@@ -19,7 +19,8 @@ from hashlib import sha256
 from io import BytesIO
 from os import environ
 from pathlib import Path
-from re import findall, search, sub
+from re import Pattern, findall, sub
+from re import compile as compile_regex
 from shutil import copy2
 from sys import argv
 from tarfile import TarInfo
@@ -47,6 +48,8 @@ _VENDOR: Final[str] = "toml_fmt_common"
 _COMMON: Final[Path] = (
     _HERE / "toml-fmt-common" if (_HERE / "toml-fmt-common").is_dir() else _HERE.parent / "toml-fmt-common"
 )
+_DEPENDENCIES_PATTERN: Final[Pattern[str]] = compile_regex(r"(?ms)^dependencies = \[(?P<dependencies>.*?)\]")
+_QUOTED_PATTERN: Final[Pattern[str]] = compile_regex(r'"([^"]*)"')
 
 
 def build_wheel(
@@ -194,10 +197,8 @@ def _source_epoch() -> int | None:
 
 
 def _own_metadata(metadata: bytes) -> bytes:
-    dependency_block = search(
-        r"(?ms)^dependencies = \[(?P<dependencies>.*?)\]", (_COMMON / "pyproject.toml").read_text()
-    )
-    if not (dependencies := findall(r'"([^"]*)"', dependency_block["dependencies"]) if dependency_block else []):
+    dependency_block = _DEPENDENCIES_PATTERN.search((_COMMON / "pyproject.toml").read_text())
+    if not (dependencies := _QUOTED_PATTERN.findall(dependency_block["dependencies"]) if dependency_block else []):
         return metadata
     # Requires-Dist belongs in the header block; everything past the first blank line is the description
     headers, separator, description = metadata.decode().partition("\n\n")
