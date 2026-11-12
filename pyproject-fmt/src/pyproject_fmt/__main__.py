@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser, ArgumentTypeError
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, TypedDict
 
 from toml_fmt_common import ArgumentGroup, FmtNamespace, TOMLFormatter, TomlValue, build_cli, run
 
@@ -134,8 +134,35 @@ def build_parser() -> ArgumentParser:
     return build_cli(_PyProjectFormatter())[0]
 
 
+class _ExampleSettings(TypedDict):
+    column_width: int
+    indent: int
+    keep_full_version: bool
+    max_supported_python: tuple[int, int]
+    min_supported_python: tuple[int, int]
+    generate_python_version_classifiers: bool
+    table_format: str
+    sub_table_spacing: str
+    separate_root_table: str
+    expand_tables: tuple[str, ...]
+    collapse_tables: tuple[str, ...]
+    skip_wrap_for_keys: tuple[str, ...]
+
+
+def format_example(content: str, settings: _ExampleSettings) -> str:
+    """
+    Format a documentation example with its settings.
+
+    :param content: the TOML example.
+    :param settings: formatter options for this example.
+    :returns: the formatted TOML.
+    """
+    return format_toml(content, Settings(**settings))
+
+
 __all__ = [
     "build_parser",
+    "format_example",
     "runner",
 ]
 
