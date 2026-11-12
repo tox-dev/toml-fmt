@@ -60,9 +60,6 @@ lint.per-file-ignores."**/build_backend.py" = [
   "implicit-namespace-package", # is not a namespace
   "print",                      # the CLI reports what it patched
 ]
-lint.per-file-ignores."**/src/toml_fmt_common/_app.py" = [
-  "print", # the CLI reports what it formatted on stdout
-]
 lint.per-file-ignores."**/tests/**/*.py" = [
   "assert",                               # asserts allowed in tests...
   "D",                                    # test names document behavior
