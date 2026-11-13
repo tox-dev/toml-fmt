@@ -7,8 +7,7 @@ use regex::Regex;
 
 use common::arrays::{dedupe_strings_in, map_strings, sort, sort_names_in, string_of};
 use common::nesting::Width;
-use common::pep508::{is_valid_version, Requirement};
-use common::pep508::{Number, Operator, Version, VersionOp};
+use common::pep508::{Number, Operator, Requirement, Version, VersionOp, is_valid_version};
 use common::sections;
 use toml_doc::{
     Array, Comment, Document, Entry, InlineTable, Key, KeyValue, LineEnding, Member, Pad, Piece, Section, SectionKind,
@@ -103,10 +102,10 @@ pub fn fix(
             });
         }
         "version" => {
-            if let Some(raw) = common::strings::text_of(value) {
-                if !is_valid_version(&raw) {
-                    invalid_version = Some(raw);
-                }
+            if let Some(raw) = common::strings::text_of(value)
+                && !is_valid_version(&raw)
+            {
+                invalid_version = Some(raw);
             }
         }
         // the deprecated license table holds a path and the license text itself, neither of which is
@@ -218,9 +217,7 @@ fn expand_entry_points_in(entries: &mut Vec<Entry<'_>>, under: &[String], path: 
     let mut expanded: Vec<Entry<'_>> = Vec::new();
     for entry in std::mem::take(entries) {
         let named: Vec<String> = under.iter().chain(&entry.key_value.key.segments()).cloned().collect();
-        let key = named
-            .strip_prefix(path)
-            .map_or_else(String::new, common::sections::dotted_name);
+        let key = named.strip_prefix(path).map_or_default(common::sections::dotted_name);
         let Value::InlineTable(table) = &entry.key_value.value else {
             expanded.push(entry);
             continue;

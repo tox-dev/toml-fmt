@@ -5,7 +5,7 @@ use pyo3::types::{PyDict, PyDictMethods};
 use pyo3::{Bound, PyResult, Python};
 
 use super::{assert_valid_toml, default_settings, evaluate_settings};
-use _tox_toml_fmt::{format_toml, Settings};
+use _tox_toml_fmt::{Settings, format_toml};
 
 #[test]
 fn test_format_toml_simple() {

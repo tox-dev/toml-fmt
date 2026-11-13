@@ -4,7 +4,8 @@ version = "1.9.3"
 description = "Formatting rules for tox.toml and tool.tox"
 repository = "https://github.com/tox-dev/toml-fmt"
 license = "MIT"
-edition = "2021"
+edition = "2024"
+rust-version = "1.100"
 
 [dependencies]
 common = { path = "../common" }
@@ -14,3 +15,5 @@ lexical-sort = { version = "0.3.1" } # the natural order names sort in
 [dev-dependencies]
 indoc = { version = "2.0.8" }   # dedented test cases for literal strings
 insta = { version = "1.49.0" }  # snapshot testing
+
+[lints]

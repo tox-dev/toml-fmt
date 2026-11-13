@@ -1,5 +1,5 @@
 use super::{default_settings, evaluate_full as evaluate, evaluate_long};
-use _pyproject_fmt::{format_toml, Settings};
+use _pyproject_fmt::{Settings, format_toml};
 
 #[test]
 fn test_setuptools_top_level_key_order() {

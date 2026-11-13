@@ -30,7 +30,7 @@ pub fn member_ranges<T>(members: &[toml_doc::Member<'_, T>]) -> Vec<std::ops::Ra
         }
     }
     starts.push(members.len());
-    starts.windows(2).map(|pair| pair[0]..pair[1]).collect()
+    starts.array_windows().map(|[start, end]| *start..*end).collect()
 }
 
 /// The name a table groups under: one level deeper for the nested prefixes, so `tool.black` and

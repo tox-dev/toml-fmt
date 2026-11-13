@@ -129,11 +129,10 @@ fn open<'t>(root: &'t mut Table, key: &Key<'_>, kind: SectionKind, report: &mut 
                 report.says(key, "is already something an array of tables cannot extend");
                 return None;
             };
-            elements.push(Table {
+            Some(elements.push_mut(Table {
                 explicit: true,
                 ..Table::default()
-            });
-            Some(elements.last_mut().expect("just pushed"))
+            }))
         }
     }
 }
@@ -235,7 +234,7 @@ fn is_number(text: &str) -> bool {
             return digit_run(digits, radix);
         }
     }
-    let body = text.strip_prefix(['+', '-']).unwrap_or(text);
+    let body = text.trim_prefix(['+', '-']);
     matches!(body, "inf" | "nan") || is_decimal(body)
 }
 
@@ -263,7 +262,7 @@ fn is_decimal(text: &str) -> bool {
     let Some(after) = rest.strip_prefix(['e', 'E']) else {
         return false;
     };
-    let (exponent, rest) = split_run(after.strip_prefix(['+', '-']).unwrap_or(after));
+    let (exponent, rest) = split_run(after.trim_prefix(['+', '-']));
     rest.is_empty() && digit_run(exponent, 10)
 }
 
@@ -294,13 +293,13 @@ fn is_moment(text: &str) -> bool {
 
 /// `YYYY-MM-DD` and what follows it, where the day is one that month has.
 fn after_date(text: &str) -> Option<&str> {
-    let date = text.get(..10)?;
+    let (date, rest) = text.split_at_checked(10)?;
     let shaped = date.as_bytes()[4] == b'-'
         && date.as_bytes()[7] == b'-'
         && [0..4, 5..7, 8..10]
             .into_iter()
             .all(|span| date.as_bytes()[span].iter().all(u8::is_ascii_digit));
-    (shaped && day_exists(date)).then(|| &text[10..])
+    (shaped && day_exists(date)).then_some(rest)
 }
 
 fn day_exists(date: &str) -> bool {
@@ -310,7 +309,7 @@ fn day_exists(date: &str) -> bool {
         month.parse::<u8>().expect("two ascii digits"),
         day.parse::<u8>().expect("two ascii digits"),
     );
-    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let leap = year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400));
     let days = match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
@@ -339,11 +338,11 @@ fn after_time(text: &str) -> Option<&str> {
 
 /// Two digits below the given bound, and what follows them.
 fn two_digits(text: &str, less_than: u8) -> Option<&str> {
-    let head = text.get(..2)?;
+    let (head, rest) = text.split_at_checked(2)?;
     if !head.bytes().all(|byte| byte.is_ascii_digit()) {
         return None;
     }
-    (head.parse::<u8>().expect("two ascii digits") < less_than).then(|| &text[2..])
+    (head.parse::<u8>().expect("two ascii digits") < less_than).then_some(rest)
 }
 
 /// `+HH:MM`, whose hour RFC 3339 gives as 00 through 23.

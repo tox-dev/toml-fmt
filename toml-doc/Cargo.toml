@@ -5,7 +5,7 @@ description = "Mutable, format-preserving TOML document model built for formatte
 repository = "https://github.com/tox-dev/toml-fmt"
 license = "MIT"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.100"
 
 [dependencies]
 toml_parser = { workspace = true }

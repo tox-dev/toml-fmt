@@ -1,4 +1,4 @@
-use common::pep508::{MarkerExpr, Requirement, is_valid_version};
+use common::pep508::{MarkerExpr, Number, Requirement, Version, is_valid_version};
 
 /// Two spellings of one distribution name are the same name, which is what decides where a
 /// requirement sorts against the others.
@@ -390,6 +390,23 @@ fn a_version_is_read_the_way_the_spec_writes_one() {
 #[test]
 fn test_normalize_spells_out_a_pre_release() {
     insta::assert_snapshot!(format_requirement_helper("pkg==1.0alpha", false), @"pkg==1.0a0");
+}
+
+#[test]
+fn a_version_keeps_an_unknown_pre_release_label() {
+    let version = Version {
+        epoch: None,
+        release: ["1", "2", "3"]
+            .map(|digits| Number::written(digits).expect("digits"))
+            .to_vec(),
+        pre: Some((String::from("unknown"), Number::written("1"))),
+        post: None,
+        dev: None,
+        local: None,
+        has_wildcard: false,
+    };
+
+    assert_eq!(version.to_string(), "1.2.3unknown1");
 }
 
 /// A requirement this parser cannot read whole is one it does not read at all, so nothing a caller

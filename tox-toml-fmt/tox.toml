@@ -109,6 +109,7 @@ runner = "uv-venv-runner"
 description = "build and test the source distribution"
 skip_install = true
 dependency_groups = [ "test" ]
+pass_env = [ "RUSTUP_TOOLCHAIN" ]
 change_dir = "{tox_root}{/}.."
 commands = [ [ "python", "tasks{/}check_sdist.py", "tox-toml-fmt" ] ]
 

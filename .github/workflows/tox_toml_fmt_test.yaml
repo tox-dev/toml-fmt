@@ -218,6 +218,7 @@ jobs:
         run: tox run --skip-pkg-install -e ${{ matrix.env }}
         env:
           PYTEST_ADDOPTS: "-vv --durations=20"
+          RUSTUP_TOOLCHAIN: "1.100"
   all-pass:
     name: 🚦 tox-toml-fmt
     if: always()

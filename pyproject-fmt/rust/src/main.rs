@@ -4,7 +4,7 @@ use std::string::String;
 use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::{FromPyObjectOwned, PyModule, PyModuleMethods};
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
-use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction, Bound, PyResult, Python};
+use pyo3::{Bound, PyResult, Python, pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction};
 
 use crate::global::reorder_tables;
 use toml_doc::Document;
@@ -123,14 +123,10 @@ impl Settings {
                 }
             }
         }
-        // a pattern names a key and a pin names an environment, each of which the file writes as
-        // something; neither says anything where the file wrote no name at all
-        for (setting, held) in [("skip_wrap_for_keys", &skip_wrap_for_keys)] {
-            if held.iter().any(|name| name.trim().is_empty()) {
-                return Err(PyValueError::new_err(format!(
-                    "{setting}: a name is written there, not nothing"
-                )));
-            }
+        if skip_wrap_for_keys.iter().any(|name| name.trim().is_empty()) {
+            return Err(PyValueError::new_err(
+                "skip_wrap_for_keys: a name is written there, not nothing",
+            ));
         }
         Ok(Self {
             column_width,

@@ -190,10 +190,11 @@ pub fn build_root_key_order(entries: &[toml_doc::Entry<'_>]) -> Vec<String> {
 fn build_root_key_order_under(document: &mut Document<'_>, path: &[String]) -> Vec<String> {
     let mut groups: Vec<String> = Vec::new();
     sections::for_names_under(document, path, |tail, _| {
-        if let [head, name, ..] = tail {
-            if head == "group" && !groups.contains(name) {
-                groups.push(name.clone());
-            }
+        if let [head, name, ..] = tail
+            && head == "group"
+            && !groups.contains(name)
+        {
+            groups.push(name.clone());
         }
     });
     root_key_order(&groups)

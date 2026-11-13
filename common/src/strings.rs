@@ -342,7 +342,7 @@ fn pattern_segments(pattern: &str) -> Vec<Want> {
     let mut escaped = false;
     for (at, held) in pattern.char_indices() {
         match (quote, held) {
-            (Some('"'), '\\') => escaped = !escaped,
+            (Some('"'), '\\') => escaped.toggle(),
             (Some(open), held) if held == open && !escaped => quote = None,
             (Some(_), _) => escaped = false,
             (None, '"' | '\'') => quote = Some(held),

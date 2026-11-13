@@ -526,7 +526,7 @@ fn take_marker<'a>(lead: &mut Trivia<'a>) -> Vec<Piece<'a>> {
         Piece::Comment { text, .. } => is_group_marker(text),
         Piece::Blank { .. } => false,
     });
-    last.map_or_else(Vec::new, |index| pieces.drain(..=index).collect())
+    last.map_or_default(|index| pieces.drain(..=index).collect())
 }
 
 /// Rewrite the entry keys that appear in `aliases`, leaving the rest alone, and hand back the
@@ -690,7 +690,7 @@ fn groups(entries: &[Entry<'_>]) -> Vec<std::ops::Range<usize>> {
         }
     }
     starts.push(entries.len());
-    starts.windows(2).map(|pair| pair[0]..pair[1]).collect()
+    starts.array_windows().map(|[start, end]| *start..*end).collect()
 }
 
 /// Put the members of a table written as a value in order, one authored group at a time.
@@ -891,8 +891,10 @@ pub fn reorder_within_keeping(
     // spacing pass then widens or closes the gaps it cares about
     let opens_next: Vec<bool> = document
         .sections
-        .windows(2)
-        .map(|pair| pair[0].entries.is_empty() && pair[0].header.key.segments() != pair[1].header.key.segments())
+        .array_windows()
+        .map(|[current, next]| {
+            current.entries.is_empty() && current.header.key.segments() != next.header.key.segments()
+        })
         .collect();
     for (index, section) in document.sections.iter_mut().enumerate().skip(1) {
         let pieces = section.header.lead.pieces_mut();

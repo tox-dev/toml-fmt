@@ -4,7 +4,8 @@ version = "1.11.3"
 description = "Format tox.toml files"
 repository = "https://github.com/tox-dev/tox-toml-fmt"
 license = "MIT"
-edition = "2021"
+edition = "2024"
+rust-version = "1.100"
 
 [lib]
 name = "_tox_toml_fmt"
@@ -39,3 +40,5 @@ indoc = { version = "2.0.8" }   # dedented test cases for literal strings
 insta = { version = "1.49.0", features = ["redactions"] } # snapshot testing
 pyo3 = { version = "0.30.1", features = ["auto-initialize"] }
 toml = "1.1.8"                  # an independent parser, to read back what the formatter wrote
+
+[lints]

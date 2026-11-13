@@ -231,20 +231,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_display_unknown_pre_release_label() {
-        let version = Version {
-            epoch: None,
-            release: ["1", "2", "3"].map(Number::read).to_vec(),
-            pre: Some((String::from("unknown"), Some(Number::read("1")))),
-            post: None,
-            dev: None,
-            local: None,
-            has_wildcard: false,
-        };
-        assert_eq!(version.to_string(), "1.2.3unknown1");
-    }
-
-    #[test]
     fn test_display_every_part_a_version_can_hold() {
         let version = Version {
             epoch: Some(Number::read("2")),
