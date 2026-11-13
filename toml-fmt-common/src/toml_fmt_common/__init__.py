@@ -285,7 +285,7 @@ def _load_shared_config(  # ruff: ignore[non-empty-init-module]  # root implemen
 ) -> dict[str, TomlValue]:
     try:
         return formatter.settings_in(path.read_text(encoding="utf-8"), ()) or {}
-    except (SyntaxError, TypeError, ValueError, UnicodeDecodeError) as exc:
+    except (SyntaxError, TypeError, ValueError) as exc:
         parser.error(f"{path}: {exc}")
 
 
