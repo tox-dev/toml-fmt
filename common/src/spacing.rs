@@ -71,11 +71,13 @@ impl Spacing<'_> {
             .position(|piece| !piece.is_blank())
             .unwrap_or(pieces.len());
         pieces.drain(..leading);
-        let gap = std::iter::repeat_with(|| Piece::Blank {
-            indent: "".into(),
-            ending: self.ending,
-        })
-        .take(blanks);
+        let gap = std::iter::repeat_n(
+            Piece::Blank {
+                indent: "".into(),
+                ending: self.ending,
+            },
+            blanks,
+        );
         pieces.splice(0..0, gap);
     }
 }

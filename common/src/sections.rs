@@ -526,7 +526,7 @@ fn take_marker<'a>(lead: &mut Trivia<'a>) -> Vec<Piece<'a>> {
         Piece::Comment { text, .. } => is_group_marker(text),
         Piece::Blank { .. } => false,
     });
-    last.map_or_else(Vec::new, |index| pieces.drain(..=index).collect())
+    last.map_or_default(|index| pieces.drain(..=index).collect())
 }
 
 /// Rewrite the entry keys that appear in `aliases`, leaving the rest alone, and hand back the

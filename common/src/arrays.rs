@@ -249,7 +249,7 @@ fn take_marker<'a>(member: &mut Member<'a, Value<'a>>) -> Vec<Pad<'a>> {
         Pad::Comment(text) => is_group_marker(text.as_ref()),
         _ => false,
     });
-    last.map_or_else(Vec::new, |index| parts.drain(..=index).collect())
+    last.map_or_default(|index| parts.drain(..=index).collect())
 }
 
 /// Sort a value when it is an array of strings, and leave it alone otherwise.

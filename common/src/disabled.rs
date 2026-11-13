@@ -253,11 +253,7 @@ fn closing_lines(lines: &[&str]) -> Vec<Close> {
         depth += open.net;
         ends[at] = depth;
         waiting.push(at);
-        while waiting
-            .last()
-            .is_some_and(|held| before(&ends, *held, run_start) >= depth)
-        {
-            let held = waiting.pop().expect("the stack was just read");
+        while let Some(held) = waiting.pop_if(|held| before(&ends, *held, run_start) >= depth) {
             closes[held] = Close::At(at);
         }
     }

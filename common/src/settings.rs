@@ -65,7 +65,7 @@ fn entries_at<'doc>(document: &'doc Document<'_>, path: &[String]) -> Result<Opt
         let under = section.header.key.segments();
         // a header names the table it opens whether or not the file wrote a key under it
         if let Some([name, ..]) = under.strip_prefix(path) {
-            push(held.get_or_insert_with(Vec::new), name.clone(), None);
+            push(held.get_or_insert_default(), name.clone(), None);
         }
         for entry in &section.entries {
             take(&mut held, path, &under, &entry.key_value)?;
@@ -84,7 +84,7 @@ fn take<'doc>(
 ) -> Result<(), String> {
     let named: Vec<String> = under.iter().cloned().chain(key_value.key.segments()).collect();
     if let Some(rest) = named.strip_prefix(path) {
-        let found = held.get_or_insert_with(Vec::new);
+        let found = held.get_or_insert_default();
         match rest {
             // the settings are written as the value of the key that names them
             [] => settings_inside(found, path, &key_value.value)?,

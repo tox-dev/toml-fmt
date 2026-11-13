@@ -217,9 +217,7 @@ fn expand_entry_points_in(entries: &mut Vec<Entry<'_>>, under: &[String], path: 
     let mut expanded: Vec<Entry<'_>> = Vec::new();
     for entry in std::mem::take(entries) {
         let named: Vec<String> = under.iter().chain(&entry.key_value.key.segments()).cloned().collect();
-        let key = named
-            .strip_prefix(path)
-            .map_or_else(String::new, common::sections::dotted_name);
+        let key = named.strip_prefix(path).map_or_default(common::sections::dotted_name);
         let Value::InlineTable(table) = &entry.key_value.value else {
             expanded.push(entry);
             continue;
