@@ -198,6 +198,13 @@ def _cli_args(  # ruff: ignore[non-empty-init-module]  # root implementation
     return [_config_of(parser, formatter, constraints, toml_path) for toml_path in formatter.opt.inputs]
 
 
+@dataclass(frozen=True, slots=True, kw_only=True)  # ruff: ignore[non-empty-init-module]  # root implementation
+class _Constraints:
+    conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
+    allowed: Mapping[str, Iterable[TomlValue]]
+    accepts: Mapping[str, type]
+
+
 def _written_as(default: TomlValue) -> type:  # ruff: ignore[non-empty-init-module]  # root implementation
     if isinstance(default, bool):
         return bool
@@ -285,7 +292,7 @@ def _load_shared_config(  # ruff: ignore[non-empty-init-module]  # root implemen
 ) -> dict[str, TomlValue]:
     try:
         return formatter.settings_in(path.read_text(encoding="utf-8"), ()) or {}
-    except (SyntaxError, TypeError, ValueError, UnicodeDecodeError) as exc:
+    except (SyntaxError, TypeError, ValueError) as exc:
         parser.error(f"{path}: {exc}")
 
 
@@ -311,6 +318,17 @@ def _apply_config(  # ruff: ignore[non-empty-init-module]  # root implementation
             choices = ", ".join(repr(choice) for choice in constraints.allowed[key])
             parser.error(f"{source}: {key}: invalid choice: {value!r} (choose from {choices})")
         setattr(opt, key, value)
+
+
+@dataclass(frozen=True, slots=True, kw_only=True)  # ruff: ignore[non-empty-init-module]  # root implementation
+class _Config(Generic[_NAMESPACE_T]):
+    toml_filename: Path | None
+    toml: str
+    stdout: bool
+    check: bool
+    no_print_diff: bool
+    opt: _NAMESPACE_T
+    eol: str
 
 
 def _handle_one(  # ruff: ignore[non-empty-init-module]  # root implementation
@@ -361,24 +379,6 @@ def _color_diff(diff: Iterable[str]) -> Iterable[str]:  # ruff: ignore[non-empty
             yield f"{red}{line}{reset}"
         else:
             yield line
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)  # ruff: ignore[non-empty-init-module]  # root implementation
-class _Config(Generic[_NAMESPACE_T]):
-    toml_filename: Path | None
-    toml: str
-    stdout: bool
-    check: bool
-    no_print_diff: bool
-    opt: _NAMESPACE_T
-    eol: str
-
-
-@dataclass(frozen=True, slots=True, kw_only=True)  # ruff: ignore[non-empty-init-module]  # root implementation
-class _Constraints:
-    conversion: Mapping[str, Callable[[TomlValue], TomlValue]]
-    allowed: Mapping[str, Iterable[TomlValue]]
-    accepts: Mapping[str, type]
 
 
 def build_cli(  # ruff: ignore[non-empty-init-module]  # original public path
