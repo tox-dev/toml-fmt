@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING
 
 from toml_fmt_common import (
     ArgumentGroup,
@@ -97,32 +97,8 @@ def build_parser() -> ArgumentParser:
     return build_cli(_ToxTOMLFormatter())[0]
 
 
-class _ExampleSettings(TypedDict):
-    column_width: int
-    indent: int
-    table_format: str
-    sub_table_spacing: str
-    separate_root_table: str
-    expand_tables: tuple[str, ...]
-    collapse_tables: tuple[str, ...]
-    skip_wrap_for_keys: tuple[str, ...]
-    pin_envs: tuple[str, ...]
-
-
-def format_example(content: str, settings: _ExampleSettings) -> str:
-    """
-    Format a documentation example with its settings.
-
-    :param content: the TOML example.
-    :param settings: formatter options for this example.
-    :returns: the formatted TOML.
-    """
-    return format_toml(content, Settings(**settings))
-
-
 __all__ = [
     "build_parser",
-    "format_example",
     "runner",
 ]
 

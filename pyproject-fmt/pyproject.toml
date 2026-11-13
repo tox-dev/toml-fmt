@@ -53,6 +53,7 @@ dev = [
 ]
 test = [
   "covdefaults>=2.3",
+  "maturin>=1.15,<2",
   "pytest>=9.2",
   "pytest-cov>=7.1",
   "pytest-mock>=3.17",

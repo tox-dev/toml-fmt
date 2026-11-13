@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time as time_module
 from io import BytesIO
 from pathlib import Path
 from runpy import run_path
@@ -7,11 +8,10 @@ from shutil import copy2
 from sys import modules
 from tarfile import DIRTYPE, TarInfo
 from tarfile import open as tar_open
-from time import gmtime, localtime, time
-from types import SimpleNamespace
-from typing import TYPE_CHECKING, Final, NamedTuple, Protocol, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, NamedTuple, TypeAlias, cast
 from zipfile import ZipFile
 
+import maturin  # type: ignore[import-untyped]  # maturin does not ship typing metadata
 import pytest
 
 if TYPE_CHECKING:
@@ -36,25 +36,6 @@ class Backend(NamedTuple):
     build_sdist: BuildSdist
 
 
-class Maturin(Protocol):
-    @staticmethod
-    def build_wheel(
-        wheel_directory: str,
-        config_settings: ConfigSettings | None = None,
-        metadata_directory: str | None = None,
-    ) -> str: ...
-
-    @staticmethod
-    def build_editable(
-        wheel_directory: str,
-        config_settings: ConfigSettings | None = None,
-        metadata_directory: str | None = None,
-    ) -> str: ...
-
-    @staticmethod
-    def build_sdist(sdist_directory: str, config_settings: ConfigSettings | None = None) -> str: ...
-
-
 @pytest.fixture
 def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
     package = tmp_path / "package"
@@ -64,12 +45,13 @@ def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
     (package / "pyproject.toml").write_text(f'[project]\nname = "{distribution}"\n', encoding="utf-8", newline="")
     _write_common(package / "toml-fmt-common")
 
-    maturin = SimpleNamespace(
-        build_wheel=mocker.create_autospec(Maturin.build_wheel, side_effect=_write_wheel),
-        build_editable=mocker.create_autospec(Maturin.build_editable, side_effect=_write_wheel),
-        build_sdist=mocker.create_autospec(Maturin.build_sdist, side_effect=_write_sdist),
-    )
-    mocker.patch.dict(modules, {"maturin": maturin})
+    maturin_mock = mocker.create_autospec(maturin, spec_set=True)
+    maturin_mock.configure_mock(**{
+        "build_wheel.side_effect": _write_wheel,
+        "build_editable.side_effect": _write_wheel,
+        "build_sdist.side_effect": _write_sdist,
+    })
+    mocker.patch.dict(modules, {"maturin": maturin_mock})
     loaded = run_path(str(package / "build_backend.py"))
     return Backend(
         cast("BuildWheel", loaded["build_wheel"]),
@@ -180,9 +162,11 @@ def test_vendor_into_wheel_rebuild_is_byte_identical(
 
 @pytest.fixture
 def clock(mocker: MockerFixture) -> MockType:
-    clock: MockType = mocker.create_autospec(time, return_value=1609459201)
-    mocker.patch("zipfile.time", SimpleNamespace(gmtime=gmtime, localtime=localtime, time=clock))
-    mocker.patch("gzip.time", SimpleNamespace(time=clock))
+    clock: MockType = mocker.create_autospec(time_module.time, return_value=1609459201)
+    clock_module = mocker.create_autospec(time_module, spec_set=True)
+    clock_module.configure_mock(gmtime=time_module.gmtime, localtime=time_module.localtime, time=clock)
+    mocker.patch("zipfile.time", clock_module)
+    mocker.patch("gzip.time", clock_module)
     return clock
 
 

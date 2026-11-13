@@ -1555,6 +1555,7 @@ source = { editable = "pyproject-fmt" }
 [package.dev-dependencies]
 dev = [
     { name = "covdefaults" },
+    { name = "maturin" },
     { name = "mypy" },
     { name = "pre-commit-uv" },
     { name = "pytest" },
@@ -1586,6 +1587,7 @@ pkg-meta = [
 ]
 test = [
     { name = "covdefaults" },
+    { name = "maturin" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
@@ -1593,6 +1595,7 @@ test = [
 ]
 type = [
     { name = "covdefaults" },
+    { name = "maturin" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1607,6 +1610,7 @@ type = [
 [package.metadata.requires-dev]
 dev = [
     { name = "covdefaults", specifier = ">=2.3" },
+    { name = "maturin", specifier = ">=1.15,<2" },
     { name = "mypy", specifier = "==2.4.1" },
     { name = "pre-commit-uv", specifier = ">=4.4.1" },
     { name = "pytest", specifier = ">=9.2" },
@@ -1636,6 +1640,7 @@ pkg-meta = [
 ]
 test = [
     { name = "covdefaults", specifier = ">=2.3" },
+    { name = "maturin", specifier = ">=1.15,<2" },
     { name = "pytest", specifier = ">=9.2" },
     { name = "pytest-cov", specifier = ">=7.1" },
     { name = "pytest-mock", specifier = ">=3.17" },
@@ -1643,6 +1648,7 @@ test = [
 ]
 type = [
     { name = "covdefaults", specifier = ">=2.3" },
+    { name = "maturin", specifier = ">=1.15,<2" },
     { name = "mypy", specifier = "==2.4.1" },
     { name = "pytest", specifier = ">=9.2" },
     { name = "pytest-cov", specifier = ">=7.1" },
@@ -2310,6 +2316,7 @@ source = { editable = "tox-toml-fmt" }
 [package.dev-dependencies]
 dev = [
     { name = "covdefaults" },
+    { name = "maturin" },
     { name = "mypy" },
     { name = "pre-commit-uv" },
     { name = "pytest" },
@@ -2339,12 +2346,14 @@ pkg-meta = [
 ]
 test = [
     { name = "covdefaults" },
+    { name = "maturin" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-mock" },
 ]
 type = [
     { name = "covdefaults" },
+    { name = "maturin" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -2358,6 +2367,7 @@ type = [
 [package.metadata.requires-dev]
 dev = [
     { name = "covdefaults", specifier = ">=2.3" },
+    { name = "maturin", specifier = ">=1.15,<2" },
     { name = "mypy", specifier = "==2.4.1" },
     { name = "pre-commit-uv", specifier = ">=4.4.1" },
     { name = "pytest", specifier = ">=9.2" },
@@ -2385,12 +2395,14 @@ pkg-meta = [
 ]
 test = [
     { name = "covdefaults", specifier = ">=2.3" },
+    { name = "maturin", specifier = ">=1.15,<2" },
     { name = "pytest", specifier = ">=9.2" },
     { name = "pytest-cov", specifier = ">=7.1" },
     { name = "pytest-mock", specifier = ">=3.17" },
 ]
 type = [
     { name = "covdefaults", specifier = ">=2.3" },
+    { name = "maturin", specifier = ">=1.15,<2" },
     { name = "mypy", specifier = "==2.4.1" },
     { name = "pytest", specifier = ">=9.2" },
     { name = "pytest-cov", specifier = ">=7.1" },

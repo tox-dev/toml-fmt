@@ -50,10 +50,11 @@ def render_example(module: str, before: str, config: str = "") -> str:
 
 
 def _format_example(module: str, before: str, config: str) -> str:
-    formatter = importlib.import_module(module)
+    # Docs examples set options the CLI does not expose.
+    lib = importlib.import_module(f"{module}._lib")
     defaults = dict(_DEFAULTS[module])
     defaults.update(_parse_config(config, defaults))
-    return formatter.format_example(before, defaults)
+    return lib.format_toml(before, lib.Settings(**defaults))
 
 
 def _parse_config(config: str, defaults: Mapping[str, _Setting]) -> dict[str, _Setting]:
