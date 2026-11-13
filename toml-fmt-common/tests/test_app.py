@@ -540,6 +540,13 @@ def test_build_cli_underscore_alias_preserved() -> None:
     assert toml_fmt_common.__dict__["_build_cli"] is build_cli
 
 
+def test_legacy_consumer_reregistering_flags_does_not_crash(tmp_path: Path) -> None:
+    dumb = tmp_path / "dumb.toml"
+    dumb.write_text("")
+    # Must not raise argparse.ArgumentError on the duplicate --table-format/--expand-tables.
+    assert run(LegacyDumb(), ["E", str(dumb), "--table-format", "long"]) == 1
+
+
 class LegacyDumb(Dumb):
     # Mirrors pyproject-fmt <=2.21.2, which re-registers the shared format flags that
     # build_cli now also defines (tox-dev/toml-fmt#355).
@@ -548,13 +555,6 @@ class LegacyDumb(Dumb):
         Dumb.add_format_flags(parser)
         parser.add_argument("--table-format", choices=["short", "long"], default="short")
         parser.add_argument("--expand-tables", default=[])
-
-
-def test_legacy_consumer_reregistering_flags_does_not_crash(tmp_path: Path) -> None:
-    dumb = tmp_path / "dumb.toml"
-    dumb.write_text("")
-    # Must not raise argparse.ArgumentError on the duplicate --table-format/--expand-tables.
-    assert run(LegacyDumb(), ["E", str(dumb), "--table-format", "long"]) == 1
 
 
 def test_format_rejection_reported(
