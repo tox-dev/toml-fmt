@@ -63,7 +63,6 @@ Python API
 
 .. automodule:: tox_toml_fmt
    :members:
-   :exclude-members: format_example
 
 .. toctree::
    :hidden:

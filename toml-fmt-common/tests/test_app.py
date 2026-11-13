@@ -15,11 +15,9 @@ from toml_fmt_common import (
     TOMLFormatter,
     TomlValue,
     build_cli,
-    count_argument,
     list_argument,
     name_list_argument,
     run,
-    spacing_argument,
 )
 
 if TYPE_CHECKING:
@@ -89,6 +87,23 @@ class Dumb(TOMLFormatter[DumpNamespace]):
             f"extras = {opt.extra!r}",
             *([f"magic = {','.join(opt.tuple_magic)!r}"] if opt.tuple_magic else []),
         ])
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("ArgumentGroup", id="argument-group"),
+        pytest.param("FmtNamespace", id="namespace"),
+        pytest.param("Setting", id="setting"),
+        pytest.param("TOMLFormatter", id="formatter"),
+        pytest.param("build_cli", id="build-cli"),
+        pytest.param("list_argument", id="list-argument"),
+        pytest.param("name_list_argument", id="name-list-argument"),
+        pytest.param("run", id="run"),
+    ],
+)
+def test_public_api_is_defined_in_the_package(name: str) -> None:
+    assert getattr(toml_fmt_common, name).__module__ == "toml_fmt_common"
 
 
 def test_dumb_help(capsys: pytest.CaptureFixture[str]) -> None:
@@ -613,11 +628,11 @@ def test_dumb_format_crlf_alone_is_not_a_change(tmp_path: Path, monkeypatch: pyt
 )
 def test_a_count_the_formatter_cannot_hold(written: str | int) -> None:
     with pytest.raises(ArgumentTypeError):
-        count_argument(written)
+        build_cli(Dumb())[1]["indent"](written)
 
 
 def test_a_count_reads_what_it_is_given() -> None:
-    assert count_argument("4") == 4
+    assert build_cli(Dumb())[1]["indent"]("4") == 4
 
 
 @pytest.mark.parametrize(
@@ -682,16 +697,16 @@ def test_a_setting_read_against_the_type_its_flag_takes(
 
 def test_a_count_wider_than_any_line() -> None:
     with pytest.raises(ArgumentTypeError, match="must be at most"):
-        count_argument(10_001)
+        build_cli(Dumb())[1]["indent"](10_001)
 
 
 def test_a_spacing_reads_the_newline_it_writes() -> None:
-    assert spacing_argument(r"\n") == "\n"
+    assert build_cli(Dumb())[1]["sub_table_spacing"](r"\n") == "\n"
 
 
 def test_a_spacing_written_as_a_number_is_no_spacing() -> None:
     with pytest.raises(ArgumentTypeError, match="invalid spacing"):
-        spacing_argument(1)
+        build_cli(Dumb())[1]["sub_table_spacing"](1)
 
 
 @pytest.mark.parametrize(

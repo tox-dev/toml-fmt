@@ -8,7 +8,7 @@ from typing import Final
 import pytest
 from trove_classifiers import classifiers
 
-from pyproject_fmt import build_parser, format_example, run
+from pyproject_fmt import build_parser, run
 
 
 def test_build_parser_uses_program_name() -> None:
@@ -53,29 +53,6 @@ _CASES: Final[list[pytest.ParameterSet]] = [
         id="format",
     ),
 ]
-
-
-def test_format_example_uses_docs_settings() -> None:
-    assert (
-        format_example(
-            _UNFORMATTED,
-            {
-                "column_width": 120,
-                "indent": 2,
-                "keep_full_version": False,
-                "max_supported_python": (3, 15),
-                "min_supported_python": (3, 10),
-                "generate_python_version_classifiers": True,
-                "table_format": "short",
-                "sub_table_spacing": "",
-                "separate_root_table": "\n",
-                "expand_tables": (),
-                "collapse_tables": (),
-                "skip_wrap_for_keys": (),
-            },
-        )
-        == _REFORMATTED
-    )
 
 
 @pytest.mark.parametrize(("start", "outcome", "output", "exit_code"), _CASES)
