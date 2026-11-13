@@ -7,8 +7,8 @@ use regex::Regex;
 
 use common::arrays::{dedupe_strings_in, map_strings, sort, sort_names_in, string_of};
 use common::nesting::Width;
-use common::pep508::{is_valid_version, Requirement};
 use common::pep508::{Number, Operator, Version, VersionOp};
+use common::pep508::{Requirement, is_valid_version};
 use common::sections;
 use toml_doc::{
     Array, Comment, Document, Entry, InlineTable, Key, KeyValue, LineEnding, Member, Pad, Piece, Section, SectionKind,
@@ -103,10 +103,10 @@ pub fn fix(
             });
         }
         "version" => {
-            if let Some(raw) = common::strings::text_of(value) {
-                if !is_valid_version(&raw) {
-                    invalid_version = Some(raw);
-                }
+            if let Some(raw) = common::strings::text_of(value)
+                && !is_valid_version(&raw)
+            {
+                invalid_version = Some(raw);
             }
         }
         // the deprecated license table holds a path and the license text itself, neither of which is

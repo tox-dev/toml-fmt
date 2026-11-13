@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use _pyproject_fmt::{format_toml, Settings};
+use _pyproject_fmt::{Settings, format_toml};
 
 mod autopep8_tests;
 mod bandit_tests;

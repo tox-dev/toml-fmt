@@ -229,13 +229,11 @@ pub fn expand_where(document: &mut Document<'_>, name: &[String], wanted: &dyn F
     }
     document.sections[parent].entries = kept;
 
-    let mut at = parent + 1;
-    for (_, leaf, entries) in moved {
+    for (at, (_, leaf, entries)) in (parent + 1..).zip(moved) {
         let mut key = document.sections[parent].header.key.clone();
         key.extend_parts(leaf);
         let header = header_for(key, &document.sections[parent]);
         document.sections.insert(at, Section { header, entries });
-        at += 1;
     }
 }
 

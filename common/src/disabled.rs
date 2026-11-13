@@ -23,22 +23,6 @@ thread_local! {
     static IN_USE: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
 }
 
-/// Holds the marker for as long as the pass runs, and takes it back however the pass ends.
-struct InUse;
-
-impl InUse {
-    fn hold(marker: &str) -> Self {
-        IN_USE.with_borrow_mut(|held| *held = Some(marker.to_owned()));
-        Self
-    }
-}
-
-impl Drop for InUse {
-    fn drop(&mut self) {
-        IN_USE.with_borrow_mut(|held| *held = None);
-    }
-}
-
 /// Whether the entry is one this pass turned back on, which is what the marker beside it says.
 ///
 /// A pass that would split, drop or merge such an entry has to leave it alone: what says the entry
@@ -111,7 +95,8 @@ pub fn try_with_disabled_keys(
     };
     let mut turned_on = toml_doc::parse_syntax(&enabled).expect("a comment stood where a key may stand");
     let formatted = {
-        let _in_use = InUse::hold(&marker);
+        IN_USE.with_borrow_mut(|held| *held = Some(marker.clone()));
+        let _in_use = std::mem::DropGuard::new((), |()| IN_USE.with_borrow_mut(|held| *held = None));
         format(&mut turned_on)?;
         turned_on.to_string()
     };
@@ -400,7 +385,7 @@ fn split_comment(line: &str) -> Option<(&str, &str)> {
     let trimmed = line.trim_start();
     let rest = trimmed.strip_prefix('#')?;
     let indent = &line[..line.len() - trimmed.len()];
-    Some((indent, rest.strip_prefix(' ').unwrap_or(rest)))
+    Some((indent, rest.trim_prefix(' ')))
 }
 
 fn is_table_header(body: &str) -> bool {

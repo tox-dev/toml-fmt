@@ -6,9 +6,9 @@ use pyo3::prelude::FromPyObjectOwned;
 #[cfg(feature = "extension-module")]
 use pyo3::prelude::{PyModule, PyModuleMethods};
 use pyo3::types::{PyAnyMethods, PyDict, PyDictMethods};
-use pyo3::{pyclass, pymethods, Bound, PyResult};
+use pyo3::{Bound, PyResult, pyclass, pymethods};
 #[cfg(feature = "extension-module")]
-use pyo3::{pyfunction, pymodule, wrap_pyfunction, Python};
+use pyo3::{Python, pyfunction, pymodule, wrap_pyfunction};
 
 use toml_doc::Document;
 

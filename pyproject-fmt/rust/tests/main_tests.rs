@@ -7,7 +7,7 @@ use pyo3::types::{PyDict, PyDictMethods};
 use pyo3::{Bound, PyResult, Python};
 
 use super::{assert_valid_toml, default_settings};
-use _pyproject_fmt::{format_toml, Settings};
+use _pyproject_fmt::{Settings, format_toml};
 
 #[test]
 fn test_format_toml_simple() {
@@ -1999,10 +1999,11 @@ fn test_lib_settings_in_reads_the_table_it_is_given() {
         assert_eq!(held.get_item("column_width").unwrap().to_string(), "30");
         assert_eq!(held.get_item("expand_tables").unwrap().to_string(), "['a']");
 
-        assert!(read
-            .call1(("[project]\nname = \"x\"\n", path.clone()))
-            .unwrap()
-            .is_none());
+        assert!(
+            read.call1(("[project]\nname = \"x\"\n", path.clone()))
+                .unwrap()
+                .is_none()
+        );
 
         let error = read.call1(("key =\n", path.clone())).unwrap_err();
         assert!(error.is_instance_of::<pyo3::exceptions::PySyntaxError>(py));

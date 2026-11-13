@@ -59,10 +59,7 @@ fn renaming_a_key_leaves_the_rest_of_the_line_alone() {
 fn trailing_comments_stay_with_the_document() {
     let document = parse("a = 1\n\n# dangling\n");
 
-    assert!(matches!(
-        document.trailing.pieces(),
-        [Piece::Blank { .. }, Piece::Comment { .. }]
-    ));
+    std::assert_matches!(document.trailing.pieces(), [Piece::Blank { .. }, Piece::Comment { .. }]);
 }
 
 #[test]

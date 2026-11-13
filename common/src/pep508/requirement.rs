@@ -33,12 +33,12 @@ fn marker_break(raw: &str) -> Option<usize> {
 /// A parenthesis opens a list and the matching one closes it; a lone one is text this parser cannot
 /// read, and dropping it would write a requirement the file does not say.
 fn read_specifiers(text: &str) -> Result<Vec<VersionOp>, String> {
-    let inside = match text.strip_prefix('(') {
-        Some(rest) => rest
-            .strip_suffix(')')
+    let inside = if text.starts_with('(') {
+        text.strip_circumfix('(', ')')
             .ok_or_else(|| format!("Unclosed parenthesis: '{text}'"))?
-            .trim(),
-        None => text,
+            .trim()
+    } else {
+        text
     };
     // a list may close with a comma, which names no clause of its own
     let inside = inside.strip_suffix(',').map_or(inside, str::trim_end);

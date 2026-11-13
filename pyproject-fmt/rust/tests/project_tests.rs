@@ -4,7 +4,7 @@ use common::sections;
 use indoc::indoc;
 
 use super::default_settings;
-use _pyproject_fmt::{format_toml, Settings, TableFormatConfig};
+use _pyproject_fmt::{Settings, TableFormatConfig, format_toml};
 
 #[test]
 fn test_project_no_project_section() {

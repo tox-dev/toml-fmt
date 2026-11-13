@@ -525,7 +525,7 @@ fn ranked_env(member: &Member<'_, Value<'_>>, pin_envs: &[String]) -> Option<(i3
 fn interpreter(part: &str) -> Option<(i32, i32, i32)> {
     let (kind, version) = match part.strip_prefix("pypy") {
         Some(version) => (2, version),
-        None => (1, part.strip_prefix("py").unwrap_or(part)),
+        None => (1, part.trim_prefix("py")),
     };
     // `py312` and `py3.12` both name a version, and a name holding anything else names none
     let (major, minor) = version.split_once('.').unwrap_or((version, ""));

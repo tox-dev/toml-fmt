@@ -129,11 +129,10 @@ fn open<'t>(root: &'t mut Table, key: &Key<'_>, kind: SectionKind, report: &mut 
                 report.says(key, "is already something an array of tables cannot extend");
                 return None;
             };
-            elements.push(Table {
+            Some(elements.push_mut(Table {
                 explicit: true,
                 ..Table::default()
-            });
-            Some(elements.last_mut().expect("just pushed"))
+            }))
         }
     }
 }
@@ -235,7 +234,7 @@ fn is_number(text: &str) -> bool {
             return digit_run(digits, radix);
         }
     }
-    let body = text.strip_prefix(['+', '-']).unwrap_or(text);
+    let body = text.trim_prefix(['+', '-']);
     matches!(body, "inf" | "nan") || is_decimal(body)
 }
 
@@ -263,7 +262,7 @@ fn is_decimal(text: &str) -> bool {
     let Some(after) = rest.strip_prefix(['e', 'E']) else {
         return false;
     };
-    let (exponent, rest) = split_run(after.strip_prefix(['+', '-']).unwrap_or(after));
+    let (exponent, rest) = split_run(after.trim_prefix(['+', '-']));
     rest.is_empty() && digit_run(exponent, 10)
 }
 

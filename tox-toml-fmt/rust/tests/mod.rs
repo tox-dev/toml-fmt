@@ -1,4 +1,4 @@
-use _tox_toml_fmt::{format_toml, Settings};
+use _tox_toml_fmt::{Settings, format_toml};
 
 mod disabled_tests;
 mod doc_config_tests;

@@ -2,7 +2,7 @@ use common::disabled::MARKER;
 use indoc::indoc;
 
 use super::{assert_valid_toml, default_settings};
-use _pyproject_fmt::{format_toml, Settings};
+use _pyproject_fmt::{Settings, format_toml};
 
 #[test]
 fn test_disabled_keys_stay_anchored_to_their_entry() {
