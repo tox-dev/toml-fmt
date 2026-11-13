@@ -7,8 +7,7 @@ use regex::Regex;
 
 use common::arrays::{dedupe_strings_in, map_strings, sort, sort_names_in, string_of};
 use common::nesting::Width;
-use common::pep508::{Number, Operator, Version, VersionOp};
-use common::pep508::{Requirement, is_valid_version};
+use common::pep508::{Number, Operator, Requirement, Version, VersionOp, is_valid_version};
 use common::sections;
 use toml_doc::{
     Array, Comment, Document, Entry, InlineTable, Key, KeyValue, LineEnding, Member, Pad, Piece, Section, SectionKind,
