@@ -2,24 +2,24 @@
 
 from __future__ import annotations
 
-import difflib  # simplint: ignore[init-module-content]  # retain public definitions at this module path
-import os  # simplint: ignore[init-module-content]  # retain public definitions at this module path
-import sys  # simplint: ignore[init-module-content]  # retain public definitions at this module path
-from abc import ABC, abstractmethod  # simplint: ignore[init-module-content]  # retain public definitions here
-from argparse import (  # simplint: ignore[init-module-content]  # retain public definitions here
+import difflib
+import os
+import sys
+from abc import ABC, abstractmethod
+from argparse import (
     Action,
     ArgumentDefaultsHelpFormatter,
     ArgumentParser,
     ArgumentTypeError,
     Namespace,
 )
-from collections.abc import Mapping, Sequence  # simplint: ignore[init-module-content]  # retain definitions here
-from copy import deepcopy  # simplint: ignore[init-module-content]  # retain public definitions here
-from dataclasses import dataclass, field  # simplint: ignore[init-module-content]  # retain definitions here
-from functools import partial  # simplint: ignore[init-module-content]  # retain public definitions here
-from importlib.metadata import version  # simplint: ignore[init-module-content]  # retain definitions here
-from pathlib import Path  # simplint: ignore[init-module-content]  # retain public definitions here
-from typing import (  # simplint: ignore[init-module-content]  # retain public definitions here
+from collections.abc import Mapping, Sequence
+from copy import deepcopy
+from dataclasses import dataclass, field
+from functools import partial
+from importlib.metadata import version
+from pathlib import Path
+from typing import (
     TYPE_CHECKING,
     Final,
     Generic,
