@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+from types import MappingProxyType
 from typing import TYPE_CHECKING, Final, TypeAlias
 
 if TYPE_CHECKING:
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 _Setting: TypeAlias = bool | int | str | tuple[int, int] | tuple[str, ...]
 
 # Match the CLI defaults so examples need no duplicate configuration.
-_DEFAULTS: Final[Mapping[str, Mapping[str, _Setting]]] = {
+_DEFAULTS: Final[Mapping[str, Mapping[str, _Setting]]] = MappingProxyType({
     "pyproject_fmt": {
         "column_width": 120,
         "indent": 2,
@@ -37,7 +38,7 @@ _DEFAULTS: Final[Mapping[str, Mapping[str, _Setting]]] = {
         "skip_wrap_for_keys": (),
         "pin_envs": (),
     },
-}
+})
 
 
 def render_example(module: str, before: str, config: str = "") -> str:

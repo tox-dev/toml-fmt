@@ -30,12 +30,6 @@ _SDIST: Final[str] = f"{_MODULE}-0.tar.gz"
 _SDIST_HELD: Final[bytes] = b'[project]\nname = "pyproject-fmt"\n'
 
 
-class Backend(NamedTuple):
-    build_wheel: BuildWheel
-    build_editable: BuildWheel
-    build_sdist: BuildSdist
-
-
 @pytest.fixture
 def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
     package = tmp_path / "package"
@@ -58,6 +52,64 @@ def backend(tmp_path: Path, mocker: MockerFixture) -> Backend:
         cast("BuildWheel", loaded["build_editable"]),
         cast("BuildSdist", loaded["build_sdist"]),
     )
+
+
+def _write_common(common: Path) -> None:
+    source = common / "src" / "toml_fmt_common"
+    source.mkdir(parents=True)
+    (source / "__init__.py").write_text("VALUE = 1\n", encoding="utf-8", newline="")
+    (source / "_lib.pyi").write_text("VALUE: int\n", encoding="utf-8", newline="")
+    (source / "py.typed").write_text("", encoding="utf-8")
+    (common / "pyproject.toml").write_text('dependencies = [\n  "tomlkit>=0.13",\n]\n', encoding="utf-8", newline="")
+
+    cache = source / "__pycache__"
+    cache.mkdir()
+    (cache / "__init__.cpython-312.pyc").write_bytes(b"bytecode")
+    (source / "module.pyc").write_bytes(b"bytecode")
+    (source / "module.pyo").write_bytes(b"optimized")
+    (source / "_speedups.so").write_bytes(b"\x7fELF")
+    (source / ".DS_Store").write_bytes(b"junk")
+
+
+def _write_wheel(
+    wheel_directory: str,
+    _config_settings: ConfigSettings | None = None,
+    _metadata_directory: str | None = None,
+) -> str:
+    with ZipFile(Path(wheel_directory) / _WHEEL, "w") as archive:
+        archive.writestr(f"{_MODULE}/__main__.py", "import toml_fmt_common\n")
+        archive.writestr(
+            f"{_MODULE}-0.dist-info/METADATA",
+            """\
+Metadata-Version: 2.4
+Name: pyproject-fmt
+Version: 0
+Description-Content-Type: text/markdown
+
+# pyproject-fmt
+
+Format your TOML.
+""",
+        )
+        archive.writestr(f"{_MODULE}-0.dist-info/RECORD", "")
+    return _WHEEL
+
+
+def _write_sdist(sdist_directory: str, _config_settings: ConfigSettings | None = None) -> str:
+    with tar_open(Path(sdist_directory) / _SDIST, "w:gz") as archive:
+        root = TarInfo(f"{_MODULE}-0")
+        root.type = DIRTYPE
+        archive.addfile(root)
+        project = TarInfo(f"{_MODULE}-0/pyproject.toml")
+        project.size = len(_SDIST_HELD)
+        archive.addfile(project, BytesIO(_SDIST_HELD))
+    return _SDIST
+
+
+class Backend(NamedTuple):
+    build_wheel: BuildWheel
+    build_editable: BuildWheel
+    build_sdist: BuildSdist
 
 
 @pytest.fixture
@@ -183,55 +235,3 @@ def test_vendor_into_sdist_rebuild_is_byte_identical(
     second.mkdir()
     second_sdist = second / backend.build_sdist(str(second), None)
     assert first_sdist.read_bytes() == second_sdist.read_bytes()
-
-
-def _write_common(common: Path) -> None:
-    source = common / "src" / "toml_fmt_common"
-    source.mkdir(parents=True)
-    (source / "__init__.py").write_text("VALUE = 1\n", encoding="utf-8", newline="")
-    (source / "_lib.pyi").write_text("VALUE: int\n", encoding="utf-8", newline="")
-    (source / "py.typed").write_text("", encoding="utf-8")
-    (common / "pyproject.toml").write_text('dependencies = [\n  "tomlkit>=0.13",\n]\n', encoding="utf-8", newline="")
-
-    cache = source / "__pycache__"
-    cache.mkdir()
-    (cache / "__init__.cpython-312.pyc").write_bytes(b"bytecode")
-    (source / "module.pyc").write_bytes(b"bytecode")
-    (source / "module.pyo").write_bytes(b"optimized")
-    (source / "_speedups.so").write_bytes(b"\x7fELF")
-    (source / ".DS_Store").write_bytes(b"junk")
-
-
-def _write_wheel(
-    wheel_directory: str,
-    _config_settings: ConfigSettings | None = None,
-    _metadata_directory: str | None = None,
-) -> str:
-    with ZipFile(Path(wheel_directory) / _WHEEL, "w") as archive:
-        archive.writestr(f"{_MODULE}/__main__.py", "import toml_fmt_common\n")
-        archive.writestr(
-            f"{_MODULE}-0.dist-info/METADATA",
-            """\
-Metadata-Version: 2.4
-Name: pyproject-fmt
-Version: 0
-Description-Content-Type: text/markdown
-
-# pyproject-fmt
-
-Format your TOML.
-""",
-        )
-        archive.writestr(f"{_MODULE}-0.dist-info/RECORD", "")
-    return _WHEEL
-
-
-def _write_sdist(sdist_directory: str, _config_settings: ConfigSettings | None = None) -> str:
-    with tar_open(Path(sdist_directory) / _SDIST, "w:gz") as archive:
-        root = TarInfo(f"{_MODULE}-0")
-        root.type = DIRTYPE
-        archive.addfile(root)
-        project = TarInfo(f"{_MODULE}-0/pyproject.toml")
-        project.size = len(_SDIST_HELD)
-        archive.addfile(project, BytesIO(_SDIST_HELD))
-    return _SDIST
