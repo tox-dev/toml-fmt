@@ -37,11 +37,15 @@ jobs:
     uses: $/.github/workflows/common.yaml
     permissions:
       contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   toml-doc:
     name: 🧪 toml-doc
     uses: $/.github/workflows/toml_doc.yaml
     permissions:
       contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   shared-build:
     name: 🏗️ toml-fmt-common build
     uses: $/.github/workflows/toml_fmt_common_build.yaml
@@ -52,6 +56,8 @@ jobs:
     uses: $/.github/workflows/toml_fmt_common_test.yaml
     permissions:
       contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   pyproject-build:
     name: 🏗️ pyproject-fmt build
     uses: $/.github/workflows/pyproject_fmt_build.yaml
@@ -63,6 +69,8 @@ jobs:
     uses: $/.github/workflows/pyproject_fmt_test.yaml
     permissions:
       contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   tox-build:
     name: 🏗️ tox-toml-fmt build
     uses: $/.github/workflows/tox_toml_fmt_build.yaml
@@ -74,6 +82,8 @@ jobs:
     uses: $/.github/workflows/tox_toml_fmt_test.yaml
     permissions:
       contents: read
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   release:
     name: 🏷️ Release dry run ${{ matrix.package }}
     strategy:
