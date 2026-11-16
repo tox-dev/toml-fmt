@@ -5,6 +5,9 @@ on:
     branches: ["main"]
     tags-ignore: ["**"]
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: false
   schedule:
     - cron: "15 8 * * *"
 concurrency:
