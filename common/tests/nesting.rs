@@ -86,6 +86,14 @@ fn a_table_the_file_never_wrote_is_written_out_to_hold_the_fold() {
 }
 
 #[test]
+fn an_array_of_tables_under_a_table_the_file_never_wrote_folds_all_the_way_up() {
+    let mut document = parse("[[tool.x.sub.items]]\nb = 2\n[[tool.x.sub.items]]\nb = 3\n");
+    nesting::collapse(&mut document, "tool.x");
+
+    assert_eq!(document.to_string(), "[tool.x]\nsub.items = [{b = 2},{b = 3}]\n");
+}
+
+#[test]
 fn an_array_of_tables_with_nothing_in_it_stays_written_out() {
     let mut document = parse("[tool.x]\n[[tool.x.sub]]\n");
     nesting::collapse(&mut document, "tool.x");
