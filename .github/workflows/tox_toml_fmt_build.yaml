@@ -68,7 +68,7 @@ jobs:
           python-version: "3.15"
           enable-cache: false
       - name: 🧹 Run pre-commit
-        uses: tox-dev/action-pre-commit-uv@v1.1.1
+        uses: tox-dev/action-pre-commit-uv@v1.1.2
   build:
     name: 🏗️ Build distributions
     needs: changes
