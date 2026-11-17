@@ -992,6 +992,29 @@
 
 ## tox-toml-fmt
 
+### 1.12.0 (2026-11-17)
+
+<a name="release-tox-toml-fmt-1-12-0"></a>
+
+<a name="release-tox-toml-fmt-1-12-0-fixed"></a>
+
+#### Fixed
+
+- A `[[a.b.c]]` array of tables whose parent `[a.b]` is not written in the file now folds in one run, so `--check`
+  passes right after formatting ([#545](https://github.com/tox-dev/toml-fmt/pull/545)) by
+  [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-tox-toml-fmt-1-12-0-packaging"></a>
+
+#### Packaging
+
+- Every wheel now carries a [PEP 770](https://peps.python.org/pep-0770/) CycloneDX SBOM written by
+  [python-sbom](https://github.com/tox-dev/python-sbom) next to maturin's list of Rust crates: it records the Python
+  package, its supplier and license, the build tools and the source revision, and links to maturin's file
+  ([#527](https://github.com/tox-dev/toml-fmt/pull/527)) by [@gaborbernat](https://github.com/gaborbernat).
+- Building tox-toml-fmt from source now requires Rust 1.100 ([#542](https://github.com/tox-dev/toml-fmt/pull/542)) by
+  [@gaborbernat](https://github.com/gaborbernat).
+
 ### 1.11.3 (2026-11-04)
 
 <a name="release-tox-toml-fmt-1-11-3"></a>
