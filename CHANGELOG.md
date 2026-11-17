@@ -2,6 +2,18 @@
 
 ## pyproject-fmt
 
+### 2.31.1 (2026-11-17)
+
+<a name="release-pyproject-fmt-2-31-1"></a>
+
+<a name="release-pyproject-fmt-2-31-1-packaging"></a>
+
+#### Packaging
+
+- Linux x86_64 now ships a PyPy 8.0 (`pp80`) wheel for Python 3.11, so installing there no longer builds the sdist,
+  which needs Rust 1.100 ([#554](https://github.com/tox-dev/toml-fmt/pull/554)) by
+  [@gaborbernat](https://github.com/gaborbernat).
+
 ### 2.31.0 (2026-11-17)
 
 <a name="release-pyproject-fmt-2-31-0"></a>
