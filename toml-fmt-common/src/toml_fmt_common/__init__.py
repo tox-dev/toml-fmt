@@ -2,6 +2,14 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = [
+    "collections.abc",
+    "copy",
+    "difflib",
+    "functools",
+    "pathlib",
+]
+
 import difflib
 import os
 import sys
@@ -17,7 +25,6 @@ from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import partial
-from importlib.metadata import version
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -411,9 +418,9 @@ def _make_cli(  # ruff: ignore[non-empty-init-module]  # root implementation
     parser.add_argument(
         "-V",
         "--version",
-        action="version",
+        action=_VersionAction,
         help=f"print package version of {formatter.prog}",
-        version=f"%(prog)s ({version(formatter.prog)})",
+        nargs=0,
     )
 
     mode_group = parser.add_argument_group("run mode")
@@ -460,6 +467,21 @@ def _make_cli(  # ruff: ignore[non-empty-init-module]  # root implementation
         help=msg,
     )
     return _Cli(parser, type_conversion, format_group.actions)
+
+
+class _VersionAction(Action):  # ruff: ignore[non-empty-init-module]  # root implementation
+    def __call__(
+        self,
+        parser: ArgumentParser,
+        namespace: Namespace,
+        values: str | Sequence[str] | None,
+        option_string: str | None = None,
+    ) -> None:
+        del namespace, values, option_string
+        from importlib.metadata import version  # ruff: ignore[import-outside-top-level]  # only needed for -V
+
+        sys.stdout.write(f"{parser.prog} ({version(parser.prog)})\n")
+        parser.exit()
 
 
 @dataclass(kw_only=True, frozen=True, slots=True)  # ruff: ignore[non-empty-init-module]  # root implementation

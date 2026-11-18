@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = [
+    f"{__spec__.parent}.__main__",
+]
+
 from .__main__ import build_parser
 from .__main__ import runner as run
 

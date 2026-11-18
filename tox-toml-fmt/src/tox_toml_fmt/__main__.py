@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = [
+    f"{__spec__.parent}._lib",  # type: ignore[union-attr]  # imported modules have specs
+]
+
 from typing import TYPE_CHECKING
 
 from toml_fmt_common import (
