@@ -2,6 +2,11 @@
 
 from __future__ import annotations
 
+__lazy_modules__ = [
+    "argparse",
+    f"{__spec__.parent}._lib",  # type: ignore[union-attr]  # imported modules have specs
+]
+
 from argparse import ArgumentParser, ArgumentTypeError
 from typing import TYPE_CHECKING, Final
 

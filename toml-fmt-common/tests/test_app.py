@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tomllib
 from argparse import ArgumentTypeError
+from importlib.metadata import version
 from io import StringIO
 from typing import TYPE_CHECKING, ClassVar, Final
 
@@ -115,6 +116,14 @@ def test_dumb_help(capsys: pytest.CaptureFixture[str]) -> None:
     out, err = capsys.readouterr()
     assert not err
     assert "extra value" in out
+
+
+def test_dumb_version(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc:
+        run(Dumb(), ["-V"])
+
+    assert exc.value.code == 0
+    assert capsys.readouterr() == (f"toml-fmt-common ({version('toml-fmt-common')})\n", "")
 
 
 def test_build_cli_returns_a_parser_without_reading_arguments() -> None:
