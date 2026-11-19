@@ -198,9 +198,33 @@ The formatter writes tables in this order:
    6. Task runners: ``doit``, ``spin``, ``tox``
    7. Release tools: ``bumpversion``, ``commitizen``, ``jupyter-releaser``, ``semantic_release``, ``tbump``,
       ``towncrier``, ``vendoring``
-   8. Any other ``tool.*`` in alphabetical order
+   8. Unlisted tools, in the order each tool first appears in the file
 
-5. Other tables, alphabetically
+5. Other tables, in the order each top-level name first appears in the file
+
+For example, ``[tool.ruff]`` moves ahead of both unlisted tools. ``[tool.zzz]`` keeps its place before ``[tool.aaa]``.
+
+.. code-block:: toml
+
+   # Before
+   [tool.zzz]
+   enabled = true
+
+   [tool.aaa]
+   enabled = false
+
+   [tool.ruff]
+   line-length = 100
+
+   # After
+   [tool.ruff]
+   line-length = 100
+
+   [tool.zzz]
+   enabled = true
+
+   [tool.aaa]
+   enabled = false
 
 String Quotes
 ~~~~~~~~~~~~~
@@ -258,7 +282,26 @@ Short arrays stay on one line:
    # After
    keywords = [ "python", "toml" ]
 
-An array that exceeds ``column_width`` expands and gains a trailing comma:
+The formatter measures the whole line when deciding whether to wrap an array. At 50 columns the ``keywords`` array fits
+by itself, but the full assignment exceeds ``column_width``. The array wraps without a trailing comma.
+
+.. code-block:: toml
+
+   # Before
+   [project]
+   keywords = ["web", "toml", "pyproject", "formatting"]
+
+   # After
+   [project]
+   keywords = [
+     "formatting",
+     "pyproject",
+     "toml",
+     "web"
+   ]
+
+The formatter adds a trailing comma when it splits a single-line array that exceeds the limit on its own, excluding the
+spaces just inside the brackets. At 30 columns the same array gains a comma.
 
 .. code-block:: toml
 
@@ -295,8 +338,6 @@ A member comment also retains multiline form:
      "E501", # too long
      "E701",
    ]
-
-An array uses multiline form when it has a trailing comma, exceeds ``column_width``, or contains a member comment.
 
 String Wrapping
 ~~~~~~~~~~~~~~~

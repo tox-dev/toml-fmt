@@ -808,7 +808,7 @@ pub fn every_value<'d, 'a>(document: &'d mut Document<'a>) -> Vec<&'d mut Value<
     root.chain(held).collect()
 }
 
-/// Put the sections in `order`, holding the ones it does not name after them alphabetically.
+/// Put the sections in `order`. Within each namespace, unlisted groups follow in order of first appearance.
 ///
 /// A name in `order` claims the tables written beneath it, so `tool.ruff` keeps `tool.ruff.lint`
 /// with it, and sections that share a name hold the order they were written in. `key_order` places
