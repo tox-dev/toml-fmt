@@ -10,7 +10,7 @@ jobs:
   notes:
     name: 📝 Render GitHub Release notes
     needs: build
-    uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@ef0cd88bef592260a48345753b8b509b209ab189 # 6.8.3
+    uses: tox-dev/github-workflows/.github/workflows/release-notes.yaml@b34c57a8a06e7b043c2ddd0b6b7a8a778d7aa8f7 # 6.8.5
     permissions:
       contents: read
     with:
@@ -43,7 +43,7 @@ jobs:
         run: printf 'version=%s\n' "$(uv version --package toml-fmt-common --short)" >>"$GITHUB_OUTPUT"
       - name: 📦 Export locked build constraints
         id: constraints
-        uses: tox-dev/github-workflows/export-build-constraints@6.8.3
+        uses: tox-dev/github-workflows/export-build-constraints@6.8.5
       - name: 🏗️ Build source and wheel distributions
         run: |
           uv build --python 3.15 --python-preference only-managed \
@@ -82,7 +82,7 @@ jobs:
   github-release:
     name: 🚀 Publish GitHub Release
     needs: [build, pypi, notes]
-    uses: tox-dev/github-workflows/.github/workflows/github-release.yaml@ef0cd88bef592260a48345753b8b509b209ab189 # 6.8.3
+    uses: tox-dev/github-workflows/.github/workflows/github-release.yaml@b34c57a8a06e7b043c2ddd0b6b7a8a778d7aa8f7 # 6.8.5
     permissions:
       contents: write
     with:
