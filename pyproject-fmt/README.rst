@@ -198,9 +198,33 @@ The formatter writes tables in this order:
    6. Task runners: ``doit``, ``spin``, ``tox``
    7. Release tools: ``bumpversion``, ``commitizen``, ``jupyter-releaser``, ``semantic_release``, ``tbump``,
       ``towncrier``, ``vendoring``
-   8. Any other ``tool.*`` in alphabetical order
+   8. Unlisted tools, in the order each tool first appears in the file
 
-5. Other tables, alphabetically
+5. Other tables, in the order each top-level name first appears in the file
+
+For example, ``[tool.ruff]`` moves ahead of both unlisted tools. ``[tool.zzz]`` keeps its place before ``[tool.aaa]``.
+
+.. code-block:: toml
+
+   # Before
+   [tool.zzz]
+   enabled = true
+
+   [tool.aaa]
+   enabled = false
+
+   [tool.ruff]
+   line-length = 100
+
+   # After
+   [tool.ruff]
+   line-length = 100
+
+   [tool.zzz]
+   enabled = true
+
+   [tool.aaa]
+   enabled = false
 
 String Quotes
 ~~~~~~~~~~~~~
