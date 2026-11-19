@@ -86,20 +86,11 @@ Short arrays stay on one line:
 
     keywords = ["python", "toml"]
 
-The formatter measures the whole line when deciding whether to wrap an array. At 50 columns the ``keywords`` array fits
-by itself, but the full assignment exceeds ``column_width``. The array wraps without a trailing comma.
+The formatter adds a trailing comma when it wraps a non-empty single-line array to fit ``column_width``.
+It measures the full line, including the key, indentation, and any end-of-line comment.
 
 .. fmt-example::
     :config: column_width=50 generate_python_version_classifiers=false
-
-    [project]
-    keywords = ["web", "toml", "pyproject", "formatting"]
-
-The formatter adds a trailing comma when it splits a single-line array that exceeds the limit on its own, excluding the
-spaces just inside the brackets. At 30 columns the same array gains a comma.
-
-.. fmt-example::
-    :config: column_width=30 generate_python_version_classifiers=false
 
     [project]
     keywords = ["web", "toml", "pyproject", "formatting"]

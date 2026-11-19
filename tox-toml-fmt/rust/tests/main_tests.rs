@@ -1461,7 +1461,7 @@ fn test_inline_table_reorder_posargs() {
     assert_snapshot!(got, @r#"
     [env.test]
     commands = [
-      [ "pytest", { replace = "posargs", default = [], extend = true } ]
+      [ "pytest", { replace = "posargs", default = [], extend = true } ],
     ]
     "#);
 }
@@ -1484,7 +1484,7 @@ fn test_inline_table_reorder_product() {
     assert_snapshot!(got, @r#"
     env_list = [
       { product = [ [ "py312", "py313" ], [ "django42", "django50" ] ], exclude = [
-        "py312-django50"
+        "py312-django50",
       ] },
     ]
     "#);
@@ -1557,7 +1557,7 @@ fn test_inline_table_reorder_glob() {
       [
         "twine",
         "upload",
-        { replace = "glob", pattern = "dist/*.whl", extend = true }
+        { replace = "glob", pattern = "dist/*.whl", extend = true },
       ],
     ]
     "#);

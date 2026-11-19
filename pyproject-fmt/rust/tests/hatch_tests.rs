@@ -253,7 +253,7 @@ fn test_disabled_keys_reorder_and_stay_valid_comments_issue_390() {
     # TODO: re-activate after https://github.com/pypa/hatch/issues/2252
     # metadata.hooks.docstring-description = {}
     # metadata.hooks.fancy-pypi-readme.fragments = [
-    #   { path = "README.rst", start-after = ".. begin" }
+    #   { path = "README.rst", start-after = ".. begin" },
     # ]
     "#);
     assert_eq!(evaluate(&result), result, "idempotent");

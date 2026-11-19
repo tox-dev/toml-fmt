@@ -43,7 +43,8 @@ Short arrays stay on one line:
 
     env_list = ["py312", "py313", "lint"]
 
-An array that exceeds ``column_width`` expands and gains a trailing comma:
+The formatter adds a trailing comma when it wraps a non-empty single-line array to fit ``column_width``.
+It measures the full line, including the key, indentation, and any end-of-line comment.
 
 .. fmt-example::
     :config: column_width=30

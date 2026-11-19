@@ -235,7 +235,7 @@ fn test_doc_conditional_command_args() {
     assert_snapshot!(got, @r#"
     [env_run_base]
     commands = [
-      [ "pytest", { replace = "if", condition = "env.DEBUG", then = [ "-vv", "--tb=long" ], else = [], extend = true } ]
+      [ "pytest", { replace = "if", condition = "env.DEBUG", then = [ "-vv", "--tb=long" ], else = [], extend = true } ],
     ]
     "#);
 }

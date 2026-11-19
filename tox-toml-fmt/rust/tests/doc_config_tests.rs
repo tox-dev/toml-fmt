@@ -461,7 +461,7 @@ fn test_doc_glob_with_default() {
     assert_snapshot!(got, @r#"
     [env.A]
     commands = [
-      [ "twine", "upload", { replace = "glob", pattern = "dist/*.whl", default = [ "fallback.whl" ], extend = true } ]
+      [ "twine", "upload", { replace = "glob", pattern = "dist/*.whl", default = [ "fallback.whl" ], extend = true } ],
     ]
     "#);
 }

@@ -176,7 +176,8 @@ Short arrays stay on one line:
    # After
    env_list = [ "py313", "py312", "lint" ]
 
-An array that exceeds ``column_width`` expands and gains a trailing comma:
+The formatter adds a trailing comma when it wraps a non-empty single-line array to fit ``column_width``.
+It measures the full line, including the key, indentation, and any end-of-line comment.
 
 .. code-block:: toml
 
