@@ -1,4 +1,6 @@
-use super::evaluate_full as evaluate;
+use _pyproject_fmt::Settings;
+
+use super::{default_settings, evaluate_full as evaluate, evaluate_settings};
 
 #[test]
 fn test_commitizen_order() {
@@ -31,4 +33,36 @@ fn test_commitizen_idempotent() {
     let once = evaluate(start);
     let twice = evaluate(&once);
     assert_eq!(once, twice);
+}
+
+#[test]
+fn test_commitizen_questions_gain_a_trailing_comma_when_wrapped() {
+    let settings = Settings {
+        column_width: 100,
+        ..default_settings()
+    };
+    let inline = indoc::indoc! {r#"
+    [tool.commitizen]
+    customize.questions = [ { type = "list", name = "change_type" }, { type = "input", name = "message" } ]
+    "#};
+    let tables = indoc::indoc! {r#"
+    [[tool.commitizen.customize.questions]]
+    type = "list"
+    name = "change_type"
+
+    [[tool.commitizen.customize.questions]]
+    type = "input"
+    name = "message"
+    "#};
+    let expected = indoc::indoc! {r#"
+    [tool.commitizen]
+    customize.questions = [
+      { type = "list", name = "change_type" },
+      { type = "input", name = "message" },
+    ]
+    "#};
+
+    for source in [inline, tables, expected] {
+        assert_eq!(evaluate_settings(source, &settings), expected);
+    }
 }

@@ -100,32 +100,16 @@ impl Layout {
             .map(|member| self.value(&mut member.item, depth + 1, self.indent * (depth + 1), 1))
             .collect();
         let one_line = one_line_written(&held);
-        if !self.array_breaks(array, depth, prefix + suffix + one_line.columns) {
+        // Opening cannot make room for the members if their indent already fills the column.
+        let wraps_for_width = self.indent.saturating_mul(depth + 1) < self.column_width
+            && prefix + suffix + one_line.columns > self.column_width;
+        if !(array.trailing_comma || wraps_for_width || holds_a_comment(&array.members, &array.trailing)) {
             self.inline_array(array);
             return one_line;
         }
-        // an array too wide on its own is being broken up, which a trailing comma then holds open;
-        // one that only overruns because of the key or the indent before it is merely wrapped, and
-        // a comma there would say something about the file that the file does not say
-        let outgrew = one_line
-            .columns
-            .saturating_sub(usize::from(!array.members.is_empty()) * 2)
-            > self.column_width;
-        let trailing = array.trailing_comma || (!was_open && outgrew);
+        let trailing = array.trailing_comma || (wraps_for_width && !was_open && !array.members.is_empty());
         self.explode_array(array, depth, trailing);
         written_members(&array.members, &held, array.trailing_comma, &array.trailing)
-    }
-
-    /// A trailing comma, a comment, or a line that would run past `column_width` each force the
-    /// array open. Without one of those it closes back up, however it was written.
-    ///
-    /// An array whose indent already fills the column gains nothing by opening: every line it wrote
-    /// would start past the column it was asked to fit, so it stays on one line unless the file says
-    /// otherwise.
-    fn array_breaks(self, array: &Array<'_>, depth: usize, width: usize) -> bool {
-        let commented = holds_a_comment(&array.members, &array.trailing);
-        let room = self.indent.saturating_mul(depth + 1) < self.column_width;
-        array.trailing_comma || commented || (room && width > self.column_width)
     }
 
     /// A one-line array is written `[ a, b ]`, with a space inside each bracket. An empty one keeps

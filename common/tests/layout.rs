@@ -27,6 +27,31 @@ fn an_array_wider_than_the_column_breaks_apart() {
 }
 
 #[test]
+fn an_array_that_pushes_its_assignment_past_the_column_gains_a_comma() {
+    let source = "long_key = [ 1, 2 ]\n";
+    let wrapped = "long_key = [\n  1,\n  2,\n]\n";
+
+    assert_eq!(lay_out(source, 19), source);
+    assert_eq!(lay_out(source, 18), wrapped);
+    assert_eq!(lay_out(wrapped, 18), wrapped);
+}
+
+#[test]
+fn an_array_wrapped_to_fit_an_end_of_line_comment_gains_a_comma() {
+    assert_eq!(lay_out("a = [ 1, 2 ]  # note\n", 12), "a = [\n  1,\n  2,\n]  # note\n");
+}
+
+#[test]
+fn a_width_limit_adds_no_comma_to_an_existing_multiline_array_or_an_empty_array() {
+    let multiline = "long_key = [\n  1,\n  2\n]\n";
+    let empty = "long_key = [\n]\n";
+
+    assert_eq!(lay_out(multiline, 12), multiline);
+    assert_eq!(lay_out("long_key = []\n", 12), empty);
+    assert_eq!(lay_out(empty, 12), empty);
+}
+
+#[test]
 fn a_trailing_comma_keeps_an_array_open() {
     assert_eq!(lay_out("a = [\"one\",]\n", 120), "a = [\n  \"one\",\n]\n");
 }
@@ -323,7 +348,7 @@ fn a_comment_is_aligned_by_what_the_line_holds() {
 fn a_nested_array_leaves_room_for_the_comma_after_it() {
     let written = lay_out("a = [ [ \"123456789012\" ], 1 ]\n", 20);
 
-    assert_eq!(written, "a = [\n  [\n    \"123456789012\"\n  ],\n  1,\n]\n");
+    assert_eq!(written, "a = [\n  [\n    \"123456789012\",\n  ],\n  1,\n]\n");
     assert!(written.lines().all(|line| line.len() <= 20), "{written}");
 }
 

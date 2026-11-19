@@ -258,7 +258,7 @@ fn test_collapse_authors_with_url_field() {
     name = "test"
     authors = [
       { name = "Bob", email = "bob@example.com", url = "https://bob.com" },
-      { name = "Alice", email = "alice@example.com" }
+      { name = "Alice", email = "alice@example.com" },
     ]
     "#);
 }
@@ -1137,7 +1137,7 @@ fn test_wide_array_of_tables_under_implicit_parent() {
       "src/managers/opkg*",
       "tests/*apt*",
       "tests/*dpkg*",
-      "tests/*opkg*"
+      "tests/*opkg*",
     ]
     "#);
 }
@@ -1160,7 +1160,7 @@ fn test_wide_array_of_tables_under_explicit_empty_parent() {
       "src/managers/opkg*",
       "tests/*apt*",
       "tests/*dpkg*",
-      "tests/*opkg*"
+      "tests/*opkg*",
     ]
     "#);
 }
