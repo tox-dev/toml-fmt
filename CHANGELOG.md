@@ -1030,6 +1030,31 @@
 
 ## tox-toml-fmt
 
+### 1.12.2 (2026-11-19)
+
+<a name="release-tox-toml-fmt-1-12-2"></a>
+
+<a name="release-tox-toml-fmt-1-12-2-fixed"></a>
+
+#### Fixed
+
+- Add a trailing comma when a single-line array wraps because its full line exceeds `column_width`
+  ([#561](https://github.com/tox-dev/toml-fmt/pull/561)) by [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-tox-toml-fmt-1-12-2-documentation"></a>
+
+#### Documentation
+
+- Clarify that the shared table sorter keeps unlisted table groups in order of first appearance
+  ([#558](https://github.com/tox-dev/toml-fmt/pull/558)) by [@gaborbernat](https://github.com/gaborbernat).
+
+<a name="release-tox-toml-fmt-1-12-2-performance"></a>
+
+#### Performance
+
+- Defer parser and Rust extension imports until they are needed on Python 3.15 and later
+  ([#555](https://github.com/tox-dev/toml-fmt/pull/555)) by [@gaborbernat](https://github.com/gaborbernat).
+
 ### 1.12.1 (2026-11-17)
 
 <a name="release-tox-toml-fmt-1-12-1"></a>
