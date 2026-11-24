@@ -1,6 +1,6 @@
 [build-system]
 build-backend = "uv_build"
-requires = [ "uv-build<0.14,>=0.13.7" ]
+requires = [ "uv-build<0.14,>=0.13.9" ]
 
 [project]
 name = "toml-fmt-common"
@@ -55,7 +55,7 @@ type = [
 pkg-meta = [
   "check-wheel-contents>=0.6.3",
   "twine>=7",
-  "uv>=0.13.7",
+  "uv>=0.13.9",
 ]
 
 [tool.uv]
