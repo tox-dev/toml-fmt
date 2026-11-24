@@ -786,13 +786,14 @@ sha256 = "04e15df7083642d5b791e51f597cffef8a92d770ecf5160c529b5a7b53b40100"
 
 [tool.nab]
 nab-version = "0.0.28"
-created-at = 2026-11-24T20:16:35.406743+00:00
+created-at = 2026-11-24T20:20:25.662778+00:00
 command-line = [
     "nab",
     "lock",
     "--all-groups",
     "--all-extras",
     "--no-cache",
+    "--upgrade",
 ]
 input-path = "pyproject.toml"
 mode = "universal"
@@ -806,6 +807,6 @@ platforms = [
 
 [tool.nab.validation]
 version = 1
-all-inputs-sha256 = "f9f53f37514350a9680df71c2c62b937516ec6ad46df95d4e65591cbd8ee234a"
-selection-inputs-sha256 = "b5b447fd61ce0b2c1f825e9aba8a3eecd76760702abb8c84efa56d0dc694ff26"
+all-inputs-sha256 = "c780c976c386a721fed5a57499c97b4f1f5ff0bbf323841ed98c1ec95611907b"
+selection-inputs-sha256 = "db678316317253c3528416e23302f167c02afcf46018670520487f7970f04159"
 contents-sha256 = "43462a1ad202a16ef666fd3713b490c25bb1718fefa0efd5940e7bbe3c567c4f"
