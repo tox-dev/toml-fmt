@@ -101,7 +101,7 @@ jobs:
         with:
           components: llvm-tools-preview
       - name: 🦀 Install cargo-llvm-cov and cargo-nextest
-        uses: taiki-e/install-action@v2.90.3
+        uses: taiki-e/install-action@v2.90.5
         with:
           tool: cargo-llvm-cov,cargo-nextest
       - name: 🧪 Run tests with coverage
